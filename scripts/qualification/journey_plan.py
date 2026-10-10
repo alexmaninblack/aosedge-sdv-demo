@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Fixed staging journey and pure postconditions; no product effects here."""
 
-MUTATIONS = {'dependency', 'setup', 'presenter-start', 'presenter', 'control', 'mode', 'poweroff', 'shutdown', 'restore'}
+MUTATIONS = {'dependency', 'setup', 'vm-access', 'presenter-start', 'presenter', 'control', 'mode', 'poweroff', 'shutdown', 'restore'}
 
 # A shutdown changes the experimental conditions. Do not combine observations
 # across it into a passing Reset, offline or ignition result.
@@ -170,6 +170,7 @@ def plan(config):
     add('backend-images', 'setup', args=dict(action='prepare-backends'), timeout=180)
     add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
     add('cloud-ready', 'setup', args=dict(action='cloud-check'), timeout=150)
+    add('vm-access', 'vm-access', timeout=30)
     add('cloud-subjects', 'setup', args=dict(action='cloud-subjects'), timeout=150)
     add('presenter', 'presenter-start', timeout=90)
     op('controller-create', 'create', image=config['image'])

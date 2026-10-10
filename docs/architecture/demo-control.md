@@ -1810,6 +1810,11 @@ until a producer manifest binding is integrated; metadata is never guessed.
   shell prompt; a bootloader line or fragmented kernel banner ending in `#`
   is not authenticated shell evidence. An already authenticated root console
   remains supported without resubmitting the password.
+  The [10 October qualification refinement](../planning/active/autonomous-m1-qualification.md)
+  permits an explicit owner-private Test password profile for unattended
+  engineering runs, bound to the installed instance, staging and exact Factory
+  digest. Native access validates it before use and never falls back to a dialog
+  on invalid presence. This is not a shipped default or a native-input pass.
 - stop asks the guest to power off over SSH, falling back to QMP powerdown.
   Wait for process exit and disk release, with no automatic forced kill. Keep
   overlay/identity/access material. Stop shared DNS only after the last owned VM.

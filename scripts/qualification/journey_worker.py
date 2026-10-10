@@ -22,7 +22,19 @@ OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-t
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset'}
 QUERIES = {'installed', 'component', 'service', 'backend', 'local', 'combined', 'platform', 'snapshot', 'publication'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
-PORTS = (18080,18600,2000,2001,2002,22022,22023)
+PORTS = (18080,18600,2000,2001,2002,10022,10023)
+
+
+def fixed_code(value):
+    return value if isinstance(value, str) and re.fullmatch('[A-Z][A-Z0-9_]{1,100}', value) else None
+
+
+def job_projection(job):
+    """Bounded product fields only; exclude arbitrary progress/text/logs."""
+    return dict(productState=fixed_code(job.get('state')), results=[
+        dict(state=fixed_code(row.get('state')),
+             code=fixed_code(row.get('message')) or fixed_code((row.get('facts') or {}).get('reason')))
+        for row in job.get('results', [])[-12:]])
 
 
 def wait_for_exit(timeout=10):
@@ -492,6 +504,51 @@ class Worker:
         require(client['buildId'] == hashlib.sha256(runtime.entry('web').read_bytes()).hexdigest(), 'UI_BUILD_CHANGED')
         return result(dict(serverReady=True, nativeWindowsOpened=False))
 
+    def vm_access(self):
+        from aosedge_demo_orchestrator.qualification_access import prepare, preflight, input_password
+        self.binding(allow_empty=True)
+        if self.request['phase'] == 'prepare':
+            if self.config.get('vmPasswordFile'):
+                input_password(Path(self.config['vmPasswordFile']))
+            else:
+                preflight(self.app.environment_service, self.config['image'])
+            return result(dict(validated=True))
+        if self.request['phase'] == 'execute' and self.config.get('vmPasswordFile'):
+            self.attempted = True
+            prepare(self.app.environment_service, self.config['image'], Path(self.config['vmPasswordFile']))
+        return result(preflight(self.app.environment_service, self.config['image']))
+
+    def bind_created(self, job):
+        identity = exchange('snapshot').get('runId')
+        require(identity and str(UUID(identity)) == identity and job.get('runId') == identity,
+                'CREATE_IDENTITY_UNCONFIRMED')
+        require(self.request.get('expectedRun') in (None, identity), 'TEST_IDENTITY_CHANGED')
+        self.request['expectedRun'] = identity
+        state = self.binding()
+        return identity, state
+
+    def diagnostic(self):
+        # One bounded observation before shutdown, even when enrollment failed.
+        state = self.binding(allow_empty=True)
+        value = dict(state='OBSERVED', expected='COMPLETED_OR_OBSERVED',
+                     journalPresent=state is not None)
+        if state:
+            lifecycle = state.get('demoLifecycle') or {}
+            vehicle = state['vehicles']['test']
+            value.update(lifecycleState=fixed_code(lifecycle.get('state')),
+                reason=fixed_code(lifecycle.get('reason')),
+                provisioned=bool(vehicle.get('unitId')),
+                vmState=fixed_code((vehicle.get('runtime') or {}).get('state')))
+        try:
+            operations = exchange('operations')
+            value['activeOperation'] = operations.get('active') is not None
+            rows = [row for row in operations.get('jobs', []) if row.get('id') == self.request['requestId']]
+            if len(rows) == 1:
+                value['job'] = job_projection(rows[0])
+        except (OSError, ValueError, KeyError):
+            value['presenterObservation'] = 'UNAVAILABLE'
+        return result(value)
+
     def presenter(self):
         action = self.args['action']
         require(action in OPERATIONS, 'OPERATION_NOT_ALLOWED')
@@ -537,25 +594,28 @@ class Worker:
             if operations['active'] != self.request['requestId']:
                 if job['state'] not in ('COMPLETED','OBSERVED'):
                     rows = job.get('results',[])
-                    facts = dict(productState=job['state'], results=[dict(operation=row.get('operation'),
-                        state=row.get('state'), code=row.get('message') if re.fullmatch(
-                            '[A-Z][A-Z0-9_]{1,100}', row.get('message') or '') else
-                        (row.get('facts') or {}).get('reason') if re.fullmatch('[A-Z][A-Z0-9_]{1,100}',
-                            (row.get('facts') or {}).get('reason') or '') else None) for row in rows])
+                    facts = job_projection(job)
                     not_submitted = (action=='service-assign' and len(rows)==1
                         and rows[0].get('operation')=='service.runtime-prepare' and rows[0].get('state')=='BLOCKED')
+                    partial_create = False
+                    if action == 'create' and job.get('runId'):
+                        identity, state = self.bind_created(job)
+                        lifecycle = state.get('demoLifecycle') or {}
+                        require(lifecycle.get('action') == 'create' and lifecycle.get('image') == self.config['image']
+                                and not state['vehicles']['test'].get('unitId'), 'PARTIAL_CREATE_UNCONFIRMED')
+                        partial_create = lifecycle.get('state') == 'PARTIAL' and job['state'] == 'PARTIAL'
+                        if partial_create:
+                            facts.update(runId=identity, partialRunBound=True,
+                                         reason=fixed_code(lifecycle.get('reason')))
                     return result(dict(facts,assignmentNotSubmitted=not_submitted),
-                        outcome='FAIL' if not_submitted else 'UNCERTAIN', code='PRODUCT_OPERATION_NOT_COMPLETED')
+                        outcome='FAIL' if not_submitted or partial_create else 'UNCERTAIN',
+                        code='PRODUCT_OPERATION_NOT_COMPLETED')
                 facts = {key:job[key] for key in ('version','release','serviceId') if job.get(key)}
                 for row in job.get('results', []):
                     if (row.get('facts') or {}).get('command'):
                         facts['commandId'] = row['facts']['command']['commandId']
                 if action == 'create':
-                    facts['runId'] = exchange('snapshot')['runId']
-                    require(facts['runId'] and str(UUID(facts['runId'])) == facts['runId']
-                            and job.get('runId') == facts['runId'], 'CREATE_IDENTITY_UNCONFIRMED')
-                    self.request['expectedRun'] = facts['runId']
-                    self.binding()
+                    facts['runId'], _ = self.bind_created(job)
                 return result(facts)
             require(time.monotonic() < deadline, 'OPERATION_DEADLINE_RECONCILE_REQUIRED')
             time.sleep(2)
@@ -677,7 +737,7 @@ class Worker:
 
     def execute(self):
         kind = self.request['kind']
-        require(kind in ('dependency','setup','presenter-start','presenter','control','mode','poweroff','shutdown','observe','hold','restore'), 'KIND_INVALID')
+        require(kind in ('dependency','setup','vm-access','diagnostic','presenter-start','presenter','control','mode','poweroff','shutdown','observe','hold','restore'), 'KIND_INVALID')
         with self.imports():
             if kind == 'setup': return self.setup()
             if kind in ('observe','hold'): return result(self.observe())

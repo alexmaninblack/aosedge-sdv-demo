@@ -150,7 +150,8 @@ applications and verify exit; never infer shutdown after a lost connection.
 does not rebuild or patch the package, inject telemetry, replace the installer,
 or create its own Cloud or VM lifecycle. Use it after verified installation and
 selection; media transfer, installation/repair and initial macOS consent remain
-separate checks. The matching signed Setup media must remain available while
+separate evidence. The `campaign.py` entry below joins those engineering steps
+without turning them into native acceptance. Matching signed Setup media remains available while
 the runner uses its embedded worker and launch validation.
 
 The sequence covers dependency readiness, signed Setup backend preparation,
@@ -233,8 +234,10 @@ candidate. The separate mode-0600 journey JSON has exactly these fields:
 All paths are absolute. Package and instance directories must not overlap.
 The binding is immutable once evidence exists. Only the dedicated Test in
 `aws-stage.epmp-aos.projects.epam.com` is allowed; any Production entry or
-changed Test/candidate blocks the operation. A new Test identity is adopted
-only after its own completed Create job agrees with the product journal.
+changed Test/candidate blocks the operation. A new Test identity is adopted after
+its own Create job agrees with the product journal. A terminal partial Create
+binds identity for cleanup and diagnosis, not a passing Create or permission to
+provision. It must be the exact unprovisioned Test-only staging run.
 
 ### Continuation and evidence
 
@@ -267,3 +270,56 @@ Finish wrapper or moving-SOTA adapter. Full E2E stays `NOT_COMPLETE` regardless
 of successful scripted steps until the separate acceptance evidence is closed.
 See the [runner qualification record](../../docs/qualification/scripted-journey-2026-10-02.md)
 for actual unit and M1 execution results.
+
+## One command engineering campaign
+
+The [10 October work packet](../../docs/planning/active/autonomous-m1-qualification.md)
+joins pinned media delivery, signed Setup installation/preparation, the serial
+journey, failure diagnosis and ordinary demo-only shutdown. It never rebuilds
+the candidate or replaces a retained installation to force selection.
+
+```
+python3 -B scripts/qualification/campaign.py \
+  --config PRIVATE_SSH_CONFIG --journey PRIVATE_JOURNEY_CONFIG \
+  --dmg /absolute/path/to/Lab.dmg \
+  --remote-dmg /Users/tester/SDV-Qualification/candidate/Lab.dmg
+```
+
+The DMG's sibling `.receipt.json` must match the journey's manifest pin and
+the transfer bytes/digest. Setup has its own executable pin. The target must
+be the pinned M1 and the ordinary internal installation path. No old-image
+unmount, retained-Test retirement, SSH Accessibility grant, hidden dependency
+installation or Docker restart occurs. An occupied mount fails instead of being
+detached. Verified unchanged media is reused. Interrupted transfer, install or
+selection requires exact read-only reconciliation; incomplete media is never
+overwritten. Installation attempts are in a sibling
+`<journey records>-installation` folder; runtime attempts and `report.json`
+stay in the existing journey folder.
+
+Unattended runs require explicit Test access before Create. Optionally add
+`vmPasswordFile` to the private journey JSON: an absolute path on M1 to an
+owner-private, single-link, mode-0600 JSON file with exactly one `password`
+field. This is the existing development Factory password, not a new password
+or a Cloud credential. Prepare the file once outside the package and evidence
+directories; never paste its contents into a command or report. The installed
+owner validates it and stores an equally private qualification profile bound
+to the instance, staging and Factory digest. Later runs need no dialog.
+No password is guessed, extracted from legacy tools or shipped as a default.
+
+An absent file/profile is a fast `QUALIFICATION_ACCESS_INPUT_REQUIRED` stop,
+before creating/starting a VM. An invalid profile never falls back to prompting.
+Ordinary installations without the explicit profile still use native secure
+input/Keychain. Automated access does not pass that separate native UI gate.
+
+On a terminal failed mutation the runner stops with projected diagnosis before
+cleanup. Re-running does not replay the mutation. After a diagnosed correction,
+`--resume-partial-create` explicitly continues only the same bound partial
+Create through Demo Control's idempotent path. It cannot replay a publication,
+provisioning, assignment or reset. Candidate changes use new bindings and cannot
+inherit previous passes.
+
+Attempts record remote-call time, explicit postcondition-wait time and diagnostic
+time. Remote time includes product execution and its internal waits; it is not
+presented as pure CPU work. Long calls have a local elapsed-time heartbeat
+without extra network probes or invented ETA. Bounded failure projections omit
+free-text logs, arbitrary exception messages and credentials.

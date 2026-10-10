@@ -213,8 +213,9 @@ component publication or service deployment was created. The summary remains
 eight passes, one incomplete Create and 89 steps not run. These results do not
 qualify the source-only prompt correction or a complete E2E journey.
 
-The next live continuation must keep the retained Test, reconcile the recorded
-partial Create and use fresh native password input. Rebuilding/promoting media
+The next live continuation must keep the retained Test and reconcile the recorded
+partial Create. The later explicit unattended-access decision below replaces
+the need to repeat native input for engineering runs. Rebuilding/promoting media
 and claiming clean first-boot acceptance require separate verification of the
 console correction; neither is implied by this recovery.
 
@@ -244,3 +245,39 @@ evidence is retained. A new candidate has new bindings and qualification records
 no pass is inherited merely from the former installation. The Keychain save
 failure and the harness's handling of partial Create remain separate findings.
 A fresh Test has its own VM-access enrollment.
+
+## Autonomous runner refinement
+
+On 10 October the operator accepted one script-driven installation/journey
+cycle and explicit reuse of the development Factory password. The
+[work packet](../planning/active/autonomous-m1-qualification.md) records the
+bounded change, including separate native acceptance and unchanged staging
+ownership rules.
+
+Source now contains `scripts/qualification/campaign.py`, joining verified DMG
+delivery, signed Setup installation/preparation and the existing journey.
+The journey checks an explicit private Test access profile before Create,
+corroborates a terminal partial Create's identity for cleanup without marking it
+passed, captures bounded failure projections, records timing and refuses to
+replay a terminal failed mutation. An explicit partial-Create continuation is
+limited to the same unprovisioned Test. Normal cleanup preserves Docker Engine.
+
+Offline evidence: 89 affected native access/guest/VM/Presenter tests, 72
+qualification runner/campaign tests, 15 application export tests, 20 Setup
+protocol tests, 15 remote harness tests and 15 installed-scenario tests pass
+(226 total). The initial socket-denied sandbox run was repeated with local
+fixture socket access; the Setup suite was repeated with its distribution
+import path. Neither harness restriction was treated as a product defect.
+Confidential-input and documentation gates pass.
+
+A bounded, non-interactive read through the existing M1 native Keychain owner
+reports no saved password for the retained r5 instance. No password was printed,
+exported or requested in a dialog. The qualification profile therefore remains
+unconfigured pending the one-time test value or its explicit private-file
+reference. This is not another request for staging/test authorization.
+
+These are source/fixture results only. No new DMG has been built or installed;
+r5 is unchanged, no live journey was restarted, and the earlier Keychain save
+failure is not claimed fixed. The new access path avoids that dependency only
+for explicitly configured engineering runs. Native input and full E2E remain
+open.

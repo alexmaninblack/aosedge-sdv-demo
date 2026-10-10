@@ -12,6 +12,7 @@ import re
 import shlex
 import stat
 import sys
+import threading
 import time
 from uuid import uuid4
 
@@ -24,7 +25,7 @@ DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
 FIELDS = {'schemaVersion', 'manifestSha256', 'packageRoot', 'instanceRoot',
           'setupApp', 'setupSha256', 'sourceRoot', 'storeRoot', 'image',
           'oemCertificate', 'spCertificate', 'records'}
-OPTIONAL_FIELDS = {'subjectReferences'}
+OPTIONAL_FIELDS = {'subjectReferences', 'vmPasswordFile'}
 
 
 def configuration(path, user):
@@ -54,6 +55,12 @@ def configuration(path, user):
         h.require(isinstance(raw, str) and raw.startswith('/') and '..' not in Path(raw).parts
                   and str(Path(raw)) == raw and not any(ord(c) < 32 for c in raw), 'PATH_INVALID')
     home = Path('/Users') / user
+    if 'vmPasswordFile' in value:
+        raw = value['vmPasswordFile']
+        h.require(isinstance(raw, str) and raw.startswith('/') and '..' not in Path(raw).parts
+                  and str(Path(raw)) == raw and not any(ord(c) < 32 for c in raw)
+                  and Path(raw).is_relative_to(home) and Path(raw) != home,
+                  'VM_ACCESS_PATH_INVALID')
     for key in ('packageRoot', 'instanceRoot', 'storeRoot', 'oemCertificate', 'spCertificate'):
         p = Path(value[key])
         h.require(p.is_relative_to(home) and p != home, 'TARGET_OUTSIDE_HOME')
@@ -104,7 +111,28 @@ def definition(step):
 
 def source_pin():
     return hashlib.sha256(b''.join((HERE / name).read_bytes() for name in
-        ('journey.py', 'journey_plan.py', 'journey_worker.py'))).hexdigest()
+        ('journey.py', 'journey_plan.py', 'journey_worker.py', 'campaign.py', 'remote_harness.py'))).hexdigest()
+
+
+class Progress:
+    """A local heartbeat, not another remote probe or fabricated percentage."""
+    def __init__(self, label, emit=print, interval=15):
+        self.label, self.emit, self.interval = label, emit, interval
+        self.done = threading.Event()
+
+    def __enter__(self):
+        self.started = time.monotonic()
+        def notify():
+            while not self.done.wait(self.interval):
+                self.emit(json.dumps(dict(stage=self.label, state='IN_PROGRESS',
+                    elapsedSeconds=round(time.monotonic()-self.started))))
+        self.thread = threading.Thread(target=notify, daemon=True)
+        self.thread.start()
+        return self
+
+    def __exit__(self, *args):
+        self.done.set()
+        self.thread.join()
 
 
 class Remote:
@@ -122,7 +150,8 @@ class Remote:
                   '/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12')
         script = WORKER.read_text() + '\nmain(' + repr(json.dumps(payload)) + ')\n'
         command = shlex.quote(python) + " -I -B - <<'SDV_JOURNEY_WORKER'\n" + script + '\nSDV_JOURNEY_WORKER\n'
-        value = h.parse(h.remote(self.transport, command, timeout=step.get('timeout', 180) + 20))
+        with Progress(step['id']+':'+phase, emit=lambda value: print(value, flush=True)):
+            value = h.parse(h.remote(self.transport, command, timeout=step.get('timeout', 180) + 20))
         h.require(isinstance(value, dict) and set(value) == {'outcome', 'code', 'facts'}
                   and value['outcome'] in ('PASS', 'FAIL', 'BLOCKED', 'UNCERTAIN')
                   and isinstance(value['facts'], dict)
@@ -130,6 +159,10 @@ class Remote:
         # The worker projects fixed fields. Do not persist unbounded/raw payloads.
         h.require(len(json.dumps(value)) <= 512 * 1024, 'WORKER_RESPONSE_TOO_LARGE')
         return value
+
+    def diagnose(self, step, context, request_id):
+        return self(dict(id='diagnostic', kind='diagnostic', timeout=35,
+            args=dict(failedStep=step['id'])), 'observe', context, request_id)['facts']
 
 
 def rows_by_step(rows):
@@ -148,6 +181,13 @@ def context_from(rows):
             context[row['step']] = facts
             if facts.get('runId'):
                 context['runId'] = facts['runId']
+        # A terminal partial Create is not a successful step. Its corroborated
+        # identity is nevertheless necessary for exact-owner diagnosis/cleanup.
+        facts = row.get('observations', {}).get('facts', {})
+        if (row.get('stepDefinition', {}).get('args', {}).get('action') == 'create'
+                and facts.get('partialRunBound') is True and facts.get('runId')):
+            h.require(context.get('runId') in (None, facts['runId']), 'PARTIAL_TEST_IDENTITY_CHANGED')
+            context['runId'] = facts['runId']
     return context
 
 
@@ -209,6 +249,23 @@ class Runner:
         h.atomic(path, record)
         self.emit(json.dumps(dict(step=step['id'], state='RECONCILING' if previous else 'STARTED')))
         start = self.clock()
+        timings = dict(remoteSeconds=0., observationWaitSeconds=0., calls=0)
+        last_feedback = [start]
+        def remote(*args):
+            began = self.clock()
+            try:
+                return self.remote(*args)
+            finally:
+                timings['remoteSeconds'] += self.clock() - began
+                timings['calls'] += 1
+        def pause(seconds):
+            began = self.clock()
+            self.sleep(seconds)
+            timings['observationWaitSeconds'] += self.clock() - began
+            if self.clock()-last_feedback[0] >= 15:
+                self.emit(json.dumps(dict(step=step['id'], state='WAITING_FOR_POSTCONDITION',
+                                         elapsedSeconds=round(self.clock()-start, 1))))
+                last_feedback[0] = self.clock()
         dispatched = bool(previous and mutation)
         try:
             resolved = dict(step, args=resolve(step.get('args', {}), context))
@@ -222,7 +279,7 @@ class Runner:
                 # repeat its reads/time, never shorten it from a checkpoint.
                 seconds = step['seconds']
                 while True:
-                    result = self.remote(resolved, 'observe', context, record['requestId'])
+                    result = remote(resolved, 'observe', context, record['requestId'])
                     if result['outcome'] != 'PASS':
                         break
                     if not evaluate(step['check'], dict(context, sample=result['facts'])):
@@ -230,30 +287,49 @@ class Runner:
                     if self.clock() - start >= seconds:
                         result = dict(outcome='PASS', code='SOAK_DURATION_CONFIRMED', facts=dict(seconds=seconds))
                         break
-                    self.sleep(min(5, seconds - (self.clock() - start)))
+                    pause(min(5, seconds - (self.clock() - start)))
             elif previous and mutation:
-                result = self.remote(resolved, 'reconcile', context, record['requestId'], record['prepared'])
+                result = remote(resolved, 'reconcile', context, record['requestId'], record['prepared'])
             else:
                 if mutation:
-                    before = self.remote(resolved, 'prepare', context, record['requestId'])
+                    before = remote(resolved, 'prepare', context, record['requestId'])
                     if before['outcome'] != 'PASS':
                         result = before
                     else:
                         record['prepared'] = before['facts']
                         h.atomic(path, record)  # Persist identity/session BEFORE dispatch.
                         dispatched = True
-                        result = self.remote(resolved, 'execute', context, record['requestId'], before['facts'])
+                        result = remote(resolved, 'execute', context, record['requestId'], before['facts'])
                 else:
-                    result = self.remote(resolved, 'observe', context, record['requestId'])
+                    result = remote(resolved, 'observe', context, record['requestId'])
                 if step.get('until'):
                     while result['outcome'] == 'PASS' and not evaluate(step['until'], dict(context, sample=result['facts'])):
                         if self.clock() - start >= step.get('timeout', 180):
                             result = dict(outcome='FAIL', code='POSTCONDITION_DEADLINE', facts=result['facts']); break
-                        self.sleep(min(3, max(0, step.get('timeout', 180) - (self.clock()-start))))
-                        result = self.remote(resolved, 'observe', context, record['requestId'])
-            self.journal.finish(record, result['outcome'], result['code'], dict(facts=result['facts']))
+                        pause(min(3, max(0, step.get('timeout', 180) - (self.clock()-start))))
+                        result = remote(resolved, 'observe', context, record['requestId'])
         except (OSError, ValueError, KeyError, TypeError, h.Error, h.InstallError):
-            self.journal.finish(record, 'UNCERTAIN' if dispatched else 'BLOCKED', 'TRANSPORT_OR_EVIDENCE_UNAVAILABLE')
+            result = dict(outcome='UNCERTAIN' if dispatched else 'BLOCKED',
+                          code='TRANSPORT_OR_EVIDENCE_UNAVAILABLE', facts={})
+        observations = dict(facts=result['facts'], timing={k:round(v,3) for k,v in timings.items()})
+        if result['outcome'] != 'PASS':
+            reason = result['facts'].get('reason') or result['code']
+            observations['failureClass'] = ('INPUT_REQUIRED' if reason in (
+                'QUALIFICATION_ACCESS_INPUT_REQUIRED', 'VM_ACCESS_DIALOG_TIMED_OUT',
+                'VM_ACCESS_CANCELLED_OR_DIALOG_UNAVAILABLE') else
+                'UNRESOLVED_EFFECT' if result['outcome'] == 'UNCERTAIN' else
+                'PRODUCT' if result['code'] == 'PRODUCT_OPERATION_NOT_COMPLETED' else 'PREREQUISITE_OR_CHECK')
+        if result['outcome'] != 'PASS' and callable(getattr(self.remote, 'diagnose', None)):
+            began = self.clock()
+            scope = dict(context)
+            if result['facts'].get('partialRunBound'):
+                scope['runId'] = result['facts']['runId']
+            try:
+                observations['diagnostic'] = self.remote.diagnose(step, scope, record['requestId'])
+            except (OSError, ValueError, KeyError, TypeError):
+                observations['diagnostic'] = dict(state='UNAVAILABLE')
+            observations['timing']['diagnosticSeconds'] = round(self.clock()-began,3)
+        self.journal.finish(record, result['outcome'], result['code'], observations)
         self.emit(json.dumps(dict(step=step['id'], outcome=record['outcome'],
                                  seconds=record['durationSeconds'], code=record['code'])))
         return record
@@ -305,18 +381,33 @@ class Runner:
                 return False
         return True
 
-    def run(self, steps, until=None):
+    def run(self, steps, until=None, retry_create=False):
         h.require(until is None or until in {s['id'] for s in steps}, 'UNKNOWN_STOP_BOUNDARY')
+        initial_rows = h.read_attempts(self.journal.root)
+        latest = rows_by_step(initial_rows)
         for step in steps:
-            prior = rows_by_step(h.read_attempts(self.journal.root)).get(step['id'])
+            prior = latest.get(step['id'])
             h.require(not prior or prior['outcome'] != 'PASS' or prior.get('definitionSha256') == definition(step),
                       'PASSED_STEP_DEFINITION_CHANGED')
+            if prior and prior['outcome'] == 'FAIL' and prior.get('mutation'):
+                permitted = (retry_create and step.get('args', {}).get('action') == 'create'
+                             and prior.get('observations', {}).get('facts', {}).get('partialRunBound'))
+                if not permitted:
+                    # Do not restart infrastructure just to discover that a
+                    # known failed mutation cannot be replayed.
+                    return report(initial_rows, steps)
         if not self.resume(steps, until):
             return report(h.read_attempts(self.journal.root), steps)
         for step in steps:
             rows = h.read_attempts(self.journal.root)
             latest = rows_by_step(rows)
             prior = latest.get(step['id'])
+            if prior and prior['outcome'] == 'FAIL' and prior.get('mutation'):
+                # Only the product's idempotent partial-Create continuation is
+                # explicitly resumable here. Never replay a failed publication.
+                if not (retry_create and step.get('args', {}).get('action') == 'create'
+                        and prior.get('observations', {}).get('facts', {}).get('partialRunBound')):
+                    break
             uncertain = [r for r in latest.values() if r['outcome'] == 'UNCERTAIN']
             h.require(not uncertain or (len(uncertain) == 1 and uncertain[0]['step'] == step['id'])
                       or (prior and prior['outcome'] == 'PASS'), 'RECONCILE_EARLIER_ACTION')
@@ -337,6 +428,8 @@ def main():
     parser.add_argument('--journey', type=Path, required=True, help='private exact candidate/instance binding')
     parser.add_argument('command', choices=('plan', 'status', 'report', 'run', 'stop', 'verify-host'))
     parser.add_argument('--until', help='named checkpoint; does not skip earlier gates')
+    parser.add_argument('--resume-partial-create', action='store_true',
+                        help='after a diagnosed fix, continue only the same bound partial Create')
     args = parser.parse_args()
     transport, _ = h.configuration(args.config)
     config = configuration(args.journey, transport['user'])
@@ -351,7 +444,7 @@ def main():
         if args.command in ('run', 'verify-host'):
             try:
                 if args.command == 'run':
-                    result = runner.run(steps, args.until)
+                    result = runner.run(steps, args.until, args.resume_partial_create)
                 else:
                     # Fresh, small infrastructure smoke. No journal creation,
                     # publication, reset, provisioning, VM or CARLA startup.

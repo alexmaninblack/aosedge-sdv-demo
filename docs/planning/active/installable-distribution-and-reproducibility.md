@@ -219,6 +219,13 @@ test tooling on M1. Do not transfer development trees, provisioned VMs, prior
 run data or implicit credentials. Inventory shared/global software as well as
 the selected user's state: a new local user alone does not prove a clean host.
 
+The [10 October autonomous qualification work packet](autonomous-m1-qualification.md)
+extends the existing runner with one media-to-journey command, an explicit
+instance/Factory-bound test password profile, partial-Create identity recovery
+for cleanup, bounded failure diagnostics and timing. It preserves this delivery
+plan and separate native acceptance. Source tests are not installed-candidate
+evidence; the older r5 media does not contain these changes.
+
 On 2 October, the user requested script-first qualification and a final UI pass
 after functional checks succeed. Use SSH for verified media transfer, mounting,
 the signed Setup worker protocol, bounded installed-owner scenarios, diagnostics

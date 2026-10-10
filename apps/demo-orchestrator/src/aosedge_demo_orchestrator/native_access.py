@@ -80,6 +80,14 @@ class NativeVMAccess:
         self.value = None
 
     def __call__(self, role):
+        from . import runtime_paths
+        if runtime_paths.installed():
+            from .environment import EnvironmentService
+            from .qualification_access import password
+            test_value = password(EnvironmentService(), role)
+            if test_value is not None:
+                self.progress("VM access available from the explicit Test qualification profile")
+                return test_value
         if self.value is not None:
             return self.value
         keychain = self.keychain or Keychain()
