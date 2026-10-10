@@ -16,6 +16,8 @@ import threading
 from developer_bootstrap import WorkflowError, require, safe, read, save, validate_checkout
 from developer_catalog import source_check, CatalogError
 from reproduction.core import LabError
+from developer_progress import Display
+from developer_result import expose_result
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r4.json'
@@ -23,9 +25,10 @@ PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r4.json'
 
 class OwnerOutput(io.TextIOBase):
     """Retain owner diagnostics, show only bounded progress, remember last result."""
-    def __init__(self, log, screen):
+    def __init__(self, log, screen, display=None):
         self.log, self.screen = log, screen
         self.pending, self.last = '', None
+        self.display = display or Display(screen)
 
     def write(self, text):
         self.log.write(text)
@@ -41,10 +44,7 @@ class OwnerOutput(io.TextIOBase):
                 self.last = row
                 event = row.get('event') or row.get('stage')
                 detail = row.get('detail', row.get('value', ''))
-                if event in ('CHAIN_STEP', 'CHAIN_STEP_STARTED', 'CHAIN_STEP_VERIFIED', 'BUILD_REUSED', 'SOURCE_READY'):
-                    if isinstance(detail, str) and re.fullmatch('[a-zA-Z0-9._-]{1,100}', detail):
-                        print('  ' + event.replace('_', ' ').lower() + ': ' + detail,
-                              file=self.screen, flush=True)
+                self.display.event(event, detail)
         # Never accumulate a boundless non-line-terminated tool message.
         if len(self.pending) > 2**20:
             self.pending = ''
@@ -65,18 +65,19 @@ class Owner:
         fd, path = tempfile.mkstemp(prefix='workflow-', suffix='.log', dir=self.directory)
         self.last_log = path
         done = threading.Event()
+        display = Display(self.screen)
+        display.begin(title, 'Working')
+        success = False
 
         def heartbeat():
-            elapsed = 0
-            while not done.wait(30):
-                elapsed += 30
-                print(f'  Working: {title} ({elapsed}s). Details: {path}', file=self.screen, flush=True)
+            while not done.wait(.2):
+                display.draw()
 
         thread = threading.Thread(target=heartbeat, daemon=True)
         thread.start()
         try:
             with os.fdopen(fd, 'w') as log:
-                output = OwnerOutput(log, self.screen)
+                output = OwnerOutput(log, self.screen, display)
                 with redirect_stdout(output), redirect_stderr(output):
                     code = lab_main(list(map(str, args)))
                 result = output.last
@@ -84,10 +85,12 @@ class Owner:
                 reason = failure_reason(result)
                 raise WorkflowError(f'{title} stopped (exit {code}). {reason} Details: {path}')
             require(isinstance(result, dict), f'{title} returned no result. Details: {path}')
+            success = True
             return result
         finally:
             done.set()
             thread.join()
+            display.finish(success)
 
 
 def failure_reason(result):
@@ -142,7 +145,7 @@ def resolve_dmg(build_root, result):
     return str(matches[0]), str(record_path)
 
 
-def execute(config, owner, resolve=resolve_dmg):
+def execute(config, owner, resolve=resolve_dmg, expose=expose_result):
     root = safe(config['SDV_ROOT'])
     control = safe(root/'.developer-preparation')
     source = root/'source'
@@ -199,9 +202,12 @@ def execute(config, owner, resolve=resolve_dmg):
         validate_checkout(source, selected['revision'])
         print('[5/5] Locating the verified result', flush=True)
         dmg, receipt = resolve(build, result)
-        progress.update(status='CHAIN_BUILT_NOT_QUALIFIED', stage='complete', dmg=dmg, chainReceipt=receipt)
+        display_dmg = expose(root, dmg, receipt)
+        progress.update(status='CHAIN_BUILT_NOT_QUALIFIED', stage='complete', dmg=dmg,
+                        displayDmg=display_dmg, chainReceipt=receipt)
         save(control/'workflow.json', progress)
-        print('\nBUILD COMPLETE — engineering candidate, not release-qualified.\nDMG: '+dmg+'\nBuild receipt: '+receipt+
+        print('\nBUILD COMPLETE — engineering candidate, not release-qualified.\nDMG: '+display_dmg+
+              '\nBuild details: '+str(control/'workflow.json')+
               '\nNothing was installed, launched or published.', flush=True)
         return 0
     except BaseException:

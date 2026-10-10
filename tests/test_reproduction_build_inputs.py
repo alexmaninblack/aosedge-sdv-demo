@@ -68,6 +68,23 @@ class BuildInputsTests(StorageFixture, unittest.TestCase):
     def prepare(self):
         return b.prepare(self.storage,self.lock,self.simulation,self.bindings,self.client,lambda *a:None)
 
+    def test_named_cache_and_extraction_progress_matches_locked_inventory(self):
+        self.bundle()
+        events = []
+        b.prepare(self.storage, self.lock, self.simulation, self.bindings, self.client,
+                  lambda *event: events.append(event))
+        packages = {**self.simulation['packages'], **self.lock['packages']}
+        names = [v for event, v in events if event == 'ARTIFACT_SELECTED']
+        self.assertEqual(names, [{'role': role, 'file': row['file'], 'bytes': row['bytes']}
+                                 for role, row in packages.items()])
+        self.assertEqual(sum(event == 'ARTIFACT_REUSED' for event, _ in events), 5)
+        for role, expected in packages.items():
+            counts = [value['bytes'] for event, value in events
+                      if event == 'EXTRACT_BYTES' and value['role'] == role]
+            self.assertEqual(counts[-1], expected['unpackedBytes'])
+            self.assertEqual(counts, sorted(counts))
+        self.assertFalse(any(event == 'DOWNLOAD_STARTED' for event, _ in events))
+
     def test_five_packages_first_repeat_offline_without_old_kit(self):
         self.bundle()
         state = self.storage.state_path.read_bytes()

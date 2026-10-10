@@ -19,13 +19,16 @@ def identity(path):
     info = regular(path).stat()
     return [info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns]
 
-def sha256(path, check=lambda: None):
+def sha256(path, check=lambda: None, progress=lambda *args: None):
     before = identity(path)
     value = hashlib.sha256()
+    count = 0
     with path.open('rb') as stream:
         while data := stream.read(CHUNK):
             check()
             value.update(data)
+            count += len(data)
+            progress('VERIFY_BYTES', count)
     require(identity(path) == before, 'Artifact changed while hashing')
     return value.hexdigest()
 
@@ -139,6 +142,7 @@ def receive(storage, expected, open_content, progress, before_promote=lambda: No
     offset = regular(partial).stat().st_size if partial.exists() else 0
     require(offset <= expected['bytes'], 'Partial artifact exceeds expected size')
     storage.check(additional=expected['bytes'] - offset)
+    progress('DOWNLOAD_STARTED', {'offset': offset, 'totalBytes': expected['bytes']})
     if offset < expected['bytes']:
         with open_content(offset) as response:
             require(response.status in (200, 206), 'Unexpected download status')
@@ -167,7 +171,8 @@ def receive(storage, expected, open_content, progress, before_promote=lambda: No
             except (OSError, urllib.error.URLError, http.client.HTTPException):
                 raise LabError('Download interrupted; partial data retained') from None
     require(offset == expected['bytes'], 'Download incomplete; partial data retained')
-    require(sha256(partial, lambda: storage.check(reserve=0)) == expected['sha256'], 'Downloaded artifact digest differs; not promoted')
+    progress('VERIFY_STARTED', expected['bytes'])
+    require(sha256(partial, lambda: storage.check(reserve=0), progress) == expected['sha256'], 'Downloaded artifact digest differs; not promoted')
     before_promote()
     storage.check(reserve=0)
     os.rename(partial, path)

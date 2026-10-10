@@ -78,6 +78,7 @@ class PrepareMacTests(unittest.TestCase):
         environment.chmod(0o600)
         python = self.executable('continuation-python', 'printf "CONTINUED %s %s\\n" "$FIXTURE_ENV" "$SDV_WORKFLOW_VOLUME"\n')
         body = f'''STATE={shlex.quote(str(state))}; SDV_ROOT={shlex.quote(str(self.root))}
+LOG={shlex.quote(str(self.root/'bootstrap.log'))}
 SDV_PYTHON={shlex.quote(python)}; SELECTED_UUID=fixture-volume
 recheck_storage() {{ :; }}
 private_file() {{ :; }}
@@ -87,8 +88,21 @@ continue_workflow
         success = self.shell(body.replace('BOOTSTRAP_CODE', '0'))
         self.assertIn('CONTINUED loaded fixture-volume', success.stdout)
         fail = self.shell(body.replace('BOOTSTRAP_CODE', '12'), ok=False)
-        self.assertEqual(fail.returncode, 12)
+        self.assertEqual(fail.returncode, 1)
+        self.assertIn('failed (exit 12)', fail.stderr)
         self.assertNotIn('CONTINUED', fail.stdout)
+
+    def test_long_operation_plain_output_has_no_heartbeat_spam(self):
+        result = self.shell(f'''LOG={shlex.quote(str(self.root/'progress.log'))}
+recheck_storage() {{ :; }}
+run_install 'Fixture tool preparation' /bin/bash -c 'echo diagnostic-only'
+''')
+        self.assertIn('Fixture tool preparation', result.stdout)
+        self.assertIn('Done.', result.stdout)
+        self.assertNotIn('diagnostic-only', result.stdout)
+        self.assertNotIn('Still working', result.stdout)
+        self.assertNotIn('\033', result.stdout)
+        self.assertEqual((self.root/'progress.log').read_text(), 'diagnostic-only\n')
 
     def test_host_tool_capacity_is_separate_from_external_workspace(self):
         result = self.shell("df() { printf 'Filesystem blocks used avail\n/dev/fixture 100 99 1\n'; }; check_host_capacity", ok=False)

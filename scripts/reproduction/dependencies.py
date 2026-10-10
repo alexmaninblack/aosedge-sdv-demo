@@ -196,6 +196,8 @@ def unpack(storage, archive_path, role, expected, output, progress, *, validate=
         validate(role, rows)
         require(len(rows) == expected['files'] and sum(r['bytes'] for r in rows) == expected['unpackedBytes'],
                 'Package inventory differs')
+        extracted = 0
+        progress('EXTRACT_STARTED', {'role': role, 'totalBytes': expected['unpackedBytes']})
         for index, row in enumerate(rows):
             member = archive.next()
             require(member and member.isreg() and member.name == row['path'] and member.size == row['bytes']
@@ -213,6 +215,8 @@ def unpack(storage, archive_path, role, expected, output, progress, *, validate=
                     require(total <= row['bytes'], 'Member exceeds pinned size')
                     h.update(data)
                     dst.write(data)
+                    extracted += len(data)
+                    progress('EXTRACT_BYTES', {'role': role, 'bytes': extracted})
             require(total == row['bytes'] and h.hexdigest() == row['sha256'], 'Extracted member digest differs')
             target.chmod(row['mode'])
             stamps[row['path']] = artifacts.identity(target)
@@ -220,6 +224,7 @@ def unpack(storage, archive_path, role, expected, output, progress, *, validate=
                 progress('EXTRACT_FILES', {'role': role, 'count': index+1})
         require(archive.next() is None, 'Unexpected extra archive member')
     require(artifacts.identity(archive_path) == before, 'Archive changed during extraction')
+    progress('EXTRACT_FINISHED', role)
     return stamps
 
 

@@ -74,10 +74,28 @@ installs the resulting DMG, publishes services or launches the demo.
 
 Use `--prepare-only` to stop at the original preparation boundary. `--check`
 remains non-mutating and never enters checkout/acquisition/build. The complete
-route ends with `BUILD COMPLETE` and the exact DMG/receipt paths, explicitly
+route ends with `BUILD COMPLETE` and a readable `<workspace>/output/<name>.dmg` path, explicitly
 labelled as an engineering candidate, not a qualified release.
 The result stays on the selected disk; the launcher does not upload it or
 publish a release automatically.
+
+Large build inputs display the artifact's name, downloaded/total bytes, a
+percentage bar, measured transfer rate and approximate remaining time. Resumed
+transfers start at the retained byte offset; the rate excludes those old bytes.
+A stalled transfer shows that it is waiting for data instead of keeping an
+obsolete ETA. Verification and unpacking are separate byte-based stages.
+The build bar counts verified steps out of 17; it is not a prediction of time.
+Source preparation, package-manager work and other unmeasured operations use
+an activity indicator. Redirected output uses compact plain milestones without
+terminal control codes or repeated elapsed-time/log-path lines.
+
+`output` is a managed directory shortcut to the exact verified media result.
+No multi-gigabyte copy is created and no immutable result directory is renamed.
+A later successful build may advance this shortcut, retaining earlier results.
+Existing unowned `output` files/directories/links are preserved and reported,
+not overwritten. `.developer-preparation/workflow.json` records the canonical
+DMG and chain receipt as well as the displayed path. The shortcut is a browsing
+convenience, never an input authority or proof of qualification.
 
 ## Repeats, saved choices and diagnostics
 

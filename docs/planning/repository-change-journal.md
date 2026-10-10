@@ -14,6 +14,32 @@ records public input activation for the one-run launcher. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Developer launcher progress and readable result
+
+The owner requested artifact names with progress bars, meaningful long-operation
+feedback and a readable final DMG location. The entry launcher now renders
+source-locked archive names, transfer bytes/percentage/rate/ETA, separate digest
+verification and extraction bars, and verified build steps out of 17. Unknown
+durations use an activity indicator; redirected output is compact plain text.
+Diagnostic log paths are no longer recurring heartbeat messages.
+
+After canonical exact-chain verification, the managed `output` directory link
+provides a readable path without copying the DMG or renaming immutable results.
+Private intent metadata reconciles an interrupted link update; unowned paths
+are preserved. Canonical receipts remain authoritative. Frozen producer r4,
+component/input pins, public Drive files, runtime and shared Docker are unchanged.
+
+Validation uses small offline fixtures for resumed downloads, corrupt-byte
+failure, terminal/non-terminal output, cancellation, cache reuse and output-link
+first/repeat/successor/collision/recovery. Passed: 51 developer catalog/workflow/
+presentation tests, 32 standalone-launcher tests and 253 reproduction tests;
+Bash syntax, embedded-helper parity and documentation quality also passed
+(342 documents, 662 stable identifiers, 38 diagrams). A terminal-only rendering
+fixture exercised the live in-place bar without network or artifact creation.
+No product build, real archive transfer,
+signing, installation or runtime launch is part of this UX check. The next
+full walkthrough remains the owner's README-based manual run.
+
 ### 2026 October 10 Managed temporary storage
 
 The owner accepted a common temporary-directory lifecycle for the developer

@@ -181,6 +181,7 @@ def prepare(storage, lock, simulation, bindings, client, progress):
     key = digest(combined(lock, simulation))
     output = storage.path('build-inputs/'+key)
     if output.exists():
+        progress('INPUTS_VERIFYING', None)
         return verify(storage, lock, simulation)
     partial = output.with_suffix('.partial')
     require(not partial.exists(), 'Incomplete build input extraction preserved; inspect before retry')
@@ -189,6 +190,7 @@ def prepare(storage, lock, simulation, bindings, client, progress):
     storage.check(additional=needed+sum(p['unpackedBytes'] for p in packages.values()), reserve=90*GIB)
     archives = {}
     for role, expected in packages.items():
+        progress('ARTIFACT_SELECTED', {'role': role, 'file': expected['file'], 'bytes': expected['bytes']})
         selected = bindings['simulation' if role in sim.ROLES else 'buildInputs']
         if selected['schemaVersion'] == 2:
             archives[role] = artifacts.download_public(storage, selected['files'][role], expected, progress)
@@ -205,6 +207,7 @@ def prepare(storage, lock, simulation, bindings, client, progress):
                           validate=sim.rows_valid if role in sim.ROLES else rows_valid)
         require(not stamps.keys() & rows.keys(), 'Overlapping build input packages')
         stamps.update(rows)
+    progress('INPUTS_VERIFYING', None)
     consumers(storage, partial, lock)
     os.rename(partial, output)
     atomic_json(output.with_suffix('.json'), {'inputDigest':key, 'stamps':stamps})
@@ -254,7 +257,7 @@ def main(argv=None):
         last = [0]
         def progress(stage, value):
             now = time.monotonic()
-            if now-last[0] >= 15 or not stage.endswith(('BYTES', 'FILES')):
+            if now-last[0] >= .2 or not stage.endswith(('BYTES', 'FILES')):
                 print(json.dumps({'stage':stage, 'value':value}), flush=True)
                 last[0] = now
         with storage.locked():

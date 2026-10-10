@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.23
+- Version: 1.24
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -307,6 +307,31 @@ the historical producer/storage boundary is unchanged. No pin adoption or
 automatic native-partial recovery is added. Success is only
 `CHAIN_BUILT_NOT_QUALIFIED` with the DMG selected from the exact chain receipt,
 never the newest file. Offline fixtures are not a completed real walkthrough.
+
+### Human progress and result presentation
+
+The October 10 owner-requested UX amendment adds in-place terminal progress
+without changing acquisition, validation, build or release authority. Input
+events carry only source-locked artifact role/name, byte totals and observed
+byte counts. Transfer, digest verification and extraction are separate phases.
+The transfer ETA uses bytes received in this invocation, excluding an existing
+partial file; when data stops arriving it reports waiting rather than a stale
+estimate. Completion still requires all existing integrity/receipt checks, not
+a full bar. The ordered build bar counts verified steps, not weighted time.
+Unknown-duration work uses an activity indicator. Non-terminal output stays
+bounded and plain. Full diagnostics remain in the existing logs; paths appear
+on error and in the final build-details reference, not in recurring heartbeats.
+
+Only after exact-chain media verification may the launcher expose
+`<workspace>/output` as a relative directory symlink to that immutable result
+under `build/builds/dmg`. This presentation-only link is not consumed by build
+owners, does not weaken their no-symlink rules and allocates no second DMG copy.
+Private ownership/intent metadata allows atomic advance and interrupted-update
+reconciliation. Foreign output files/directories/links or changed metadata fail
+without overwrite. Earlier results and receipts remain intact. The workflow
+record retains canonical and displayed paths; display state cannot skip any
+owner verification on repeat. This amendment changes no frozen producer plan
+or source/input pin and requires no product rebuild for its offline UX tests.
 
 ## Standalone macOS developer preparation
 

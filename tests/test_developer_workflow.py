@@ -178,7 +178,8 @@ class WorkflowTests(unittest.TestCase):
 
     def execute(self):
         with contextlib.redirect_stdout(io.StringIO()) as screen:
-            workflow.execute(self.config, self.owner, resolve=lambda *a: ('/fixture/result.dmg', '/fixture/receipt.json'))
+            workflow.execute(self.config, self.owner, resolve=lambda *a: ('/fixture/result.dmg', '/fixture/receipt.json'),
+                             expose=lambda *a: str(self.root/'output/result.dmg'))
         return screen.getvalue()
 
     def test_complete_sequence_and_repeat_delegate_to_canonical_owners(self):
@@ -196,6 +197,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('--prepare-dependencies', first[-1])
         self.assertNotIn('--resume', first[-1])
         self.assertIn('not release-qualified', output)
+        self.assertIn(str(self.root/'output/result.dmg'), output)
+        self.assertNotIn('/fixture/receipt.json', output)
         state = json.loads((self.control/'workflow.json').read_text())
         self.assertEqual(state['status'], 'CHAIN_BUILT_NOT_QUALIFIED')
 
@@ -265,7 +268,7 @@ class WorkflowTests(unittest.TestCase):
         output.write('{"event":"CHAIN_STEP","detail":"gateway"}\n')
         output.write('{"status":"CHAIN_BUILT_NOT_QUALIFIED"}\n')
         self.assertEqual(output.last['status'], 'CHAIN_BUILT_NOT_QUALIFIED')
-        self.assertIn('gateway', screen.getvalue())
+        self.assertIn('Vehicle Gateway', screen.getvalue())
         self.assertNotIn('status', screen.getvalue())
         self.assertIn('status', log.getvalue())
 

@@ -405,6 +405,26 @@ class ArtifactTests(StorageFixture, unittest.TestCase):
         self.assertEqual(self.download().read_bytes(), self.data)
         self.assertEqual(self.drive.offsets, [5])
 
+    def test_resumed_transfer_reports_bytes_then_verification(self):
+        self.partial(self.data[:5])
+        events = []
+        artifacts.download(self.storage, self.drive, self.drive.info['id'],
+                           'test-folder-identifier', self.expected, lambda *event: events.append(event))
+        self.assertEqual(events[0], ('DOWNLOAD_STARTED', {'offset': 5, 'totalBytes': len(self.data)}))
+        self.assertIn(('DOWNLOAD_BYTES', len(self.data)), events)
+        self.assertIn(('VERIFY_BYTES', len(self.data)), events)
+        self.assertLess(next(i for i,e in enumerate(events) if e[0] == 'DOWNLOAD_BYTES'),
+                        next(i for i,e in enumerate(events) if e[0] == 'VERIFY_STARTED'))
+        self.assertEqual(events[-1][0], 'ARTIFACT_VERIFIED')
+
+    def test_bad_bytes_never_report_verified_progress(self):
+        self.partial(b'x' * len(self.data))
+        events = []
+        with self.assertRaisesRegex(core.LabError, 'digest differs'):
+            artifacts.download(self.storage, self.drive, self.drive.info['id'],
+                               'test-folder-identifier', self.expected, lambda *event: events.append(event))
+        self.assertFalse(any(e[0] == 'ARTIFACT_VERIFIED' for e in events))
+
     def test_ignored_range_keeps_partial_unchanged(self):
         path = self.partial(self.data[:5])
         self.drive.ignore_range = True

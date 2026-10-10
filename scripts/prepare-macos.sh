@@ -4,7 +4,7 @@
 # Standalone before Git/Python/Homebrew. Compatible with Apple's Bash 3.2.
 # Sourceable by offline fixtures; execution always goes through main().
 
-SDV_PREP_VERSION=5
+SDV_PREP_VERSION=6
 SDV_CATALOG_RECORD=c4c5639edc09ddc363784b8fcf3c97fb5b5ff99b4815e8421bb2858b657d0da5
 SDV_PUBLIC_CATALOG_URL='https://drive.google.com/uc?id=11euQ35OM6BpmLHCT5ognHyukoi9lNq1v&export=download'
 SDV_PUBLIC_CATALOG_RECORD=74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450
@@ -316,6 +316,8 @@ setup_state() {
 cleanup() {
   local result=$?
   stop_child
+  clear_activity
+  exec 9>&-
   finish_scratch || result=1
   if [ "${LOCKED:-no}" = yes ]; then
     [ ! -f "$STATE/active/pid" ] || rm "$STATE/active/pid"
@@ -388,25 +390,47 @@ stop_child() {
     CHILD_PID=
   fi
 }
+activity_bar() {
+  # Unknown-duration operations must not claim a percentage or an ETA.
+  [ -t 1 ] && [ "${TERM:-}" != dumb ] || return 0
+  local position=$(( $1 % 16 )) left=---------------- right=----------------
+  printf '\r\033[2K  [%s====%s] Working' "${left:0:$position}" "${right:$position}"
+}
+clear_activity() {
+  [ -t 1 ] && [ "${TERM:-}" != dumb ] && printf '\r\033[2K'
+  return 0
+}
 run_install() {
   local title=$1 result elapsed=0
   shift
   recheck_storage
-  say "  $title… (details: $LOG)"
+  say "  $title"
+  # The child owns descriptor 9 only for a direct curl progress bar. All other
+  # diagnostics stay in the log; stdin is never consumed by progress rendering.
+  exec 9>&1
   set -m
   "$@" >> "$LOG" 2>&1 & CHILD_PID=$!
   set +m
   while kill -0 "$CHILD_PID" 2>/dev/null; do
-    sleep 2; elapsed=$((elapsed+2))
-    [ "$((elapsed % 10))" -ne 0 ] || printf '  Still working: %s (%ss)\n' "$title" "$elapsed"
+    [ "$1" = download ] || activity_bar "$elapsed"
+    sleep 1; elapsed=$((elapsed+1))
     [ "$elapsed" -lt 1800 ] || { stop_child; die "$title exceeded 30 minutes. Owned processes stopped; partial work preserved."; }
   done
   wait "$CHILD_PID"; result=$?; CHILD_PID=
+  exec 9>&-
+  clear_activity
   [ "$result" = 0 ] || die "$title failed (exit $result). Partial work is preserved; see $LOG and rerun after resolving the cause."
+  say '  Done.'
 }
 download() {
   local url=$1 destination=$2
   # Official HTTPS only; incomplete files never replace a completed download.
+  if [ -t 9 ] && [ "${TERM:-}" != dumb ]; then
+    printf '  %s\n' "${destination##*/}" >&9
+    curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 900 \
+      --progress-bar --show-error --output "$destination.part" "$url" 2>&9 && mv "$destination.part" "$destination"
+    return $?
+  fi
   curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 900 \
     --silent --show-error --output "$destination.part" "$url" && mv "$destination.part" "$destination"
 }
@@ -1221,10 +1245,8 @@ continue_workflow() {
   local result
   recheck_storage
   WORKFLOW_CHILD=yes
-  set -m
-  bootstrap_checkout & CHILD_PID=$!
-  set +m
-  wait "$CHILD_PID"; result=$?; CHILD_PID=; WORKFLOW_CHILD=no
+  run_install 'Preparing the source repository' bootstrap_checkout
+  result=$?; WORKFLOW_CHILD=no
   [ "$result" = 0 ] || return "$result"
   recheck_storage
   private_file "$STATE/environment.sh" || die 'Unsafe environment handoff.'

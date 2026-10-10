@@ -284,9 +284,20 @@ The launcher continues without another command:
 2. Acquire or reuse five locked binary inputs using automatically selected references.
 3. Read the returned paths automatically; no manual path reconstruction.
 4. Run the ordered 17-step build using the explicit tools/signing identity.
-5. Print `BUILD COMPLETE` / `CHAIN_BUILT_NOT_QUALIFIED` and the exact DMG and
-   build-receipt paths. Installation through route A is a separate action with
+5. Print `BUILD COMPLETE` / `CHAIN_BUILT_NOT_QUALIFIED` and a readable DMG path
+   under `<workspace>/output/`. Installation through route A is a separate action with
    the result's **own** matching descriptor.
+
+Downloads show the artifact name and an in-place bar with bytes, percentage,
+speed and an approximate remaining time. Verification and unpacking have their
+own bars. The build bar counts verified steps out of 17, not elapsed-time
+percentage. Operations without a measurable total show an activity indicator;
+no estimated completion time is invented.
+
+`output` is a directory shortcut to this invocation's verified DMG result, not
+a second copy. Internal digest-named directories remain for integrity checks
+and reuse; you do not need to navigate them. Build details and the canonical
+receipt path are recorded in `.developer-preparation/workflow.json`.
 
 The DMG stays on your selected build disk. The script does not upload it to
 Google Drive or create a public release; publication is a separate release-owner
