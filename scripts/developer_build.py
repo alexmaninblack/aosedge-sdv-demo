@@ -18,7 +18,7 @@ from developer_catalog import source_check, CatalogError
 from reproduction.core import LabError
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r1.json'
+PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r2.json'
 INPUTS = 'workspace/releases/1.2.0-rc.1-source-factory-packaging.json'
 RELEASE = 'workspace/releases/1.2.0-rc.1-source-factory-setup.json'
 

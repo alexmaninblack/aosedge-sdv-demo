@@ -238,7 +238,7 @@ class SpaceTests(StorageFixture, unittest.TestCase):
     def test_unreviewed_plan_cannot_reuse_capacity_claim(self):
         self.fixture(); original = space.chain.read_plan(self.release)
         changed = copy.deepcopy(original); changed['producers']['media'] = 'f'*40
-        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original,original]):
+        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original,original,original]):
             with self.assertRaisesRegex(core.LabError, 'reviewed producer'):
                 space.report(self.storage, self.state, build_plan=Path('different.json'))
 
@@ -267,6 +267,17 @@ class SpaceTests(StorageFixture, unittest.TestCase):
         self.assertFalse(value['cache']['wheelScopeComplete'])
         self.assertFalse(value['storagePreflightComplete'])
         self.assertFalse(value['qualified'])
+
+    def test_public_r2_only_adopts_the_verified_host_mode_fix(self):
+        self.fixture()
+        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r1.json')
+        path = core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r2.json'
+        new = space.chain.read_plan(self.release, path)
+        self.assertEqual(new['steps'], old['steps'])
+        self.assertNotEqual(new['producers']['host'], old['producers']['host'])
+        self.assertEqual({k:v for k,v in new['producers'].items() if k != 'host'},
+                         {k:v for k,v in old['producers'].items() if k != 'host'})
+        self.assertEqual(len(space.report(self.storage, self.state, build_plan=path)['ownerGuards']), 17)
 
     def test_non_docker_target_does_not_probe_or_require_engine(self):
         self.fixture()

@@ -14,7 +14,7 @@ records public input activation for the one-run launcher. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
-### 2026 October 10 Autonomous launcher qualification started
+### 2026 October 10 Autonomous launcher qualification
 
 The owner authorized a complete README launcher walkthrough, defect correction,
 commit/push to main and cleanup of this test's outputs before the owner's manual
@@ -32,10 +32,51 @@ capacity checks. Docker inspection reports its actual bounded cause rather
 than mislabelling every failure as insufficient capacity. The targeted suites
 passed 237 reproduction tests and 22 workflow tests.
 
-Real capacity checks now pass on both disks. The historical components producer
-still rejects separate Docker storage; a successor plan must pin the corrected
-committed owner rather than edit historical pins or move shared Docker. The
-end-to-end run and cleanup are not yet complete.
+Real capacity checks pass on both disks. The public `r1` producer plan selects
+the corrected components owner without editing historical plans or moving
+shared Docker. A fresh public launcher run selected root `060c8027`, cloned
+all seven component sources, acquired the five anonymous input archives once,
+verified and extracted 31,491 files, and completed eleven of seventeen chain
+steps. Gateway's thirty tests passed. No Google credentials were needed.
+
+The first packaging failure was `HOST_RUNTIME_MANIFEST_INVALID`: the launcher's
+private umask caused generated metadata and replacement signed binaries to have
+0600/0700 modes rather than the host payload contract's 0644/0755. Thirty-five
+generated files were affected. A mode-only structural probe isolated the cause
+without modifying the failed output or claiming byte-integrity qualification.
+Commit `0a103660` seals only generated UI/native payload modes after the native
+tools finish. The real corrected host target passed under umask 077, including
+four network/Homebrew-denied version/help probes; a repeat reported BUILD_REUSED
+with the same result key. Private state, source inputs and signing identities
+remain unchanged. All 240 reproduction and 22 workflow tests passed.
+
+The successor public `r2` plan adopts that exact host owner while preserving
+the other owners and all seventeen steps. The earlier failure output is not
+promoted. Host result key:
+`a32619b1deef8a8c20ca7e48b8181a6b152fc17354639e3d8942591b47055ba4`.
+The original stopped chain key is
+`d8a099dd7446dbf54568c3115938e5fd830ecff9cca8fa946ac1b3e513b7a8c1`.
+
+An independent packaging gate proof identified the remaining contract conflict.
+The new backend archive passed its source/platform/inventory checks, but its
+manifest digest is `f7f0ce340667970c098bdab74bba76768ef1b58c06c118f28047213b945054d8`,
+not the historical checkpoint's
+`a86e09f914804be2acb7f5ef158b42018912781ad75ed9d4355d4985d2473bf8`.
+The actual backend packaging owner rejects it before creating output. Fresh
+preparation also differs from its historical manifest pin, while Cloud runtime
+matches. Host metadata incorporates a build-receipt digest containing absolute
+build paths, so a new source pin for this one workspace cannot make arbitrary
+fresh workspaces reproduce that historical manifest.
+
+The proposed amendment separates developer result sealing from published
+release pins: retain pinned sources/inputs, validate exact owner outputs, seal
+this invocation's results and embed their exact manifests in Setup. Runtime
+checks and published-release verification would remain strict. This changes
+the accepted build authority and is awaiting the owner's explicit decision;
+no automatic pin adoption or checksum bypass has been implemented. The DMG,
+complete E2E success and final cleanup are still pending. Preserve this test's
+verified SSD inputs/results for continuation instead of downloading/rebuilding
+them again. Shared Docker and unrelated workloads are not test-owned.
 
 ### 2026 October 10 Public test access activation
 

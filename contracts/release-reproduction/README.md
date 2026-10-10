@@ -540,12 +540,18 @@ before preparing producer checkouts or starting any build step. A successor
 source-reviewed plan must adopt new committed owners; historical plans and
 checksums are never resealed to bypass the boundary.
 
-The October 10 autonomous launcher test selects
-`workspace/releases/1.2.0-rc.1-public-build-chain-r1.json`. It preserves the
-historical source-Factory plan's inputs, seventeen steps and five downstream
-owners, adopting only the components owner with separate-Docker-volume support
-and the verified native APFS mount fix. Historical source/input pins and catalog
-records remain unchanged. This new plan is test input, not a completed build.
+The October 10 autonomous launcher test first selected
+`workspace/releases/1.2.0-rc.1-public-build-chain-r1.json`, adopting the components
+owner with separate-Docker-volume support and the native APFS mount fix.
+`workspace/releases/1.2.0-rc.1-public-build-chain-r2.json` additionally adopts the
+verified host packager correction for a private launcher umask. The packager
+sets contract-defined modes on generated UI/native payloads after signing tools
+may replace files; private launcher state and retained inputs are unchanged.
+Both plans preserve the historical seventeen steps and source/input pins.
+The new host target and its idempotent repeat passed, but the complete launcher
+remains unqualified: fresh output manifests differ from the reviewed historical
+packaging pins. Autonomous result-pin generation is not authorized by this
+contract; a separate developer-build amendment is awaiting the owner's decision.
 
 ## R2 build tooling boundary
 
