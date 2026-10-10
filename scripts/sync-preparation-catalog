@@ -5,6 +5,9 @@
 import argparse
 from pathlib import Path
 import sys
+import re
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from developer_catalog import PUBLIC_PIN
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -14,7 +17,20 @@ script = root/'scripts/prepare-macos.sh'
 text = script.read_text()
 start = text.index("<<'PY'\n", text.index('drive_probe() {')) + len("<<'PY'\n")
 end = text.index('\nPY\n}', start)
-updated = text[:start] + (root/'scripts/developer_catalog.py').read_text().rstrip() + text[end:]
+module = (root/'scripts/public_drive.py').read_text()
+embedded = ('# Canonical anonymous transport, embedded for pre-clone use.\n'
+            'import sys, types\n'
+            '_transport = types.ModuleType("public_drive")\n'
+            'exec(' + repr(module) + ', _transport.__dict__)\n'
+            'sys.modules["public_drive"] = _transport\n')
+updated = text[:start] + embedded + (root/'scripts/developer_catalog.py').read_text().rstrip() + text[end:]
+start = updated.index("<<'BOOTSTRAP_PY'\n") + len("<<'BOOTSTRAP_PY'\n")
+end = updated.index('\nBOOTSTRAP_PY\n}', start)
+updated = updated[:start] + (root/'scripts/developer_bootstrap.py').read_text().rstrip() + updated[end:]
+for key, value in (('SDV_PUBLIC_CATALOG_URL', PUBLIC_PIN['url']), ('SDV_PUBLIC_CATALOG_RECORD', PUBLIC_PIN['recordSha256'])):
+    # Values are release-owner-reviewed pins, not user-provided shell text.
+    import shlex
+    updated = re.sub('^'+key+'=.*$', lambda match: key+'='+shlex.quote(value), updated, flags=re.M)
 if args.check:
     if text != updated:
         sys.exit('Embedded preparation catalog helper is stale; run scripts/sync-preparation-catalog')

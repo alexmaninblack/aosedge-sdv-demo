@@ -669,7 +669,7 @@ class CloudBuildTests(StorageFixture, unittest.TestCase):
 
     def test_kit_on_other_volume_is_rejected(self):
         with patch('reproduction.cloud.storage_volume', return_value={'uuid': 'OTHER'}):
-            with self.assertRaisesRegex(core.LabError, 'selected external'):
+            with self.assertRaisesRegex(core.LabError, 'selected volume'):
                 self.invoke()
 
     def test_declared_venv_entry_point_is_not_dereferenced(self):

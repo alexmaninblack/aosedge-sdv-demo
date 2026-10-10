@@ -187,6 +187,14 @@ class DependencyTests(StorageFixture, unittest.TestCase):
             d.prepare(self.storage, self.lock, self.binding, self.client, lambda *a: None)
         self.assertEqual(target.read_bytes(), b'!!')
 
+    def test_public_selection_reuses_cache_without_authenticated_client(self):
+        self.bundle()
+        value={'schemaVersion':2,'transport':'google-drive-public','lockDigest':core.digest(self.lock),
+               'files':{r:'https://drive.google.com/uc?export=download&id=public_fixture_'+r for r in d.ROLES}}
+        with patch('public_drive.Client',side_effect=AssertionError('cached acquisition stays offline')):
+            first=d.prepare(self.storage,self.lock,value,None,lambda *a:None)
+            self.assertEqual(first,d.prepare(self.storage,self.lock,value,None,lambda *a:None))
+
     def test_corrupt_cached_archive_not_extracted(self):
         self.bundle()
         row = self.lock['packages']['carla-runtime']

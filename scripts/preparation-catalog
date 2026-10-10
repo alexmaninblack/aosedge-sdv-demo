@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Create/append a private discovery catalog from an existing release receipt.
+"""Create/append a private or public-link catalog from a release receipt.
 
 Offline only. Does not upload, grant access, edit old receipts or read credentials.
-The printed pin is public; the output catalog contains private transport IDs.
+The printed pin is public; without --public-links the catalog contains private IDs.
 """
 import argparse
 import hashlib
@@ -16,9 +16,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from reproduction.core import digest, read_json, LabError, require, no_links
+import public_drive
 
 
-def create(receipt_path, output, previous=None):
+def create(receipt_path, output, previous=None, public_links=None):
     output = no_links(output)
     require(not output.is_relative_to(ROOT), 'Private catalog output must remain outside the public checkout')
     old = read_json(receipt_path)
@@ -52,8 +53,19 @@ def create(receipt_path, output, previous=None):
             role: {k: value[k] for k in ('file', 'bytes', 'sha256')}
             for role, value in lock['packages'].items()}}
         paths.append(path)
+    if public_links is not None:
+        links = read_json(public_links)
+        require(isinstance(links, dict) and set(links) == set(groups), 'Public link groups differ')
+        for group, row in groups.items():
+            value = {'schemaVersion': 2, 'transport': 'google-drive-public',
+                     'lockDigest': row['binding']['lockDigest'], 'files': links[group]}
+            try:
+                public_drive.binding(value, value['lockDigest'], row['packages'])
+            except public_drive.PublicDriveError as error:
+                raise LabError(str(error)) from None
+            row['binding'] = value
     entry = {
-        'id': old['productVersion'] + '-source-factory-r1',
+        'id': old['productVersion'] + '-source-factory-r1' + ('-public' if public_links is not None else ''),
         'productVersion': old['productVersion'],
         'status': 'ENGINEERING_CANDIDATE_NOT_QUALIFIED',
         'sourceFiles': {p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths},
@@ -90,9 +102,10 @@ if __name__ == '__main__':
     parser.add_argument('--historical-index', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--previous', type=Path)
+    parser.add_argument('--public-links', type=Path, help='Reviewed public URLs grouped by buildInputs/simulation and role; does not grant sharing or redistribution rights')
     args = parser.parse_args()
     try:
-        print(json.dumps(create(args.historical_index, args.output, args.previous), indent=2, sort_keys=True))
+        print(json.dumps(create(args.historical_index, args.output, args.previous, args.public_links), indent=2, sort_keys=True))
     except (LabError, OSError, ValueError, KeyError, TypeError) as exc:
         print('Catalog preparation failed: ' + (str(exc) if isinstance(exc, LabError) else 'invalid input/output'), file=sys.stderr)
         sys.exit(1)

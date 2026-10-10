@@ -1,7 +1,19 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Build the demo from pinned sources
+# Developer build reference
+
+The normal route is the **single downloaded launcher in
+[README B1](../../README.md#b1-prepare-tools-storage-and-access)**. It handles
+preparation, root/component checkouts, storage checks, verified input acquisition
+and the existing developer DMG chain automatically. You do not need the manual
+commands below after running it. Repeat the same launcher to continue after a
+resolved interruption; it keeps the selected root commit and delegates reuse
+to the existing owners. Public publication and the exact producer/storage gates
+remain open as described in README; a wrapper does not qualify the build.
+
+This page preserves the individual commands for engineering diagnosis and
+manual reproduction only. Do not run them concurrently with the launcher.
 
 This developer route builds project components and a matching installer using
 verified standalone CARLA, native support and source-built Factory .41 inputs.
@@ -13,14 +25,24 @@ builds have passed; fresh-clone reproduction of this guide remains an R4 gate.
 Read [release selection](release-status.md) first. The historical source tag
 does not include these newer commands; the candidate tag is not yet published.
 The exact published root revision and its source branch are recorded in release
-selection; the preparation wizard resolves private input bindings automatically
-through the authorized release catalog.
+selection; the preparation wizard resolves input selections automatically
+through the source-pinned public release catalog. Public publication/activation
+is still pending; the preparation reference documents the explicit private
+maintainer compatibility route.
 
 ## 1 Prepare the host and access
 
-First run the standalone wizard in [README B1](../../README.md#b1-prepare-tools-storage-and-access)
-and load its saved environment there. It checks tools/versions, storage, Google
-access and signing selection, and supplies all `SDV_*` variables below. No long
+For the optional manual route, download the launcher from README and run it in
+preparation-only mode, then load the generated handoff:
+
+```sh
+/bin/bash "$HOME/Downloads/aosedge-prepare-macos.sh" --prepare-only
+source "$HOME/Library/Application Support/AosEdge SDV Lab/Developer/environment.sh"
+```
+
+Continue only after `READY FOR SOURCE PREPARATION` and `Developer environment
+loaded`. This checks tools/versions, storage, public
+input availability and signing selection, and supplies all `SDV_*` variables below. No long
 shell blocks or clone are required for preparation. The optional
 [preparation reference](macos-developer-tools.md) covers diagnostics and recovery.
 The real installation/build walkthrough remains pending; offline wizard fixtures
@@ -33,12 +55,12 @@ are not evidence of a completed host setup or build. Stop after any error.
 | Node 26.0.0 and npm 11.12.1 | Pinned UI and backend tooling |
 | CMake, Git, Docker CLI and running local Docker Desktop | Gateway and Linux ARM64 builds |
 | Mounted external APFS SSD | Sources, caches, scratch, outputs and Docker's active backing disk |
-| Authorized Google CLI account with access to the SDV Lab catalog and inputs | Automatic input selection, then acquisition of five locked archives |
+| Published public release catalog and input links | Automatic input selection, then acquisition of five locked archives; no Google account or CLI |
 | Authorized Apple Development signing identity in Keychain | Explicit Setup signing, not notarized distribution |
 
 Host tools are prerequisites, not installed by `lab`. Declare their paths;
 do not use the installed demo's private Python as a development interpreter.
-Google login is separate from the build. Automatically prepared bindings contain file IDs, not
+Automatically prepared public selections contain download URLs, not
 credentials; checked-in locks supply sizes and hashes. OEM/SP certificates are
 needed later for the installed demo, not these builds.
 
@@ -54,8 +76,9 @@ Test, backend container, VM or simulator is started by this route.
 
 ## 2 Select the root revision and storage
 
-Clone only the product repository. If you already completed README B2/B3,
-do not clone or repeat those steps: continue at step 3 below.
+Clone only the product repository. If the automatic launcher already created
+this checkout, do not run another clone; return to that launcher for normal
+continuation. These commands are the separate manual route.
 
 ```sh
 git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
@@ -74,7 +97,7 @@ mains. Adopting newer owners requires a reviewed successor plan, not editing
 historical pins. For exact historical reproduction, use the root checkpoint in
 [release selection](release-status.md). Do not collect components manually.
 Source and frozen producer revisions are published; a public
-clone alone does not supply the private binary inputs or host tools.
+clone alone does not supply the binary inputs or host tools.
 
 Run from that clean root checkout. Host preparation already defined the selected
 volume, parent directories and scratch (at most 29 UTF-8 bytes). `lab` creates and
@@ -85,7 +108,8 @@ owns its own workspaces; do not populate them by hand.
   --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
 ./lab inputs plan
 ./lab space --storage "$SDV_ROOT/build" \
-  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json \
+  --docker "$SDV_DOCKER"
 ```
 
 Inspect gates before acquisition. `qualified: false` is intentional: planning
@@ -99,14 +123,15 @@ causes failure, not fallback to the internal disk.
 ./lab verify --storage "$SDV_ROOT/build" --sources-only
 ./lab inputs prepare --storage "$SDV_ROOT/inputs" \
   --binding "$SDV_BUILD_BINDING" \
-  --simulation-binding "$SDV_SIM_BINDING" \
-  --account "$SDV_DRIVE_ACCOUNT" --gcloud "$SDV_GCLOUD"
+  --simulation-binding "$SDV_SIM_BINDING"
 ./lab inputs verify --storage "$SDV_ROOT/inputs" > "$SDV_ROOT/input-paths.json"
 ```
 
-Both bindings and the account were selected in host preparation. Never paste
-tokens into commands, logs or source files. Repeats reuse verified inputs;
-after preparation no Google access is needed for offline verification. The last
+Both selections were prepared automatically; the public route needs no Google
+account. Maintainers using `--private-inputs` add the explicit account/CLI
+options described in the [preparation reference](macos-developer-tools.md#private-maintainer-route).
+Never paste tokens into commands, logs or source files. Repeats reuse verified
+inputs; no Google access is needed for offline verification. The last
 command writes only the input verification result, not progress lines or tokens.
 
 Expect seven source roles and `BUILD_INPUTS_READY_NOT_PROFILE_QUALIFIED`.

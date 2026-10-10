@@ -10,6 +10,7 @@ from contextlib import redirect_stdout
 
 from test_reproduction import StorageFixture
 from reproduction import artifacts, build_inputs as b, core, dependencies as d, cli
+import public_drive
 
 
 class BuildInputsTests(StorageFixture, unittest.TestCase):
@@ -77,6 +78,30 @@ class BuildInputsTests(StorageFixture, unittest.TestCase):
         self.assertEqual(self.storage.state_path.read_bytes(),state)
         self.client.metadata.assert_not_called()
         self.client.content.assert_not_called()
+
+    def test_five_public_packages_first_download_repeat_and_no_oauth(self):
+        from test_public_drive import Response
+        self.bundle()
+        contents={}
+        for group,lock in (('buildInputs',self.lock),('simulation',self.simulation)):
+            files={}
+            for role,row in lock['packages'].items():
+                url='https://drive.google.com/uc?export=download&id=public_fixture_'+role
+                cache=self.storage.path('cache/sha256/'+row['sha256'])
+                contents[url]=cache.read_bytes();cache.unlink()
+                files[role]=url
+            self.bindings[group]={'schemaVersion':2,'transport':'google-drive-public','lockDigest':core.digest(lock),'files':files}
+        public=Mock()
+        def open(url,offset):
+            raw=contents[url]
+            return Response(raw[offset:],206,**{'Content-Range':f'bytes {offset}-{len(raw)-1}/{len(raw)}'})
+        public.open.side_effect=open
+        with patch.object(public_drive,'Client',return_value=public): first=self.prepare()
+        self.assertEqual(public.open.call_count,5)
+        self.assertEqual(first['files'],17)
+        with patch.object(public_drive,'Client',side_effect=AssertionError('complete cache stays offline')):
+            self.assertEqual(self.prepare(),first)
+        self.client.metadata.assert_not_called();self.client.content.assert_not_called()
 
     def test_reviewed_lock_rejects_ancestry_and_package_override(self):
         self.bundle()

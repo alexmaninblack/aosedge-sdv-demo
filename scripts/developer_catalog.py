@@ -18,6 +18,7 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import public_drive
 
 PIN = {
     'releaseId': '1.2.0-rc.1-source-factory-r1',
@@ -32,6 +33,9 @@ PIN = {
         'workspace/releases/1.2.0-rc.1-source-factory-delivery.json': '33cc8b296bfe76be301b33a170789539a3154dec7a8ad62a3333fff8e9a3ebdc',
         'workspace/releases/kit028-setup042.json': '5951852da7158a63802c1045fe0f37719f90d549b2e70f5f7ab63c5c9841ad13'},
 }
+# Populated only after release-owner review/publication of a separate public
+# catalog and its dependencies. Never expose the current private IDs as defaults.
+PUBLIC_PIN = {'url': '', 'releaseId': '1.2.0-rc.1-source-factory-r1-public', 'recordSha256': ''}
 ROLES = {'buildInputs': {'vehicle-bases', 'factory-image'},
          'simulation': {'carla-runtime', 'host-support', 'gateway-sdk'}}
 LIMIT = 1024 * 1024
@@ -88,7 +92,9 @@ def read_local(value):
     return json_bytes(path.read_bytes())
 
 
-def validate_binding(value, group):
+def validate_binding(value, group, public=False):
+    if public:
+        return public_drive.binding(value, PIN['lockDigests'][group], ROLES[group])
     require(isinstance(value, dict) and set(value) == {'schemaVersion', 'lockDigest', 'folderId', 'files'}
             and type(value['schemaVersion']) is int and value['schemaVersion'] == 1
             and value['lockDigest'] == PIN['lockDigests'][group]
@@ -100,19 +106,25 @@ def validate_binding(value, group):
     return value
 
 
-def validate_record(entry):
-    require(isinstance(entry, dict) and entry.get('id') == PIN['releaseId']
-            and digest(entry) == PIN['recordSha256'],
+def validate_record(entry, public=False):
+    pin = PUBLIC_PIN if public else PIN
+    require(isinstance(entry, dict) and entry.get('id') == pin['releaseId']
+            and digest(entry) == pin['recordSha256'],
             'The selected release record differs from the trusted source pin. No input selection was saved.')
     require(entry['sourceFiles'] == PIN['sourceFiles'] and set(entry['dependencyGroups']) == set(ROLES),
             'Release source requirements differ.')
     for group, row in entry['dependencyGroups'].items():
-        validate_binding(row['binding'], group)
+        validate_binding(row['binding'], group, public)
         require(set(row['packages']) == ROLES[group], 'Release input list is incomplete.')
+        for package in row['packages'].values():
+            require(set(package) == {'file', 'bytes', 'sha256'} and type(package['bytes']) is int
+                    and package['bytes'] > 0 and re.fullmatch('[a-f0-9]{64}', package['sha256']),
+                    'Invalid pinned package identity.')
     return entry
 
 
-def select_record(catalog):
+def select_record(catalog, public=False):
+    pin = PUBLIC_PIN if public else PIN
     require(isinstance(catalog, dict) and set(catalog) == {'schemaVersion', 'product', 'catalogRevision', 'releases'}
             and type(catalog['schemaVersion']) is int and catalog['schemaVersion'] == 1,
             'Unsupported release catalog format. Download the current preparation script from README B1.')
@@ -125,9 +137,25 @@ def select_record(catalog):
         require(isinstance(entry, dict) and isinstance(entry.get('id'), str), 'Invalid release record.')
         ids.append(entry['id'])
     require(len(set(ids)) == len(ids), 'Duplicate release IDs require release-owner reconciliation.')
-    require(PIN['releaseId'] in ids,
+    require(pin['releaseId'] in ids,
             'No compatible release is available for this preparation script. Contact the release owner; no newer release was substituted.')
-    return validate_record(catalog['releases'][ids.index(PIN['releaseId'])])
+    return validate_record(catalog['releases'][ids.index(pin['releaseId'])], public)
+
+
+def public_ready():
+    require(PUBLIC_PIN['url'] and re.fullmatch('[a-f0-9]{64}', PUBLIC_PIN['recordSha256']),
+            'Public release inputs have not been published yet. The release owner must publish the reviewed catalog and enable its source pin. No Google account or JSON path is required from you.')
+    public_drive.link(PUBLIC_PIN['url'])
+
+
+def public_discover():
+    public_ready()
+    client = public_drive.Client()
+    record = select_record(json_bytes(client.catalog(PUBLIC_PIN['url'], LIMIT)), public=True)
+    for row in record['dependencyGroups'].values():
+        for role, url in row['binding']['files'].items():
+            client.probe(url, row['packages'][role])
+    return record
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -233,11 +261,11 @@ def private_directory(path, create=False):
     return path
 
 
-def save_generation(state, record):
+def save_generation(state, record, public=False):
     parent = private_directory(state)
-    for part in ('catalog', PIN['recordSha256']):
+    for part in ('catalog', (PUBLIC_PIN if public else PIN)['recordSha256']):
         parent = private_directory(parent / part, create=True)
-    target = safe_path(parent / ('automatic' if record else 'manual'))
+    target = safe_path(parent / ('public' if public else 'automatic' if record else 'manual'))
     files = {'source-requirements.json': PIN}
     if record:
         files.update({'release.json': record,
@@ -280,19 +308,34 @@ def main(args):
     if args == ['--requirements']:
         print(json.dumps(PIN, sort_keys=True))
         return 0
-    require(len(args) == 7, 'Invalid catalog helper invocation.')
-    gcloud, account, build, simulation, mode, state, advanced = args
+    # Seven arguments retain the historical private helper interface; the
+    # current wizard always supplies the explicit eighth transport argument.
+    require(len(args) in (7, 8), 'Invalid catalog helper invocation.')
+    gcloud, account, build, simulation, mode, state, advanced = args[:7]
+    transport = args[7] if len(args) == 8 else 'private'
+    require(transport in ('public', 'private'), 'Invalid catalog transport.')
+    public = transport == 'public'
     require(mode in ('local', 'remote') and advanced in ('yes', 'no'), 'Invalid catalog check mode.')
+    require(not (public and advanced == 'yes'), 'Manual bindings require explicit private-inputs mode.')
     record = None
     if advanced == 'yes':
         bindings = {g: validate_binding(read_local(p), g) for g, p in (('buildInputs', build), ('simulation', simulation))}
     elif mode == 'local':
-        generation = safe_path(Path(state)/'catalog'/PIN['recordSha256']/'automatic')
-        record = validate_record(read_local(generation/'release.json'))
-        bindings = {g: validate_binding(read_local(p), g) for g, p in (('buildInputs', build), ('simulation', simulation))}
+        if public:
+            public_ready()
+        generation = safe_path(Path(state)/'catalog'/(PUBLIC_PIN if public else PIN)['recordSha256']/('public' if public else 'automatic'))
+        record = validate_record(read_local(generation/'release.json'), public)
+        bindings = {g: validate_binding(read_local(p), g, public) for g, p in (('buildInputs', build), ('simulation', simulation))}
         require(all(v == record['dependencyGroups'][g]['binding'] for g, v in bindings.items()), 'Prepared bindings differ from the trusted release.')
     if mode == 'local':
         print('Input file structure checked; Drive access is not checked in --check mode.')
+        return 0
+    if public:
+        print('Checking the compatible public SDV Lab release (no Google login)…')
+        record = public_discover()
+        save_generation(state, record, public=True)
+        print('Selected release: ' + record['productVersion'] + ' — engineering candidate (not qualified).')
+        print('Public catalog pin verified; all five input links/lengths checked. No archives downloaded; complete SHA-256 verification happens during acquisition.')
         return 0
     client = Client(gcloud, account)
     if advanced == 'no':
@@ -311,6 +354,9 @@ def main(args):
 if __name__ == '__main__':
     try:
         sys.exit(main(sys.argv[1:]))
+    except public_drive.PublicDriveError as error:
+        print(str(error))
+        sys.exit(12)
     except CatalogError as error:
         print(str(error))
         sys.exit(error.code)

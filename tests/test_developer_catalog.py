@@ -18,6 +18,7 @@ import urllib.parse
 import urllib.error
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts'))
 spec = importlib.util.spec_from_file_location('developer_catalog', ROOT/'scripts/developer_catalog.py')
 catalog = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(catalog)
@@ -234,6 +235,71 @@ class CatalogSourceTests(unittest.TestCase):
             self.assertFalse((root/'rejected.json').exists())
             with self.assertRaises(owner['LabError']): create(receipt, ROOT/'private-catalog-must-not-appear.json')
             self.assertFalse((ROOT/'private-catalog-must-not-appear.json').exists())
+            links = root/'public-links.json'
+            links.write_text(json.dumps({group: {role: 'https://drive.google.com/uc?export=download&id=public_fixture_'+role
+                for role in row['binding']['files']} for group,row in old['dependencyGroups'].items()}))
+            public = root/'public.json'
+            pin = create(receipt, public, public_links=links)
+            entry = json.loads(public.read_text())['releases'][0]
+            self.assertTrue(pin['releaseId'].endswith('-public'))
+            self.assertEqual(pin['recordSha256'], catalog.digest(entry))
+            self.assertNotIn('private_folder', public.read_text())
+            self.assertNotIn('fixture_object_', public.read_text())
+            for group,row in entry['dependencyGroups'].items():
+                catalog.validate_binding(row['binding'],group,public=True)
+
+
+class PublicCatalogTests(unittest.TestCase):
+    def setUp(self):
+        CatalogTests.setUp(self)
+        self.record['id'] = catalog.PUBLIC_PIN['releaseId']
+        for row in self.record['dependencyGroups'].values():
+            row['binding'] = {'schemaVersion':2, 'transport':'google-drive-public',
+                'lockDigest':row['binding']['lockDigest'], 'files':{
+                    role: 'https://drive.google.com/uc?export=download&id=public_fixture_'+role for role in row['packages']}}
+        patch = mock.patch.dict(catalog.PUBLIC_PIN, {'url':'https://drive.google.com/uc?export=download&id=public_fixture_catalog',
+                                                   'recordSha256':catalog.digest(self.record)})
+        patch.start(); self.addCleanup(patch.stop)
+
+    def args(self,mode='remote'):
+        target = self.state/'catalog'/catalog.PUBLIC_PIN['recordSha256']/'public'
+        return ['', '', str(target/'developer-inputs.drive.json'),str(target/'simulation-inputs.drive.json'),mode,str(self.state),'no','public']
+
+    def test_first_repeat_and_local_without_credentials_or_private_client(self):
+        client = mock.Mock()
+        client.catalog.return_value = catalog.canonical(self.value)
+        with mock.patch.object(catalog, 'Client', side_effect=AssertionError('private client forbidden')), \
+             mock.patch.object(catalog.public_drive,'Client',return_value=client):
+            for _ in range(2): self.assertEqual(catalog.main(self.args()),0)
+        self.assertEqual(client.probe.call_count,10)
+        target=self.state/'catalog'/catalog.PUBLIC_PIN['recordSha256']/'public'
+        self.assertEqual(len(list(target.iterdir())),4)
+        self.assertTrue(all(p.stat().st_mode & 0o777 == 0o600 for p in target.iterdir()))
+        with mock.patch.object(catalog.public_drive,'Client',side_effect=AssertionError('local check must not contact Drive')):
+            self.assertEqual(catalog.main(self.args('local')),0)
+
+    def test_unpublished_and_changed_record_fail_before_probes_or_state(self):
+        with mock.patch.dict(catalog.PUBLIC_PIN,{'url':''}), \
+             mock.patch.object(catalog.public_drive,'Client',side_effect=AssertionError('no network')):
+            with self.assertRaises(catalog.CatalogError): catalog.main(self.args())
+        client=mock.Mock(); changed=copy.deepcopy(self.value)
+        changed['releases'][0]['dependencyGroups']['simulation']['packages']['carla-runtime']['sha256']='b'*64
+        client.catalog.return_value=catalog.canonical(changed)
+        with mock.patch.object(catalog.public_drive,'Client',return_value=client),self.assertRaises(catalog.CatalogError):
+            catalog.main(self.args())
+        client.probe.assert_not_called()
+        self.assertFalse((self.state/'catalog').exists())
+
+    def test_availability_failure_preserves_existing_selection_no_auth_fallback(self):
+        catalog.save_generation(self.state,self.record,public=True)
+        path=self.state/'catalog'/catalog.PUBLIC_PIN['recordSha256']/'public/release.json'
+        stamp=path.stat().st_mtime_ns
+        client=mock.Mock();client.catalog.return_value=catalog.canonical(self.value)
+        client.probe.side_effect=catalog.public_drive.PublicDriveError('Public file unavailable')
+        with mock.patch.object(catalog.public_drive,'Client',return_value=client), \
+             mock.patch.object(catalog,'Client',side_effect=AssertionError('no auth fallback')), \
+             self.assertRaises(catalog.public_drive.PublicDriveError): catalog.main(self.args())
+        self.assertEqual(path.stat().st_mtime_ns,stamp)
 
 
 if __name__ == '__main__': unittest.main()

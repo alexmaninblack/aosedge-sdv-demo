@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 tooling complete for the agreed developer route; R3 step-by-step revision drafted; joint walkthrough pending; R4 planned
-- Version: 0.30
+- Version: 0.31
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -419,6 +419,20 @@ not guessed by users from internal scripts.
 ## Block R3 Provide the human documentation routes
 
 ### Current result
+
+**October 10 one-run workflow amendment:** the owner approved replacing manual
+B1–B4 handoffs with one downloaded launcher. Default execution prepares the host,
+fixes the selected root main commit, checks the source/input/storage boundaries,
+prepares pinned sources and verified archives, then invokes the existing DMG
+chain. `--prepare-only` retains host-only work and `--check` stays read-only.
+No second builder, runtime controller or release authority is introduced.
+Receipts/caches stay with their canonical owners; diagnostic workflow state
+cannot skip their validation. Dirty/foreign checkouts, changed selections and
+unsupported frozen storage policies stop without replacement or fallback.
+README now needs only download/run commands; the manual guide is optional.
+Implementation and offline fixtures are in scope now; real installations,
+builds and the owner's joint walkthrough remain deferred. Public input
+activation and a successor producer/storage plan are separate remaining gates.
 
 **October 9 standalone preparation amendment:** after completing the first
 storage block, the owner requested one robust, resumable wizard for all six

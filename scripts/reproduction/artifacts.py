@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Digest cache and bounded authenticated Drive downloads; no publication."""
+"""Digest cache and bounded private/public Drive downloads; no publication."""
 import hashlib
 import http.client
 import json
@@ -10,6 +10,7 @@ import stat
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
+import public_drive
 from .core import LabError, require, regular, read_json, atomic_json
 
 CHUNK = 4 * 2**20
@@ -108,6 +109,27 @@ def download(storage, drive, file_id, folder_id, expected, progress=lambda *args
     def unchanged():
         require(drive.metadata(file_id) == meta, 'Drive artifact changed during download; not promoted')
     return receive(storage, expected, lambda offset: drive.content(file_id, offset), progress, unchanged)
+
+
+def public_binding(value, lock_digest, roles):
+    try:
+        return public_drive.binding(value, lock_digest, roles)
+    except public_drive.PublicDriveError as error:
+        raise LabError(str(error)) from None
+
+
+def download_public(storage, url, expected, progress=lambda *args: None):
+    """Source lock authenticates bytes; never invent private API metadata."""
+    try:
+        public_drive.link(url)
+        hit = cached(storage, expected)
+        if hit:
+            progress('ARTIFACT_REUSED', expected['sha256'][:12])
+            return hit
+        client = public_drive.Client()
+        return receive(storage, expected, lambda offset: client.open(url, offset), progress)
+    except public_drive.PublicDriveError as error:
+        raise LabError(str(error)) from None
 
 def receive(storage, expected, open_content, progress, before_promote=lambda: None):
     """Shared bounded/resumable transport; callers establish input authority."""

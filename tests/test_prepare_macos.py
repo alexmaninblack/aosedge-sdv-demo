@@ -70,6 +70,26 @@ class PrepareMacTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('disconnected', result.stderr)
 
+    def test_continuation_passes_environment_and_stops_on_bootstrap_failure(self):
+        state = self.root/'state'
+        state.mkdir()
+        environment = state/'environment.sh'
+        environment.write_text('export FIXTURE_ENV=loaded\n')
+        environment.chmod(0o600)
+        python = self.executable('continuation-python', 'printf "CONTINUED %s %s\\n" "$FIXTURE_ENV" "$SDV_WORKFLOW_VOLUME"\n')
+        body = f'''STATE={shlex.quote(str(state))}; SDV_ROOT={shlex.quote(str(self.root))}
+SDV_PYTHON={shlex.quote(python)}; SELECTED_UUID=fixture-volume
+recheck_storage() {{ :; }}
+private_file() {{ :; }}
+bootstrap_checkout() {{ printf 'BOOTSTRAP\\n'; return BOOTSTRAP_CODE; }}
+continue_workflow
+'''
+        success = self.shell(body.replace('BOOTSTRAP_CODE', '0'))
+        self.assertIn('CONTINUED loaded fixture-volume', success.stdout)
+        fail = self.shell(body.replace('BOOTSTRAP_CODE', '12'), ok=False)
+        self.assertEqual(fail.returncode, 12)
+        self.assertNotIn('CONTINUED', fail.stdout)
+
     def test_host_tool_capacity_is_separate_from_external_workspace(self):
         result = self.shell("df() { printf 'Filesystem blocks used avail\n/dev/fixture 100 99 1\n'; }; check_host_capacity", ok=False)
         self.assertNotEqual(result.returncode, 0)
@@ -186,7 +206,7 @@ prepare_node''', ok=False)
         a, b = self.bindings()
         return f'''SDV_PYTHON={shlex.quote(python or sys.executable)}
 SDV_GCLOUD=/not-called; SDV_DRIVE_ACCOUNT=reader@example.invalid
-STATE={shlex.quote(str(self.root))}; ADVANCED_INPUTS=yes
+STATE={shlex.quote(str(self.root))}; ADVANCED_INPUTS=yes; PRIVATE_INPUTS=yes
 SDV_BUILD_BINDING={shlex.quote(str(a))}; SDV_SIM_BINDING={shlex.quote(str(b))}
 drive_probe {mode}
 '''
@@ -207,7 +227,7 @@ SDV_SIGNING_IDENTITY=; SDV_BUILD_BINDING=/missing; SDV_SIM_BINDING=/missing
 ask() { echo "$1" >&2; printf reader@example.invalid; }
 identity_ready() { :; }; save_choices() { :; }
 choose_access''')
-        self.assertIn('Google account', result.stderr)
+        self.assertNotIn('Google account', result.stderr)
         self.assertNotIn('Full path', result.stderr)
         self.assertIn('automatically', result.stdout)
 
@@ -217,7 +237,30 @@ SDV_BUILD_BINDING=/old/build; SDV_SIM_BINDING=/old/simulation
 catalog_paths
 printf '%s\\n' "$SDV_BUILD_BINDING" "$SDV_SIM_BINDING" "$SDV_PREPARED_SOURCE"''')
         self.assertNotIn('/old/', result.stdout)
-        self.assertIn('/automatic/source-requirements.json', result.stdout)
+        self.assertIn('/public/source-requirements.json', result.stdout)
+
+    def test_public_tools_do_not_probe_or_install_gcloud(self):
+        result = self.shell('''PRIVATE_INPUTS=no; SDV_DOCKER=/existing/docker; SDV_GCLOUD=
+need_brew() { echo UNEXPECTED; exit 50; }
+prepare_access_tools''')
+        self.assertNotIn('UNEXPECTED', result.stdout)
+
+    def test_private_mode_keeps_explicit_account_prompt(self):
+        result = self.shell('''PRIVATE_INPUTS=yes; SDV_DRIVE_ACCOUNT=; ADVANCED_INPUTS=no
+ask() { echo "$1" >&2; printf reader@example.invalid; }
+identity_ready() { :; }; save_choices() { :; }
+choose_access''')
+        self.assertIn('Google account', result.stderr)
+
+    def test_unpublished_public_catalog_stops_before_prompts_or_installation(self):
+        result = self.shell('''uname() { case "$1" in -s) echo Darwin ;; -m) echo arm64 ;; esac; }
+sw_vers() { echo 26.6.2; }; id() { echo 501; }
+SDV_PUBLIC_CATALOG_URL=; SDV_PUBLIC_CATALOG_RECORD=
+choose_storage() { echo UNEXPECTED; exit 50; }
+main --state-dir /private/tmp/sdv-unused-public-probe''', ok=False)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('PUBLIC RELEASE NOT YET AVAILABLE', result.stdout)
+        self.assertNotIn('UNEXPECTED', result.stdout)
 
     def python_interceptor(self, prefix):
         # Execute the real embedded helper against fixture-only stdlib stubs.
@@ -274,6 +317,7 @@ subprocess.run=run
         # All external probes/installers are replaced; real orchestration and
         # local state/lock/environment behavior are exercised in a disposable root.
         body = f'''uname() {{ case "$1" in -s) echo Darwin ;; -m) echo arm64 ;; esac; }}
+SDV_PUBLIC_CATALOG_URL=https://drive.google.com/uc?export=download; SDV_PUBLIC_CATALOG_RECORD=fixture-public-pin
 sw_vers() {{ echo 26.6.2; }}
 inspect_volume() {{ VOLUME_UUID=fixture-uuid; VOLUME_NAME=Fixture; VOLUME_MOUNT={shlex.quote(str(self.root))}; FREE_KIB=999999999; }}
 load_choices() {{ DEVELOPER_DIR=/fixture/xcode; SDV_DRIVE_ACCOUNT=reader@example.invalid; SDV_BUILD_BINDING=/fixture/build.json; SDV_SIM_BINDING=/fixture/sim.json; SDV_SIGNING_IDENTITY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; }}
@@ -285,6 +329,7 @@ docker_ready() {{ :; }}
 choose_access() {{ :; }}
 drive_probe() {{ say "fixture access $1"; }}
 identity_ready() {{ :; }}
+continue_workflow() {{ say 'WORKFLOW_CONTINUED'; }}
 main --state-dir {shlex.quote(str(self.root/'state'))} --parent {shlex.quote(str(self.root))} {mode}
 '''
         return self.shell(body, input=input, ok=not fail and input != 'no\n')
@@ -297,6 +342,12 @@ main --state-dir {shlex.quote(str(self.root/'state'))} --parent {shlex.quote(str
         result = self.wizard_fixture(input='no\n')
         self.assertIn('Cancelled', result.stdout)
         self.assertFalse((self.root/'state').exists())
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
+    def test_default_continues_but_prepare_only_and_check_do_not(self):
+        self.assertIn('WORKFLOW_CONTINUED', self.wizard_fixture().stdout)
+        self.assertNotIn('WORKFLOW_CONTINUED', self.wizard_fixture('--prepare-only').stdout)
+        self.assertNotIn('WORKFLOW_CONTINUED', self.wizard_fixture('--check', input='').stdout)
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
     def test_first_repeat_and_interrupted_resume(self):

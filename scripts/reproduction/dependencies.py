@@ -244,12 +244,17 @@ def verify(storage, lock):
 
 
 def prepare(storage, lock, binding, client, progress):
-    require(set(binding) == {'schemaVersion', 'lockDigest', 'folderId', 'files'}
-            and binding['schemaVersion'] == 1 and binding['lockDigest'] == digest(lock)
-            and set(binding['files']) == set(ROLES), 'Dependency Drive binding differs')
-    folder = delivery.identifier(binding['folderId'])
-    for file_id in binding['files'].values():
-        delivery.identifier(file_id)
+    require(isinstance(binding, dict), 'Invalid dependency selection')
+    public = binding.get('schemaVersion') == 2
+    if public:
+        artifacts.public_binding(binding, digest(lock), ROLES)
+    else:
+        require(set(binding) == {'schemaVersion', 'lockDigest', 'folderId', 'files'}
+                and binding['schemaVersion'] == 1 and binding['lockDigest'] == digest(lock)
+                and set(binding['files']) == set(ROLES), 'Dependency Drive binding differs')
+        folder = delivery.identifier(binding['folderId'])
+        for file_id in binding['files'].values():
+            delivery.identifier(file_id)
     key = digest(lock)
     output = storage.path('dependencies/'+key)
     if output.exists():
@@ -261,6 +266,9 @@ def prepare(storage, lock, binding, client, progress):
     storage.check(additional=archive_bytes+sum(p['unpackedBytes'] for p in lock['packages'].values()), reserve=90*GIB)
     archives = {}
     for role, expected in lock['packages'].items():
+        if public:
+            archives[role] = artifacts.download_public(storage, binding['files'][role], expected, progress)
+            continue
         if artifacts.cached(storage, expected) is None:
             require(bool(client.account), 'Missing authorized Google account for an uncached dependency')
             delivery.check_remote(client.metadata(binding['files'][role]), binding['files'][role], folder, expected)
@@ -285,7 +293,7 @@ def main(argv=None):
     parser.add_argument('action', choices=('export', 'upload', 'prepare', 'verify'))
     parser.add_argument('--storage', type=Path, required=True)
     parser.add_argument('--lock', type=Path, default=LOCK)
-    parser.add_argument('--binding', type=Path, help='Private Drive binding supplied separately, never credentials')
+    parser.add_argument('--binding', type=Path, help='Prepared public/private input selection; never credentials')
     parser.add_argument('--kit-inputs', type=Path)
     parser.add_argument('--gateway-sdk', type=Path)
     parser.add_argument('--folder-id')
@@ -311,7 +319,7 @@ def main(argv=None):
                 else:
                     client = delivery.Client(args.gcloud, args.account)
                     if args.action == 'prepare':
-                        require(args.binding is not None, 'Preparation requires an explicit private Drive binding')
+                        require(args.binding is not None, 'Preparation requires an explicit input selection')
                         # A complete cache remains usable offline without an account.
                         result = prepare(storage, lock, read_json(args.binding), client, progress)
                     else:

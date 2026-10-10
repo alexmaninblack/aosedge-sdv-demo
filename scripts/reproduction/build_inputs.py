@@ -126,6 +126,9 @@ def export(storage, kit, factory, progress):
 
 
 def binding(value, lock, roles):
+    require(isinstance(value, dict), 'Invalid build input selection')
+    if value.get('schemaVersion') == 2:
+        return artifacts.public_binding(value, digest(lock), roles)
     require(set(value) == {'schemaVersion', 'lockDigest', 'folderId', 'files'}
             and value['schemaVersion'] == 1 and value['lockDigest'] == digest(lock)
             and set(value['files']) == set(roles), 'Build input Drive binding differs')
@@ -187,6 +190,9 @@ def prepare(storage, lock, simulation, bindings, client, progress):
     archives = {}
     for role, expected in packages.items():
         selected = bindings['simulation' if role in sim.ROLES else 'buildInputs']
+        if selected['schemaVersion'] == 2:
+            archives[role] = artifacts.download_public(storage, selected['files'][role], expected, progress)
+            continue
         file_id, folder = selected['files'][role], selected['folderId']
         if artifacts.cached(storage, expected) is None:
             require(bool(client.account), 'Missing authorized Google account for uncached build inputs')
@@ -263,7 +269,7 @@ def main(argv=None):
                     require(args.account and args.folder_id, 'Explicit authorized account and private folder required')
                     result = upload(storage, lock, client, args.folder_id, progress)
                 else:
-                    require(args.binding is not None and args.simulation_binding is not None, 'Both private bindings required')
+                    require(args.binding is not None and args.simulation_binding is not None, 'Both prepared input selections required')
                     result = prepare(storage, lock, simulation, {'buildInputs':read_json(args.binding),
                         'simulation':read_json(args.simulation_binding)}, client, progress)
         print(json.dumps(result), flush=True)

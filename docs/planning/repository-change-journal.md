@@ -9,10 +9,64 @@ controls delivery order; the [current baseline](../qualification/current-baselin
 identifies the implemented candidate. Component source, contracts and release
 locks remain authoritative. This journal links them and does not duplicate them.
 
-The latest [publication checkpoint](#2026-october-9-readme-and-build-storage-source-publication)
-records the owner-authorized README and build-storage source handoff. Earlier
-local-only entries below retain their original checkpoint state; they are
-superseded by that publication, not retroactive build or test evidence.
+The latest [publication checkpoint](#2026-october-10-one-run-launcher-source-handoff)
+records the owner-authorized README and one-run launcher source handoff. Earlier
+local-only entries below retain their original checkpoint state; source
+publication does not constitute retroactive build or test evidence.
+
+### 2026 October 10 One-run launcher source handoff
+
+The owner authorized committing and pushing the current README, anonymous input
+transport, one-run launcher, contracts, guides and regression fixtures together
+to `main`. This source checkpoint follows `ffebae0`; Git identifies its exact
+revision. Normal confidential-input and documentation hooks remain enabled.
+The commit uses `[skip ci]` to preserve the agreed no-build boundary; the 228
+offline tests recorded below are the implementation evidence, not a live build.
+
+This handoff publishes source only. It neither makes the private Drive files
+public nor activates the empty public-catalog pin. The default launcher still
+reports `PUBLIC RELEASE NOT YET AVAILABLE` before making changes. A real public
+walkthrough requires reviewed artifact publication/activation and a compatible
+producer/storage plan. No installation, signing, runtime or Cloud action is
+part of this Git handoff. Remote commit equality is checked after pushing.
+
+### 2026 October 10 One-run developer preparation and DMG workflow
+
+The owner approved replacing manual B1–B4 handoffs with a single downloaded
+launcher and then doing the real walkthrough together. The default launcher
+now shows one combined preparation/build plan, prepares the host, fixes the
+root main revision, obtains the matching checkout and delegates to the existing
+`lab` source/input/build owners. `--prepare-only` retains the previous boundary;
+`--check` remains non-mutating. README requires only download and run commands;
+individual build commands remain in the optional engineering reference.
+
+The embedded bootstrap records the selected commit before fetching. Repeat and
+interrupted acquisition retain that commit even if main advances. Existing
+clean matching manual checkouts may be reused; dirty/foreign/linked/changed
+checkouts and replacement volumes are preserved and rejected. Preparation and
+workspace locks prevent overlapping owners. Continuation checks compatibility
+and capacity before acquisition, forwards explicit tools/input/signing choices,
+and invokes the canonical ordered build without changing its pins. Result paths
+come from that exact chain/media receipt, not a newest-file search. Workflow
+progress is diagnostic only; canonical owners verify reusable results on repeat.
+
+Offline coverage: **228 tests passed**, including new local-Git first/repeat,
+moving-main, interrupted-fetch, manual-checkout adoption, local-change/foreign
+remote/volume/pin rejection, concurrent-lock and shell-to-repository handoff
+fixtures. Continuation fixtures cover phase order, early capacity stops, private
+versus public arguments, failure/cancellation and exact DMG receipt selection.
+No compiler, real clone, installer, archive transfer, signing or runtime was
+started. Synthetic repositories and test processes are disposed of by fixtures.
+Shell syntax, embedded-helper parity, documentation and public-source scanning
+(including untracked new source files) pass. This source remains local and
+uncommitted; no push or release qualification is implied.
+
+Remaining before a public joint end-to-end walkthrough: publish the reviewed
+source, activate the reviewed public catalog/dependencies, and adopt a successor
+producer plan where the selected internal/split-Docker layout is incompatible
+with historical frozen owners. The launcher preserves those failures instead
+of moving Docker storage, editing old pins or silently using private access.
+The user requested no real build/installation in this implementation turn.
 
 ### 2026 October 9 Automatic pre-clone release catalog
 
@@ -1042,3 +1096,51 @@ This closes the reusable simulation input delivery step, not full R2/R4 or
 public distribution. No source push, tag, signing or permission expansion.
 Next: discuss a clean developer build that reuses these declared dependencies,
 separately from a full-source engine/Factory rebuild.
+
+## 2026 October 10 Anonymous preparation reader implementation
+
+The owner approved implementing the tested anonymous Drive reader, with the
+actual first-use walkthrough to follow together. Changes are confined to the
+entry repository on `main`, based on `ffebae05165a57c7e69c044991158de0230e4e3e`.
+No component, video, frozen artifact, Factory, account or Drive permission was
+changed during implementation. This is an uncommitted local source checkpoint,
+not a published release or completed user walkthrough.
+
+Preparation v3 defaults to a source-pinned public catalog, without Google CLI
+discovery/installation, account questions or OAuth. The standard-library
+anonymous transport handles bounded same-file redirects, the expected large-
+file confirmation, one-byte availability probes and sanitized failures. Public
+schema-2 input selections flow into both dependency consumers; complete archive
+hashes, safe extraction, existing cache receipts and range-resume checks remain
+authoritative. Explicit `--private-inputs` preserves the authenticated route;
+there is no implicit fallback. The offline catalog generator can create a
+distinct public record from reviewed links without publishing anything.
+
+Evidence: 205 targeted offline fixtures passed across transport, catalog,
+wizard, both input consumers, existing private delivery/reproduction and reader
+navigation. This includes real small fixture downloads/extraction through the
+consumer with mocked HTTP, interruption/resume, cached no-network repeat,
+wrong bytes/ranges, HTML/access/quota failure, no credential lookup and state
+preservation. One pre-existing test expected the obsolete wording "selected
+external"; only that assertion was updated to the accepted "selected volume"
+message, retaining the cross-volume rejection check. Documentation quality,
+standalone embedding parity, Bash syntax and tracked/new public-source scans
+passed. No real installation, product build, large transfer or demo launch ran.
+
+The preceding disposable Drive proof verified anonymous 1 MiB full/range
+downloads, 128 MiB bounded range reads after the normal large-file confirmation,
+stable index update and read-only sharing. Its public permission was revoked;
+synthetic Drive files were trashed and local payloads removed. This proves a
+transport mechanism, not the availability/licensing of real 13–14 GB archives.
+
+Public activation remains deliberately unset in `PUBLIC_PIN`: the real inputs
+are still private. A release-owner content/redistribution review, separate
+read-only public publication and source review of its stable catalog URL/record
+pin are needed before the joint ordinary-user walkthrough. Until activation,
+the default wizard exits before storage prompts/installations and explains the
+publication gap without asking the user for credentials or JSON paths. Existing
+private catalog state and the explicit maintainer route remain available.
+
+No commit, push, tag, runtime process, test VM or demo container was created.
+Fixture directories/processes were cleaned by their test owners; shared Docker
+and working caches were not changed.

@@ -173,11 +173,19 @@ and separating build data; it is not a platform requirement. Use a writable
 local APFS volume and keep the workspace, its reusable inputs and short test
 scratch directory on that volume. Docker may use a different local volume.
 
-**Prepare the environment with one wizard.** No clone, Python or Homebrew is
-needed to start. It checks all six preparation stages, reuses compatible tools,
-shows what is missing and asks once before preparing it. Choose an existing
+**Use one launcher from preparation to the developer DMG.** No clone, Python
+or Homebrew is needed to start. It checks prerequisites, reuses compatible tools,
+shows the plan and asks once before preparing and building. Choose an existing
 internal folder or mounted external disk when prompted. Xcode, Docker first-run
-setup and account permissions may still require your interaction.
+setup and Apple account permissions may still require your interaction.
+
+The ordinary input route uses public downloads, without Google login or Google
+CLI. **Public input publication is not enabled yet:** the separate reviewed
+catalog and its source pin must be published before this route can complete.
+Until then the wizard reports `PUBLIC RELEASE NOT YET AVAILABLE` before making
+changes. This is a release-owner action, not a missing user credential. The
+[maintainer-only private route](docs/getting-started/macos-developer-tools.md#private-maintainer-route)
+remains available for the existing authorized artifacts.
 
 Download the current script from this repository. Continue only if download
 succeeds; a partial download never replaces the completed script:
@@ -195,53 +203,44 @@ You can open the downloaded file in a text editor before executing it. Run:
 /bin/bash "$HOME/Downloads/aosedge-prepare-macos.sh"
 ```
 
-Have your Google account with access to the SDV Lab artifacts and your Apple
-Development signing identity available. After Google authorization, the wizard
-finds the small release catalog, selects compatible inputs and prepares their
-references automatically. You do not need to find, create or enter JSON files.
-It shows the selected release and checks access without downloading the large
-CARLA/Factory archives. The wizard remembers selections; rerun the same command
-after resolving a missing item.
-It does not clone, build, sign anything or start the demo. It never restarts
-Docker or moves its disk. See the optional
+Have your Apple Development signing identity available. The wizard reads the
+small public release catalog through its fixed link, verifies its pinned record,
+selects compatible inputs and prepares their references automatically. You do
+not need a Google account or any JSON file paths. It shows the selected release
+and checks download availability with one-byte range requests, without
+downloading the large CARLA/Factory archives. Complete archive integrity is
+checked when the build consumer downloads them. The launcher remembers selections;
+rerun the same command after resolving a missing item. It automatically continues
+through the stages described below; **do not copy more commands or clone anything
+manually**. It signs Setup with your selected identity, but never installs or
+starts the demo, publishes services, restarts Docker or moves its disk. See the optional
 [preparation reference](docs/getting-started/macos-developer-tools.md) for
 diagnostic mode, installation locations and recovery.
 
-Only after **READY FOR SOURCE PREPARATION**, load the saved environment:
+`READY FOR SOURCE PREPARATION` is an intermediate milestone, not the final
+result. The launcher passes its environment to the next phase itself. For
+preparation without cloning/downloading/building, use the optional
+`--prepare-only` mode; `--check` remains local read-only diagnosis.
 
-```sh
-source "$HOME/Library/Application Support/AosEdge SDV Lab/Developer/environment.sh"
-```
+<a id="b2-clone-the-one-entry-repository"></a>
 
-Expect `Developer environment loaded`. This supplies `SDV_ROOT`, `SDV_TMP` and
-the explicit tool/access paths below, also after a Terminal restart. Stop if
-the saved environment reports an error. Preparation is not a completed build
-or a substitute for the build-space and exact-source checks in B3.
+### B2. Automatic source selection
 
-### B2. Clone the one entry repository
+No user action is needed here. The launcher selects the current root `main`
+commit once, records it and clones `aosedge-sdv-demo` into the selected workspace.
+It checks source/input compatibility before continuing. Repeats keep that exact
+commit: no automatic pull, reset or replacement of your changes. A compatible
+clean checkout from the earlier manual B2 can be reused. Foreign or dirty
+checkouts produce a specific stop, not deletion.
 
-```sh
-git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
-cd "$SDV_ROOT/source"
-git rev-parse HEAD
-"$SDV_PYTHON" -B scripts/developer_catalog.py --check-source "$SDV_PREPARED_SOURCE"
-```
+Component repositories are then prepared automatically at the build plan's
+pinned revisions, not at all component mains. The root development revision is
+not an immutable qualified release tag. See
+[release selection](docs/getting-started/release-status.md) for historical reproduction.
 
-Expect `Source compatibility: PASS`. Stop on a mismatch: the cloned dependency
-records/producer plan must match the prepared selection before any input
-download or build. Rerun the current preparation script; if no compatible
-release is available, contact the release owner rather than substituting inputs.
+<a id="b3-inspect-the-build-before-downloading-inputs"></a>
 
-This walkthrough uses the current `main`, as selected for the development
-exercise. Record the printed revision; it is not an immutable release tag.
-The existing build plan still selects frozen candidate component/producer
-revisions, not all component mains. Changing that plan is a separate reviewed
-step; the wizard does not change those pins. For exact historical candidate
-reproduction, use the checkpoint recorded in
-[release selection](docs/getting-started/release-status.md). Do not clone
-components manually.
-
-### B3. Inspect the build before downloading inputs
+### B3. Automatic checks before downloading inputs
 
 **Source and release boundary:** current storage-aware scripts and their joint
 walkthrough do not upgrade the historical build plan. That plan still uses
@@ -255,16 +254,9 @@ Budget for source checkouts, downloads, unpacked inputs, caches, temporary files
 outputs and reserves on each actual disk, including Docker and, for route C,
 the Factory Builder. The final DMG size is not a build-space estimate.
 
-```sh
-./lab plan --profile developer \
-  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
-./lab inputs plan
-./lab space --storage "$SDV_ROOT/build" \
-  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
-```
-
-Review the reported free space, missing cached inputs and build-stage space
-guards for the selected release. The new tooling checks Docker separately and
+These checks run automatically before acquisition, and again before large
+stages. The launcher reports input sizes and stops on a failed capacity or
+compatibility check. The tooling checks Docker separately and
 counts shared APFS capacity only once; an incomplete storage check is not a
 pass. These guards are not a measured cold-build
 peak or a universal minimum for every release. Keep the required reserve and
@@ -272,19 +264,28 @@ resolve insufficient space or other blocking prerequisites before acquisition.
 A plan with `qualified: false` does not fail merely because qualification is
 still open; it does not mean that the build or release is qualified.
 
-### B4. Prepare, build and locate the result
+<a id="b4-prepare-build-and-locate-the-result"></a>
 
-Continue directly at [developer guide step 3](docs/getting-started/reproduce-demo.md#3-prepare-sources-and-binary-inputs).
-That is the single copy/paste recipe for the remaining commands:
+### B4. Automatic build and result
+
+The launcher continues without another command:
 
 1. Prepare and verify seven pinned source roles.
-2. Acquire the five locked binary inputs using your two binding files.
+2. Acquire or reuse five locked binary inputs using automatically selected references.
 3. Read the returned paths automatically; no manual path reconstruction.
 4. Run the ordered 17-step build using the explicit tools/signing identity.
-5. Expect `CHAIN_BUILT_NOT_QUALIFIED`; use its result/receipt path to find the
-   DMG, then install it through route A with **its own** matching descriptor.
+5. Print `BUILD COMPLETE` / `CHAIN_BUILT_NOT_QUALIFIED` and the exact DMG and
+   build-receipt paths. Installation through route A is a separate action with
+   the result's **own** matching descriptor.
 
-The guide includes failure recovery and cache reuse. A build never implicitly
+If interrupted, rerun the same downloaded launcher. Existing owners verify and
+reuse completed work; progress flags alone never skip integrity checks.
+Unexpected partial native output may require diagnosis; the launcher does not
+delete it or retry blindly. Detailed logs live in the workspace's
+`.developer-preparation` directory and the existing owner build logs.
+
+The [manual developer reference](docs/getting-started/reproduce-demo.md) retains
+individual commands for diagnosis, not another required checklist. A build never implicitly
 provisions a Cloud Unit, publishes services or starts a simulator. Stop on a
 failed step; do not turn retries into duplicate live actions.
 

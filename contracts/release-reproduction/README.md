@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.22
+- Version: 1.23
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -94,6 +94,12 @@ blocker or toggling a flag. A future release-state extension requires reviewed
 acquisition and qualification evidence; R1 is not that promotion mechanism.
 
 ## Artifact delivery boundary
+
+The private publication/receipt contract below remains valid for historical
+artifacts and explicit maintainer operations. The October 10 owner-authorized
+[anonymous reader extension](#anonymous-developer-input-delivery) is a separate
+transport for reviewed public inputs; it does not automatically publish any
+existing file or change its permissions.
 
 The release owner selected Google Drive in the existing Google Workspace
 account, with public Git source/metadata and read/download access for approved
@@ -273,25 +279,56 @@ it must not relabel the retained bytes as rebuilt or fully tested.
 
 See the [R1 inventory and remaining gates](../../docs/development/release-reproduction-r1.md).
 
+## One-run macOS developer workflow
+
+The October 10 owner-approved amendment makes the downloaded wizard the single
+entry for preparation, root checkout, source/input acquisition and the existing
+developer DMG chain. One displayed plan and confirmation covers this build-only
+route, including signing with the selected identity. `--prepare-only` retains
+the old preparation boundary; `--check` remains non-mutating local diagnosis.
+System permissions remain explicit. No installation, runtime launch, Cloud
+mutation, Docker restart/storage migration or public publication is implied.
+
+The bootstrap records the selected root `main` commit before acquisition and
+never pulls or changes it on resume. Owned incomplete clones may resume at that
+same commit. Existing clean canonical checkouts may be adopted explicitly by
+location; dirty, foreign, linked or changed checkouts are preserved and rejected.
+The prepared release requirements must match before repository code is used.
+The preparation lock covers the whole workflow; existing build/input owners
+retain their own locks and receipts. Workflow progress is diagnostic, not an
+alternative readiness authority. Repeats call the canonical idempotent owners,
+not a skip list based on previous green progress flags.
+
+The repository continuation checks plans, source preparation, exact producer
+storage compatibility and capacity before large input downloads. It forwards
+explicit paths/tool/signing selections to the existing `lab` commands. The
+single-script public route remains gated on actual public input publication;
+the historical producer/storage boundary is unchanged. No pin adoption or
+automatic native-partial recovery is added. Success is only
+`CHAIN_BUILT_NOT_QUALIFIED` with the DMG selected from the exact chain receipt,
+never the newest file. Offline fixtures are not a completed real walkthrough.
+
 ## Standalone macOS developer preparation
 
 The October 9 owner-approved wizard replaces the six manual prerequisite
 blocks. [prepare-macos.sh](../../scripts/prepare-macos.sh) is a single downloadable
 Bash 3.2 file, runnable before a source checkout, Python or Homebrew exists.
-It is a host-preparation owner, not a new builder or runtime controller.
+Its preparation phase is a host-preparation owner, not a new builder or runtime
+controller; the default continuation calls the existing repository builder.
 
 It inspects first, shows one plan and requests one preparation confirmation.
 Compatible installed tools are reused; mismatched project Node/npm are isolated
 inside the selected workspace. Missing Homebrew tools use binary bottles/casks;
 an incompatible already-installed formula is reported without a global upgrade.
-Xcode installation/license, Docker first-run/start and Google consent remain
-explicit user/system boundaries. Global Xcode selection, shell profiles,
+Xcode installation/license and Docker first-run/start remain explicit
+user/system boundaries. Google consent exists only in the explicit private
+maintainer mode. Global Xcode selection, shell profiles,
 shared Docker storage and Engine lifecycle are not changed. No source clone,
 heavy input transfer, compile, signing operation, Cloud enrollment or demo launch
 is part of preparation.
 
 The six checks cover host/storage, Xcode/SDK/Swift/Git, CMake/Python, exact
-Node/npm, local Docker/Google access, and existing signing/input selections.
+Node/npm, local Docker/public input availability, and existing signing/input selections.
 Bootstrap version values are exposed by `--requirements` and tested against
 the source-owned UI engines and simulation Python compatibility. Existing
 build owners retain their own authoritative version/input checks; frozen
@@ -305,9 +342,12 @@ reconcile owned partial Python/Node work and reuse verified downloads. They
 preserve unexpected files and incompatible/unowned destinations. A lock
 prevents overlapping preparations; confirmed dead owners may be recovered.
 
-Google credentials stay in their existing store. Access tokens are obtained
+Default public mode does not discover/install Google CLI, ask for a Google
+account, or access credentials. It fetches one bounded catalog and checks one
+byte per declared archive. Only the later build consumer acquires full archives.
+In the explicit private maintainer mode, Google credentials stay in their existing store. Access tokens are obtained
 only inside a bounded helper and never printed, placed in shell variables,
-logs or state. The ordinary route downloads only the bounded catalog and checks
+logs or state. This private route downloads only the bounded catalog and checks
 input metadata, never archives. Local bindings are produced automatically from
 the trusted release record; archive verification remains with `lab inputs prepare`.
 Missing/expired authorization or missing Drive scope
@@ -324,6 +364,11 @@ compatibility. UI/output and recovery are described in the
 [preparation reference](../../docs/getting-started/macos-developer-tools.md).
 
 ### Pre-clone release catalog
+
+This subsection records the October 9 private catalog compatibility contract.
+It now requires `--private-inputs` (or `--advanced-inputs`); the ordinary route
+uses the October 10 anonymous extension below. Old records and source pins are
+preserved, not reinterpreted as public permissions.
 
 The October 9 owner-approved amendment replaces ordinary manual binding-path
 questions. The stable filename is `release-index.json` in the authorized
@@ -379,6 +424,63 @@ refuses to alter an existing record ID. The private result is published to the
 existing authorized folder; only the public trust pin enters Git. Future
 producer/input adoption still requires its normal review and a new record;
 catalog discovery does not move any historical pin or qualify a release.
+
+### Anonymous developer input delivery
+
+On October 10 the owner approved implementing the tested public-reader route
+before a joint walkthrough. Default preparation is anonymous; explicit private
+mode remains available for maintainers. Public-read failure must never trigger
+OAuth, Google CLI installation, account questions or a private transport fallback.
+
+The public distribution folder is separate from historical/private artifacts.
+Publication needs prior content/redistribution review, read-only link sharing
+and a reviewed persistent `release-index.json` locator. An absent public URL or
+record pin makes the ordinary wizard exit 2 before prompts, state changes or
+tool installation; it is not an invitation for the reader to supply credentials.
+Implementation alone does not authorize or complete publication. `PUBLIC_PIN`
+is deliberately inactive until those release-owner steps are complete.
+
+The existing catalog envelope/versioning is retained. Public records have
+distinct immutable IDs and canonical record SHA-256 pins. A selected record
+must match `PUBLIC_PIN`, the same dependency-lock digests and source-file pins.
+Its schema-2 bindings contain exactly `schemaVersion`, `transport` equal to
+`google-drive-public`, `lockDigest` and a role-to-public-download-URL `files`
+mapping. No private folder IDs, OAuth fields, API keys or expected-byte overrides
+are accepted. Source locks, not URLs or response headers, authenticate archives.
+
+The standard-library transport is `scripts/public_drive.py`, embedded with the
+catalog helper by `scripts/sync-preparation-catalog`. It uses HTTPS only, bounded
+same-file redirects between the two observed Google download endpoints, and no
+ambient proxy authentication, cookies, OAuth or API key. Resource keys remain
+part of the approved public locator. The reader does not search Drive.
+Only Google's expected bounded same-file "cannot scan for viruses" confirmation
+form is followed, once. Unexpected forms, login redirects, malware/abuse
+warnings, foreign hosts and quota errors fail closed with sanitized messages.
+There is no alternate-copy or quota-bypass operation.
+
+Preparation limits the JSON catalog to 1 MiB, rejects duplicate keys/IDs and
+selects only the pinned record. Each dependency probe requires HTTP 206 with
+the exact `bytes 0-0/<pinned-size>` range and reads at most two bytes to check
+that the response contains exactly one. This is an availability/length check,
+not full integrity or a claim of remotely verified parent/version metadata.
+Public state uses its own digest-keyed `public` generation, atomic promotion
+and private modes; existing private/manual generations remain intact.
+
+After cloning, source compatibility is checked before `lab inputs prepare` or
+`lab dependencies prepare`. Both consumers accept explicitly supplied schema-2
+bindings, preserve the existing verified SHA-256 cache/resume mechanism, and
+check complete size and source-pinned hash before promotion/extraction. Wrong
+ranges, ignored resume, changed bytes, unsafe archives and altered receipts
+remain failures. Public acquisition does not fake private API metadata checks;
+the authenticated schema-1 route retains those checks unchanged. A verified
+cache repeat requires no network client or credentials.
+
+The offline maintainer generator accepts `--public-links` with reviewed URLs,
+preserves byte/source identities and creates a distinct `-public` record. It
+does not upload, change sharing, approve redistribution or edit old records.
+After public publication the owner must review the stable URL and record pin
+into source and regenerate the standalone script. Real archive delivery and
+the user's first-use walkthrough remain separate qualification evidence.
 
 ## Explicit build storage
 

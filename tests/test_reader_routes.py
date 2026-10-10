@@ -21,7 +21,7 @@ class InteractivePreparationSnippetTests(unittest.TestCase):
     def test_short_preparation_blocks_survive_interactive_history_expansion(self):
         guide = (ROOT / 'README.md').read_text().split('### B1.')[1].split('### B2.')[0]
         blocks = re.findall(r'```sh\n(.*?)```', guide, re.S)
-        self.assertEqual(len(blocks), 3)
+        self.assertEqual(len(blocks), 2)
         # Parse, but never execute downloads, setup or the environment handoff.
         candidates = [('guide-' + str(i), 'sdv_check_storage() {\n' + block + '\n}')
                       for i, block in enumerate(blocks)]
