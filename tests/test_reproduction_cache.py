@@ -238,7 +238,7 @@ class SpaceTests(StorageFixture, unittest.TestCase):
     def test_unreviewed_plan_cannot_reuse_capacity_claim(self):
         self.fixture(); original = space.chain.read_plan(self.release)
         changed = copy.deepcopy(original); changed['producers']['media'] = 'f'*40
-        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original,original,original]):
+        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original,original,original,original]):
             with self.assertRaisesRegex(core.LabError, 'reviewed producer'):
                 space.report(self.storage, self.state, build_plan=Path('different.json'))
 
@@ -284,6 +284,17 @@ class SpaceTests(StorageFixture, unittest.TestCase):
         with patch.object(space.containers, 'inspect_storage', side_effect=AssertionError):
             value = space.report(self.storage, self.state, target='presenter', docker=Path('/unused'))
         self.assertTrue(value['storagePreflightComplete'])
+
+    def test_public_r3_keeps_completed_owners_and_seals_new_package_results(self):
+        self.fixture()
+        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r2.json')
+        path = core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r3.json'
+        new = space.chain.read_plan(self.release, path)
+        self.assertEqual(new['steps'], old['steps'])
+        self.assertEqual(new['resultPolicy'], 'seal-developer-results-v1')
+        for role in ('components', 'preparation', 'host'):
+            self.assertEqual(new['producers'][role], old['producers'][role])
+        self.assertEqual(len(space.report(self.storage, self.state, build_plan=path)['ownerGuards']), 17)
 
     def test_separate_docker_capacity_is_visible_and_not_added_to_workspace_free(self):
         self.fixture()

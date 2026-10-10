@@ -163,7 +163,10 @@ the release, including the virtual controller's base image (Factory).
 **It does not rebuild the simulator engine or Factory.** Exact versions and
 checksums belong to the selected release's dependency records. A new signed
 build is not automatically byte-identical to the delivered DMG or qualified
-for release.
+for release. The launcher verifies the selected sources and inputs, seals the
+results of your build and embeds their exact checksums in the signed Setup.
+Installation verifies those checksums; published releases keep their separate
+release pins.
 
 ### B1. Prepare tools, storage and access
 

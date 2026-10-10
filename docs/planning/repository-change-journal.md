@@ -76,7 +76,11 @@ chain explicitly selects this build-only policy; historical schema-1 chains
 keep their independently reviewed release pins. Result seals bind verified
 source selections, exact upstream build keys and bounded manifest hashes.
 Setup embeds those exact pins before signing; runtime cannot adopt new pins.
-Implementation and negative/repeat qualification are in progress. The DMG,
+The real backend packaging probe passed with the verified export and its typed
+seal. All 249 reproduction tests, 22 workflow tests, seven historical checkpoint
+tests and fifteen application validation tests passed. The public `r3` plan
+selects the new packaging/media owner while retaining the twelve previously
+verified component/preparation/host steps. The DMG,
 complete E2E success and final cleanup are still pending. Preserve this test's
 verified SSD inputs/results for continuation instead of downloading/rebuilding
 them again. Shared Docker and unrelated workloads are not test-owned.

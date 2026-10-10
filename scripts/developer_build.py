@@ -18,9 +18,7 @@ from developer_catalog import source_check, CatalogError
 from reproduction.core import LabError
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r2.json'
-INPUTS = 'workspace/releases/1.2.0-rc.1-source-factory-packaging.json'
-RELEASE = 'workspace/releases/1.2.0-rc.1-source-factory-setup.json'
+PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r3.json'
 
 
 class OwnerOutput(io.TextIOBase):
@@ -192,8 +190,7 @@ def execute(config, owner, resolve=resolve_dmg):
         owner('Storage before compilation', space_args)
         args = ['build', '--target', 'all', '--storage', build, '--build-plan', source/PLAN,
                 '--kit-inputs', prepared['kitInputs'], '--gateway-sdk', prepared['gatewaySdk'],
-                '--factory-inputs', prepared['factoryInputs'], '--input-checkpoint', INPUTS,
-                '--release-checkpoint', RELEASE, '--test-tmp-parent', config['SDV_TMP'],
+                '--factory-inputs', prepared['factoryInputs'], '--test-tmp-parent', config['SDV_TMP'],
                 '--ui-python', '/usr/bin/python3', '--prepare-dependencies']
         for flag, key in (('python', 'SDV_PYTHON'), ('node', 'SDV_NODE'), ('npm', 'SDV_NPM'),
                           ('cmake', 'SDV_CMAKE'), ('docker', 'SDV_DOCKER'), ('signing-identity', 'SDV_SIGNING_IDENTITY')):
