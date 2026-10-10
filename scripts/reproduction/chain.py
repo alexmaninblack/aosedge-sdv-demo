@@ -25,9 +25,11 @@ DEPENDENCIES = {
 
 def read_plan(release, path=None):
     value = read_json(path or ROOT/PLAN)
+    developer = isinstance(value, dict) and value.get('schemaVersion') == 2
     require(isinstance(value, dict) and set(value) == {'schemaVersion', 'productVersion',
-        'baseDefinitionSha256', 'repository', 'producers', 'steps'}
-        and type(value['schemaVersion']) is int and value['schemaVersion'] == 1
+        'baseDefinitionSha256', 'repository', 'producers', 'steps'} | ({'resultPolicy'} if developer else set())
+        and type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2)
+        and (not developer or value['resultPolicy'] == 'seal-developer-results-v1')
         and value['productVersion'] == '1.2.0-rc.1' and value['baseDefinitionSha256'] == release.key,
         'Build chain differs from selected definition')
     require(value['repository'] == release.sources['integration']['repository'], 'Producer repository differs')
@@ -198,6 +200,10 @@ def execute(storage, state, args, progress):
     plan = read_plan(storage.release, args.build_plan)
     verify_sources(storage, state)
     config = preflight(storage, args)
+    if plan.get('resultPolicy') == 'seal-developer-results-v1':
+        require(not any(name in config for name in ('input_checkpoint', 'release_checkpoint')),
+                'Developer chain cannot select reviewed output checkpoints')
+        config['developer_results'] = True
     # Preserve mandatory per-owner guards; this is not a measured cold peak.
     storage.check(additional=76*GIB, reserve=90*GIB)
     docker_storage = containers.inspect_storage(args.docker, storage.environment(create=False), storage.root)

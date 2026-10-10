@@ -64,6 +64,7 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
           developer_id_identity=None, hardened_runtime=False,
           input_checkpoint=None, release_checkpoint=None):
     from application import export_plan, LOCKS
+    from developer_inputs import DeveloperInputs
     supported_platform()
     # Fail before copying or compiling when stable signing is unavailable.
     distribution = developer_id_identity is not None
@@ -102,8 +103,11 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     for leaf in HELPERS:
         target = resources / 'tooling/scripts/distribution' / leaf
         target.parent.mkdir(parents=True, exist_ok=True)
-        source = ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint else HERE/leaf
-        shutil.copyfile(source, target)
+        if leaf == 'setup_release.json' and isinstance(release_checkpoint, DeveloperInputs):
+            target.write_bytes(release_checkpoint.release_bytes())
+        else:
+            source = ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint else HERE/leaf
+            shutil.copyfile(source, target)
     for name, raw in application_sources.items():
         relative = Path(name)
         target = resources / 'tooling' / relative
@@ -128,7 +132,8 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     require(probe.returncode == 1 and probe.stderr == b''
             and json.loads(probe.stdout) == dict(kind='error', code='SETUP_ACTION_INVALID'),
             'SETUP_EMBEDDED_PROBE_FAILED')
-    source_files = [ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint else HERE/leaf
+    source_files = [ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint
+                   and not isinstance(release_checkpoint, DeveloperInputs) else HERE/leaf
                     for leaf in HELPERS] + [
         HERE / 'native/Setup.swift', HERE / 'setup_build.py', HERE / 'setup_signing.py']
     source_files += [ROOT / name for name in application_sources]
@@ -143,7 +148,9 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
                    runtimeLaunched=False, developerCredentialsCopied=False)
     if input_checkpoint is not None:
         import hashlib
-        receipt['packagingCheckpoint'] = dict(path=input_checkpoint, sha256=digest(ROOT/input_checkpoint))
+        from candidate_inputs import identity
+        receipt['packagingCheckpoint'] = identity(ROOT, input_checkpoint)
+        receipt['embeddedReleaseSha256'] = digest(resources/'tooling/scripts/distribution/setup_release.json')
         receipt['exportedApplicationHashes'] = {name: hashlib.sha256(raw).hexdigest()
                                                  for name, raw in application_sources.items()}
     (output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')

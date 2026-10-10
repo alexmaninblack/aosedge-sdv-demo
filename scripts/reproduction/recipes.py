@@ -123,6 +123,7 @@ def paths(root, tracked, target):
         chosen.update(('scripts/reproduction/build.py', 'scripts/reproduction/gateway.py',
                        'workspace/gateway-build-sdk.lock.json'))
     if target in ('backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
+        chosen.add('scripts/reproduction/build_results.py')
         chosen.update(('scripts/reproduction/package_chain.py', 'scripts/reproduction/containers.py'))
         chosen.add('workspace/releases/1.2.0-rc.1-packaging.json')
         chosen.add('workspace/releases/kit028-setup042.json')

@@ -197,7 +197,8 @@ def assemble(integration, groups, output, *, input_checkpoint=None):
                              'Docker installation/licensing and fresh-engine import',
                              'first-use TLS and credentials', 'installer', 'clean Mac', 'redistribution'])
     if input_checkpoint is not None:
-        report['packagingCheckpoint'] = dict(path=input_checkpoint, sha256=sha256(regular(integration, input_checkpoint)))
+        from candidate_inputs import identity
+        report['packagingCheckpoint'] = identity(integration, input_checkpoint)
     write_new(output, 'application-manifest.json', (json.dumps(report, indent=2) + '\n').encode())
     return report
 

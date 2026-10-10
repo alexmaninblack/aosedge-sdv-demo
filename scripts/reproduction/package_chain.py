@@ -52,14 +52,16 @@ def verify(output, inputs, receipt=None):
     return receipt
 
 
-def assemble(storage, state, target, kit, python, progress, input_checkpoint=None):
+def assemble(storage, state, target, kit, python, progress, input_checkpoint=None, developer_results=False):
     require(storage.profile == 'developer' and target in MANIFESTS, 'Unsupported package target/profile')
+    require(type(developer_results) is bool and not (developer_results and input_checkpoint is not None),
+            'Cannot mix developer results and reviewed checkpoints')
     verify_sources(storage, state)
     storage.check(additional=(40 if target == 'application' else 1)*GIB, reserve=90*GIB)
     checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else CHECKPOINT
     extras = (checkpoint_path,) if input_checkpoint is not None else ()
     trees, revision = packaging.producer(storage, target, extras)
-    checkpoint = read_json(ROOT/checkpoint_path)
+    checkpoint = None if developer_results else read_json(ROOT/checkpoint_path)
     chosen, paths = {}, {}
     roles = ('backend-export',) if target == 'backend-inputs' else (
         ('host-runtime', 'preparation') if target == 'vm-runtime' else tuple(GROUP_TARGETS.values()))
@@ -69,6 +71,11 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
             chosen[role], paths[role] = upstream(storage, state, role, checkpoint['manifests'][group])
         else:
             chosen[role], paths[role] = upstream(storage, state, role)
+    seal_args = []
+    if developer_results:
+        from .build_results import seal
+        sealed, seal_key, checkpoint, _ = seal(storage, chosen, paths)
+        seal_args = ['--developer-seal', str(sealed), seal_key]
     retained_pin = None
     if target == 'vm-runtime':
         require(kit is not None and storage_volume(kit)['uuid'] == storage.volume['uuid'], 'VM kit must be on bound volume')
@@ -77,6 +84,8 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
     inputs = {'target': target, 'producerTrees': trees, 'upstream': chosen, 'retainedManifest': retained_pin,
               'checkpoint': checkpoint, 'adapterSha256': sha256(ROOT/'scripts/reproduction/package_chain.py'),
               'workerSha256': sha256(ROOT/'scripts/reproduction/package_worker.py')}
+    if developer_results:
+        inputs['developerSealSha256'] = seal_key
     key = digest(inputs)
     output = storage.path('builds/'+target+'/'+key)
     marker = output.parent/(key+'.inputs.json')
@@ -97,7 +106,7 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
         policy.write_text('(version 1)\n(allow default)\n(deny network*)\n')
         progress('BUILD_STARTED', target)
         result = run_command(['/usr/bin/sandbox-exec', '-f', policy, python, '-I', '-B',
-            ROOT/'scripts/reproduction/package_worker.py', ROOT, target, selected, output, checkpoint_path],
+            ROOT/'scripts/reproduction/package_worker.py', ROOT, target, selected, output, checkpoint_path, *seal_args],
             env=storage.environment(), cwd=storage.root, timeout=900)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
         require(result.returncode == 0, 'Package owner failed; inspect retained workspace log')

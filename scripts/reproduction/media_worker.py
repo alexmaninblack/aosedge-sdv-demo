@@ -7,10 +7,15 @@ import sys
 
 
 if __name__ == '__main__':
-    root, target, kit, setup, output, signer, checkpoint, release = sys.argv[1:]
+    root, target, kit, setup, output, signer, checkpoint, release = sys.argv[1:9]
     root, kit, output = Path(root), Path(kit), Path(output)
     sys.path.insert(0, str(root/'scripts/distribution'))
     sys.path.insert(0, str(root/'apps/demo-orchestrator/src'))
+    if sys.argv[9:]:
+        if len(sys.argv[9:]) != 3 or sys.argv[9] != '--developer-seal':
+            raise ValueError('Invalid developer result arguments')
+        from developer_inputs import DeveloperInputs
+        checkpoint = release = DeveloperInputs.load(sys.argv[10], sys.argv[11])
     if target == 'setup':
         import setup_build
         result = setup_build.build(kit, output, signing_identity=signer,

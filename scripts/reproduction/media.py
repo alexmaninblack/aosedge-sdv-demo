@@ -32,8 +32,11 @@ def verify(output, inputs):
 
 
 def assemble(storage, state, target, python, signing_identity, progress,
-             input_checkpoint=None, release_checkpoint=None):
+             input_checkpoint=None, release_checkpoint=None, developer_results=False):
     require(storage.profile == 'developer' and target in TARGETS, 'Unsupported media target/profile')
+    require(type(developer_results) is bool and not (developer_results and
+            (input_checkpoint is not None or release_checkpoint is not None)),
+            'Cannot mix developer results and reviewed checkpoints')
     verify_sources(storage, state)
     storage.check(additional=(76 if target == 'dmg' else 2)*GIB, reserve=90*GIB)
     from .cloud import relative
@@ -42,12 +45,17 @@ def assemble(storage, state, target, python, signing_identity, progress,
     release_path = str(relative(release_checkpoint)) if release_checkpoint is not None else RELEASE
     extras = (checkpoint_path, release_path) if input_checkpoint is not None else ()
     trees, revision = packaging.producer(storage, target, extras)
-    trusted = read_json(ROOT/release_path)
+    trusted = None if developer_results else read_json(ROOT/release_path)
     if release_checkpoint is not None:
         kit_key, kit = package_chain.upstream(storage, state, 'application',
             {'path':'application-manifest.json', 'sha256':trusted['manifestSha256']})
     else:
         kit_key, kit = package_chain.upstream(storage, state, 'application')
+    seal_args = []
+    if developer_results:
+        from .build_results import seal
+        sealed, seal_key, _, trusted = seal(storage, {'application': kit_key}, {}, application=kit)
+        seal_args = ['--developer-seal', str(sealed), seal_key]
     require(sha256(regular(kit/'application-manifest.json')) == trusted['manifestSha256'],
             'Application differs from independent Setup checkpoint')
     setup_key, setup = None, None
@@ -55,7 +63,8 @@ def assemble(storage, state, target, python, signing_identity, progress,
         require(signing_identity is not None, 'Explicit authorized Apple Development signing identity required')
     else:
         found = [(k, v) for k, v in state['builds'].items() if v['target'] == 'setup'
-                 and v['inputs']['application'] == kit_key and v['inputs']['release'] == trusted]
+                 and v['inputs']['application'] == kit_key and v['inputs']['release'] == trusted
+                 and (signing_identity is None or v['inputs']['signingIdentity'] == signing_identity)]
         require(len(found) == 1, 'Matching signed Setup required')
         setup_key, value = found[0]
         setup = storage.path('builds/setup/'+setup_key)
@@ -64,7 +73,7 @@ def assemble(storage, state, target, python, signing_identity, progress,
         signing_identity = value['inputs']['signingIdentity']
     inputs = {'target': target, 'producerTrees': trees, 'application': kit_key, 'setup': setup_key,
               'release': trusted, 'signingIdentity': signing_identity,
-              'checkpointSha256': sha256(ROOT/checkpoint_path),
+              'checkpointSha256': seal_key if developer_results else sha256(ROOT/checkpoint_path),
               'adapterSha256': sha256(ROOT/'scripts/reproduction/media.py'),
               'workerSha256': sha256(ROOT/'scripts/reproduction/media_worker.py')}
     key = digest(inputs)
@@ -83,7 +92,7 @@ def assemble(storage, state, target, python, signing_identity, progress,
         atomic_json(marker, inputs)
         progress('BUILD_STARTED', target)
         result = run_command([python, '-I', '-B', ROOT/'scripts/reproduction/media_worker.py',
-            ROOT, target, kit, str(setup or '-'), output, signing_identity, checkpoint_path, release_path],
+            ROOT, target, kit, str(setup or '-'), output, signing_identity, checkpoint_path, release_path, *seal_args],
             env=storage.environment(), cwd=storage.root, timeout=2700 if target == 'dmg' else 600)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
         require(result.returncode == 0, 'Media owner failed; inspect retained workspace log')

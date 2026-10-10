@@ -66,7 +66,13 @@ def assemble(root, target, paths, output, checkpoint):
 
 
 if __name__ == '__main__':
-    root, target, selected, output, checkpoint = sys.argv[1:]
+    root, target, selected, output, checkpoint = sys.argv[1:6]
+    if sys.argv[6:]:
+        if len(sys.argv[6:]) != 3 or sys.argv[6] != '--developer-seal':
+            raise ValueError('Invalid developer result arguments')
+        sys.path.insert(0, str(Path(root)/'scripts/distribution'))
+        from developer_inputs import DeveloperInputs
+        checkpoint = DeveloperInputs.load(sys.argv[7], sys.argv[8])
     paths = {k: Path(v) for k, v in json.loads(Path(selected).read_bytes()).items()}
     result = assemble(Path(root), target, paths, Path(output), checkpoint)
     print(json.dumps({'status': result.get('status', 'ASSEMBLED_VM_INPUTS_NOT_LIVE_QUALIFIED')}), flush=True)

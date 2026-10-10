@@ -8,6 +8,7 @@ import re
 from installation_inputs import parse
 from native_bundle import BundleError
 from ui_helpers import regular
+from developer_inputs import DeveloperInputs
 
 LOCKS = {
     'host-runtime': 'portable-host-launch/host-runtime.lock.json',
@@ -27,10 +28,12 @@ def read(root, name):
 
 
 def pins(root, checkpoint, required):
-    value = parse(read(root, checkpoint))
+    developer = isinstance(checkpoint, DeveloperInputs)
+    value = checkpoint.value()['checkpoint'] if developer else parse(read(root, checkpoint))
     if (not isinstance(value, dict) or set(value) != {'schemaVersion', 'kind', 'productVersion',
             'baseDefinitionSha256', 'manifests'} or value['schemaVersion'] != 1
-            or value['kind'] != 'reviewed-packaging-inputs' or value['productVersion'] != '1.2.0-rc.1'
+            or value['kind'] != ('developer-packaging-inputs' if developer else 'reviewed-packaging-inputs')
+            or value['productVersion'] != '1.2.0-rc.1'
             or not isinstance(value['manifests'], dict) or not set(required) <= value['manifests'].keys()
             or not value['manifests'].keys() <= LOCKS.keys()):
         raise BundleError('Incomplete or invalid packaging checkpoint')
@@ -38,6 +41,8 @@ def pins(root, checkpoint, required):
     base = hashlib.sha256(json.dumps(definition, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     if value['baseDefinitionSha256'] != base:
         raise BundleError('Packaging baseline differs')
+    if developer and checkpoint.value()['sources'] != {s['id']: s for s in definition['sources']}:
+        raise BundleError('Developer source selection differs')
     for group, pin in value['manifests'].items():
         expected = parse(read(root, 'contracts/'+LOCKS[group]))['manifest']
         if (not isinstance(pin, dict) or set(pin) != {'path', 'bytes', 'sha256'}
@@ -61,7 +66,11 @@ def locks(root, checkpoint, required):
 
 def setup_release(root, checkpoint):
     """Read an independent source pin before selecting any supplied kit bytes."""
-    value = parse(read(root, checkpoint))
+    if isinstance(checkpoint, DeveloperInputs):
+        pins(root, checkpoint, LOCKS)
+        value = checkpoint.value()['release']
+    else:
+        value = parse(read(root, checkpoint))
     if (not isinstance(value, dict) or set(value) != {'schemaVersion', 'label', 'manifestSha256'}
             or type(value['schemaVersion']) is not int or value['schemaVersion'] != 1
             or not isinstance(value['label'], str) or not 0 < len(value['label']) < 120
@@ -69,3 +78,10 @@ def setup_release(root, checkpoint):
             or not re.fullmatch('[a-f0-9]{64}', value['manifestSha256'])):
         raise BundleError('Invalid reviewed Setup release pin')
     return value
+
+
+def identity(root, checkpoint):
+    if isinstance(checkpoint, DeveloperInputs):
+        checkpoint.value()
+        return {'kind': 'developer-build-results', 'sha256': checkpoint.key}
+    return {'path': checkpoint, 'sha256': hashlib.sha256(read(root, checkpoint)).hexdigest()}

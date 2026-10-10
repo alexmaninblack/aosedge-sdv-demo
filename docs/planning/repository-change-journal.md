@@ -68,12 +68,15 @@ matches. Host metadata incorporates a build-receipt digest containing absolute
 build paths, so a new source pin for this one workspace cannot make arbitrary
 fresh workspaces reproduce that historical manifest.
 
-The proposed amendment separates developer result sealing from published
+The owner accepted the amendment on 10 October: separate developer result sealing from published
 release pins: retain pinned sources/inputs, validate exact owner outputs, seal
 this invocation's results and embed their exact manifests in Setup. Runtime
-checks and published-release verification would remain strict. This changes
-the accepted build authority and is awaiting the owner's explicit decision;
-no automatic pin adoption or checksum bypass has been implemented. The DMG,
+checks and published-release verification remain strict. A reviewed schema-2
+chain explicitly selects this build-only policy; historical schema-1 chains
+keep their independently reviewed release pins. Result seals bind verified
+source selections, exact upstream build keys and bounded manifest hashes.
+Setup embeds those exact pins before signing; runtime cannot adopt new pins.
+Implementation and negative/repeat qualification are in progress. The DMG,
 complete E2E success and final cleanup are still pending. Preserve this test's
 verified SSD inputs/results for continuation instead of downloading/rebuilding
 them again. Shared Docker and unrelated workloads are not test-owned.

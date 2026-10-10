@@ -677,6 +677,24 @@ for the exercised scope, exit codes and remaining gates.
 
 ### Ordered developer chain
 
+#### Developer result sealing
+
+Accepted on 10 October 2026: a source-reviewed schema-2 producer plan may select
+`resultPolicy: seal-developer-results-v1`. This build-only policy validates the
+same pinned sources, acquired input archives and exact upstream owner receipts,
+then seals the resulting group manifests and application digest for that build.
+Seals are immutable, digest-addressed records on the selected build volume,
+binding the base definition, source selections and upstream result keys. Workers
+require the independently passed seal digest and preserve all payload validators.
+They reject changed, linked, incomplete or mixed historical/developer inputs.
+
+Setup embeds the sealed group locks and application digest before signing.
+Installation still requires exact manifests and payload hashes; it has no
+developer trust fallback. A developer result is not a published or qualified
+release. Schema-1 plans and ordinary source-reviewed checkpoint arguments retain
+their existing behavior. Historical pins and frozen producer sources are not
+rewritten. Repeats verify and reuse exact results without acquiring inputs again.
+
 `build --target all` invokes the 17 developer steps from the source-reviewed
 [ordered producer plan](../../workspace/releases/1.2.0-rc.1-build-chain.json).
 This plan extends the accepted separate build-tools roles: it binds the base
