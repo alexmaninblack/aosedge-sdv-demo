@@ -285,6 +285,42 @@ class LocalProtocolTests(unittest.TestCase):
                       time.monotonic() + 4, "fixture-password")
         self.assertTrue((self.access / "known_hosts").is_file())
 
+    def test_factory_cursor_controls_do_not_hide_authenticated_root_prompt(self):
+        def exchange(connection):
+            self.assertEqual(b"\r", connection.recv(8192))
+            connection.sendall(b"\r\nLinux version fixture #\x1b[0m")
+            connection.settimeout(.15)
+            with self.assertRaises(socket.timeout): connection.recv(8192)
+            connection.settimeout(3)
+            connection.sendall(b"1 SMP\r\n\x1b[0mfixture login: ")
+            self.assertEqual(b"root\r", connection.recv(8192))
+            connection.sendall(b"Password: \x1b[0m")
+            self.assertEqual(b"fixture-password\r", connection.recv(8192))
+            # Recorded Factory shape: CSI sequences can separate ESC 7 from
+            # root@main. A chunk may also end inside the CSI sequence.
+            connection.sendall(b"\r\n\x1b7\x1b[")
+            connection.settimeout(.15)
+            with self.assertRaises(socket.timeout): connection.recv(8192)
+            connection.settimeout(3)
+            connection.sendall(b"0mroot@main:~# \x1b[?2004h")
+            self.assertIn(b"authorized_keys", connection.recv(16384))
+            connection.sendall(b"\r\nDEMO_HOSTKEY_BEGIN\r\nssh-ed25519 AAAAFixtureOnly\r\nDEMO_HOSTKEY_END\r\n")
+
+        enroll_serial(self.server(exchange), self.access, 10022,
+                      time.monotonic() + 4, "fixture-password")
+        self.assertTrue((self.access / "known_hosts").is_file())
+
+    def test_unknown_escape_or_non_root_shell_is_not_accepted(self):
+        def exchange(connection):
+            self.assertEqual(b"\r", connection.recv(8192))
+            connection.sendall(b"\r\nuser@main:~# \r\n\x1bcroot@main:~# ")
+            self.assertEqual(b"", connection.recv(8192))
+
+        with self.assertRaisesRegex(EnvironmentError, 'GUEST_CONSOLE_NOT_READY'):
+            enroll_serial(self.server(exchange), self.access, 10022,
+                          time.monotonic() + .2, "fixture-password")
+        self.assertFalse((self.access / "known_hosts").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

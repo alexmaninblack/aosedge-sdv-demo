@@ -9,9 +9,13 @@ is corrected in source; rebuilt r5 media has now passed a separate fresh M1
 installation and backend-image preparation. Its live staging journey exposed
 a separate serial-console prompt defect and is **not complete**. The prompt
 correction is included in r6. Its automated installation passed but exposed a
-first-use qualification-access scope defect before VM creation. Earlier Kit028
-results do not qualify these candidates. Candidate identities and recovery
-evidence are separated below.
+first-use qualification-access scope defect before VM creation. r7 resolves
+that scope defect but exposed terminal-control bytes hiding the real Factory
+root prompt. A transient console correction passed first enrollment, repeated
+start and restart on the preserved Test; diagnostic continuation is separate
+from clean first-use qualification of corrected media. Earlier Kit028 results
+do not qualify these candidates. Candidate identities and recovery evidence
+are separated below.
 
 ## Candidate and target
 
@@ -329,3 +333,57 @@ the actual configuration loader rather than a synthetic normalized response.
 
 r6 is not E2E-qualified. Its original attempt records are retained unchanged;
 the corrected code requires a successor candidate and new live evidence.
+
+## Corrected r7 candidate
+
+The r7 qualification plan selects application/media producer
+`5295bb30fc91a955e1814b31a52b0b92b4652bf0` for the first-use correction. All 91
+affected qualification-access, native-access, guest-access, VM, VM-runtime and
+Presenter-operation tests pass. The regression fixture required its installed
+input-root dependency to be supplied; this fixture correction is not another
+product defect. Documentation and confidential-input gates pass.
+
+The built application manifest is
+`23084984c9492eae3b19a91f7299171d21661ca1eaa86eabf7c6d110ef5e35c6`;
+the signed Setup executable is
+`a519f83d1b39ccd2aff9b3d9347f8bce0f5feec46d315b6947cfa35a526f12c9`.
+r7 uses a separate instance and evidence binding. The existing private VM
+input is reused, not embedded in media. All 17 build-chain stages passed. Its
+DMG is 14,140,683,582 bytes, SHA-256
+`e323d17a99e4cdae4700f643ba064461edadff62e4240af5cddd805b4e540eea`.
+
+Transfer, read-only mount/signature, installation and instance preparation
+passed. The installed journey passed package, Docker, backend-image, Cloud
+pair/access, unattended VM access, Subject selection and Presenter checks.
+Create Controller stopped after 107.567 seconds with
+`GUEST_CONSOLE_NOT_READY_SHELL_PROMPT`. No Cloud Unit was created and no release
+was published. Normal shutdown passed in 12.246 seconds with zero owned demo
+processes/listeners; the exact partial Test and evidence were preserved.
+
+### Terminal-control prompt correction
+
+Bounded console inspection proved that the password was accepted and the real
+`root@main:~#` prompt was present. Its prefix included VT100 save-cursor `ESC 7`
+and ANSI CSI controls. The strict parser correctly rejected a boot banner
+ending in `#`, but failed to recognize this decorated authenticated prompt.
+The correction strips only CSI and save/restore-cursor controls for prompt
+matching; unknown escapes and non-root prompts remain rejected. It changes no
+Factory bytes, authentication requirement, security policy or readiness budget.
+
+A one-shot in-memory replacement of the enrollment function, invoked through
+the ordinary installed VM owner, passed first enrollment in 46.36 seconds.
+The original installed code then passed repeated start (2.15 s), normal stop
+(2.62 s), restart through pinned SSH (24.28 s) and final stop (3.36 s). Guest
+and DNS readiness were observed after each start. The package was unchanged,
+the Test identity was preserved and no Cloud Unit was created. The corrected
+function was removed from memory before the proof ended. Private evidence is
+`r7-console-fix-proof.json` in the existing qualification-record directory.
+
+The r7 journey may now continue diagnostically on this same partial Test through
+its explicit idempotent Create-resume path. This does not qualify r7 first use:
+the original failed attempt remains recorded, and a successor immutable
+candidate must pass fresh enrollment without an in-memory correction.
+
+All 93 affected access, VM and Presenter-operation regression tests pass,
+including fragmented decorated prompts, rejection of kernel-banner hashes,
+unknown escapes and non-root prompts. The documentation gate also passes.

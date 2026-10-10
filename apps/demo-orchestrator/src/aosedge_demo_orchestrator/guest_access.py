@@ -200,14 +200,19 @@ def enroll_serial(serial, access, port, deadline, password, progress=None):
             if not chunk:
                 break
             buffer = (buffer + chunk.decode("utf-8", "replace"))[-32768:]
-            if re.search(r"login: *$", buffer):
+            # Factory getty/login may decorate its prompt with CSI controls
+            # and VT100 save/restore-cursor (ESC 7/8). These bytes are not
+            # visible prompt text. Keep unknown escapes and the strict root
+            # prompt check; never accept a boot banner merely ending in '#'.
+            prompt = re.sub(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|[78])", "", buffer)
+            if re.search(r"login: *$", prompt):
                 if stage != "CONSOLE_PROMPT":
                     raise EnvironmentError("GUEST_CONSOLE_AUTHENTICATION_FAILED")
                 connection.sendall(b"root\r")
                 stage = "PASSWORD_PROMPT"
                 progress("console login received; waiting for password prompt")
                 buffer = ""
-            elif re.search(r"[Pp]assword: *$", buffer):
+            elif re.search(r"[Pp]assword: *$", prompt):
                 if sent_password:
                     raise EnvironmentError("GUEST_CONSOLE_AUTHENTICATION_FAILED")
                 connection.sendall(password.encode() + b"\r")
@@ -218,7 +223,7 @@ def enroll_serial(serial, access, port, deadline, password, progress=None):
             # Serial chunks can end at the '#' in a kernel build banner or
             # bootloader text. Only the Factory's root shell prompt permits
             # enrollment commands; a hash alone does not prove Linux login.
-            elif re.search(r"(?:^|[\r\n])root@[A-Za-z0-9_.-]+:(?:~|/)[^\r\n]*# *$", buffer):
+            elif re.search(r"(?:^|[\r\n])root@[A-Za-z0-9_.-]+:(?:~|/)[^\r\n]*# *$", prompt):
                 authenticated = True
                 break
         if not authenticated:
