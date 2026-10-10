@@ -5,6 +5,7 @@ import copy
 import importlib
 import json
 from pathlib import Path
+import signal
 import sys
 
 
@@ -63,6 +64,12 @@ def merged_state(original, selected, require, digest):
 
 
 def main(path):
+    # Unwind an adapter's separately owned compiler groups before its caller
+    # removes scratch. A default SIGTERM would orphan those child sessions.
+    def cancel(signum, frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, cancel)
+    signal.signal(signal.SIGINT, cancel)
     request = json.loads(Path(path).read_bytes())
     root = Path(request['producer'])
     sys.path.insert(0, str(root/'scripts'))

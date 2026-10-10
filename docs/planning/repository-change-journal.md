@@ -14,6 +14,36 @@ records public input activation for the one-run launcher. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Managed temporary storage
+
+The owner accepted a common temporary-directory lifecycle for the developer
+scripts and requested publication on main before the manual README walkthrough.
+Build/compiler, preparation, host/VM/application packaging and DMG staging now
+share the selected workspace's `.tmp` through the owned scratch helper. The
+standalone pre-Python launcher has a matching private bootstrap child and an
+exit/cancellation trap. Node archives moved to the reusable cache category;
+extraction is temporary. New producer selection is required to activate these
+changes without modifying historical frozen owners.
+
+| Audited category | Lifecycle |
+| --- | --- |
+| Build, packaging and future publication scratch | Private `.tmp` children; cleanup on success/error/cancellation; next-run recovery for marked dead owners with no handles |
+| Caches, source checkouts, resumable downloads and incomplete build outputs | Preserved by their existing ownership/verification contracts; never deleted as temporary data |
+| Reports and final DMG | Retained outside scratch; no automatic publication or installation |
+| Atomic metadata promotion, VM transactions, credential helpers and isolated installed-state/guest probes | Keep their existing destination/security/sandbox boundaries and cleanup; not moved into bulk build scratch |
+
+Gateway keeps its nine-byte private test suffix and 29-byte parent constraint.
+Only a long workspace needs a separate, explicitly selected shorter same-volume
+`.tmp` for socket fixtures. Runtime, Cloud, signing and manifest trust contracts
+are unchanged. The temporary publication archive directory was deleted at the
+owner's request; 14.63 GiB was reclaimed and compact private receipts retained.
+
+Validation uses small offline fixtures, including success, failure, cancellation,
+hard-crash recovery, active/unknown owners, links, changed roots and DMG error
+staging. No product build, download, signing, installation or runtime launch is
+part of this change's checks. The prior complete DMG proof below remains evidence
+for its original source revision, not a claimed full build of this revision.
+
 ### 2026 October 10 Autonomous launcher qualification
 
 The owner authorized a complete README launcher walkthrough, defect correction,

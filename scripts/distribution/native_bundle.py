@@ -12,7 +12,7 @@ import plistlib
 import re
 import shutil
 import subprocess
-import tempfile
+from build_scratch import directory
 
 
 class BundleError(ValueError):
@@ -223,7 +223,7 @@ def build(roots, allowed, output, provenance, minimum_free, maximum_input):
             edits += ['-id', '@rpath/' + path.name]
         if edits:
             command(['/usr/bin/install_name_tool', *edits, path])
-        with tempfile.TemporaryDirectory(prefix='native-sign-') as temporary:
+        with directory(output.parent) as temporary:
             arguments = ['/usr/bin/codesign', '--force', '--sign', '-']
             if rights[source]:
                 entitlement_file = Path(temporary) / 'entitlements.plist'

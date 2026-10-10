@@ -6,7 +6,6 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-import tempfile
 
 
 def generated_row(output, path, native):
@@ -58,6 +57,7 @@ def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
     sys.path.insert(0, str(root/'apps/demo-orchestrator/src'))
     import native_bundle as native
     import ui_helpers
+    from build_scratch import directory
     from aosedge_demo_orchestrator import host_runtime
 
     def require(ok, message):
@@ -80,7 +80,7 @@ def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
         print(json.dumps({'stage': 'HOST_GROUP_TRANSFERRED', 'group': group}), flush=True)
     ui_helpers.assemble(integration, gateway, ui, output/'ui')
     print(json.dumps({'stage': 'UI_ASSEMBLED'}), flush=True)
-    with tempfile.TemporaryDirectory(prefix='host-native-') as temporary:
+    with directory(output.parent) as temporary:
         staging = Path(temporary)
         old_native = retained/'native'
         rows = [{**r, 'path': name[len('native/'):]} for name, r in original_rows.items()

@@ -10,7 +10,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-import tempfile
+from build_scratch import directory
 
 from native_bundle import BundleError
 
@@ -48,7 +48,7 @@ def assemble(integration, host, vehicle, output, api, qemu_prefix, *, input_chec
         chosen = locks(integration, input_checkpoint, ('host-runtime', 'preparation-inputs'))
         # Existing validators read temporary copies of independently reviewed
         # source locks; no runtime trust/configuration path is changed.
-        with tempfile.TemporaryDirectory(prefix='vm-input-locks-') as temporary:
+        with directory(output.parent) as temporary:
             holder = Path(temporary)
             for group, raw in chosen.items():
                 (holder/group).write_bytes(raw)

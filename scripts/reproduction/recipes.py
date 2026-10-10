@@ -116,6 +116,7 @@ def paths(root, tracked, target):
     chosen.update('scripts/reproduction/'+name+'.py' for name in
                   ('core', 'sources', 'artifacts', 'cloud', 'packaging', 'recipes', *ADAPTERS[target]))
     chosen.add('scripts/validate-release-definition')
+    chosen.add('scripts/distribution/build_scratch.py')
     chosen.add('workspace/releases/release.schema.json')
     if target in ('host-runtime', 'backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
         chosen.add('scripts/reproduction/host.py')

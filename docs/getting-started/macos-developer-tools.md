@@ -81,6 +81,15 @@ publish a release automatically.
 
 ## Repeats, saved choices and diagnostics
 
+Disposable preparation, compiler and packaging files use `sdv/.tmp`; each
+operation removes its own temporary data on completion or normal cancellation.
+The next run checks abandoned marked data after a crash and removes only idle
+owned directories. Unknown contents or files still in use are preserved.
+Verified dependencies and Node archives are caches, not disposable scratch.
+Logs stay in `.developer-preparation` and build result locations; the final DMG
+is not deleted by temporary cleanup. A shorter same-volume `.tmp` is requested
+only when Gateway's socket tests cannot use the workspace's long path.
+
 Small private control files are kept in
 `~/Library/Application Support/AosEdge SDV Lab/Developer` (directory 0700,
 files 0600). Selections are data, not executed shell input. They contain paths,

@@ -176,6 +176,12 @@ and separating build data; it is not a platform requirement. Use a writable
 local APFS volume and keep the workspace, its reusable inputs and short test
 scratch directory on that volume. Docker may use a different local volume.
 
+Temporary build and packaging files stay in `sdv/.tmp` and are cleaned up
+automatically. Verified downloads/caches, source checkouts, build results and
+diagnostic reports are kept separately for reuse. A failed run does not erase
+them. Very long workspace paths may require a shorter same-volume `.tmp` for
+Gateway socket tests only; the launcher explains that exception when needed.
+
 **Use one launcher from preparation to the developer DMG.** No clone, Python
 or Homebrew is needed to start. It checks prerequisites, reuses compatible tools,
 shows the plan and asks once before preparing and building. Choose an existing

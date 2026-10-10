@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 import shutil
 import sys
-import tempfile
 
 
 def assemble(root, target, paths, output, checkpoint):
@@ -14,6 +13,7 @@ def assemble(root, target, paths, output, checkpoint):
     import application
     import candidate_inputs
     import native_bundle as native
+    from build_scratch import directory
     from ui_helpers import regular
     from aosedge_demo_orchestrator import host_runtime, preparation_inputs, vm_runtime
     if target == 'backend-inputs':
@@ -35,7 +35,7 @@ def assemble(root, target, paths, output, checkpoint):
         retained = paths['retained-vm']
         manifest = json.loads((retained/'vm-runtime-manifest.json').read_bytes())
         rows = {r['path']: r for r in manifest['files']}
-        with tempfile.TemporaryDirectory(prefix='vm-qemu-inputs-') as temporary:
+        with directory(output.parent) as temporary:
             qemu = Path(temporary)
             for original, name in [('share/qemu/efi-virtio.rom', 'share/qemu/efi-virtio.rom'),
                                    ('notices/qemu/LICENSE', 'LICENSE'), ('notices/qemu/COPYING', 'COPYING')]:
@@ -51,7 +51,7 @@ def assemble(root, target, paths, output, checkpoint):
     application.require(target == 'application', 'Unknown packaging owner')
     # The build receipt is adapter evidence, not an installed input. Only its
     # verified payload is cloned into this invocation's private staging directory.
-    with tempfile.TemporaryDirectory(prefix='application-inputs-') as temporary:
+    with directory(output.parent) as temporary:
         staged = Path(temporary)/'preparation-inputs'
         native.command(['/bin/cp', '-cR', '-p', paths['preparation'], staged])
         regular(staged, 'build-receipt.json').unlink()

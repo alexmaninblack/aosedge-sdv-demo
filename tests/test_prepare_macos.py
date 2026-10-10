@@ -175,7 +175,7 @@ run_install fixture /bin/bash -c 'echo $$ > "$1"; exec sleep 30' _ {shlex.quote(
                 process.communicate(timeout=8)
 
     def test_bad_archive_is_not_extracted(self):
-        work = self.root / '.developer-preparation/node'
+        work = self.root / 'cache/node'
         work.mkdir(parents=True)
         name = 'node-v26.0.0-darwin-arm64.tar.gz'
         (work / name).write_bytes(b'corrupt')
@@ -317,6 +317,7 @@ subprocess.run=run
         # All external probes/installers are replaced; real orchestration and
         # local state/lock/environment behavior are exercised in a disposable root.
         body = f'''uname() {{ case "$1" in -s) echo Darwin ;; -m) echo arm64 ;; esac; }}
+ask() {{ case "$1" in 'Short socket-test'*) printf '%s' {shlex.quote(str(self.root/'.tmp'))} ;; *) IFS= read -r fixture_answer; printf '%s' "$fixture_answer" ;; esac; }}
 SDV_PUBLIC_CATALOG_URL=https://drive.google.com/uc?export=download; SDV_PUBLIC_CATALOG_RECORD=fixture-public-pin
 sw_vers() {{ echo 26.6.2; }}
 inspect_volume() {{ VOLUME_UUID=fixture-uuid; VOLUME_NAME=Fixture; VOLUME_MOUNT={shlex.quote(str(self.root))}; FREE_KIB=999999999; }}
@@ -356,6 +357,7 @@ main --state-dir {shlex.quote(str(self.root/'state'))} --parent {shlex.quote(str
         env = self.root/'state/environment.sh'
         self.assertIn('incomplete', env.read_text())
         self.assertFalse((self.root/'state/active').exists())
+        self.assertFalse((self.root/'sdv/.tmp/.bootstrap').exists())
         done = self.root/'state/python-done'
         stamp = done.stat().st_mtime_ns
         for _ in range(2):
@@ -363,6 +365,7 @@ main --state-dir {shlex.quote(str(self.root/'state'))} --parent {shlex.quote(str
             self.assertIn('READY FOR SOURCE PREPARATION', result.stdout)
             self.assertEqual(done.stat().st_mtime_ns, stamp)
             self.assertFalse((self.root/'state/active').exists())
+            self.assertFalse((self.root/'sdv/.tmp/.bootstrap').exists())
             self.assertEqual(env.stat().st_mode & 0o777, 0o600)
         for shell in ('/bin/bash', '/bin/zsh'):
             result = subprocess.run([shell, '-n', str(env)], capture_output=True, text=True)

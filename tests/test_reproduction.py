@@ -1002,7 +1002,7 @@ class GatewayBuildTests(StorageFixture, unittest.TestCase):
         super().setUp()
         self.patch('reproduction.gateway.verify_sources', return_value=7)
         self.patch('reproduction.gateway.sdk_input', return_value={'manifestSha256': 'a'*64})
-        self.patch('reproduction.gateway.temporary_parent', return_value=self.storage.root)
+        self.patch('reproduction.gateway.temporary_parent', return_value=self.storage.root / '.tmp')
         self.patch('reproduction.gateway.command', return_value='fixture-tool-version')
         self.runner = self.patch('reproduction.gateway.run_command', side_effect=self.owner_step)
         source = self.storage.root / 'sources/vehicle-gateway'

@@ -61,8 +61,13 @@ and source locks are unchanged. The companion and copied README retain their
 pre-activation review snapshot; this status supersedes their access statements,
 not their unresolved review findings or draft terms.
 
-Large files and private review evidence remain outside Git. The private
-checkpoint stores the exact workspace location and preparation tools. The
+Large files and private review evidence remain outside Git. After public access
+and consumer verification, the owner authorized removing the temporary local
+publication workspace on October 10. Its duplicate archives and extracted
+payloads are deleted; compact review manifests, receipts and preparation tools
+are retained in the existing ignored local evidence area. Published files and
+their permissions are unchanged. Future preparation uses the selected
+workspace's managed `.tmp` instead of a separate directory at the volume root. The
 repository stores this sanitized status and the release boundaries. No access
 token, certificate, password value/hash, private Drive locator, Unreal source
 tree or Factory filesystem is included in the documentation.
@@ -80,8 +85,9 @@ tree or Factory filesystem is included in the documentation.
 The retained local simulator differed from the pinned archive in 1,048 file
 entries (519 different hashes, 528 different sizes and one missing file), so it
 could not stand in for the selected archive. One authenticated acquisition of
-the exact archive supplied the content check; that verified copy is cached on
-the SSD. This was not a second download to test the Drive storage provider.
+the exact archive supplied the content check; that verified copy was removed
+with the temporary publication workspace. This was not a second download to
+test the Drive storage provider.
 No simulator code was executed. The inventory contains no `Engine/Source`
 files or executables named Unreal Editor, UnrealPak or ShaderCompileWorker;
 that filename check alone does not classify statically linked Engine Tools.

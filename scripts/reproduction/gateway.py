@@ -4,7 +4,6 @@
 import json
 from pathlib import Path
 import stat
-import tempfile
 import xml.etree.ElementTree as ET
 
 from .core import ROOT, require, regular, read_json, atomic_json, digest, storage_volume, run_command, GIB
@@ -61,7 +60,7 @@ def verify_output(output, inputs):
 def temporary_parent(storage, parent):
     require(parent is not None, 'Specify --test-tmp-parent: an existing short directory on the bound volume')
     parent = Path(parent)
-    require(parent.is_dir() and storage_volume(parent)['uuid'] == storage.volume['uuid'],
+    require(parent.name == '.tmp' and parent.is_dir() and storage_volume(parent)['uuid'] == storage.volume['uuid'],
             'Gateway test temporary parent must be on the bound volume')
     # mkdtemp adds ten bytes; the unchanged owner appends its fixture/socket names.
     require(len(str(parent).encode()) <= 29, 'Gateway test temporary parent is too long for Unix sockets')
@@ -146,10 +145,11 @@ def assemble(storage, state, sdk, cmake, python, progress, test_tmp_parent=None,
         # Raw compiler outputs are not relocated packages. Select only this declared SDK for test loading.
         # The short temporary directory is the sole workspace-layout exception:
         # same verified volume, mode 0700, only this test invocation, removed on exit.
-        with tempfile.TemporaryDirectory(prefix='t', dir=tmp_parent) as test_tmp:
+        from distribution.build_scratch import directory
+        with directory(storage.root, root=tmp_parent, compact=True) as test_tmp:
             require(Path(test_tmp).stat().st_dev == storage.volume['device'], 'Test temporary directory escaped its selected volume')
             step('tests', [ctest, '--test-dir', output, '--output-on-failure', '--output-junit', output / 'ctest-results.xml'],
-                 offline=False, extra={'DYLD_LIBRARY_PATH': str(sdk / 'openssl/lib'), 'TMPDIR': test_tmp})
+                 offline=False, extra={'DYLD_LIBRARY_PATH': str(sdk / 'openssl/lib'), 'TMPDIR': str(test_tmp)})
             storage.check(reserve=0)
         count = test_result(output / 'ctest-results.xml', names)
         for name in BINARIES:

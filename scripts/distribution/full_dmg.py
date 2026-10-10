@@ -9,7 +9,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import subprocess
-import tempfile
+from build_scratch import directory
 
 from installation_inputs import Bundle, digest, parse, read_small, require, unlinked
 from installation import copy_file
@@ -105,9 +105,10 @@ def build(kit, setup, output, *, progress=lambda row: None, release_checkpoint=N
     # rely on clone sharing or make the internal disk a temporary staging area.
     needed = 2*sum(row.size for row in bundle.rows.values()) + 4*2**30
     require(shutil.disk_usage(output.parent).free >= needed, 'MEDIA_SPACE_INSUFFICIENT')
-    staging = Path(tempfile.mkdtemp(prefix='.full-media-', dir=output.parent))
-    progress(dict(stage='MEDIA_STAGING', path=str(staging)))
+    context = directory(output.parent)
+    staging = context.__enter__()
     try:
+        progress(dict(stage='MEDIA_STAGING', path=str(staging)))
         payload = copy_payload(bundle, staging/KIT, progress)
         subprocess.run(['/usr/bin/ditto', str(app), str(staging/APP)], check=True, timeout=120)
         setup_signing.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', str(staging/APP)], 'MEDIA_COPIED_SIGNATURE_INVALID')
@@ -121,11 +122,16 @@ def build(kit, setup, output, *, progress=lambda row: None, release_checkpoint=N
                        **payload, signing=signature['signing'], notarized=False,
                        runtimeStarted=False, cloudAccessed=False, operatorStateCopied=False)
         output.with_suffix('.receipt.json').write_text(json.dumps(receipt, indent=2)+'\n')
-    except BaseException:
-        progress(dict(stage='MEDIA_INCOMPLETE_PRESERVED', scratch=str(staging)))
+    except BaseException as error:
+        # Preserve a bounded failure record and any partial output, never the
+        # disposable full-size staging duplicate. The owner keeps its build log.
+        output.with_suffix('.failure.json').write_text(json.dumps(dict(
+            status='MEDIA_FAILED', errorType=type(error).__name__,
+            partialOutputPreserved=output.exists())) + '\n')
+        progress(dict(stage='MEDIA_FAILED', scratchCleanup='on-exit'))
         raise
-    # Only this invocation's complete disposable media staging is removed.
-    shutil.rmtree(staging)
+    finally:
+        context.__exit__(None, None, None)
     return receipt
 
 

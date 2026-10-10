@@ -4,9 +4,9 @@
 # Rapid Development and Debugging Policy
 
 - Status: Accepted operating policy
-- Version: 1.4
+- Version: 1.5
 - Prepared: 2026-08-30
-- Updated: 2026-10-09
+- Updated: 2026-10-10
 - Owner: Demo Solution Team with repository and integration owners
 - Applies to: implementation, integration, debugging, build, qualification,
   Cloud operations and artifact cleanup across the AosEdge SDV demo workspace
@@ -297,6 +297,34 @@ or release qualification requirements.
 ## Disk and Artifact Hygiene
 
 Disk cleanup is part of completion rather than an emergency response.
+
+### Temporary data lifecycle
+
+Accepted on 10 October 2026: new build, packaging, publication-preparation and
+diagnostic scratch uses one `.tmp` area inside the selected workspace. Do not
+create unrelated `sdv-publication.*`, test-kit or attempt directories in the
+home/volume root. Private per-operation children are allowed inside `.tmp`;
+they isolate concurrent operations and are removed on success, failure and
+normal cancellation. Use the shared build-scratch context or the pre-Python
+launcher's ownership-checked cleanup trap, not ad hoc untracked directories.
+
+Retain bounded diagnostics outside scratch before removal. Verified downloads
+and reusable compiler caches belong in cache storage; immutable final outputs,
+receipts, Git checkouts and active diagnostic/runtime state are not scratch.
+Do not delete them as part of this rule. After a hard crash, the next operation
+may remove only marked runs with an inactive owner, an obtainable lease and
+no open handles. Unknown contents, active owners, nested mounts, changed volumes
+and uncertain checks are preserved. Cleanup never falls back to another disk.
+
+The only build-path exception is Gateway's existing Unix-socket length limit:
+when the workspace path is too long, explicitly select a shorter `.tmp` on the
+same volume for these small socket fixtures. Bulk scratch stays in the workspace.
+Atomic file promotion must remain on the destination filesystem; credential
+helpers and installed-runtime sessions keep their private security boundaries.
+Guest-only temporary files stay in the guest with their existing cleanup traps.
+Do not rewrite historical receipts or frozen producer revisions during cleanup.
+
+### Existing artifact cleanup
 
 1. Inventory exact candidate paths and physical sizes; use no broad glob.
 2. Map child overlays to backing images and active QEMU/Builder processes.

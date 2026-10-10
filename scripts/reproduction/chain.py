@@ -230,7 +230,7 @@ def execute(storage, state, args, progress):
         invocation = {'storage': str(storage.root), 'producer': str(paths[plan['producers'][step['producer']]]),
             'revision': plan['producers'][step['producer']], 'repository': plan['repository'],
             'step': step, 'visible': sorted(visible), 'options': config}
-        request = storage.path('tmp/chain-'+key+'-'+step['id']+'.json')
+        request = Path(storage.environment()['TMPDIR']) / ('chain-'+key+'-'+step['id']+'.json')
         atomic_json(request, invocation)
         progress('CHAIN_STEP', step['id'])
         response = run_command([config['ui_python' if step['python']=='ui' else 'python'], '-I','-B',

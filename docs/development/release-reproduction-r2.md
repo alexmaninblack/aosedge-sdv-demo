@@ -43,7 +43,7 @@ by this release/profile/volume binding. Replace the example path below:
   --functional-profile v1 --prepare-dependencies
 ./lab build --storage /Volumes/BUILD/workspace --target gateway \
   --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk \
-  --test-tmp-parent /Volumes/BUILD/tmp --cmake /path/to/cmake
+  --test-tmp-parent /Volumes/BUILD/.tmp --cmake /path/to/cmake
 ./lab build --storage /Volumes/BUILD/workspace --target preparation \
   --kit-inputs /Volumes/BUILD/retained-kit --python /path/to/python3.12 --prepare-dependencies
 ./lab build --storage /Volumes/BUILD/workspace --target host-runtime \
@@ -142,7 +142,7 @@ download route. SDK acquisition and redistribution remain separate gates.
 The adapter enables CARLA, VISS and the owner's tests, targets ARM64/macOS 26.0,
 and records CMake, compiler, SDK and Python versions. Configure/compile steps
 deny network. Unit tests may bind local sockets; they do not start CARLA or a
-demo. An existing short directory selected by `--test-tmp-parent` must be on
+demo. An existing private `.tmp` directory selected by `--test-tmp-parent` must be on
 the same SSD and at most 29 UTF-8 bytes long. Its temporary child is private
 and removed on exit. `CARLA_CACHE_DIR` is explicit inside the workspace, so
 tests do not depend on the operator's home directory. Test loading explicitly
@@ -198,7 +198,7 @@ profiles. It requires prepared component sources and these explicit inputs:
 ./lab build --target all --storage /Volumes/BUILD/workspace \
   --kit-inputs /Volumes/BUILD/retained-kit \
   --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk \
-  --test-tmp-parent /Volumes/BUILD/tmp \
+  --test-tmp-parent /Volumes/BUILD/.tmp \
   --python /path/to/python3.12 --ui-python /usr/bin/python3 \
   --node /path/to/node --npm /path/to/npm --cmake /path/to/cmake \
   --docker /path/to/docker \

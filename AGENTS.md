@@ -96,6 +96,16 @@ boundary outside this scope or when a mandatory tool control requires it.
 
 ## Efficient build and evidence rules
 
+- All new build, packaging, publication-preparation and diagnostic scratch
+  belongs under the selected workspace's `.tmp`, not a new directory in the
+  home or volume root. Use the owned build-scratch helper/context and cleanup
+  traps; completion includes scratch removal and retained compact evidence.
+  Keep verified caches, resumable downloads, final outputs and runtime state
+  separate. Never repurpose scratch cleanup to remove them. Recover abandoned
+  marked runs only after proving their owner and open handles are gone.
+- Gateway socket fixtures may require an explicitly selected shorter `.tmp`
+  on the same volume (29-byte parent limit); this is not bulk-build storage.
+  Preserve existing transactional/credential/guest temporary-file boundaries.
 - Use the accepted warm Builder, download cache and shared-state cache. Never
   delete them as routine cleanup.
 - Put mandatory compile/unit/policy gates before image construction. Stop the

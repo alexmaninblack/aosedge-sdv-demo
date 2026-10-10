@@ -311,13 +311,30 @@ class Storage:
             except BlockingIOError as exc:
                 raise LabError('Another preparation/build is active') from exc
             self.initialize()
-            yield self.state()
+            from distribution.build_scratch import directory
+            with directory(self.root) as scratch:
+                self._scratch = scratch
+                try:
+                    yield self.state()
+                finally:
+                    del self._scratch
         finally:
             os.close(descriptor)
 
     def environment(self, create=True):
         env = {k: v for k, v in os.environ.items() if k in ('PATH', 'LANG', 'LC_ALL', 'TERM')}
-        for name, relative in [('TMPDIR', 'tmp'), ('XDG_CACHE_HOME', 'cache/tools'),
+        scratch_root = no_links(os.environ.get('SDV_SCRATCH_ROOT', self.root / '.tmp'))
+        require(scratch_root.name == '.tmp', 'Scratch must use the workspace .tmp directory')
+        existing = next(p for p in (scratch_root, *scratch_root.parents) if p.exists())
+        require(existing.stat().st_dev == self.volume['device'], 'Scratch escaped selected volume')
+        inherited = Path(os.environ.get('TMPDIR', str(scratch_root)))
+        scratch = getattr(self, '_scratch', inherited if inherited.is_relative_to(scratch_root) else scratch_root)
+        no_links(scratch)
+        if create:
+            scratch.mkdir(parents=True, exist_ok=True, mode=0o700)
+        env['TMPDIR'] = str(scratch)
+        env['SDV_SCRATCH_ROOT'] = str(scratch_root)
+        for name, relative in [('XDG_CACHE_HOME', 'cache/tools'),
                                ('npm_config_cache', 'cache/npm'), ('PIP_CACHE_DIR', 'cache/pip'),
                                ('CMAKE_BUILD_PARALLEL_LEVEL', None)]:
             if relative is None:

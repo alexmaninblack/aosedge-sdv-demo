@@ -106,7 +106,7 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
                  'shareableLogicalBytes':sum(rows[k]['bytes'] for k in shared),
                  'absentFromCachesLogicalBytes':sum(rows[k]['bytes'] for k in missing),
                  'cacheAbsenceIsNotMissingRetainedInput':True},
-        'workspace':{name:footprint(storage.path(name), check) for name in ('sources','cache','inputs','builds','tmp')},
+        'workspace':{name:footprint(storage.path(name), check) for name in ('sources','cache','inputs','builds','.tmp','tmp')},
         'ownerGuards':steps, 'largestStepGuardBytes':largest, 'fitsLargestStepGuard':free >= largest,
         'sumOfStepReservationsBytes':envelope, 'fitsSumOfStepReservations':free >= envelope,
         'reservationSumIsNotPeak':True, 'coldBuildPeakBytes':None,

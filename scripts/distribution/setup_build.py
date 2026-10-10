@@ -12,6 +12,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+from build_scratch import directory
 
 from installation_inputs import Bundle, digest, file_info, require, unlinked
 from setup_bridge import release, supported_platform
@@ -116,12 +117,14 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     info = bundle_info(executable.name)
     (contents / 'Info.plist').write_bytes(plistlib.dumps(info))
     env = build_environment()
-    with tempfile.TemporaryDirectory(prefix='sdv-setup-compile.') as scratch:
+    with directory(output.parent) as scratch:
+        env['TMPDIR'] = str(scratch)
         command = ['/usr/bin/sandbox-exec', '-p', '(version 1)(allow default)(deny network*)',
                    '/usr/bin/xcrun', 'swiftc', '-O', '-target', 'arm64-apple-macos26.0',
                    '-module-cache-path', str(Path(scratch) / 'cache'), str(HERE / 'native/Setup.swift'),
                    '-o', str(executable), '-framework', 'AppKit']
         subprocess.run(command, check=True, env=env, timeout=180)
+    env = build_environment()
     subprocess.run([str(executable), '--self-test'], check=True, env=env, timeout=30)
     signing = setup_signing.sign(app, signer, hardened=hardened_runtime or distribution,
                                  distribution=distribution)

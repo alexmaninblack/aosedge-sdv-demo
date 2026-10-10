@@ -4,6 +4,8 @@
 import json
 from pathlib import Path
 import plistlib
+import shutil
+import subprocess
 import sys
 import unittest
 from unittest.mock import patch
@@ -62,3 +64,31 @@ class CompleteMediaTests(unittest.TestCase):
         self.assertIn('separately installed', media.GUIDE)
         self.assertIn('persistent Applications launcher', media.GUIDE)
         self.assertIn('not a notarized public release', media.GUIDE)
+
+    def test_media_success_and_error_clean_staging_without_touching_inputs(self):
+        for fail in (False, True):
+            output = self.f.root / ('failed.dmg' if fail else 'complete.dmg')
+            stages = []
+            def fake_command(command, **kwargs):
+                if 'create' in command:
+                    output.write_bytes(b'partial' if fail else b'complete')
+                    if fail:
+                        raise subprocess.CalledProcessError(1, command)
+                return subprocess.CompletedProcess(command, 0)
+            with patch.object(media, 'release', return_value={'manifestSha256': self.f.pin}), \
+                 patch.object(media, 'setup_pin', return_value=(self.setup, {'signing': 'fixture'})), \
+                 patch.object(media, 'copy_file', side_effect=shutil.copy2), \
+                 patch.object(media.setup_signing, 'run'), \
+                 patch.object(media.subprocess, 'run', side_effect=fake_command), \
+                 patch.object(media.shutil, 'disk_usage', return_value=type('Usage', (), {'free': 100*2**30})()):
+                if fail:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        media.build(self.f.source, self.setup, output, progress=stages.append)
+                    self.assertEqual(json.loads(output.with_suffix('.failure.json').read_text())['status'], 'MEDIA_FAILED')
+                else:
+                    self.assertEqual(media.build(self.f.source, self.setup, output, progress=stages.append)['status'],
+                                     'COMPLETE_MEDIA_BUILT_NOT_INSTALLED')
+            staging = Path(next(s['path'] for s in stages if s['stage'] == 'MEDIA_STAGING'))
+            self.assertFalse(staging.exists())
+            self.assertTrue(output.exists())
+            fixtures.Bundle(self.f.source, self.f.pin).verify()

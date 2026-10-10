@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 import re
 import stat
-import tempfile
 
 from .core import ROOT, require, regular, read_json, atomic_json, digest, storage_volume, run_command, GIB
 from .cloud import matches, relative as safe_relative
@@ -252,7 +251,8 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
         output.parent.mkdir(parents=True, exist_ok=True)
         atomic_json(marker, inputs)
         progress('BUILD_STARTED', 'preparation')
-        with tempfile.TemporaryDirectory(prefix='preparation-', dir=storage.path('tmp')) as temporary:
+        from distribution.build_scratch import directory
+        with directory(storage.root) as temporary:
             scratch = Path(temporary)
             stage_inputs(storage, scratch, source, rows, factory, chosen)
             if source_selection:

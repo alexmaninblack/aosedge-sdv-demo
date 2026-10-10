@@ -4,7 +4,7 @@
 # Standalone before Git/Python/Homebrew. Compatible with Apple's Bash 3.2.
 # Sourceable by offline fixtures; execution always goes through main().
 
-SDV_PREP_VERSION=4
+SDV_PREP_VERSION=5
 SDV_CATALOG_RECORD=c4c5639edc09ddc363784b8fcf3c97fb5b5ff99b4815e8421bb2858b657d0da5
 SDV_PUBLIC_CATALOG_URL='https://drive.google.com/uc?id=11euQ35OM6BpmLHCT5ognHyukoi9lNq1v&export=download'
 SDV_PUBLIC_CATALOG_RECORD=74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450
@@ -194,11 +194,13 @@ choose_storage() {
   fi
   check_capacity
   SDV_ROOT="$SDV_PARENT/sdv"
-  SDV_TMP="$VOLUME_MOUNT/tmp"
-  [ "$VOLUME_MOUNT" != /System/Volumes/Data ] || SDV_TMP=/private/tmp/sdv
-  if [ "$saved" = "$SDV_PARENT" ] && [ -n "$(state_get SDV_TMP)" ]; then SDV_TMP=$(state_get SDV_TMP); fi
+  SDV_TMP="$SDV_ROOT/.tmp"
   if [ "$(printf %s "$SDV_TMP" | wc -c | tr -d ' ')" -gt 29 ]; then
-    SDV_TMP=$(ask 'Short scratch path on the SAME volume (maximum 29 UTF-8 bytes)' '')
+    # Only socket tests need this exception. Compiler and archive scratch
+    # always remain under SDV_ROOT/.tmp, regardless of the socket selection.
+    SDV_TMP=$(state_get SDV_TMP)
+    case "$SDV_TMP" in */.tmp) ;; *) SDV_TMP= ;; esac
+    [ -n "$SDV_TMP" ] || SDV_TMP=$(ask 'Short socket-test path ending in /.tmp on the SAME volume (maximum 29 UTF-8 bytes)' '')
   fi
   safe_path "$SDV_ROOT" && safe_path "$SDV_TMP" || die 'Workspace/scratch must be absolute paths without links or traversal.'
   for path in "$SDV_ROOT/tools" "$SDV_ROOT/cache" "$SDV_ROOT/.developer-preparation"; do
@@ -206,7 +208,10 @@ choose_storage() {
   done
   [ ! -d "$SDV_ROOT" ] || [ "$(stat -f %u "$SDV_ROOT")" = "$(id -u)" ] || die 'Existing workspace belongs to another user.'
   [ "$(printf %s "$SDV_TMP" | wc -c | tr -d ' ')" -le 29 ] || die 'Scratch path is longer than 29 UTF-8 bytes.'
-  [ -d "$(dirname "$SDV_TMP")" ] && [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$(dirname "$SDV_TMP")")" ] || die 'Scratch parent must already exist on the selected volume.'
+  if [ "$SDV_TMP" != "$SDV_ROOT/.tmp" ]; then
+    case "$SDV_TMP" in */.tmp) ;; *) die 'Socket scratch must end in /.tmp.' ;; esac
+    [ -d "$(dirname "$SDV_TMP")" ] && [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$(dirname "$SDV_TMP")")" ] || die 'Socket scratch parent must already exist on the selected volume.'
+  fi
   say "Selected: $SDV_PARENT"
   awk -v k="$FREE_KIB" 'BEGIN {printf "Available: %.1f GiB (full build capacity is checked after cloning)\n",k/1048576}'
 }
@@ -300,20 +305,69 @@ setup_state() {
   save_choices
   recheck_storage
   [ -d "$SDV_ROOT" ] || mkdir -m 700 "$SDV_ROOT" || die 'Cannot create workspace.'
-  owned_dir "$SDV_TMP"
+  setup_scratch
   mkdir -p "$SDV_ROOT/tools" "$SDV_ROOT/cache" || die 'Cannot create workspace directories.'
   owned_dir "$SDV_ROOT/.developer-preparation"
   LOG=$(mktemp "$SDV_ROOT/.developer-preparation/run.XXXXXX") || die 'Cannot create diagnostic log.'
-  export TMPDIR="$SDV_TMP" HOMEBREW_TEMP="$SDV_TMP"
+  export TMPDIR="$SDV_BOOTSTRAP_TMP" HOMEBREW_TEMP="$SDV_BOOTSTRAP_TMP"
   export HOMEBREW_CACHE="$SDV_ROOT/cache/homebrew" PIP_CACHE_DIR="$SDV_ROOT/cache/pip" npm_config_cache="$SDV_ROOT/cache/npm"
   export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_UPGRADE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ANALYTICS=1
 }
 cleanup() {
+  local result=$?
   stop_child
+  finish_scratch || result=1
   if [ "${LOCKED:-no}" = yes ]; then
     [ ! -f "$STATE/active/pid" ] || rm "$STATE/active/pid"
     rmdir "$STATE/active" 2>/dev/null
   fi
+  trap - EXIT
+  exit "$result"
+}
+scratch_root() {
+  local path=$1
+  safe_path "$path" || die 'Unsafe scratch path.'
+  [ -d "$path" ] || mkdir -m 700 "$path" || die 'Cannot create workspace scratch.'
+  [ "$(stat -f %u "$path")" = "$(id -u)" ] && [ "$(stat -f %Lp "$path")" = 700 ] || die 'Scratch ownership or mode differs; preserved.'
+  if [ ! -e "$path/.owner" ]; then
+    [ -z "$(ls -A "$path")" ] || die 'Unowned scratch contents; preserved.'
+    printf '%s\n' aosedge-build-scratch-v1 > "$path/.owner"
+  fi
+  private_file "$path/.owner" && [ "$(<"$path/.owner")" = aosedge-build-scratch-v1 ] || die 'Unknown scratch marker; preserved.'
+}
+bootstrap_idle() {
+  # lsof returns 1 with empty output for a directory with no open handles.
+  local output code
+  output=$(/usr/sbin/lsof -t +D "$1" 2>&1); code=$?
+  [ "$code" = 1 ] && [ -z "$output" ]
+}
+setup_scratch() {
+  local previous
+  export SDV_SCRATCH_ROOT="$SDV_ROOT/.tmp"
+  scratch_root "$SDV_SCRATCH_ROOT"
+  [ "$SDV_TMP" = "$SDV_SCRATCH_ROOT" ] || scratch_root "$SDV_TMP"
+  SDV_BOOTSTRAP_TMP="$SDV_SCRATCH_ROOT/.bootstrap"
+  if [ -e "$SDV_BOOTSTRAP_TMP" ]; then
+    safe_path "$SDV_BOOTSTRAP_TMP" && private_file "$SDV_BOOTSTRAP_TMP/.pid" || die 'Unknown bootstrap scratch; preserved.'
+    previous=$(<"$SDV_BOOTSTRAP_TMP/.pid")
+    printf '%s\n' "$previous" | grep -Eq '^[1-9][0-9]*$' || die 'Invalid scratch owner; preserved.'
+    kill -0 "$previous" 2>/dev/null && die 'Bootstrap scratch owner is still active.'
+    bootstrap_idle "$SDV_BOOTSTRAP_TMP" || die 'Interrupted scratch is still in use or cannot be checked; preserved.'
+    rm -rf -- "$SDV_BOOTSTRAP_TMP" || die 'Cannot remove interrupted bootstrap scratch.'
+  fi
+  mkdir -m 700 "$SDV_BOOTSTRAP_TMP" || die 'Cannot create bootstrap scratch.'
+  printf '%s\n' "$$" > "$SDV_BOOTSTRAP_TMP/.pid"
+  SCRATCH_OWNED=yes
+}
+finish_scratch() {
+  [ "${SCRATCH_OWNED:-no}" = yes ] || return 0
+  # No reconstruction or deletion at a stale mount path after disk removal.
+  inspect_volume "$SDV_PARENT"
+  [ "$VOLUME_UUID" = "$SELECTED_UUID" ] && [ "$SDV_BOOTSTRAP_TMP" = "$SDV_ROOT/.tmp/.bootstrap" ] && safe_path "$SDV_BOOTSTRAP_TMP" &&
+    private_file "$SDV_BOOTSTRAP_TMP/.pid" && [ "$(<"$SDV_BOOTSTRAP_TMP/.pid")" = "$$" ] || return 1
+  bootstrap_idle "$SDV_BOOTSTRAP_TMP" || { say 'Scratch still in use; preserved for reconciliation.' >&2; return 1; }
+  rm -rf -- "$SDV_BOOTSTRAP_TMP" || return 1
+  SCRATCH_OWNED=no
 }
 stop_child() {
   if [ -n "${CHILD_PID:-}" ]; then
@@ -401,9 +455,9 @@ prepare_python_cmake() {
   say '[3/6] CMake / Python ready'
 }
 prepare_node() {
-  local base="$SDV_ROOT/tools/node-v$SDV_NODE_VERSION-darwin-arm64" work archive actual expected
+  local base="$SDV_ROOT/tools/node-v$SDV_NODE_VERSION-darwin-arm64" work unpacked archive actual expected
   if [ -z "$SDV_NODE" ]; then
-    work="$SDV_ROOT/.developer-preparation/node"
+    work="$SDV_ROOT/cache/node"
     owned_dir "$work"
     archive="node-v$SDV_NODE_VERSION-darwin-arm64.tar.gz"
     [ -f "$work/SHASUMS256.txt" ] || run_install 'Download Node checksums' download "https://nodejs.org/dist/v$SDV_NODE_VERSION/SHASUMS256.txt" "$work/SHASUMS256.txt"
@@ -413,12 +467,13 @@ prepare_node() {
     actual=$(shasum -a 256 "$work/$archive" | awk '{print $1}')
     [ "$actual" = "$expected" ] || die 'Node archive checksum mismatch. The archive is preserved, not executed.'
     if [ ! -e "$base" ]; then
-      owned_dir "$work/unpacked"
-      run_install 'Unpack verified Node' extract_node "$work/$archive" "$work/unpacked"
-      printf '%s\n' aosedge-developer-preparation-v1 > "$work/unpacked/node-v$SDV_NODE_VERSION-darwin-arm64/.aosedge-preparation"
-      mv "$work/unpacked/node-v$SDV_NODE_VERSION-darwin-arm64" "$base" || die 'Cannot place Node tools.'
-      rm "$work/unpacked/.aosedge-preparation"
-      rmdir "$work/unpacked" || die 'Unexpected archive contents preserved.'
+      unpacked="$SDV_BOOTSTRAP_TMP/node"
+      owned_dir "$unpacked"
+      run_install 'Unpack verified Node' extract_node "$work/$archive" "$unpacked"
+      printf '%s\n' aosedge-developer-preparation-v1 > "$unpacked/node-v$SDV_NODE_VERSION-darwin-arm64/.aosedge-preparation"
+      mv "$unpacked/node-v$SDV_NODE_VERSION-darwin-arm64" "$base" || die 'Cannot place Node tools.'
+      rm "$unpacked/.aosedge-preparation"
+      rmdir "$unpacked" || die 'Unexpected archive contents preserved.'
     fi
     node_ok "$base/bin/node" || die 'Existing project Node is incompatible or incomplete; preserved.'
     if ! npm_ok "$base/bin/node" "$base/bin/npm"; then
@@ -922,7 +977,7 @@ write_environment() {
   tmp=$(mktemp "$STATE/environment.XXXXXX") || die 'Cannot write environment handoff.'
   {
     say '# Generated by AosEdge developer preparation. No credentials are stored here.'
-    say 'unset SDV_PARENT SDV_ROOT SDV_TMP SDV_PYTHON SDV_CMAKE SDV_NODE SDV_NPM SDV_DOCKER SDV_GCLOUD SDV_DRIVE_ACCOUNT SDV_BUILD_BINDING SDV_SIM_BINDING SDV_PREPARED_SOURCE SDV_SIGNING_IDENTITY'
+    say 'unset SDV_PARENT SDV_ROOT SDV_TMP SDV_SCRATCH_ROOT SDV_PYTHON SDV_CMAKE SDV_NODE SDV_NPM SDV_DOCKER SDV_GCLOUD SDV_DRIVE_ACCOUNT SDV_BUILD_BINDING SDV_SIM_BINDING SDV_PREPARED_SOURCE SDV_SIGNING_IDENTITY'
     if [ "$ready" != yes ]; then
       say "printf '%s\n' 'STOP: Developer preparation is incomplete. Rerun the preparation script.' >&2"
       say 'return 1'
@@ -936,7 +991,9 @@ write_environment() {
       for key in SDV_ROOT SDV_TMP SDV_PYTHON SDV_CMAKE SDV_NODE SDV_NPM SDV_DOCKER SDV_GCLOUD SDV_DRIVE_ACCOUNT SDV_BUILD_BINDING SDV_SIM_BINDING SDV_PREPARED_SOURCE SDV_SIGNING_IDENTITY DEVELOPER_DIR; do
         printf 'export %s=%q\n' "$key" "${!key}"
       done
-      printf 'export TMPDIR=%q HOMEBREW_TEMP=%q\n' "$SDV_TMP" "$SDV_TMP"
+      printf 'export SDV_SCRATCH_ROOT=%q\n' "$SDV_ROOT/.tmp"
+      # Persistent handoff never names the deleted bootstrap session.
+      printf 'export TMPDIR=%q HOMEBREW_TEMP=%q\n' "$SDV_ROOT/.tmp" "$SDV_ROOT/.tmp"
       printf 'export HOMEBREW_CACHE=%q PIP_CACHE_DIR=%q npm_config_cache=%q\n' "$SDV_ROOT/cache/homebrew" "$SDV_ROOT/cache/pip" "$SDV_ROOT/cache/npm"
       printf 'export PATH=%q:"$PATH"\n' "$(dirname "$SDV_PYTHON"):$(dirname "$SDV_NODE"):/opt/homebrew/bin"
       say 'unset SDV_EXPECTED_VOLUME SDV_CURRENT_DEVICE SDV_CURRENT_VOLUME'

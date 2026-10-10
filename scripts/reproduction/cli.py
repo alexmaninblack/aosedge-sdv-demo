@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 import shutil
 import sys
+from distribution.build_scratch import ScratchError
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
 from .artifacts import Drive, binding_entry, download, cached
@@ -204,8 +205,8 @@ def main(argv=None):
     except KeyboardInterrupt:
         emit({'status': 'INTERRUPTED', 'reason': 'Partial work retained; inspect status before resuming'})
         return 130
-    except (LabError, OSError, ValueError, KeyError, TypeError, http.client.HTTPException) as exc:
-        emit({'status': 'BLOCKED', 'reason': str(exc) if isinstance(exc, LabError) else 'Invalid or unavailable local input; no implicit repair'})
+    except (LabError, ScratchError, OSError, ValueError, KeyError, TypeError, http.client.HTTPException) as exc:
+        emit({'status': 'BLOCKED', 'reason': str(exc) if isinstance(exc, (LabError, ScratchError)) else 'Invalid or unavailable local input; no implicit repair'})
         return 1
 
 if __name__ == '__main__':

@@ -510,6 +510,25 @@ use the explicit workspace. Retained inputs, clone donors, Gateway scratch and
 the selected Factory Builder stay on its bound volume; same-volume clone
 restrictions are not relaxed. Factory keeps its independent guest-space guard.
 
+The October 10 temporary-storage amendment places disposable build/compiler,
+packaging and media staging under the selected workspace's `.tmp`. The launcher
+binds `SDV_SCRATCH_ROOT` to that directory. Direct build commands without the
+launcher use their explicit workspace/output parent's `.tmp` on the same volume.
+Each operation owns a private marked child and a lease. Successful, failed and
+normally cancelled operations remove their disposable child; reports, verified
+caches, resumable downloads, source trees and partial/final build outputs remain
+outside it. DMG failure retains a bounded failure record and any partial DMG,
+not a second full-size staging copy. Partial outputs are not promoted or retried
+automatically.
+
+The next invocation checks crash leftovers. Only a valid private marked run
+with a dead owner, obtainable lease and no open handles can be removed. Foreign
+or busy data and changed/missing volumes are preserved, never silently adopted.
+The pre-Python launcher uses a private bootstrap child with a PID and its existing
+exclusive preparation lock. Node archives are reusable cache entries; Node
+extraction is disposable bootstrap scratch. Atomic metadata writes and security-
+sensitive runtime/guest temporary files retain their existing boundaries.
+
 Docker is the declared exception: its already-running local Desktop Engine may
 use another internal or external APFS volume. Verify the configured disk, actual
 open backing file and local socket without creating containers or moving data.
@@ -616,9 +635,12 @@ Gateway uses the pinned CMake recipe and an explicit external SDK bound by
 This is a declared prebuilt LibCarla/OpenSSL input, not full-source closure or
 redistribution approval. Compile steps deny network. The unchanged owner's
 socket tests need a short temporary directory; `--test-tmp-parent` must select
-an existing directory on the same verified volume, with a path no longer than
+an existing `.tmp` directory on the same verified volume, with a path no longer than
 29 UTF-8 bytes. Only the invocation's private child directory is removed after
-testing. CARLA's test cache is explicitly inside the workspace. An inspected
+testing. The shared scratch owner keeps the original nine-byte socket child
+suffix, allowing the launcher's ordinary workspace `.tmp` when it fits. A
+longer workspace needs an explicitly selected shorter socket-only `.tmp`; this
+does not move compiler or media scratch. CARLA's test cache is explicitly inside the workspace. An inspected
 incomplete Gateway build may resume only with `--resume` and matching inputs;
 the first stage logs are retained. Raw outputs still require native packaging
 and library relocation before they can be treated as portable runtime files.
