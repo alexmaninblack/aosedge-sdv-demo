@@ -22,13 +22,16 @@ def check_scope(environment, factory_sha):
     if not runtime_paths.installed(root):
         raise EnvironmentError('QUALIFICATION_ACCESS_INSTALLED_TEST_REQUIRED')
     config = load_configuration(root)
-    if ((config.get('cloudConnection') or {}).get('domain') != DOMAIN
-            or config.get('vehicles', {}).get('test', {}).get('cloudHost') != DOMAIN):
+    # Before Create there is no vehicle binding: load_configuration still
+    # exposes legacy vehicle defaults. The selected Cloud connection owns
+    # first-use scope; a manufactured Test additionally requires its journal.
+    if (config.get('cloudConnection') or {}).get('domain') != DOMAIN:
         raise EnvironmentError('QUALIFICATION_ACCESS_STAGING_REQUIRED')
     if (root / JOURNAL).exists():
         state = read_json(root / JOURNAL)
         if (set(state.get('vehicles', {})) != {'test'}
                 or state.get('selectedCloudDomain') != DOMAIN
+                or (config.get('vehicles', {}).get('test') or {}).get('cloudHost') != DOMAIN
                 or factory_for(state, 'test').get('sha256') != factory_sha):
             raise EnvironmentError('QUALIFICATION_ACCESS_TEST_FACTORY_MISMATCH')
 

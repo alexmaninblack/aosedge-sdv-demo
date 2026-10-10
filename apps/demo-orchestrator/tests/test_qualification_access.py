@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 from aosedge_demo_orchestrator import qualification_access as q
 from aosedge_demo_orchestrator.environment import JOURNAL, EnvironmentError
 from aosedge_demo_orchestrator.native_access import NativeVMAccess
+from aosedge_demo_orchestrator.status import load_configuration as actual_configuration
 
 
 class QualificationAccessTests(unittest.TestCase):
@@ -50,6 +51,33 @@ class QualificationAccessTests(unittest.TestCase):
         self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
         self.assertEqual(q.password(self.env, 'test', self.pin), 'fixture-only')
         self.assertFalse((self.root/JOURNAL).exists())
+
+    def test_real_fresh_configuration_uses_selected_domain_not_legacy_vehicle_defaults(self):
+        config = self.root/'.local/demo-control/status.json'
+        config.write_text(json.dumps(dict(schemaVersion=1, cloudProfiles={},
+            cloudConnection=dict(domain=q.DOMAIN, source='OEM_CERTIFICATE_ORGANIZATION'))))
+        source = self.root/'fixture.json'
+        source.write_text(json.dumps(dict(password='fixture-only'))); source.chmod(0o600)
+        with patch('aosedge_demo_orchestrator.status.load_configuration', side_effect=actual_configuration), \
+             patch.object(q.runtime_paths, 'input_root', return_value=self.root/'inputs'):
+            self.assertEqual(actual_configuration(self.root)['vehicles']['test']['cloudHost'], 'aoscloud.io')
+            for _ in range(2):
+                self.assertTrue(q.prepare(self.env, 'factory', source)['available'])
+                self.assertTrue(q.preflight(self.env, 'factory')['available'])
+            config.write_text(json.dumps(dict(schemaVersion=1, cloudProfiles={},
+                cloudConnection=dict(domain='aoscloud.io', source='OEM_CERTIFICATE_ORGANIZATION'))))
+            with self.assertRaisesRegex(EnvironmentError, 'STAGING_REQUIRED'):
+                q.preflight(self.env, 'factory')
+
+    def test_existing_journal_still_requires_staging_vehicle_binding(self):
+        self.save()
+        journal = self.root/JOURNAL; journal.parent.mkdir(parents=True); journal.write_text('{}')
+        state = dict(vehicles=dict(test={}), selectedCloudDomain=q.DOMAIN)
+        with patch('aosedge_demo_orchestrator.status.read_json', return_value=state), \
+             patch('aosedge_demo_orchestrator.status.load_configuration', return_value=dict(
+                cloudConnection=dict(domain=q.DOMAIN), vehicles=dict(test=None))):
+            with self.assertRaisesRegex(EnvironmentError, 'TEST_FACTORY_MISMATCH'):
+                q.preflight(self.env, 'factory')
 
     def test_production_wrong_factory_and_foreign_instance_rejected(self):
         self.save()

@@ -8,8 +8,10 @@ defect after successful M1 installation and VM password enrollment. The defect
 is corrected in source; rebuilt r5 media has now passed a separate fresh M1
 installation and backend-image preparation. Its live staging journey exposed
 a separate serial-console prompt defect and is **not complete**. The prompt
-correction is source-only; the installed r5 media remains unchanged. Earlier Kit028 results do not qualify either
-candidate. Candidate identities and recovery evidence are separated below.
+correction is included in r6. Its automated installation passed but exposed a
+first-use qualification-access scope defect before VM creation. Earlier Kit028
+results do not qualify these candidates. Candidate identities and recovery
+evidence are separated below.
 
 ## Candidate and target
 
@@ -271,13 +273,59 @@ import path. Neither harness restriction was treated as a product defect.
 Confidential-input and documentation gates pass.
 
 A bounded, non-interactive read through the existing M1 native Keychain owner
-reports no saved password for the retained r5 instance. No password was printed,
-exported or requested in a dialog. The qualification profile therefore remains
-unconfigured pending the one-time test value or its explicit private-file
-reference. This is not another request for staging/test authorization.
+reported no saved password for the retained r5 instance. No password was printed,
+exported or requested in a dialog. The operator subsequently supplied the test
+value explicitly. It was delivered over pinned SSH to a single-link, owner-private
+input file on M1, outside the package, Git and evidence. The new installed
+instance will consume that input through its explicit qualification profile.
 
-These are source/fixture results only. No new DMG has been built or installed;
-r5 is unchanged, no live journey was restarted, and the earlier Keychain save
-failure is not claimed fixed. The new access path avoids that dependency only
-for explicitly configured engineering runs. Native input and full E2E remain
-open.
+The earlier Keychain save failure is not claimed fixed. The new access path
+avoids that dependency only for explicitly configured engineering runs. Native
+input and full E2E remain open until separately observed.
+
+## Incremental r6 campaign
+
+The qualification-only r6 build plan selects application and media producer
+`44e0bd1c43479d626d7c7fdcbf0f625fa09635ca`, including the console prompt fix and
+explicit Test access provider. All other producer pins remain those of r5;
+Factory and CARLA are reused unchanged. The public launcher default is not
+promoted by this test build.
+
+Preflight confirms the pinned M1, internal storage with approximately 236 GiB
+free, staging HTTP availability, and zero demo processes/listeners. The old r5
+media was normally detached after checking open handles. Its stopped,
+unprovisioned partial Test is preserved; r6 uses a separate installed instance
+and evidence binding. The 72 runner/campaign fixture tests pass again.
+
+All 17 incremental build-chain stages completed on the build SSD. The resulting
+DMG is 14,150,490,992 bytes with SHA-256
+`3ad1cc8d9bdf762e311c1094bbb425fa11c1920e42df7a91ea7773d0eda9bf13`.
+The kit manifest is
+`aea7d6e053127be87352218fd2e73c9f1fc15645055b4d23f7bd18cef6ad4d25`;
+the signed Setup executable is
+`7225f7d8e0cef1191b13033624ebffe517ecb08bae6fad53eeb3ef9743cae0d2`.
+The signature remains local Apple Development, not notarized distribution.
+
+The unified campaign ran with separate
+`m1-e2e-r6-20261010-journey` and `m1-e2e-r6-20261010-journey-installation`
+records. Transfer/checksum, readonly mount/signature, installation, instance
+selection, installed-candidate verification, Docker reuse, backend-image
+preparation, credential selection and staging access all passed. VM access
+stopped with `QUALIFICATION_ACCESS_STAGING_REQUIRED` before profile creation or
+Create Controller. Normal shutdown passed in 9.777 seconds, with zero owned
+demo processes/listeners and shared Docker preserved. No Cloud Unit, VM or
+publication was created by r6.
+
+The defect is in the qualification provider's pre-Create scope check, not
+Cloud authentication. Before a vehicle journal exists, the status loader
+retains legacy `aoscloud.io` vehicle defaults even after the selected connection
+is staging. The provider incorrectly required that nonexistent vehicle binding
+already to be staging. The correction uses the selected connection before
+Create and still requires the exact Test-only journal, Factory and staging
+vehicle binding after creation. A read-only, in-memory probe of the correction
+passed against the real r6 M1 configuration without reading the password,
+changing state or modifying the installed package. A regression test now uses
+the actual configuration loader rather than a synthetic normalized response.
+
+r6 is not E2E-qualified. Its original attempt records are retained unchanged;
+the corrected code requires a successor candidate and new live evidence.
