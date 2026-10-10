@@ -248,13 +248,11 @@ not an immutable qualified release tag. See
 
 ### B3. Automatic checks before downloading inputs
 
-**Source and release boundary:** current storage-aware scripts and their joint
-walkthrough do not upgrade the historical build plan. That plan still uses
-older, external-only build owners and requires Docker on that same external
-volume. A reviewed successor must adopt new owners before the complete internal
-or split-Docker route can be qualified. Do not edit historical pins or relocate
-shared Docker to bypass this boundary. Compatibility is checked separately
-from available space; a disconnected disk must never trigger a fallback.
+The launcher selects reviewed, storage-aware build owners and checks their
+compatibility with your chosen workspace and Docker locations. Docker can stay
+on its existing local disk; the launcher does not move or restart it. Historical
+release plans remain unchanged. Compatibility is checked separately from
+available space; a disconnected disk must never trigger a fallback.
 
 Budget for source checkouts, downloads, unpacked inputs, caches, temporary files,
 outputs and reserves on each actual disk, including Docker and, for route C,
@@ -283,6 +281,11 @@ The launcher continues without another command:
 5. Print `BUILD COMPLETE` / `CHAIN_BUILT_NOT_QUALIFIED` and the exact DMG and
    build-receipt paths. Installation through route A is a separate action with
    the result's **own** matching descriptor.
+
+The DMG stays on your selected build disk. The script does not upload it to
+Google Drive or create a public release; publication is a separate release-owner
+action. Google Drive supplies the verified build inputs, not an automatic
+destination for each developer's output.
 
 If interrupted, rerun the same downloaded launcher. Existing owners verify and
 reuse completed work; progress flags alone never skip integrity checks.

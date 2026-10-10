@@ -695,7 +695,7 @@ release. Schema-1 plans and ordinary source-reviewed checkpoint arguments retain
 their existing behavior. Historical pins and frozen producer sources are not
 rewritten. Repeats verify and reuse exact results without acquiring inputs again.
 
-`build --target all` invokes the 17 developer steps from the source-reviewed
+The historical schema-1 `build --target all` route invokes 17 developer steps from the source-reviewed
 [ordered producer plan](../../workspace/releases/1.2.0-rc.1-build-chain.json).
 This plan extends the accepted separate build-tools roles: it binds the base
 definition, exact integration-repository commits and dependency order. It does
@@ -717,6 +717,10 @@ change source, artifact or storage bindings. Repeats run owner verification and
 reuse unchanged results. A failure preserves completed work and compact logs;
 an unverified partial native output still requires the owner's inspection and
 resume procedure. No automatic retry or pin adoption is introduced.
+
+The public launcher selects the schema-2 successor plan described above instead
+of the historical output-pin route. Both routes keep the same owner ordering,
+source isolation, result verification and failure preservation rules.
 
 The complete chain requires explicit retained kit/SDK inputs on the bound volume,
 declared build tools, a short same-volume test directory and an authorized signing

@@ -61,8 +61,10 @@ the complete build. The same conservative free-space floor is checked at
 Applications/Homebrew locations before installing host packages; an external
 workspace does not provide space for those host tools. After cloning, the launcher calls the existing build-space planner to
 check workspace and Docker capacity and compatibility with exact build owners.
-The frozen candidate retains its older external-only producer policy;
-preparation does not rewrite source pins or make that policy disappear.
+The public launcher selects the reviewed storage-aware successor owners;
+historical candidate plans retain their original policy and source pins.
+Project and Docker storage may be separate local volumes. Neither preparation
+nor the build moves shared Docker data or restarts its Engine.
 
 `PREPARATION INCOMPLETE` or `ACTION REQUIRED` means resolve the listed action
 and rerun the same downloaded script. Default mode continues by cloning the
@@ -74,6 +76,8 @@ Use `--prepare-only` to stop at the original preparation boundary. `--check`
 remains non-mutating and never enters checkout/acquisition/build. The complete
 route ends with `BUILD COMPLETE` and the exact DMG/receipt paths, explicitly
 labelled as an engineering candidate, not a qualified release.
+The result stays on the selected disk; the launcher does not upload it or
+publish a release automatically.
 
 ## Repeats, saved choices and diagnostics
 

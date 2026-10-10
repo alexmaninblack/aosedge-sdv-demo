@@ -80,10 +80,39 @@ The real backend packaging probe passed with the verified export and its typed
 seal. All 249 reproduction tests, 22 workflow tests, seven historical checkpoint
 tests and fifteen application validation tests passed. The public `r3` plan
 selects the new packaging/media owner while retaining the twelve previously
-verified component/preparation/host steps. The DMG,
-complete E2E success and final cleanup are still pending. Preserve this test's
-verified SSD inputs/results for continuation instead of downloading/rebuilding
-them again. Shared Docker and unrelated workloads are not test-owned.
+verified component/preparation/host steps.
+
+The public launcher at `2cadb8d7945cc1e5d43883cd031960788fb37f13`
+completed all seventeen stages, producing a 14,150,568,962-byte DMG containing
+17,697 manifested files. The real Setup compiled, passed its self-test and
+embedded-interpreter probe, and passed strict Apple Development signature
+verification. Image creation and `hdiutil verify` passed. The embedded group
+locks match the actual application, and its consumer rejected a modified
+application-manifest copy. No runtime was launched, installed or published.
+
+A second invocation of the same downloaded launcher completed with the same
+chain, all seventeen owners reporting `BUILD_REUSED`. The seventeen result
+keys and twenty-one sampled artifact/receipt modification records were
+unchanged. All five downloaded archives retained their initial timestamps.
+Final regression results: 250 reproduction tests, 22 workflow tests and 318
+distribution tests passed (one opt-in installed-process test was skipped).
+The prepared Python dependencies and canonical temporary paths are required
+for these fixtures; initial broad-suite environment errors were not product
+failures or waived gates.
+
+The [sanitized completion checkpoint](../../workspace/checkpoints/developer-launcher-e2e-20261010.json)
+records exact keys, hashes and exclusions. The first completed run reused
+verified results from the diagnosed predecessor run; the owner's independent
+fresh README walkthrough remains next, not a claimed cold-machine qualification.
+
+Cleanup removed this test's DMG, outputs, downloaded copies and all eighteen
+SSD clones, including the preceding incomplete manual checkout. No owned
+process, open handle or mounted test image remained before deletion. About
+54.34 GiB was reclaimed; 915.70 GiB is available. Original working repositories,
+the publication archive directory, credentials, five unrelated running Docker
+containers and all twenty-two pre-existing Docker images were preserved.
+Compact local evidence is retained outside the disposable workspaces; no
+multi-gigabyte test artifact remains for the manual walkthrough to reuse.
 
 ### 2026 October 10 Public test access activation
 
