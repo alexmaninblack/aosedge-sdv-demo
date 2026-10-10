@@ -27,12 +27,25 @@
     "boundedCompressedBytesRead": 33554432
   },
   "remainingGates": [
-    "factory-source-records",
     "exact-recipe-patches",
     "bundled-dependency-source-notices",
     "simulator-content-terms",
     "recipient-delivery"
   ],
+  "scopeDecision": {
+    "date": "2026-10-10",
+    "factory-source-records": "OMITTED_BY_OWNER",
+    "basis": "Owner considers upstream AosCore/Linux licensing known and excludes a separate Factory audit.",
+    "actionsCancelled": [
+      "request original SSD for Factory license/source audit",
+      "retrieve Yocto license/package/source reports for that audit",
+      "rebuild or copy Factory build caches for that audit"
+    ],
+    "auditPassed": false,
+    "historicalBundleBytesUnchanged": true,
+    "supersedes": "Factory audit/resume requirement in the original sealed preparation bundle",
+    "preserve": "Existing license notices, source references, integrity checks and credential protection"
+  },
   "sharingChanged": false,
   "publicCatalogActive": false,
   "buildsOrRuntimeStarted": false

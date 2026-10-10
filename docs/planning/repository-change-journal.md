@@ -14,6 +14,19 @@ records the owner-authorized README and one-run launcher source handoff. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Factory audit scope correction
+
+The owner excluded the separate Factory license/source-record audit, relying
+on the known upstream AosCore/Linux licensing. The original-SSD request and
+Yocto report/source-cache recovery for this purpose are cancelled. Do not
+restart this investigation or rebuild Factory as part of the current public
+materials preparation. The [current preparation record](../development/public-artifact-preparation.md#factory-scope-decision)
+and its machine-readable checkpoint record `OMITTED_BY_OWNER`, not a passed
+audit. Existing notices, source references, integrity and credential protection
+remain unchanged. Earlier entries and the sealed bundle retain their historical
+evidence; this scope decision supersedes their Factory-audit continuation task.
+Other preparation work is unaffected. No artifact sharing is changed here.
+
 ### 2026 October 10 Public distribution materials preparation
 
 The owner approved preparing the public artifact set after the activation

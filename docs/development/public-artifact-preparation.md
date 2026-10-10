@@ -4,7 +4,7 @@
 # Public Artifact Distribution Preparation
 
 - Status: review candidate; public activation is not complete
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-10-10
 - Owner: Demo Solution Team
 
@@ -69,21 +69,22 @@ an operator-secret leak. No value or hash was logged or retained. Default
 credentials still require an explicit first-use/security review; this check
 does not change or approve the authentication contract.
 
+## Factory scope decision
+
+On October 10 the owner removed the separate Factory license/source-record
+audit from this preparation, relying on the known upstream AosCore/Linux
+licensing. Do not request the original SSD, retrieve Yocto reports, copy build
+caches or rebuild Factory for that audit. It is no longer an active preparation
+task or a dependency on the owner's connecting another disk.
+
+Record this as `OMITTED_BY_OWNER`, not a passed audit or a finding that every
+distribution obligation has been verified. Preserve the existing upstream
+license notices, source references, image hashes and content-review evidence.
+Integrity and credential-protection checks are unaffected. The original sealed
+bundle remains historical evidence; the checkpoint's scope decision supersedes
+its Factory-audit/resume instruction without changing any archived bytes.
+
 ## Remaining release gates
-
-### Factory build records and corresponding sources
-
-Retrieve the preserved Factory .41 build results from the original build SSD.
-The currently attached preparation SSD is not that build workspace. Required
-inputs are the **selected image's** package manifest, deployed license/SPDX
-records, exact recipes/layers/configuration, patches and corresponding sources.
-Use the retained Yocto builder/downloads only for the selected packages; do not
-publish the entire download cache or unrelated build history. No rebuild was
-started as a substitute for the missing records.
-
-If the records were not retained, record that fact and use the existing owner
-workflow to agree the smallest source-closure recovery. Do not relabel a newer
-build's license report as evidence for this immutable Factory image.
 
 ### Host and Python source closure
 
@@ -128,8 +129,10 @@ license or legal approval.
 
 ### Package delivery and activation
 
-1. Close the content, notice, source and terms gaps above for the exact selected
-   bytes. Keep a reviewed component-to-material mapping.
+1. Close the remaining in-scope content, notice, source and terms gaps above
+   for the exact selected bytes, respecting the Factory scope decision. Keep a
+   reviewed component-to-material mapping; do not report the omitted audit as
+   completed.
 2. Make notices and matching required sources available with the binary
    distribution, including a usable retrieval route for recipients. This
    preparation bundle is not automatically consumed by Setup or the developer
