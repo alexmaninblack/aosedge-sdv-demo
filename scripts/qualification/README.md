@@ -169,6 +169,9 @@ connection before assigning Test-set membership, which may immediately offer
 an existing Cloud component. Provisioning first can start FOTA before its
 Gateway credentials exist. Never bypass the active-transaction credential guard
 to compensate for a reversed test sequence.
+After the first physical Safe Stop, observe that any already-offered component
+update has settled in Cloud before preparing/publishing VDP V1. This is a bounded
+read of the existing update, not another deployment or a relaxed release gate.
 
 Brake V3 advisory correlation also accepts its documented first-activation
 decision from the exact pinned V2 release, when that assessment is still present

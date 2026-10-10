@@ -29,6 +29,8 @@ class JourneyTests(unittest.TestCase):
         self.assertLess(ids.index('simulation'), ids.index('provision'))
         self.assertLess(ids.index('provision'), ids.index('connect'))
         self.assertLess(ids.index('connect'), ids.index('vdp-v1-safe'))
+        self.assertLess(ids.index('vdp-v1-safe-observed'), ids.index('vdp-v1-prior-update-settled'))
+        self.assertLess(ids.index('vdp-v1-prior-update-settled'), ids.index('vdp-v1-prepare'))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -284,6 +286,16 @@ class JourneyTests(unittest.TestCase):
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_prior_component_update_must_settle_before_new_publication(self):
+        def sample(state='CURRENT', rows=None):
+            return w.component_idle_projection(dict(components=dict(state=state, value=rows)))
+        self.assertTrue(sample(rows=[])['idle'])
+        self.assertTrue(sample(rows=[dict(installed_component=dict(version='136.0.0'))])['idle'])
+        for state, rows in [('UNKNOWN',[]),('STALE',[]),('CURRENT',None),('CURRENT',[None]),
+                            ('CURRENT',[dict(pending_component=dict(version='136.0.0'))]),
+                            ('CURRENT',[dict(pending_component_error='FAILED')])]:
+            self.assertFalse(sample(state,rows)['idle'])
+
     def test_setup_launch_requires_gui_and_reconciliation_never_replays(self):
         with tempfile.TemporaryDirectory() as tmp:
             app=Path(tmp)/'Setup.app'

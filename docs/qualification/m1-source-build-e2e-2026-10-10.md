@@ -439,3 +439,11 @@ The unused r6 DMG transfer copy on M1 was removed after verifying its exact
 size, no mount and no open handles; its original remains on the build SSD.
 r7 media was normally detached after shutdown. M1 free space was 153.5 GiB
 before the r8 transfer. Packages, credentials and compact evidence were retained.
+
+The corrected journey also waits for any already-offered Cloud component update
+to settle after its first physical Safe Stop and before VDP V1 preparation.
+The existing publication owner rejects concurrent pending/failed updates; this
+read-only gate prevents racing that guard against the observed automatic VDP
+136 offer. Unknown, stale, malformed or pending/error observations cannot pass.
+All 75 campaign/journey fixtures pass. The fixed sequence now has 100 steps;
+earlier candidate counts remain historical evidence, not rewritten results.

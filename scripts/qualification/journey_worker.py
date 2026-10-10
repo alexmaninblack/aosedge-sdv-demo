@@ -20,7 +20,7 @@ DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
 BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset'}
-QUERIES = {'installed', 'component', 'service', 'backend', 'local', 'combined', 'platform', 'snapshot', 'publication'}
+QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform', 'snapshot', 'publication'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
 
@@ -45,6 +45,15 @@ def job_projection(job):
         dict(state=fixed_code(row.get('state')),
              code=fixed_reason(row.get('message')) or fixed_reason((row.get('facts') or {}).get('reason')))
         for row in job.get('results', [])[-12:]])
+
+
+def component_idle_projection(value):
+    section = value.get('components') or {}
+    rows = section.get('value')
+    current = (section.get('state') == 'CURRENT' and isinstance(rows, list)
+               and all(isinstance(row, dict) for row in rows))
+    return dict(idle=current and not any(row.get('pending_component') or
+        row.get('pending_component_error') for row in rows), cloudCurrent=current)
 
 
 def wait_for_exit(timeout=10):
@@ -453,6 +462,8 @@ class Worker:
         require(query in QUERIES and set(self.args) <= {'query','team','release'}, 'OBSERVATION_NOT_ALLOWED')
         if query == 'installed': return self.installed()
         self.binding()
+        if query == 'component-idle':
+            return component_idle_projection(self.app.unit_service.observe('cloud-status', 'test'))
         if query == 'publication':
             require(set(self.args) == {'query','release'}, 'PUBLICATION_FIELDS_INVALID')
             from aosedge_demo_orchestrator.environment import EnvironmentError

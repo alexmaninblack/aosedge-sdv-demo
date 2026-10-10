@@ -143,6 +143,11 @@ def plan(config):
         key = 'vdp-' + profile
         add(key+'-safe', 'mode', args=dict(mode='safe_stop'), timeout=30)
         read(key+'-safe-observed', 'local', dict(test='safe-stop', actual='$sample'))
+        if profile == 'v1':
+            # Existing Test-set releases can arrive immediately at provisioning.
+            # Let that already-issued update settle before publishing a new one.
+            read(key+'-prior-update-settled', 'component-idle',
+                 dict(test='equals', actual='$sample.idle', expected=True))
         op(key+'-prepare', 'prepare', profile=profile)
         op(key+'-publish', 'publish', version='$'+key+'-prepare.version')
         read(key+'-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$'+key+'-prepare.version'))
