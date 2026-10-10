@@ -725,6 +725,12 @@ class BackendBuildTests(StorageFixture, unittest.TestCase):
         self.client = self.patch('reproduction.containers.Desktop').return_value
         self.client.version = 'fixture-engine'
         self.client.run.side_effect = self.build_image
+        self.contexts = []
+        def context(checkout, revision, destination, env):
+            destination.mkdir()
+            (destination/'Dockerfile').write_bytes((checkout/'Dockerfile').read_bytes())
+            self.contexts.append(destination)
+        self.patch('reproduction.containers.build_context', side_effect=context)
         for role, _ in containers.TARGETS.values():
             root = self.storage.root / 'sources' / role
             root.mkdir(parents=True)
@@ -736,6 +742,8 @@ class BackendBuildTests(StorageFixture, unittest.TestCase):
         self.assertNotIn('--push', args)
         self.assertNotIn('--tag', args)
         self.assertIn('linux/arm64', args)
+        self.assertEqual(Path(args[-1]), self.contexts[-1])
+        self.assertEqual(Path(args[args.index('--file') + 1]), self.contexts[-1]/'Dockerfile')
         Path(args[args.index('--iidfile') + 1]).write_text('sha256:' + 'a'*64)
         return ''
 
@@ -745,6 +753,8 @@ class BackendBuildTests(StorageFixture, unittest.TestCase):
     def test_each_backend_build_uses_owner_then_reuses_exact_image(self):
         for target in containers.TARGETS:
             key = self.invoke(target)
+            self.assertFalse(self.contexts[-1].exists())
+            self.assertEqual(self.state['builds'][key]['inputs']['contextPolicy'], containers.CONTEXT_POLICY)
             self.client.run.reset_mock()
             self.assertEqual(self.invoke(target, False), key)
             self.client.run.assert_not_called()
@@ -755,6 +765,14 @@ class BackendBuildTests(StorageFixture, unittest.TestCase):
         with self.assertRaisesRegex(core.LabError, 'prepare-dependencies'):
             self.invoke(dependencies=False)
         self.client.run.assert_not_called()
+
+    def test_failed_build_removes_only_disposable_context(self):
+        self.client.run.side_effect = core.LabError('build failed')
+        with self.assertRaisesRegex(core.LabError, 'build failed'):
+            self.invoke()
+        self.assertFalse(self.contexts[-1].exists())
+        self.assertTrue((self.storage.root/'sources/brake-health-cloud/Dockerfile').is_file())
+        self.assertFalse(self.state['builds'])
 
     def test_complete_iid_recovers_without_rebuild(self):
         key = self.invoke()

@@ -1,18 +1,65 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 """Backend Dockerfile adapters; never start containers or manage the Engine."""
+import io
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
+import shutil
 import stat
+import tarfile
 
-from .core import require, regular, no_links, read_json, atomic_json, digest, storage_volume, require_capacity, GIB
+from .core import require, regular, no_links, read_json, atomic_json, digest, storage_volume, require_capacity, GIB, run_command
 from .build import command
 from .artifacts import sha256, identity
 from .sources import verify_sources
 
 TARGETS = {'brake-backend': ('brake-health-cloud', 'brake'),
            'tire-backend': ('tire-health-cloud', 'tire')}
+
+CONTEXT_POLICY = 'tracked-public-source-modes-v1'
+
+def build_context(checkout, revision, destination, env):
+    """Export public tracked inputs; never inherit a private checkout's modes.
+
+    The private launcher umask must remain intact. Docker COPY preserves file
+    modes, so using its 0600 source files directly makes non-root images fail.
+    Normalize only this disposable context, not Git, credentials or run state.
+    """
+    require(not destination.exists(), 'Backend context must be new')
+    result = run_command(['git', '-C', checkout, '-c', 'core.hooksPath=/dev/null',
+                          '-c', 'tar.umask=0022', 'archive', '--format=tar', revision],
+                         env=env, timeout=30)
+    require(result.returncode == 0 and len(result.stdout) <= 64*2**20,
+            'Cannot export bounded backend source context')
+    with tarfile.open(fileobj=io.BytesIO(result.stdout), mode='r:') as archive:
+        rows, seen, total = [], set(), 0
+        for row in archive:
+            name = PurePosixPath(row.name)
+            require(name.parts and not name.is_absolute() and '..' not in name.parts
+                    and '.git' not in name.parts and name.as_posix() not in seen
+                    and (row.isfile() or row.isdir()) and len(rows) < 10000,
+                    'Unsafe backend source archive member')
+            seen.add(name.as_posix())
+            total += row.size
+            require(0 <= row.size <= 16*2**20 and total <= 64*2**20,
+                    'Backend source archive exceeds budget')
+            rows.append((row, name))
+        destination.mkdir(mode=0o700)
+        for row, name in rows:
+            path = destination / str(name)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if row.isdir():
+                path.mkdir(exist_ok=True)
+            else:
+                with archive.extractfile(row) as source, path.open('xb') as target:
+                    shutil.copyfileobj(source, target)
+                path.chmod(0o755 if row.mode & 0o111 else 0o644)
+        for path in destination.rglob('*'):
+            if path.is_dir():
+                path.chmod(0o755)
+    require(sha256(regular(destination/'Dockerfile')) == sha256(regular(checkout/'Dockerfile')),
+            'Exported backend recipe differs')
 
 def backing_disk():
     settings = Path.home() / 'Library/Group Containers/group.com.docker/settings-store.json'
@@ -118,7 +165,8 @@ def assemble(storage, state, target, docker, prepare_dependencies, progress):
     checkout = storage.path('sources/' + source)
     owner = regular(checkout / 'Dockerfile')
     inputs = {'source': state['sources'][source], 'recipeSha256': sha256(owner),
-              'platform': 'linux/arm64', 'team': team, 'docker': client.version}
+              'platform': 'linux/arm64', 'team': team, 'docker': client.version,
+              'contextPolicy': CONTEXT_POLICY}
     key = digest(inputs)
     output = storage.path('builds/' + target + '/' + key)
     marker = output.parent / (key + '.inputs.json')
@@ -138,9 +186,13 @@ def assemble(storage, state, target, docker, prepare_dependencies, progress):
         atomic_json(marker, inputs)
         output.mkdir(mode=0o700)
         progress('BUILD_STARTED', target)
-        client.run(['build', '--platform', 'linux/arm64', '--progress', 'plain', '--iidfile', output / 'image-id',
-                    '--label', 'org.opencontainers.image.revision=' + inputs['source']['revision'],
-                    '--label', 'tech.aosedge.demo.team=' + team, '--file', owner, checkout], timeout=600)
+        from distribution.build_scratch import directory
+        with directory(storage.root) as temporary:
+            context = Path(temporary)/'context'
+            build_context(checkout, inputs['source']['revision'], context, storage.environment())
+            client.run(['build', '--platform', 'linux/arm64', '--progress', 'plain', '--iidfile', output / 'image-id',
+                        '--label', 'org.opencontainers.image.revision=' + inputs['source']['revision'],
+                        '--label', 'tech.aosedge.demo.team=' + team, '--file', context/'Dockerfile', context], timeout=600)
         image_id = regular(output / 'image-id').read_text().strip()
         client.image(image_id, inputs['source']['revision'], team)
     verify_sources(storage, state)

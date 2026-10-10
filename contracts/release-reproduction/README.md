@@ -649,6 +649,15 @@ overwrite tags, publish images or reuse undeclared registry credentials.
 Build layers stay on Docker's selected disk; client caches stay in the workspace. Image receipts bind
 source/platform/runtime identity; export receipts bind the complete archive.
 Status-only receipt checks and live Engine image checks are distinguished.
+New backend producers export only the pinned Git tree into an owned disposable
+build context. Public regular files use 0644, executable files and child
+directories use 0755; the scratch root remains private. The launcher umask,
+original checkout, credentials and runtime state are unchanged. Links, escaping
+paths, duplicate members and an altered exported Dockerfile fail closed. The
+context policy enters the backend build key so earlier mode-dependent images
+cannot be reused as corrected outputs. Scratch is removed on success or failure.
+This corrects non-root access to public source/SQL files, not runtime privileges
+or readiness criteria. Frozen producer plans retain their original behavior.
 The service adapters require an explicit functional profile: Brake V1/V2/V3
 or Tire V1. They export unsigned ARM64 products through the pinned Dockerfiles
 and use the source owners' test, dependency and payload validators. They never

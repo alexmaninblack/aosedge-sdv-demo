@@ -9,6 +9,11 @@ Reports below are dated evidence: their “current”, “next” and “open”
 describes that checkpoint, not today's installation instructions. Historical
 results remain unchanged; newer results do not retroactively qualify old images.
 
+- [M1 source build installation and E2E — 10 October](m1-source-build-e2e-2026-10-10.md):
+  new `1.2.0-rc.1` DMG installation and Cloud preconditions passed; controller
+  preparation stopped at native password input, with a separate Keychain save
+  failure recorded. Owned processes were stopped; full E2E is not complete.
+
 - [Kit028 / Setup042 source return point — 5 October](kit028-setup042-source-publication-2026-10-05.md):
   candidate source tag, immutable media identity, verified source receipts and
   remaining acceptance gates; no DMG rebuild or video-repository changes.
