@@ -259,7 +259,7 @@ Completed publications, assignments and resets are not replayed. Before an
 ordinary continuation, current installation and infrastructure are re-observed;
 previously reached runtime owners are restored through their normal paths when
 they are confirmed stopped. Historical `PASS` is not current runtime readiness.
-If a shutdown interrupted a Reset, offline or ignition comparison, the runner
+If shutdown interrupted a Reset, offline, ignition or same-Test Stop/Start comparison, the runner
 blocks that experiment with `EXPERIMENT_INTERRUPTED_REBASE_REQUIRED`. It never
 combines readings from incompatible boots or sessions. Diagnose and establish a
 new scoped experimental baseline; do not silently replay the interrupted reset.
@@ -271,6 +271,15 @@ pass. A source-revision warning calls for review of affected evidence, not blind
 republication. The offline soak samples through the end of its actual 300-second
 interval. Backend checks use the observed bounded product history; they do not
 claim an exhaustive database integrity audit.
+
+The fixed journey also exercises the Presenter `stop-demo` and `start-demo`
+plans after ignition. Fresh observations must confirm the Test VM, source and
+both owned backends stopped, unchanged Unit/Node identity and the same running
+Docker Engine. Restart explicitly starts the simulator and attaches the same
+Test; it must preserve models and product history, retain Safe Stop, and produce
+new Brake/Tire results from fresh post-restart inputs. It does not create,
+provision, publish or assign again. This is live engineering coverage of normal
+product plans, not native-button acceptance or destructive retirement.
 
 Native operator flow, secure token entry, service update while moving, and
 installation interruption/repair retain separate acceptance gates. Finish is

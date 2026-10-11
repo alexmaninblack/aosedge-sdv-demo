@@ -23,6 +23,39 @@ class Clock:
 
 
 class JourneyTests(unittest.TestCase):
+    def test_stop_start_uses_existing_test_without_new_publication_or_provision(self):
+        steps = p.plan({'image':'factory'})
+        ids = [row['id'] for row in steps]
+        tail = steps[ids.index('demo-stop-before'):ids.index('shutdown')]
+        actions = [row['args']['action'] for row in tail if row['kind'] == 'presenter']
+        self.assertEqual(actions, ['stop-demo', 'start-demo', 'start-simulation', 'connect-test'])
+        self.assertTrue({'stop-demo', 'start-demo'} <= w.OPERATIONS)
+        self.assertIn(('demo-stop-before', 'demo-restart-tire-product'), p.CONTINUOUS_GROUPS)
+        self.assertLess(ids.index('ignition-tire-product'), ids.index('demo-stop-before'))
+        self.assertLess(ids.index('demo-stop-safe-observed'), ids.index('demo-stop-before'))
+
+    def test_demo_stopped_requires_fresh_owner_results_exact_identity_and_live_docker(self):
+        state = dict(vehicles={'test':dict(localVmId='test',unitId='unit',nodeId='node',systemUid='system')}, currentVehicle=None)
+        snapshot = dict(vehicles={'test':dict(state='CURRENT',process='STOPPED')})
+        source = dict(state='STOPPED',selectedVehicle=None)
+        backends = dict(teams={t:dict(state='STOPPED') for t in ('brake','tire')})
+        docker = dict(engineId='engine')
+        actual = w.demo_stopped_projection(state,snapshot,source,backends,docker)
+        check = dict(test='demo-stopped',actual=actual,before={'local':{'identity':actual['identity']}},engineId='engine')
+        self.assertTrue(p.evaluate(check,{}))
+        for index, field, bad in [(1,'state','STALE'),(1,'process','UNKNOWN'),(2,'state','NOT_RUNNING'),
+                                  (2,'selectedVehicle','test'),(0,'currentVehicle','test')]:
+            values = copy.deepcopy([state,snapshot,source,backends,docker])
+            target = values[index]['vehicles']['test'] if index==1 else values[index]
+            target[field] = bad
+            self.assertFalse(w.demo_stopped_projection(*values)['stopped'])
+        for team in ('brake','tire'):
+            bad = copy.deepcopy(backends);bad['teams'][team]['state']='UNKNOWN'
+            self.assertFalse(w.demo_stopped_projection(state,snapshot,source,bad,docker)['stopped'])
+        for field,bad in [('identity',{}),('dockerEngineId',None),('dockerEngineId','other')]:
+            changed=copy.deepcopy(check);changed['actual'][field]=bad
+            self.assertFalse(p.evaluate(changed,{}))
+
     def test_simulator_precedes_provisioning_and_automatic_fota_membership(self):
         ids = [step['id'] for step in p.plan({'image': 'factory'})]
         self.assertLess(ids.index('controller-create'), ids.index('simulation'))
@@ -203,6 +236,16 @@ class JourneyTests(unittest.TestCase):
         steps=[dict(id='offline-off',kind='control'),dict(id='cloud-online',kind='observe')]
         with h.Journal(self.root,'x') as journal:
             runner=self.runner(journal);runner.run(steps,'offline-off')
+            runner.run_step(dict(id='shutdown',kind='shutdown'),{})
+            self.calls.clear();report=runner.run(steps)
+            self.assertEqual(self.calls,[])
+            self.assertEqual(report['support'][-1]['code'],'EXPERIMENT_INTERRUPTED_REBASE_REQUIRED')
+            self.assertEqual(report['engineering'][1]['outcome'],'NOT_RUN')
+
+    def test_interrupted_demo_stop_start_is_not_spliced_across_shutdown(self):
+        steps=[dict(id='demo-stop-before',kind='observe'),dict(id='demo-restart-tire-product',kind='observe')]
+        with h.Journal(self.root,'x') as journal:
+            runner=self.runner(journal);runner.run(steps,'demo-stop-before')
             runner.run_step(dict(id='shutdown',kind='shutdown'),{})
             self.calls.clear();report=runner.run(steps)
             self.assertEqual(self.calls,[])

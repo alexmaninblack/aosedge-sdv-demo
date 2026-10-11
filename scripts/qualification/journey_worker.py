@@ -19,8 +19,10 @@ from uuid import UUID
 DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
 BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
-              'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset'}
-QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform', 'snapshot', 'publication'}
+              'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
+              'stop-demo', 'start-demo'}
+QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform',
+           'snapshot', 'publication', 'demo-stopped'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
 
@@ -54,6 +56,19 @@ def component_idle_projection(value):
                and all(isinstance(row, dict) for row in rows))
     return dict(idle=current and not any(row.get('pending_component') or
         row.get('pending_component_error') for row in rows), cloudCurrent=current)
+
+
+def demo_stopped_projection(state, snapshot, source, backends, docker):
+    """Fresh normal-owner observations, not an inference from a retained stop receipt."""
+    vehicle = state['vehicles']['test']
+    observed = (snapshot.get('vehicles') or {}).get('test') or {}
+    teams = backends.get('teams') or {}
+    return dict(stopped=observed.get('state') == 'CURRENT' and observed.get('process') == 'STOPPED'
+        and source.get('state') == 'STOPPED' and source.get('selectedVehicle') is None
+        and state.get('currentVehicle') is None and set(teams) == {'brake', 'tire'}
+        and all(row.get('state') == 'STOPPED' for row in teams.values()),
+        identity={key:vehicle.get(key) for key in ('localVmId', 'unitId', 'nodeId', 'systemUid')},
+        dockerEngineId=(docker or {}).get('engineId'))
 
 
 def wait_for_exit(timeout=10):
@@ -461,7 +476,13 @@ class Worker:
         query = self.args['query']
         require(query in QUERIES and set(self.args) <= {'query','team','release'}, 'OBSERVATION_NOT_ALLOWED')
         if query == 'installed': return self.installed()
-        self.binding()
+        state = self.binding()
+        if query == 'demo-stopped':
+            from aosedge_demo_orchestrator.backends import BackendService
+            snapshot = exchange('snapshot')
+            require(snapshot.get('runId') == self.request['expectedRun'], 'TEST_IDENTITY_CHANGED')
+            return demo_stopped_projection(state, snapshot, self.app.source_service.observe(),
+                BackendService(self.app.environment_service).observe_stack(), docker_info())
         if query == 'component-idle':
             return component_idle_projection(self.app.unit_service.observe('cloud-status', 'test'))
         if query == 'publication':

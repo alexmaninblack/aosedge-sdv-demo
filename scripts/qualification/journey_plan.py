@@ -11,6 +11,7 @@ CONTINUOUS_GROUPS = (
     ('reset-tire-before', 'reset-tire-independent'),
     ('offline-off', 'cloud-online'),
     ('ignition-before', 'ignition-preserved'),
+    ('demo-stop-before', 'demo-restart-tire-product'),
 )
 
 
@@ -86,6 +87,10 @@ def evaluate(check, context):
         row = args['actual']['controller']
         return (row['fresh'] and not row['held'] and row['mode'] == 'SAFE_STOP'
                 and row['speed'] <= .5 and row['brake'] >= .99)
+    if name == 'demo-stopped':
+        row = args['actual']
+        return (row.get('stopped') is True and row.get('identity') == args['before']['local']['identity']
+                and bool(args['engineId']) and row.get('dockerEngineId') == args['engineId'])
     if name == 'autopilot-moving':
         row = args['actual']['controller']
         return (row.get('fresh') is True and row.get('held') is False and row.get('mode') == 'AUTOPILOT'
@@ -227,6 +232,27 @@ def plan(config):
         maneuver('ignition-'+team+'-maneuver', team)
         read('ignition-'+team+'-product', 'backend', dict(test='new-product', actual='$sample',
             before='$ignition-before.'+team, version='$'+key+'-prepare.version'), team=team)
+    # Exercise the new ordinary Stop/Start compositions against the same Test.
+    # This is separate from guest ignition recovery and from destructive retirement.
+    add('demo-stop-safe', 'mode', args=dict(mode='safe_stop'), timeout=30)
+    read('demo-stop-safe-observed', 'local', dict(test='safe-stop', actual='$sample'))
+    sample('demo-stop-before')
+    op('demo-stop', 'stop-demo')
+    read('demo-stopped', 'demo-stopped', dict(test='demo-stopped', actual='$sample',
+        before='$demo-stop-before', engineId='$docker.engineId'))
+    op('demo-start', 'start-demo')
+    op('demo-simulation', 'start-simulation')
+    op('demo-connect', 'connect-test')
+    read('demo-restart-vdp-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$vdp-v3-prepare.version'))
+    sample('demo-restart-after')
+    add('demo-restart-preserved', 'assert', check=dict(test='ignition', before='$demo-stop-before', after='$demo-restart-after'))
+    for team in ('brake', 'tire'):
+        key = 'brake-v3' if team == 'brake' else 'tire-v1'
+        read('demo-restart-'+team+'-inputs', 'backend', dict(test='restarted-inputs', actual='$sample',
+            before='$demo-stop-before.'+team, version='$'+key+'-prepare.version'), team=team)
+        maneuver('demo-restart-'+team+'-maneuver', team)
+        read('demo-restart-'+team+'-product', 'backend', dict(test='new-product', actual='$sample',
+            before='$demo-stop-before.'+team, version='$'+key+'-prepare.version'), team=team)
     # Finish is deliberately a separately scoped endpoint, never default cleanup.
     add('shutdown', 'shutdown', timeout=120)
     return steps

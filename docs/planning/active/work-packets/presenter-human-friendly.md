@@ -3,7 +3,7 @@
 
 # Presenter operator experience
 
-- Status: Implemented; local branch gates passed; native/live review pending
+- Status: Branch DMG built and verified; native/live M1 review pending
 - Date: 2026-10-11
 - Branch: `codex/presenter-human-friendly`
 - Baseline: `a4afa82` on main
@@ -102,7 +102,7 @@ uncertain-result guards. Browser responses are fixtures; they do not prove
 native or live Cloud execution. Owner tests verify the fixed stop/start plans,
 partial-stop interruption and at-most-once submission.
 
-Only the Presenter web assets were built. The separate, mutable branch-review
+At the initial local-gate checkpoint, only the Presenter web assets were built. The separate, mutable branch-review
 output is at
 `/Volumes/SDV-Build/sdv/build/candidates/presenter-human-friendly-20261011/presenter-ui`.
 It is not a signed installer, a new release kit or an accepted installed demo.
@@ -115,3 +115,32 @@ candidate, persistent Test data and shared Docker Engine were not changed by
 this work. Publish only `codex/presenter-human-friendly` for review. Before any
 main integration, review the branch UI and qualify the real existing-Test
 stop/start sequence through its native owners.
+
+## Requested DMG and M1 campaign — 2026-10-11
+
+The operator subsequently requested a complete DMG with this Presenter and an
+autonomous M1 end-to-end run, still on this branch. The candidate is assembled
+on `SDV-Build` using the canonical packaging owners and retained Factory/CARLA
+inputs. Neither heavy component is recompiled. Setup retains the authorized
+Apple Development signature; this is an engineering preview, not a notarized
+external release. Detailed evidence is recorded in the
+[branch candidate qualification](../../../qualification/presenter-human-friendly-2026-10-11.md).
+
+The scripted journey now has 117 fixed steps, including serial VDP/Brake
+versions, Tire, maneuvers and product delivery, independent resets, offline
+delivery, ignition, and the new same-Test Stop/Start plans. The qualification
+harness suite passes 78 tests, including fresh stop-state observations,
+unchanged identity/Docker Engine and interrupted-experiment guards. Fixture
+results do not close native or live gates. The exact installed candidate binds
+all subsequent evidence; no previous M1 candidate's passes are inherited.
+
+M1 preparation retired the old Test through its normal lifecycle owner after
+the tool-required exact-target approval. The agreed unused copies were removed;
+the accepted package and credentials remain. Product installation is still
+blocked by an idle Docker file-sharing holder, with zero running containers.
+A single explicit M1-only Engine restart request is pending. Packaging/local
+checks continue independently; the M1 gate is not a successful deployment.
+
+The complete media was subsequently delivered and verified on M1. Transfer,
+read-only mount and exact signed Setup/application pins passed. Installation
+and live/native tests were not dispatched through the blocked state gate.
