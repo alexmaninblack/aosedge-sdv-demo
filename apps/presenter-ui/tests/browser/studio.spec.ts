@@ -119,6 +119,29 @@ for (const sourceState of ["STOPPED", "NOT_PREPARED", "UNKNOWN"]) test(`new cont
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
+for (const sourceState of ["STOPPED", "NOT_PREPARED", "UNKNOWN", "RUNNING_UNASSIGNED"])
+test(`ordinary Stop with ${sourceState} source distinguishes closed windows from layout failure`, async ({ page }) => {
+  const requests = await retainedRun(page);
+  await page.route("**/api/presenter/operations", route => route.fulfill({ json: {
+    sessionId: "native", active: null, uncertain: false, jobs: [],
+    workspace: { state: "INCOMPLETE", zOrder: { state: "UNAVAILABLE" } },
+  } }));
+  await page.route("**/api/presenter/snapshot", route => route.fulfill({ json: {
+    mode: "LOCAL_READ_ONLY", runId: "current-test", observedAt: new Date().toISOString(),
+    registrationComplete: true, images: [], access: {},
+    vehicles: { test: { state: "CURRENT", process: "STOPPED", overlayExists: true },
+      production: { state: "CURRENT", process: "STOPPED", overlayExists: true } },
+    source: { state: sourceState, currentVehicle: null },
+  } }));
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Start controller", exact: true })).toBeEnabled();
+  if (["STOPPED", "NOT_PREPARED"].includes(sourceState)) {
+    await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
+    await expect(page.getByText(/could not be verified|Window order is not currently verified/)).toHaveCount(0);
+  } else await expect(page.getByLabel("Desktop window layout")).toContainText("Window layout could not be verified");
+  expect(requests.every(row => row.method === "GET")).toBe(true);
+});
+
 test("external CLI retirement returns the open Studio to Create without reloading or submitting actions", async ({ page }) => {
   const requests = await retainedRun(page, true);
   await page.route("**/api/presenter/operations", route => route.fulfill({ json: {

@@ -3,7 +3,7 @@
 
 # Presenter operator experience
 
-- Status: Branch ready for review; 117 scripted steps and bounded native Start/Stop passed; main integration pending
+- Status: Extended retained-Test checks passed; profile and Stop-display fixes await installed-candidate acceptance; main integration pending
 - Date: 2026-10-11
 - Branch: `codex/presenter-human-friendly`
 - Baseline: `a4afa82` on main
@@ -366,7 +366,28 @@ The separate visible Return to road recheck then passed all eight stages in
 253.257 seconds. It freshly confirmed the three current installed versions,
 recorded a real CUA click and stationary Manual postcondition, and confirmed
 Stop/owner closure without publication or Reset. The earlier interrupted
-release-story record remains FAIL. No new product defect was established in
-these completed checks; main and the DMG remain unchanged. Local qualification,
+release-story record remains FAIL. Final visual review then identified the
+additional Stop-display defect below; main and the DMG remain unchanged. Local qualification,
 journey, remote, Node and documentation gates passed. Remaining separate gates
 are not inferred from these results.
+
+### Expected closed windows after ordinary Stop
+
+The final M1 screenshot shows Controller switched off together with an
+incorrect layout warning. Independent reconciliation confirms all owned demo
+processes and listeners closed. The Presenter did not include a known stopped
+controller in its expected-absence classification for source windows.
+
+Two failing unit regressions established that mismatch. The minimal source
+correction adds confirmed normal controller Stop to the existing classification,
+only when the source is confirmed STOPPED or NOT_PREPARED and not connected or
+running. Unknown source, incomplete Create, interrupted/retiring lifecycle and
+an active restore keep their existing behavior. The main screen no longer
+offers layout recovery for intentionally closed windows; Advanced settings
+retains their factual description. No native owner or lifecycle contract changes.
+
+TypeScript, all 368 unit tests, the focused 23-test lifecycle browser suite and
+the full 148-test browser suite passed. Documentation and whitespace checks
+passed; the local test browser server exited. The profile and Stop-display corrections both still require installed
+acceptance in a later candidate. Do not rebuild the DMG or merge main as part
+of this retained-candidate continuation.

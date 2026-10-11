@@ -11,8 +11,8 @@ passed a separate fresh visible recheck. Failed and passing experiments retain
 separate results rather than forming a synthetic uninterrupted journey.
 The original clean scripted campaign passed 117 steps on earlier releases.
 Native Setup/Open and stopped-controller Start/Stop checks also passed.
-Full E2E acceptance remains open at the separate gates below. The profile
-correction is source-tested, not installed in this DMG. Main, the DMG and
+Full E2E acceptance remains open at the separate gates below. The profile and
+stopped-window display corrections are source-tested, not installed in this DMG. Main, the DMG and
 Production remain unchanged; normal cleanup preserves Test data and Docker.
 
 ## Scope and candidate
@@ -715,6 +715,32 @@ and tunnel, and normally detached owned media. Evidence is in
 Local gates passed: 12 qualification-script guards, 15 Node guards, 79 journey
 tests, 15 remote-qualification tests and 19 documentation tests. Documentation
 navigation/traceability, syntax, whitespace and confidential-input checks passed.
-These fixture/source gates are separate from the M1 observations above. No
-additional product defect was established in the completed checks; the existing
-source-only profile correction still needs new-candidate live acceptance.
+These fixture/source gates are separate from the M1 observations above. Final
+visual review found the additional product defect below; the earlier completed
+operation receipts do not establish correct rendering of every status message.
+
+### Stopped vehicle windows incorrectly reported as a layout fault
+
+The retained Return to road experiment's `stopped.png` shows both the correct
+Controller switched off guidance and an incorrect Desktop window layout
+warning saying that the demo may still be running. The ordinary Stop receipt
+and independent owner reconciliation confirm that the Test VM, simulator and
+backends are stopped. This is a Presenter classification defect, not a failed
+shutdown or evidence that Docker Engine should stop.
+
+Two regression cases reproduced the warning for a confirmed stopped controller
+with a STOPPED or NOT_PREPARED source and an old INCOMPLETE placement receipt.
+The minimal correction classifies those closed windows as expected, just as it
+already does before simulator startup. Advanced settings still describes the
+closed windows. Unknown or running source observations, incomplete Create,
+legacy interruption, retirement and an actual layout restore retain their
+existing warnings and guards. No lifecycle action, receipt, identity, authority
+or layout operation changes.
+
+TypeScript and all 368 unit tests passed, including five new positive/negative
+Stop-state regressions. The focused lifecycle browser suite passed all 23 tests,
+including four new cases for confirmed, unknown and running source states;
+the full browser suite then passed all 148 tests. Documentation and whitespace
+checks passed, and the owned local browser server exited.
+This correction and the profile recovery correction remain source-only;
+new-candidate installed acceptance is still required. The DMG is unchanged.
