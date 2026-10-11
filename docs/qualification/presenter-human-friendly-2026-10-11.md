@@ -744,3 +744,22 @@ the full browser suite then passed all 148 tests. Documentation and whitespace
 checks passed, and the owned local browser server exited.
 This correction and the profile recovery correction remain source-only;
 new-candidate installed acceptance is still required. The DMG is unchanged.
+
+### Moving service updates on M1
+
+The retained candidate passed all 11 visible moving-SOTA stages in 440.564
+seconds. The real native Autopilot button started driving. Presenter then
+prepared and published Brake 130.0.0/V3 followed by Tire 66.0.0/V1, observing
+fresh, unheld motion before publication and at each installed confirmation.
+The Test identity and boot stayed unchanged, and VDP 152.0.0/V3 was not updated.
+Brake and Tire installation stages took 60.754 and 57.393 seconds respectively.
+This establishes moving service installation, not uninterrupted motion at
+millisecond resolution. A witnessed Safe Stop preceded ordinary Stop.
+
+Independent final reconciliation confirmed zero owned demo processes and
+listeners, preserved Test data and the same running Docker Engine. The browser,
+profile and tunnel closed, and owned media detached. Evidence is retained in
+`.local/remote-qualification/m1-ui-moving-sota-20261011/`. This pass remains
+separate from native WKWebView, token-entry and installation-repair acceptance.
+Only unit tests may run on the development Mac; all subsequent installation,
+recovery and live UI checks use the dedicated M1 internal disk.

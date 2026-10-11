@@ -10,6 +10,13 @@ from ui_m1 import read_request, Observer
 
 
 class PilotGuards(unittest.TestCase):
+    def test_autopilot_witness_is_restricted_to_moving_sota_stage(self):
+        identifier='01234567-89ab-cdef-0123-456789abcdef'
+        gate=dict(schemaVersion=1,stage='moving-sota-autopilot',action='Autopilot',
+                  test=identifier,sessionId=identifier,state='WAITING_FOR_UI_CLICK')
+        self.assertEqual(validate(gate,gate['stage'],gate['action'])['state'],'CLICKED_THROUGH_CUA')
+        with self.assertRaises(ValueError):
+            validate(dict(gate,stage='other'), 'other', 'Autopilot')
     def test_read_only_viewer_closes_profile_even_after_failed_start(self):
         for code,passed in ((0,True),(1,False)):
             viewer=Observer.__new__(Observer)

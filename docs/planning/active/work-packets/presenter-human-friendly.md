@@ -391,3 +391,38 @@ the full 148-test browser suite passed. Documentation and whitespace checks
 passed; the local test browser server exited. The profile and Stop-display corrections both still require installed
 acceptance in a later candidate. Do not rebuild the DMG or merge main as part
 of this retained-candidate continuation.
+
+## Remaining gate execution
+
+The operator requested completion of the remaining tests. Extend qualification
+scripts only for the current retained candidate first. The moving-SOTA scenario
+explicitly selects Autopilot through the visible native control, prepares and
+publishes one new Brake V3 release and then one Tire V1 release through Presenter,
+and checks fresh unheld Autopilot motion before publication and at installed
+confirmation. Exact Test identity, boot and unchanged VDP remain mandatory.
+Traffic stops are not Safe Stop; unknown/stale control evidence fails closed.
+Finish with witnessed Safe Stop and ordinary Stop, preserving Test and Docker.
+This does not claim continuous millisecond-level vehicle motion during download.
+
+Installation interruption/repair uses a separate disposable package store,
+never damage to the retained selected program or vehicle data. Exercise the
+canonical transaction checkpoints, verification and explicit repair owners.
+The operator clarified that only unit tests may run on the development Mac;
+all installation/recovery and UI/live checks belong on M1's internal storage.
+Development-side orchestration is not a development-side acceptance test.
+Keep source and UI results distinct; native Setup and WKWebView acceptance
+requires actual CUA actions and visible postconditions, not browser-driver or
+SSH action results. Keep the DMG and main unchanged during these checks.
+
+## Clean M1 campaign
+
+The operator subsequently authorized removal of owned M1 experiments followed
+by a fresh DMG installation, a complete API campaign and then the UI campaign.
+Retire the exact previous staging Test through its normal owner before removing
+its local installation or run data. Preserve credentials, compact evidence,
+shared Docker and unrelated files. Reuse verified Factory and CARLA inputs.
+Assemble one successor containing the source-tested profile and stopped-window
+corrections; keep it on the review branch, with main unchanged. Bind all new
+installation, API and UI evidence to that successor and new Test. API results
+must not count as UI acceptance. Only unit tests may run on the development Mac;
+all installation and live checks execute on the M1 internal disk.

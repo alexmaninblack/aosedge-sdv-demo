@@ -3,8 +3,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, resetPreserved, visibleWorkspace, transitionBaseline } from './ui_journey.mjs';
+import { command, facts, installed, resetPreserved, visibleWorkspace, transitionBaseline, autopilot } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('moving SOTA requires actual fresh unheld Autopilot motion, not a mode label alone', () => {
+  const value={controller:{fresh:true,held:false,mode:'AUTOPILOT',speed:20}};
+  assert.equal(autopilot(value,true),true);
+  assert.equal(autopilot({...value,controller:{...value.controller,speed:0}}),true);
+  assert.equal(autopilot({...value,controller:{...value.controller,speed:0}},true),false);
+  for(const change of [{fresh:false},{held:true},{mode:'SAFE_STOP'},{mode:'MANUAL'},{speed:null},{speed:NaN},{speed:-1}])
+    assert.equal(autopilot({...value,controller:{...value.controller,...change}},true),false);
+});
 test('native witness wait leaves browser routing and polling responsive', async () => {
   const url = new URL('./ui_journey.mjs', import.meta.url).href;
   const child = spawn(process.execPath, ['--input-type=module', '-e',

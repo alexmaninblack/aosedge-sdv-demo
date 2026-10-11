@@ -11,7 +11,7 @@ from uuid import UUID
 import remote_harness as h
 
 FIELDS = {'schemaVersion', 'stage', 'action', 'test', 'sessionId', 'state'}
-ACTIONS = {'Safe Stop', 'Brake maneuver', 'Tire maneuver', 'Return to road'}
+ACTIONS = {'Safe Stop', 'Brake maneuver', 'Tire maneuver', 'Return to road', 'Autopilot'}
 
 
 def validate(gate, stage, action):
@@ -21,6 +21,7 @@ def validate(gate, stage, action):
               and gate['state'] == 'WAITING_FOR_UI_CLICK', 'NATIVE_GATE_MISMATCH')
     for field in ('test', 'sessionId'):
         h.require(str(UUID(gate[field])) == gate[field], 'NATIVE_GATE_ID_INVALID')
+    h.require(action != 'Autopilot' or stage == 'moving-sota-autopilot', 'NATIVE_GATE_MISMATCH')
     return dict(gate, state='CLICKED_THROUGH_CUA')
 
 

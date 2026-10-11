@@ -353,7 +353,7 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return', 'moving-sota'), default='installed')
     parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')
     parser.add_argument('--cards-from-release-records', type=Path,
                         help='Completed release stages interrupted only at the native Return to road witness')
@@ -371,8 +371,8 @@ def main():
     config = j.configuration(args.journey, transport['user'])
     h.require((args.scenario == 'release-continuation') == (args.continue_from is not None),
               'CONTINUATION_RECORD_BOUNDARY')
-    h.require(not args.cards_from_release_records or args.scenario in ('installed','road-return'), 'INSTALLED_CARD_RECORD_BOUNDARY')
-    h.require(args.scenario != 'road-return' or args.cards_from_release_records is not None,
+    h.require(not args.cards_from_release_records or args.scenario in ('installed','road-return','moving-sota'), 'INSTALLED_CARD_RECORD_BOUNDARY')
+    h.require(args.scenario not in ('road-return','moving-sota') or args.cards_from_release_records is not None,
               'ROAD_RETURN_RELEASE_RECORD_REQUIRED')
     if args.query:
         print(json.dumps(read_query(transport, config, args.test, args.query, args.team, args.release)))

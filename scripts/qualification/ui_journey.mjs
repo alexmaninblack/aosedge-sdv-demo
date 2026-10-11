@@ -43,6 +43,12 @@ export function installed(value, team, release) {
   return value.instances.some(row => row.version === release && row.run_state === 'active'
     && !row.error_message && [0, null, undefined].includes(row.error_exit_code));
 }
+export function autopilot(value, requireMotion = false) {
+  const c = value?.controller;
+  return c?.fresh === true && c.held === false && c.mode === 'AUTOPILOT'
+    && typeof c.speed === 'number' && Number.isFinite(c.speed) && c.speed >= 0
+    && (!requireMotion || c.speed > 3);
+}
 export function resetPreserved(before, after, team, commandId) {
   const peer = team === 'brake' ? 'tire' : 'brake';
   return after[team].resetState === 'CLEARED' && after[team].resetId === commandId
@@ -82,7 +88,7 @@ export async function nativeBrokerReply(id, fd = 0) {
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return', 'moving-sota'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   if (input.scenario === 'release-continuation')
     assert(version.test(input.continuation?.preparedV2), 'CONTINUATION_RECEIPT_REQUIRED');
   const require = createRequire(input.modulePath ?? path.join(input.repository, 'apps/presenter-ui/package.json'));
@@ -370,7 +376,7 @@ export async function main(inputPath) {
         });
       });
     }
-    if (input.scenario === 'road-return') {
+    if (['road-return', 'moving-sota'].includes(input.scenario)) {
       await stage('current-installed-releases',async () => {
         for (const [team,name] of [['platform','Vehicle Data Platform installed details'],
           ['brake','Brake service details'],['tire','Tire service details']]) {
@@ -380,13 +386,55 @@ export async function main(inputPath) {
             team==='platform'?undefined:team),team,release),'CURRENT_INSTALLED_RELEASE_REQUIRED',180000);
         }
       });
+    }
+    if (input.scenario === 'moving-sota') {
+      await stage('moving-sota-autopilot', async () => {
+        await native('moving-sota-autopilot', 'Autopilot', () => autopilot(query('local'), true));
+      });
+      const original = query('local');
+      for (const [team, profile] of [['brake', 'v3'], ['tire', 'v1']]) {
+        await stage(team+'-moving-sota', async () => {
+          const motion = () => {
+            const value = query('local');
+            assert.deepEqual(value.identity, original.identity, 'MOVING_TEST_IDENTITY_CHANGED');
+            assert(value.bootId === original.bootId, 'MOVING_BOOT_CHANGED');
+            assert(autopilot(value), 'AUTOPILOT_NOT_CURRENT');
+            record({state:'MOVING_SOTA_OBSERVATION', team, moving:autopilot(value,true), mode:value.controller.mode});
+            return autopilot(value, true);
+          };
+          await until(motion, 'MOVING_BASELINE_REQUIRED', 45000);
+          await button(team==='brake'?'Brake Team':'Tire Team').click();
+          await page.getByRole('group',{name:'Capability profile',exact:true}).getByRole('button',
+            {name:`${profile} ${profiles[team][Number(profile[1])-1]}`,exact:true}).click();
+          const prepared=await operate({action:'service-prepare',team,profile},()=>button('Prepare '+profile).click());
+          assert(prepared.releaseHandle && prepared.version, 'PREPARED_SERVICE_REQUIRED');
+          await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
+          await until(motion, 'MOVING_PUBLICATION_REQUIRED', 45000);
+          await confirmed({action:'service-publish',release:prepared.releaseHandle},()=>button('Sign & publish').click(),'Sign & publish service');
+          await until(() => {
+            const moving = motion();
+            return installed(query('service',team),team,prepared.version) && moving;
+          }, 'MOVING_SERVICE_INSTALL_NOT_CONFIRMED', 180000);
+          assert(installed(query('component'),'platform',cards['Vehicle Data Platform installed details'].split(' · ')[1]),
+            'MOVING_PLATFORM_CHANGED');
+          record({state:'MOVING_SOTA_INSTALLED',team,profile,version:prepared.version,releaseHandle:prepared.releaseHandle});
+          await shot(team+'-moving-installed');
+        });
+      }
+      await stage('moving-sota-safe-stop',async () => {
+        await native('moving-sota-safe-stop','Safe Stop',()=>{
+          const c=query('local').controller;return c.fresh && !c.held && c.mode==='SAFE_STOP' && c.speed<=.5 && c.brake>=.99;
+        });
+      });
+    }
+    if (input.scenario === 'road-return') {
       await stage('return-to-road',async () => {
         await native('return-to-road','Return to road',()=>{
           const c=query('local').controller;return c.fresh && !c.held && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99;
         });
       });
     }
-    if (!['vdp-transition','road-return'].includes(input.scenario)) {
+    if (!['vdp-transition','road-return','moving-sota'].includes(input.scenario)) {
     await stage('installed-details',async () => {
       await button('Vehicle').click();
       for (const [name,text] of Object.entries(cards)) {

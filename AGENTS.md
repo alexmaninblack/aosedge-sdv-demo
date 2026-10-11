@@ -48,6 +48,11 @@ boundary outside this scope or when a mandatory tool control requires it.
 
 ## Finish checks and follow the accepted delivery stages
 
+- The operator restricted qualification on 11 October 2026: run only unit
+  tests on the development Mac. Installation, package recovery, browser/UI,
+  simulator and live end-to-end checks must execute on the dedicated M1 using
+  its internal storage. Development-side scripts may orchestrate/read those
+  M1 checks, but a local experiment is not an alternative acceptance target.
 - At the end of a check or a paused test session, gracefully close all windows,
   servers, helpers, simulators, VMs and containers started for that check and no
   longer needed by the active sequence. Do not leave them running for convenience.
