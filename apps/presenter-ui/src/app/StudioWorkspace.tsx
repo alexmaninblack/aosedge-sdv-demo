@@ -67,8 +67,11 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const [selection, setDetails] = useState<Detail | null>(null), [sessionOpen, setSessionOpen] = useState(false), [traceOpen, setTraceOpen] = useState(false);
   const architecture = useRef<HTMLDivElement>(null);
   const vehicle = local.vehicles.test;
+  // The live read port uses {} when no quick-preparation checkpoint exists.
+  // That sentinel is not a recorded recipe and must not hide story power-on.
+  const preparation = local.preparation && Object.keys(local.preparation).length ? local.preparation : null;
   // A reload must continue the recorded preparation path, not select a new one.
-  const mode = local.runId ? (local.preparation ? "quick" : "story") : chosenMode;
+  const mode = local.runId ? (preparation ? "quick" : "story") : chosenMode;
   const localStateKnown = vehicle.state === "CURRENT" || (!local.runId && vehicle.state === "NOT_APPLICABLE" && vehicle.reason === "TARGET_NOT_CONFIGURED");
   const present = vehicle.state === "CURRENT" && vehicle.overlayExists === true;
   const noController = localStateKnown && !local.runId && !present;
@@ -83,8 +86,8 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const vehicleWindowsAbsent = (noController || beforeSourceStart) && !simulationRunning
     && ["STOPPED", "NOT_PREPARED"].includes(local.source.state);
   const image = present ? local.images.find(row => row.version === vehicle.imageVersion)?.selector ?? ""
-    : (mode === "quick" ? local.preparation?.image : local.lifecycle?.image) || selectedImage || local.images[0]?.selector || "";
-  const continuation = mode === "quick" ? Boolean(local.preparation && local.preparation.phase !== "READY_TO_DRIVE")
+    : (mode === "quick" ? preparation?.image : local.lifecycle?.image) || selectedImage || local.images[0]?.selector || "";
+  const continuation = mode === "quick" ? Boolean(preparation && preparation.phase !== "READY_TO_DRIVE")
     : local.lifecycle?.action === "create" && local.lifecycle.state !== "COMPLETED";
   // Legacy Park/Resume is not the controller's supported ignition recovery.
   const interruptedRun = !retiring && (local.lifecycle?.action === "park"

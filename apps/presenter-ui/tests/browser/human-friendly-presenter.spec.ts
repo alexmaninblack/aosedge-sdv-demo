@@ -19,6 +19,7 @@ async function scenario(page: Page) {
       jobs.push(job); return route.fulfill({ status: 202, json: job });
     }
     if (path.endsWith("/snapshot")) return route.fulfill({ json: { mode: "LOCAL_READ_ONLY", runId: state.empty ? null : "same-test", observedAt: time, registrationComplete: !state.empty,
+      preparation: {}, lifecycle: { action: "create", state: "COMPLETED" },
       images: [{ selector: "41/arm64", version: "Factory .41", state: "METADATA_AVAILABLE", problems: [] }],
       access: { "oem-delivery": { present: true, state: "NOT_REQUESTED" }, "service-provider": { present: true, state: "NOT_REQUESTED" } },
       vehicles: { test: { state: state.empty ? "NOT_APPLICABLE" : "CURRENT", reason: state.empty ? "TARGET_NOT_CONFIGURED" : null,

@@ -120,11 +120,16 @@ def evaluate(check, context):
             not after['local']['teams'][t]['queuedIds'] and
             set(before['local']['teams'][t]['queuedAssessmentIds']) <= set(after[t]['productIds'])
             for t in ('brake', 'tire')))
-    if name == 'ignition':
+    if name in ('ignition', 'demo-restart'):
         before, after = args['before'], args['after']
+        controller = after['local']['controller']
+        stationary = (evaluate(dict(test='safe-stop', actual=after['local']), {})
+            if name == 'ignition' else
+            controller['fresh'] and not controller['held'] and controller['mode'] == 'MANUAL'
+            and controller['speed'] <= .5 and controller['brake'] >= .99)
         return (before['local']['bootId'] != after['local']['bootId']
             and before['local']['identity'] == after['local']['identity']
-            and evaluate(dict(test='safe-stop', actual=after['local']), {})
+            and stationary
             and all(before['local']['teams'][t]['model'] == after['local']['teams'][t]['model']
                     and set(before[t]['productIds']) <= set(after[t]['productIds']) for t in ('brake', 'tire')))
     raise ValueError('UNKNOWN_POSTCONDITION')
@@ -153,6 +158,11 @@ def plan(config):
             # Let that already-issued update settle before publishing a new one.
             read(key+'-prior-update-settled', 'component-idle',
                  dict(test='equals', actual='$sample.idle', expected=True))
+            # Provision already establishes the initial stationary-Manual
+            # connection. Test-set membership can immediately offer an older
+            # component. Stop physically and settle that update before the
+            # redundant connection confirmation probes the deployed provider.
+            op('connect', 'connect-test')
         op(key+'-prepare', 'prepare', profile=profile)
         op(key+'-publish', 'publish', version='$'+key+'-prepare.version')
         read(key+'-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$'+key+'-prepare.version'))
@@ -191,7 +201,6 @@ def plan(config):
     # deadlock first onboarding against an active FOTA transaction.
     op('simulation', 'start-simulation')
     op('provision', 'provision')
-    op('connect', 'connect-test')
     vdp('v1'); service('brake', 'v1', first=True)
     vdp('v2'); service('brake', 'v2')
     vdp('v3'); service('brake', 'v3'); service('tire', 'v1', first=True)
@@ -245,7 +254,7 @@ def plan(config):
     op('demo-connect', 'connect-test')
     read('demo-restart-vdp-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$vdp-v3-prepare.version'))
     sample('demo-restart-after')
-    add('demo-restart-preserved', 'assert', check=dict(test='ignition', before='$demo-stop-before', after='$demo-restart-after'))
+    add('demo-restart-preserved', 'assert', check=dict(test='demo-restart', before='$demo-stop-before', after='$demo-restart-after'))
     for team in ('brake', 'tire'):
         key = 'brake-v3' if team == 'brake' else 'tire-v1'
         read('demo-restart-'+team+'-inputs', 'backend', dict(test='restarted-inputs', actual='$sample',

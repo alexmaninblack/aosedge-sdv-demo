@@ -169,9 +169,20 @@ connection before assigning Test-set membership, which may immediately offer
 an existing Cloud component. Provisioning first can start FOTA before its
 Gateway credentials exist. Never bypass the active-transaction credential guard
 to compensate for a reversed test sequence.
-After the first physical Safe Stop, observe that any already-offered component
-update has settled in Cloud before preparing/publishing VDP V1. This is a bounded
-read of the existing update, not another deployment or a relaxed release gate.
+Provision already connects the first Test in stationary Manual. After the first
+physical Safe Stop, observe that any already-offered component update has
+settled in Cloud before the redundant `connect-test` confirmation and before
+preparing/publishing VDP V1. Confirming the empty Factory connection first can
+race that update; stopping after a failed confirmation can leave its incoming
+transaction waiting for Safe Stop. This is a bounded read of the existing update,
+not another deployment or a relaxed release gate.
+
+Raw ignition recovery must remain in Safe Stop. The deliberate Stop/Start
+sequence instead starts the simulator and invokes `connect-test`, whose contract
+is stationary Manual. Its preservation check requires fresh, unheld Manual
+telemetry, speed at most 0.5 km/h and at least 99% brake, alongside a new boot and
+unchanged identity, models and history. Do not reuse the raw-ignition mode
+expectation or weaken that expectation to accommodate an explicit Manual action.
 
 Brake V3 advisory correlation also accepts its documented first-activation
 decision from the exact pinned V2 release, when that assessment is still present

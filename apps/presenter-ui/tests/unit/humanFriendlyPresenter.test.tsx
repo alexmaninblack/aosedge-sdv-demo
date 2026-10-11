@@ -72,6 +72,22 @@ test("recorded quick preparation resumes after reload, without changing the reci
   expect(controls.request).toHaveBeenCalledWith({ action: "prepare-demo", image: "41/arm64" });
 });
 
+test("the live empty preparation sentinel does not hide a completed story's power-on path", () => {
+  view({ ...base, preparation: {}, registrationComplete: true,
+    vehicles: { ...base.vehicles, test: { ...base.vehicles.test, process: "STOPPED" } },
+    source: { state: "STOPPED" } });
+  expect(screen.queryByRole("button", { name: "Continue preparation" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Start controller" }));
+  expect(controls.request).toHaveBeenCalledWith({ action: "start-demo" });
+  expect(controls.request).not.toHaveBeenCalledWith(expect.objectContaining({ action: "prepare-demo" }));
+});
+
+test("an empty preparation sentinel retains story continuation for a genuinely incomplete Create", () => {
+  view({ ...base, preparation: {}, lifecycle: { action: "create", state: "PARTIAL" } });
+  fireEvent.click(screen.getByRole("button", { name: "Continue preparation" }));
+  expect(controls.request).toHaveBeenCalledWith({ action: "create", image: "41/arm64" });
+});
+
 test("Stop and Delete are separate actions; deletion is hidden until explicitly expanded", () => {
   view();
   fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));

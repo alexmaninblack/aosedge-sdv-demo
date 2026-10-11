@@ -33,6 +33,32 @@ class JourneyTests(unittest.TestCase):
         self.assertIn(('demo-stop-before', 'demo-restart-tire-product'), p.CONTINUOUS_GROUPS)
         self.assertLess(ids.index('ignition-tire-product'), ids.index('demo-stop-before'))
         self.assertLess(ids.index('demo-stop-safe-observed'), ids.index('demo-stop-before'))
+        self.assertEqual(next(s for s in steps if s['id']=='demo-restart-preserved')['check']['test'], 'demo-restart')
+
+    def test_demo_restart_requires_stationary_manual_and_preserves_the_ignition_contract(self):
+        before = dict(local=dict(bootId='old',identity={'unitId':'unit'},
+            teams={t:dict(model='model-'+t) for t in ('brake','tire')}),
+            **{t:dict(productIds=['product-'+t]) for t in ('brake','tire')})
+        after = copy.deepcopy(before)
+        after['local']['bootId'] = 'new'
+        after['local']['controller'] = dict(fresh=True,held=False,mode='MANUAL',speed=0,brake=1)
+        check = dict(test='demo-restart',before=before,after=after)
+        self.assertTrue(p.evaluate(check,{}))
+        self.assertFalse(p.evaluate(dict(check,test='ignition'),{}))
+        safe = copy.deepcopy(check);safe['after']['local']['controller']['mode']='SAFE_STOP'
+        self.assertTrue(p.evaluate(dict(safe,test='ignition'),{}))
+        self.assertFalse(p.evaluate(safe,{}))
+        for key,bad in [('fresh',False),('held',True),('mode','AUTOPILOT'),('speed',1),('brake',0)]:
+            changed=copy.deepcopy(check);changed['after']['local']['controller'][key]=bad
+            self.assertFalse(p.evaluate(changed,{}),key)
+        for key,bad in [('bootId','old'),('identity',{'unitId':'other'})]:
+            changed=copy.deepcopy(check);changed['after']['local'][key]=bad
+            self.assertFalse(p.evaluate(changed,{}),key)
+        for team in ('brake','tire'):
+            changed=copy.deepcopy(check);changed['after']['local']['teams'][team]['model']='changed'
+            self.assertFalse(p.evaluate(changed,{}),team)
+            changed=copy.deepcopy(check);changed['after'][team]['productIds']=[]
+            self.assertFalse(p.evaluate(changed,{}),team)
 
     def test_demo_stopped_requires_fresh_owner_results_exact_identity_and_live_docker(self):
         state = dict(vehicles={'test':dict(localVmId='test',unitId='unit',nodeId='node',systemUid='system')}, currentVehicle=None)
@@ -60,10 +86,10 @@ class JourneyTests(unittest.TestCase):
         ids = [step['id'] for step in p.plan({'image': 'factory'})]
         self.assertLess(ids.index('controller-create'), ids.index('simulation'))
         self.assertLess(ids.index('simulation'), ids.index('provision'))
-        self.assertLess(ids.index('provision'), ids.index('connect'))
-        self.assertLess(ids.index('connect'), ids.index('vdp-v1-safe'))
+        self.assertLess(ids.index('provision'), ids.index('vdp-v1-safe'))
         self.assertLess(ids.index('vdp-v1-safe-observed'), ids.index('vdp-v1-prior-update-settled'))
-        self.assertLess(ids.index('vdp-v1-prior-update-settled'), ids.index('vdp-v1-prepare'))
+        self.assertLess(ids.index('vdp-v1-prior-update-settled'), ids.index('connect'))
+        self.assertLess(ids.index('connect'), ids.index('vdp-v1-prepare'))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
