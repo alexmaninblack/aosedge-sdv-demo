@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, resetPreserved, visibleWorkspace, transitionBaseline, autopilot } from './ui_journey.mjs';
+import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
 test('moving SOTA requires actual fresh unheld Autopilot motion, not a mode label alone', () => {
   const value={controller:{fresh:true,held:false,mode:'AUTOPILOT',speed:20}};
@@ -61,6 +61,24 @@ test('visible M1 business checks require settled native window composition',()=>
   assert.throws(()=>visibleWorkspace({...value,workspace:{...value.workspace,zOrder:{state:'UNAVAILABLE'}}},id));
   assert.throws(()=>visibleWorkspace(value,'other'));
 });
+test('partial layout waits only for existing recovery and requires exact settled ordering',()=>{
+  const expected={action:'workspace-restore'}, job={state:'PARTIAL'};
+  const base={sessionId:id,uncertain:false,active:null,workspaceBusy:false,sourceRecoveryBusy:false};
+  const pending={...base,workspace:{state:'WAITING_FOR_WINDOWS',retryPending:true}};
+  assert.equal(layoutSettlement(expected,job,pending,id),'PENDING');
+  const settled={...base,workspace:{state:'PLACED_AWAITING_VISUAL_REVIEW',retryPending:false,zOrder:{state:'VERIFIED'}}};
+  assert.equal(layoutSettlement(expected,job,settled,id),'CONFIRMED');
+  assert.equal(layoutSettlement(expected,job,{...settled,workspaceBusy:true},id),'PENDING');
+  assert.equal(job.state,'PARTIAL');
+  assert.equal(layoutSettlement({action:'service-publish'},job,pending,id),null);
+  assert.equal(layoutSettlement(expected,{state:'FAILED'},settled,id),null);
+  for(const v of [{...pending,sessionId:'other'},{...pending,uncertain:true},
+    {...pending,workspace:{state:'WAITING_FOR_WINDOWS',retryPending:false}},
+    {...pending,workspace:{state:'WAITING_FOR_UNLOCK',retryPending:true}},
+    {...settled,workspace:{...settled.workspace,zOrder:{state:'UNAVAILABLE'}}},
+    {...settled,workspace:{state:'INCOMPLETE',retryPending:false}}])
+    assert.throws(()=>layoutSettlement(expected,job,v,id));
+});
 test('mutation must match the exact currently armed UI command',()=>{
   const expected={action:'service-prepare',team:'brake',profile:'v1'};
   const body={...expected,requestId:id,sessionId:id};
@@ -70,6 +88,25 @@ test('mutation must match the exact currently armed UI command',()=>{
   for(const key of ['force','target','certificate']) assert.throws(()=>command({...body,[key]:true},expected,id,[]));
   assert.throws(()=>command(body,expected,id,[id]));
   assert.throws(()=>command({...body,sessionId:'other'},expected,id,[]));
+});
+test('layout restoration permits only one exactly armed ordinary UI command',()=>{
+  const expected={action:'workspace-restore'};
+  const body={...expected,requestId:id,sessionId:id};
+  assert.deepEqual(command(body,expected,id,[]),body);
+  for(const extra of [{force:true},{target:'production'},{profile:'v1'}])
+    assert.throws(()=>command({...body,...extra},expected,id,[]));
+  assert.throws(()=>command(body,null,id,[]));
+  assert.throws(()=>command(body,expected,id,[id]));
+  assert.throws(()=>command({...body,sessionId:'other'},expected,id,[]));
+});
+test('Advanced settings inspection is exact and does not authorize credential selection',()=>{
+  const expected={action:'cloud-inspect'};
+  const body={...expected,requestId:id,sessionId:id};
+  assert.deepEqual(command(body,expected,id,[]),body);
+  for(const change of [{action:'cloud-choose'},{action:'cloud-select'},{certificate:'other'},{pin:'unexpected'}])
+    assert.throws(()=>command({...body,...change},expected,id,[]));
+  assert.throws(()=>command(body,null,id,[]));
+  assert.throws(()=>command(body,expected,id,[id]));
 });
 test('release values come only from validated product receipts',()=>{
   assert.deepEqual(facts({version:null,release:null,serviceId:null,results:[{facts:{}}]}),{});

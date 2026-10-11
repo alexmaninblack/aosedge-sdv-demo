@@ -10,6 +10,32 @@ from ui_m1 import read_request, Observer
 
 
 class PilotGuards(unittest.TestCase):
+    def test_interrupted_tire_binds_settled_releases_without_converting_failure(self):
+        report=dict(outcome='FAIL',scenario='release-story',candidate='a'*64,test='bound',ownersClosed=True)
+        browser=dict(outcome='FAIL',scenario='release-story',stages=[dict(stage=n,outcome='PASS')
+            for n in ('vdp-v1','brake-v1','vdp-v2','brake-v2','vdp-v3','brake-v3')]
+            + [dict(stage='tire-v1',outcome='FAIL',code='NATIVE_UI_BROKER_UNAVAILABLE')])
+        events=[]
+        for i,(action,team,profile,version) in enumerate((('prepare',None,'v3','158.0.0'),
+                ('service-prepare','brake','v3','136.0.0'),('service-prepare','tire','v1','68.0.0'))):
+            events.extend([dict(state='DISPATCH_INTENT',requestId=str(i),action=action,team=team,profile=profile),
+                           dict(requestId=str(i),productState='COMPLETED',version=version)])
+        events.extend([dict(state='DISPATCH_INTENT',requestId='publish',action='service-publish',release='tire/68.0.0'),
+            dict(requestId='publish',productState='COMPLETED',releaseHandle='tire/68.0.0'),
+            dict(state='WAITING_FOR_NATIVE_UI',stage='tire-v1-maneuver',action='Tire maneuver')])
+        self.assertEqual(p.interrupted_tire_binding(report,browser,events,'a'*64,'bound')['tire-v1-prepare'],
+                         dict(version='68.0.0'))
+        self.assertEqual(report['outcome'],'FAIL')
+        for change in ({'outcome':'PASS'},{'candidate':'b'*64},{'test':'other'},{'ownersClosed':False}):
+            with self.assertRaises(ValueError):
+                p.interrupted_tire_binding(dict(report,**change),browser,events,'a'*64,'bound')
+        for changed in (events[:-1],events[:-2]+events[-1:],events+events):
+            with self.assertRaises(ValueError): p.interrupted_tire_binding(report,browser,changed,'a'*64,'bound')
+        for failure in (dict(stage='return-to-road',outcome='FAIL',code='NATIVE_UI_BROKER_UNAVAILABLE'),
+                        dict(stage='tire-v1',outcome='FAIL',code='PRODUCT_OPERATION_FAILED')):
+            with self.assertRaises(ValueError):
+                p.interrupted_tire_binding(report,dict(browser,stages=browser['stages'][:-1]+[failure]),events,'a'*64,'bound')
+
     def test_completed_story_binds_followup_without_inheriting_another_candidate(self):
         report=dict(outcome='PASS',scenario='release-story',candidate='a'*64,test='bound',ownersClosed=True)
         names=('vdp-v1','brake-v1','vdp-v2','brake-v2','vdp-v3','brake-v3','tire-v1',

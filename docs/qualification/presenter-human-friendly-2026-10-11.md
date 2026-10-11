@@ -3,19 +3,20 @@
 
 # Presenter branch DMG and M1 qualification — 11 October 2026
 
-Status: The retained M1 candidate passed serial VDP/Brake V2 and V3 updates and
-Tire V1, a separate 17-stage visible installed-browser check, and a fresh
-53-step offline/ignition/Stop-Start recovery experiment on those exact releases.
-The interrupted release-story attempt remains FAIL; its Return to road button
-passed a separate fresh visible recheck. Failed and passing experiments retain
-separate results rather than forming a synthetic uninterrupted journey.
-The original clean scripted campaign passed 117 steps on earlier releases.
-Native Setup/Open and stopped-controller Start/Stop checks also passed.
-Full E2E acceptance remains open at the separate gates below. The profile and
-stopped-window display corrections are source-tested, not installed in this DMG. Main, the DMG and
-Production remain unchanged; normal cleanup preserves Test data and Docker.
+Status: The clean successor contains the profile and stopped-window display
+corrections. Its M1 API journey has 117 latest PASS results, with the explicit
+qualification-source review caveat below. Visible UI checks on that exact
+successor and new Test completed across a serial release story, an exact Tire
+continuation and a separate moving-SOTA scenario. The release story retains its
+native-witness timeout; the continuation and moving scenario passed.
+Bounded native Setup/WKWebView checks and repeat launch without mounted media
+also passed on 11–12 October; the remaining first-use gates are listed below.
+Failed and passing experiments remain separate, never a synthetic uninterrupted
+journey. Main and Production are unchanged; normal cleanup preserves Test data
+and Docker. The historical candidate evidence below does not qualify the
+successor. Current artifact pins and results are in the Clean M1 campaign section.
 
-## Scope and candidate
+## Original review scope and candidate (historical)
 
 Branch: `codex/presenter-human-friendly`. Presenter product source:
 `d65c4f0af952253d64a65141fa4e25358c610000`. Main is unchanged at
@@ -827,3 +828,170 @@ A subsequent campaign media recheck stopped on a changed consumer file identity.
 The completed installation remains intact. Continuation uses the installed
 journey directly; a UI campaign must re-verify the existing media digest before
 use, without retransmission or reinstallation.
+
+### Successor API sequence completed
+
+The installed successor completed all 117 API journey steps on the new Test:
+117 latest PASS, zero FAIL/BLOCKED/UNCERTAIN/STALE/NOT_RUN and no unresolved
+effects. It installed VDP 153/154/155 (V1/V2/V3), Brake 131/132/133 (V1/V2/V3)
+and Tire 67 (V1) serially. Matching maneuver products/advisories, independent
+resets, an actual 302.92-second offline soak, queued delivery and Cloud
+Offline/Online passed. Ignition and ordinary same-Test Stop/Start preserved
+identity, models and history; both services produced new results afterward.
+
+Normal final shutdown confirmed zero owned demo processes and listeners,
+preserved persistent state and preserved Docker Engine. The original Cloud
+503 attempt and media-identity guard failure remain in their records. The
+aggregate report conservatively retains `sourceReviewRequired: true` and
+`scriptedSequence: NOT_COMPLETE` because the qualification adapter changed
+during reconciliation. The reviewed change is the read-only, exact-assignment
+recovery described above; neither the installed product nor DMG changed.
+This is not a claim of an uninterrupted single-source API run or UI acceptance.
+
+The full visible M1 release-story UI sequence was dispatched immediately after
+API shutdown, using the same candidate and Test. Its results are recorded
+separately; API actions cannot satisfy browser or native-click gates.
+
+The first successor UI attempt passed controller start, simulator start and
+Manual attachment, then failed `VISIBLE_WORKSPACE_NOT_PLACED` in 228.227 seconds
+including confirmed cleanup. It dispatched no release preparation or publication.
+Diagnosis identified a harness omission: API shutdown deliberately closes the
+workspace; starting its browser and runtime does not request native placement.
+The driver now clicks the existing Restore window layout action once through
+Demo controls / Advanced settings before requiring the unchanged geometry and
+ordering receipt. All 17 Node guards pass, including exact single-dispatch
+layout-command identity and rejection of extra fields. No product/DMG change
+or weakened layout criterion was made. The original failed record remains in
+`m1-clean-20261011-ui-story`; continuation uses a separate record directory.
+
+Two further pre-publication attempts exposed additional driver assumptions:
+Advanced settings starts one read-only `cloud-inspect` on mount, and the window
+owner may initially return PARTIAL / WAITING_FOR_WINDOWS while its existing
+bounded recovery completes. Their failed records (189.735 and 188.313 seconds,
+including confirmed cleanup) remain intact. The driver now arms exactly that
+inspection before the tab click and observes the original layout request until
+strict placement, ordering and owner quiescence are confirmed. It never
+rewrites a PARTIAL receipt as COMPLETED or permits another partial operation,
+locked desktop, uncertain session, unsupported layout state or a repeated POST.
+All 19 Node guards pass. No product/DMG change or release publication occurred
+in these attempts.
+
+The next visible story passed all six serial VDP/Brake stages: VDP 156/157/158
+(V1/V2/V3) and Brake 134/135/136 (V1/V2/V3), including each real Safe Stop or
+Brake maneuver and independent installation/product observations. Tire 68/V1
+preparation and publication completed and its active instance was observed.
+The agent's native click witness was not supplied within the 120-second gate;
+the story therefore remains FAIL (`NATIVE_UI_BROKER_UNAVAILABLE`, 1,132.407
+seconds including confirmed cleanup). This is a qualification interruption,
+not a failed publication or evidence of a runtime crash. No repeated signing,
+publication or assignment is used to continue it.
+
+A separate `tire-review` uses those exact completed receipts, freshly checks
+current installations and performs a new witnessed Tire maneuver and Return
+to road before the remaining installed-browser stages. The original story's
+failure is preserved. Twelve Python UI guards include negative cases for
+another candidate/Test, incomplete stages, missing/duplicate receipts and an
+unrelated failure. Nineteen Node guards and the 95-test API qualification suite
+also pass. The continuation changes qualification scripts only, not the DMG.
+
+### Completed successor browser continuation and moving SOTA
+
+The separately bound Tire review passed all 21 stages in 376.667 seconds,
+including cleanup. It freshly confirmed VDP 158/V3, Brake 136/V3 and Tire 68/V1,
+then required an actual native Tire maneuver and a new matching product
+(43.722 seconds). Actual Return to road and stationary Manual passed in
+46.438 seconds. Installed details, all team perspectives, Cloud software and
+CPU/Disk/Inbound/Outbound resources, both backend dashboards and records,
+independent correlated Reset, Activity, Stop cancellation and confirmed Stop
+passed. Each Reset preserved the peer model and both product histories.
+No release was prepared, published or assigned in this continuation.
+
+A separate moving-SOTA scenario passed all 12 stages in 426.581 seconds,
+including cleanup. A real native Autopilot click started driving. Presenter
+prepared and published Brake 137/V3 and then Tire 69/V1, with fresh, unheld
+motion observed before publication and at matching installation confirmation.
+Those update stages took 54.582 and 50.527 seconds. The same Test identity and
+boot were retained, and VDP 158/V3 did not change. This verifies moving QM
+service installation, not continuous motion at millisecond resolution.
+A real native Safe Stop preceded the confirmed ordinary Stop.
+
+Each scenario's initial cleanup response was UNCERTAIN because its worker
+observation was unavailable. A subsequent read-only reconciliation confirmed
+zero owned demo processes/listeners, preserved Test data and the unchanged
+running Docker Engine. Shutdown was not dispatched again. Browser/profile and
+tunnel closure and normal owned-media detachment were confirmed. Private
+evidence is retained separately in
+`.local/remote-qualification/m1-clean-20261011-ui-tire-review/` and
+`.local/remote-qualification/m1-clean-20261011-ui-moving/`.
+
+These passes close the listed installed-browser and moving-SOTA checks for
+the successor. They do not rewrite the failed release story, constitute one
+uninterrupted UI pass, or claim native Setup/token entry or installation repair.
+
+### Native workspace and repeat launch on 12 October
+
+The correct signed Setup from the successor DMG completed Continue installation,
+revalidated the retained staging pair and opened the native WKWebView Presenter.
+Actual native clicks started the existing controller and simulator, then
+connected deliberately in Manual. Independent observations confirmed the exact
+successor and Test/Unit/Node/system identities, both backends RUNNING, fresh
+unheld telemetry, zero speed and full braking. No Create, provisioning,
+publication or Autopilot action was part of this bounded native check.
+
+Restore window layout completed through Demo controls / Advanced settings.
+Its native dialog reported verified positions and ordering; Screen Sharing
+showed CARLA in the upper left, Driving Control in the lower left and Presenter
+on the right. Both services received data, and installed cards showed VDP
+158/V3, Brake 137/V3 and Tire 69/V1. Native Cancel left the controller and
+backends running. A single confirmed Stop closed the source, VM and backends;
+Presenter offered Start controller without the incorrect stopped-window warning.
+Read-only observations corroborated both transitions and preserved the journal.
+
+The initial persistent application still pinned the earlier `fbdf35e…` candidate,
+while the low-level API installation had selected `862bf19…`. It correctly
+stopped with `SETUP_LOCAL_PREPARATION_REQUIRED`. This was a qualification-plan
+omission, not a product failure: runtime installation alone does not execute
+the existing persistent-launcher installation phase. Native Continue installation
+refreshed that signed application through the ordinary Setup owner. The media
+and product source were unchanged.
+
+The qualification plan now explicitly includes `install-launcher` after backend
+preparation and before Cloud setup. It verifies the selected signed Setup and
+requires fresh runtime, backend and launcher observations. Lost-response
+reconciliation observes status only and never repeats installation. Two new
+unit tests cover ordering, strict booleans, private-path exclusion and no replay.
+Future complete plans have 118 steps; the historical 117-step report and its
+source-review caveat remain unchanged. This added script phase has local unit
+coverage and native owner evidence, not a new complete 118-step campaign pass.
+
+After native Setup Quit and normal owner shutdown, the DMG had no open handles
+and detached normally. Finder then opened the installed application from the
+M1 user Applications folder. It reached Ready to open SDV Lab with the existing
+staging access, without recopying the runtime, mounting media or entering
+credentials. Its actual Open SDV Lab button opened the same stopped Test with
+Start controller and current installed-version cards. Independent reads
+confirmed unchanged identity, STOPPED source/controller/backends and preserved
+data. This closes repeat native launch without the DMG.
+
+Private observations use `.local/presenter-human-friendly/clean-native-*.json`;
+the live three-window screenshot and repeat-Setup screenshot are retained
+separately. The first normal cleanup response was UNCERTAIN; read-only
+reconciliation confirmed zero demo-owned processes/listeners without replaying
+the stop request. Final normal shutdown of the repeat-open check passed directly.
+Independent final reads confirmed zero owned demo processes/listeners, zero
+Setup processes and zero running containers, with the same running Docker
+Engine and preserved Test journal. The installer image remains detached.
+
+Final local unit gates passed: 82 journey/campaign tests, 15 remote-harness
+tests, 15 qualification-script tests, 19 Node UI guards and 19 documentation
+tests. The documentation check passed for 350 Markdown files, 662 stable IDs
+and 38 Mermaid diagrams; whitespace validation also passed. These are source
+gates, not additional live or native acceptance. Only unit tests ran on the
+development Mac; all live and UI checks used the M1 internal disk.
+
+The bounded native route does not establish new-account/token entry, first-time
+OS permissions or installation interruption/repair. External notarized
+distribution and main integration remain separate gates. Host sleep/wake and
+external SSD checks are excluded from this M1 internal-storage profile, and
+VDP-TIMEOUT-01 remains deferred. Full E2E is not certified by combining separate
+passing experiments with the interrupted release story.

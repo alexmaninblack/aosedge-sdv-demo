@@ -62,6 +62,16 @@ export function visibleWorkspace(value, session) {
   // The native owner verifies CARLA/Driving Control geometry and ordering.
   // Its receipt is not a substitute for human readability/visual acceptance.
 }
+export function layoutSettlement(expected, job, value, session) {
+  if (expected.action !== 'workspace-restore' || job.state !== 'PARTIAL') return null;
+  assert(value.sessionId === session && !value.uncertain, 'UNKNOWN_OPERATION');
+  const layout = value.workspace;
+  if (layout?.state === 'WAITING_FOR_WINDOWS' && layout.retryPending === true) return 'PENDING';
+  if (layout?.state === 'PLACED_AWAITING_VISUAL_REVIEW' && layout.zOrder?.state === 'VERIFIED'
+      && !idle(value, session)) return 'PENDING';
+  visibleWorkspace(value, session);
+  return 'CONFIRMED';
+}
 export function transitionBaseline(value, test) {
   const v = value?.value, p = v?.installedProfile;
   return value?.state === 'CURRENT' && value.bindingKey?.startsWith(test + ':')
@@ -88,7 +98,7 @@ export async function nativeBrokerReply(id, fd = 0) {
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return', 'moving-sota'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   if (input.scenario === 'release-continuation')
     assert(version.test(input.continuation?.preparedV2), 'CONTINUATION_RECEIPT_REQUIRED');
   const require = createRequire(input.modulePath ?? path.join(input.repository, 'apps/presenter-ui/package.json'));
@@ -180,6 +190,16 @@ export async function main(inputPath) {
       const value = await read('operations'); assert(value.sessionId===session && !value.uncertain && !refused,'UNKNOWN_OPERATION');
       job = value.jobs.find(row => row.id===request.requestId);
       if (!job || ['ACCEPTED','RUNNING'].includes(job.state)) return false;
+      // The existing window owner can return PARTIAL while its bounded native
+      // recovery settles. Observe that same request's layout, never replay it or
+      // relabel its receipt COMPLETED. All non-layout partial results fail below.
+      const layout = layoutSettlement(expected, job, value, session);
+      if (layout === 'PENDING') return false;
+      if (layout === 'CONFIRMED') {
+        record({state:'LAYOUT_RECOVERY_CONFIRMED',requestId:request.requestId,
+          productState:job.state,workspaceState:value.workspace.state});
+        return true;
+      }
       if (job.state!=='COMPLETED') record({ state:'PRODUCT_FAILURE',action:expected.action,
         results: job.results.map(row => ({ state: row.state,
           code: /^[A-Z][A-Z0-9_]{1,100}$/.test(row.message??'') ? row.message : null })) });
@@ -295,6 +315,20 @@ export async function main(inputPath) {
       owners(observed('connected'),before,'RUNNING',true);
     });
     if (input.visibleM1) {
+      // A clean API shutdown intentionally closes the native workspace. Starting
+      // the browser/controller/simulator does not itself request window placement.
+      // Use the existing visible UI owner once before requiring its receipt.
+      await stage('restore-window-layout', async () => {
+        await button('Demo controls').click();
+        // This tab performs one existing read-only certificate inspection on
+        // mount. Arm that exact request before the tab click, not a blanket POST
+        // exception; never persist its certificate/PIN facts in the UI report.
+        await operate({ action: 'cloud-inspect' }, () =>
+          dialog().getByRole('button', { name: 'Advanced settings', exact: true }).click());
+        await operate({ action: 'workspace-restore' }, () =>
+          dialog().getByRole('button', { name: 'Restore window layout', exact: true }).click());
+        await close();
+      });
       workspaceRequired = true;
       await stage('visible-m1-workspace', async () => {
         await visible();
@@ -376,7 +410,7 @@ export async function main(inputPath) {
         });
       });
     }
-    if (['road-return', 'moving-sota'].includes(input.scenario)) {
+    if (['tire-review', 'road-return', 'moving-sota'].includes(input.scenario)) {
       await stage('current-installed-releases',async () => {
         for (const [team,name] of [['platform','Vehicle Data Platform installed details'],
           ['brake','Brake service details'],['tire','Tire service details']]) {
@@ -427,7 +461,16 @@ export async function main(inputPath) {
         });
       });
     }
-    if (input.scenario === 'road-return') {
+    if (input.scenario === 'tire-review') {
+      await stage('tire-current-maneuver',async () => {
+        const release=cards['Tire service details'].split(' · ')[1], old=query('backend','tire');
+        await native('tire-current-maneuver','Tire maneuver',()=>{
+          const after=query('backend','tire');
+          return after.products.some(p=>!old.productIds.includes(p.id) && p.version===release);
+        });
+      });
+    }
+    if (['tire-review','road-return'].includes(input.scenario)) {
       await stage('return-to-road',async () => {
         await native('return-to-road','Return to road',()=>{
           const c=query('local').controller;return c.fresh && !c.held && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99;

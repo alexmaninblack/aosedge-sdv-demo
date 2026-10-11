@@ -188,6 +188,7 @@ def plan(config):
     add('installed', 'observe', args=dict(query='installed'))
     add('docker', 'dependency', timeout=120)
     add('backend-images', 'setup', args=dict(action='prepare-backends'), timeout=180)
+    add('installed-launcher', 'setup', args=dict(action='install-launcher'), timeout=150)
     add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
     add('cloud-ready', 'setup', args=dict(action='cloud-check'), timeout=150)
     add('vm-access', 'vm-access', timeout=30)

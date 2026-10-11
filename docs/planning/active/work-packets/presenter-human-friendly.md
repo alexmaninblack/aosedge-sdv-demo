@@ -3,8 +3,8 @@
 
 # Presenter operator experience
 
-- Status: Extended retained-Test checks passed; profile and Stop-display fixes await installed-candidate acceptance; main integration pending
-- Date: 2026-10-11
+- Status: Clean successor API, installed-browser, moving-SOTA and bounded native checks completed with recorded caveats; main integration pending
+- Date: 2026-10-12
 - Branch: `codex/presenter-human-friendly`
 - Baseline: `a4afa82` on main
 - Scope: Presenter UI and its fixed Test operation plans
@@ -445,3 +445,57 @@ This handles loss of the original Presenter session after ordinary cleanup,
 retains the uncertain attempt and does not turn runtime readiness into an
 assignment fact. The installed candidate remains unchanged. Negative unit gates
 cover changed Test, service, steps and resolution, plus attempted Cloud mutation.
+
+After a clean API shutdown, the visible browser driver must explicitly click
+the existing Restore window layout action through Demo controls / Advanced
+settings before requiring native placement and ordering. Browser/runtime start
+does not constitute that request. Submit once with exact session/request
+binding; retain strict placement verification, uncertainty guards and failed
+attempts. This test-driver correction adds no product behavior or authority.
+
+A native Tire witness timeout after the six serial VDP/Brake stages may bind a
+separate Tire review without republishing. Require the same candidate/Test,
+closed owners, exactly that single witness failure, completed current-version
+preparation receipts, completed Tire publication and its reached native gate.
+The new visible review freshly checks all installed versions, clicks Tire
+maneuver and Return to road, requires a new matching Tire product and executes
+the remaining installed-browser checks. Keep the original failure unchanged;
+this is not a passed uninterrupted release story. Moving SOTA may use those
+settled release bindings but independently rechecks current installations.
+
+### Clean successor results and persistent launch
+
+The successor API sequence has 117 latest PASS results. Its original Cloud 503
+and read-only assignment reconciliation remain separately recorded, with the
+qualification-source review flag retained. The visible serial release story
+passed all six VDP/Brake stages and completed Tire publication, but expired at
+the agent's native Tire witness gate. A separately bound Tire/installed review
+passed all 21 stages; moving SOTA then passed all 12 stages, keeping Test identity
+and VDP unchanged. Neither pass rewrites the interrupted story.
+
+Native signed Setup and WKWebView checks on 11–12 October confirmed the same
+Test's Start controller, simulator startup, deliberate Manual attachment,
+verified live window placement/ordering, Stop cancellation and confirmed Stop.
+After the DMG was detached, the installed application reached Ready to open
+SDV Lab and opened the stopped Test again without installation or provisioning.
+These bounded native checks do not qualify new-account/token-entry flow,
+first-time OS permissions or installation interruption/repair.
+
+The low-level qualification plan had omitted the existing Setup
+`install-launcher` phase, leaving the previous signed application pin in the
+user Applications folder. Its refusal to open the different selected runtime
+was correct. Native Continue installation completed that phase and refreshed
+the application without changing the DMG. Future plans now include the pinned
+launcher phase after backend preparation and before Cloud setup: 118 steps.
+Fresh status must observe runtime, backends and launcher; reconciliation is
+read-only. The completed historical 117-step report is not retroactively
+expanded or passed as that new plan. Detailed results and remaining acceptance
+boundaries are in the linked qualification receipt.
+
+Final closure confirmed zero demo processes/listeners, Setup processes and
+running containers, with the installer media detached. Persistent Test data
+and the same running Docker Engine remain. Final source gates passed 97
+journey/campaign/remote tests, 15 qualification-script tests, 19 Node UI guards
+and 19 documentation tests, plus documentation and whitespace validation.
+These source gates do not promote the separate live experiments into one
+uninterrupted full-E2E pass. Main integration remains explicitly pending.

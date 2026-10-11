@@ -158,6 +158,16 @@ Stop. Publication is not part of this scenario. Every mutation comes from an
 actual browser click and must match the exact currently armed command. Unknown
 responses stop the sequence; no direct mutation adapter or blind retry exists.
 
+In visible M1 mode, the driver explicitly opens Demo controls / Advanced
+settings and clicks Restore window layout after attachment. It arms the tab's
+single read-only Cloud inspection separately from the layout request. If the
+existing layout owner initially returns PARTIAL while its bounded recovery is
+pending, observe that same request until exact placement, verified ordering and
+owner quiescence settle; never replay it or rewrite the receipt as COMPLETED.
+The agent then checks the actual visible composition. Focus Driving Control
+through its title before clicking a native action: an inactive window may
+consume the first click for activation without executing the action.
+
 `release-story` additionally prepares and publishes VDP V1/V2/V3 and Brake
 V1/V2/V3 serially, then Tire V1, on the retained Test. Release values are obtained
 from preparation receipts. Each matching installation must be observed before
@@ -182,6 +192,16 @@ CUA click. Wrong stages/actions/identities and repeated acknowledgements fail
 closed. This is agent-assisted native UI execution, not a fully unattended
 native test. An unexecuted gate times out, fails the scenario and triggers
 ordinary shutdown. Native gates retain their failed evidence.
+
+For the exact `release-story` interruption at the Tire native witness after
+all six serial VDP/Brake stages pass, `--scenario tire-review` can use
+`--cards-from-release-records` for that closed attempt. Its strict binding
+requires completed current-version preparations and Tire publication, plus the
+reached Tire gate. It freshly confirms all three installations, performs a
+new witnessed Tire maneuver and Return to road, and runs the ordinary installed
+UI checks. It publishes nothing and never rewrites the original FAIL. The
+same settled release binding may feed moving SOTA, whose current installation
+and motion checks remain independent. Other failures cannot use this exception.
 
 The initial desktop check requires an unlocked M1 before owners start. A lock
 observed during placement stops instead of waiting minutes for a nonexistent
@@ -552,10 +572,21 @@ requirement. It does not create,
 provision, publish or assign again. This is live engineering coverage of normal
 product plans, not native-button acceptance or destructive retirement.
 
+The installation phase includes the canonical signed Setup `install-launcher`
+action after backend image preparation and before Cloud/runtime use. Fresh
+`setup-status` must confirm the selected local payload, backend images and
+persistent launcher. Runtime installation alone cannot close first-use
+installation: an old signed launcher can correctly reject a different selected
+payload. If a launcher result is lost, reconcile through `setup-status` only;
+do not repeat the installation action. This adds one step to new plans (118);
+retain historical 117-step records without rewriting their definitions.
+Native repeat-open with the DMG absent remains a distinct CUA acceptance check.
+
 Native operator flow, secure token entry, service update while moving, and
 installation interruption/repair retain separate acceptance gates. Finish is
-not part of automatic cleanup. The current implementation has no automatic
-Finish wrapper or moving-SOTA adapter. Full E2E stays `NOT_COMPLETE` regardless
+not part of automatic cleanup. The API journey has no automatic Finish wrapper;
+moving-SOTA uses the separately scoped visible UI scenario described above.
+Full E2E stays `NOT_COMPLETE` regardless
 of successful scripted steps until the separate acceptance evidence is closed.
 See the [runner qualification record](../../docs/qualification/scripted-journey-2026-10-02.md)
 for actual unit and M1 execution results.

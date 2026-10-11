@@ -334,7 +334,7 @@ class Worker:
 
     def setup(self):
         action = self.args['action']
-        require(set(self.args) == {'action'} and action in ('prepare-backends', 'cloud-pair', 'cloud-check', 'cloud-subjects', 'launch'), 'SETUP_ACTION_INVALID')
+        require(set(self.args) == {'action'} and action in ('prepare-backends', 'install-launcher', 'cloud-pair', 'cloud-check', 'cloud-subjects', 'launch'), 'SETUP_ACTION_INVALID')
         app = Path(self.config['setupApp'])
         subprocess.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', str(app)], check=True,
                        capture_output=True, timeout=30)
@@ -360,6 +360,23 @@ class Worker:
             value = self.setup_call(action)
             require(value['status'] == 'BACKEND_IMAGES_AVAILABLE' and value['imagesVerified'] == 2, 'BACKEND_IMAGES_NOT_READY')
             return result({k:value[k] for k in ('status', 'imagesVerified', 'importAttempted')})
+        if action == 'install-launcher':
+            # The low-level package installer does not install the persistent
+            # signed application. Complete that existing Setup phase explicitly;
+            # an installed runtime alone must not pass first-use installation.
+            if self.request['phase'] != 'reconcile':
+                self.attempted = True
+                value = self.setup_call(action)
+                require(value['status'] == 'SETUP_LAUNCHER_INSTALLED', 'SETUP_LAUNCHER_NOT_CONFIRMED')
+            observed = self.setup_call('setup-status')
+            require(observed.get('status') == 'SETUP_INSTALLED_OBSERVED'
+                and all(observed.get(key) is True for key in
+                    ('localInstalled', 'backendsObserved', 'launcherObserved')),
+                'SETUP_LAUNCHER_NOT_OBSERVED')
+            # Status also contains credential paths. Persist fixed facts only.
+            return result(dict(status='SETUP_LAUNCHER_INSTALLED', launcherObserved=True,
+                localInstalled=True, backendsObserved=True,
+                reconciliationOnly=self.request['phase'] == 'reconcile'))
         pair = dict(oem=self.config['oemCertificate'], sp=self.config['spCertificate'])
         observed = self.setup_call('cloud-inspect', **pair)
         require(observed['domain'] == DOMAIN, 'STAGING_REQUIRED')

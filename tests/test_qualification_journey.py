@@ -23,6 +23,15 @@ class Clock:
 
 
 class JourneyTests(unittest.TestCase):
+    def test_installation_includes_pinned_launcher_before_cloud_and_runtime(self):
+        steps = p.plan({'image': 'factory'})
+        ids = [step['id'] for step in steps]
+        self.assertEqual(next(s for s in steps if s['id'] == 'installed-launcher')['args'],
+                         dict(action='install-launcher'))
+        self.assertLess(ids.index('backend-images'), ids.index('installed-launcher'))
+        self.assertLess(ids.index('installed-launcher'), ids.index('cloud-pair'))
+        self.assertLess(ids.index('installed-launcher'), ids.index('presenter'))
+
     def test_stop_start_uses_existing_test_without_new_publication_or_provision(self):
         steps = p.plan({'image':'factory'})
         ids = [row['id'] for row in steps]
@@ -355,6 +364,40 @@ class JourneyTests(unittest.TestCase):
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_launcher_install_requires_fresh_status_and_reconcile_never_replays(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            app = Path(tmp) / 'Setup.app'
+            executable = app / 'Contents/MacOS/SDVLabSetup'
+            release = app / 'Contents/Resources/tooling/scripts/distribution/setup_release.json'
+            executable.parent.mkdir(parents=True); executable.write_bytes(b'fixture')
+            release.parent.mkdir(parents=True); release.write_text(json.dumps(dict(manifestSha256='a'*64)))
+            worker = object.__new__(w.Worker)
+            worker.config = dict(setupApp=str(app), setupSha256=hashlib.sha256(b'fixture').hexdigest())
+            worker.pin = 'a'*64; worker.args = dict(action='install-launcher')
+            worker.request = dict(phase='execute'); worker.attempted = False
+            installed = dict(status='SETUP_LAUNCHER_INSTALLED')
+            observed = dict(status='SETUP_INSTALLED_OBSERVED', localInstalled=True,
+                backendsObserved=True, launcherObserved=True, oemPath='private-path', spPath='private-path')
+            with patch.object(w.subprocess, 'run'):
+                worker.setup_call = Mock(side_effect=[installed, observed])
+                value = worker.setup()
+                self.assertEqual(value['outcome'], 'PASS')
+                self.assertTrue(worker.attempted)
+                self.assertEqual([call.args[0] for call in worker.setup_call.call_args_list],
+                                 ['install-launcher', 'setup-status'])
+                self.assertNotIn('private-path', json.dumps(value))
+                worker.request['phase'] = 'reconcile'; worker.attempted = False
+                worker.setup_call = Mock(return_value=observed)
+                self.assertTrue(worker.setup()['facts']['reconciliationOnly'])
+                worker.setup_call.assert_called_once_with('setup-status')
+                self.assertFalse(worker.attempted)
+                for field in ('localInstalled', 'backendsObserved', 'launcherObserved'):
+                    for bad in (False, None, 1, 'true'):
+                        worker.setup_call = Mock(return_value=dict(observed, **{field: bad}))
+                        with self.assertRaisesRegex(ValueError, 'SETUP_LAUNCHER_NOT_OBSERVED'):
+                            worker.setup()
+                        worker.setup_call.assert_called_once_with('setup-status')
+
     def test_prior_component_update_must_settle_before_new_publication(self):
         def sample(state='CURRENT', rows=None):
             return w.component_idle_projection(dict(components=dict(state=state, value=rows)))

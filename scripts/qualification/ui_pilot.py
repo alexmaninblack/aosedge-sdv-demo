@@ -209,6 +209,36 @@ def completed_release_binding(report, browser, events, candidate, test):
               and {'vdp-v1','brake-v1','vdp-v2','brake-v2','vdp-v3','brake-v3',
                    'tire-v1','return-to-road','confirmed-stop'} <= {row.get('stage') for row in stages},
               'COMPLETED_RELEASE_STAGES_REQUIRED')
+    return release_receipts(events)
+
+
+def interrupted_tire_binding(report, browser, events, candidate, test):
+    """Keep the failed story intact; bind only its settled releases for fresh reads."""
+    h.require(report.get('scenario') == browser.get('scenario') == 'release-story'
+              and report.get('outcome') == browser.get('outcome') == 'FAIL'
+              and report.get('candidate') == candidate and report.get('test') == test
+              and report.get('ownersClosed') is True, 'INTERRUPTED_TIRE_BINDING_REQUIRED')
+    stages = browser.get('stages', [])
+    passed = {row.get('stage') for row in stages if row.get('outcome') == 'PASS'}
+    failures = [row for row in stages if row.get('outcome') != 'PASS']
+    h.require({'vdp-v1','brake-v1','vdp-v2','brake-v2','vdp-v3','brake-v3'} <= passed
+              and len(failures) == 1 and failures[0].get('stage') == 'tire-v1'
+              and failures[0].get('code') == 'NATIVE_UI_BROKER_UNAVAILABLE',
+              'INTERRUPTED_TIRE_STAGES_REQUIRED')
+    waits = [row for row in events if row.get('state') == 'WAITING_FOR_NATIVE_UI'
+             and row.get('stage') == 'tire-v1-maneuver' and row.get('action') == 'Tire maneuver']
+    h.require(len(waits) == 1, 'TIRE_INSTALL_GATE_REQUIRED')
+    receipt = release_receipts(events)
+    handle = 'tire/' + receipt['tire-v1-prepare']['version']
+    intents = [row for row in events if row.get('state') == 'DISPATCH_INTENT'
+               and row.get('action') == 'service-publish' and row.get('release') == handle]
+    h.require(len(intents) == 1 and any(row.get('requestId') == intents[0]['requestId']
+              and row.get('productState') == 'COMPLETED' and row.get('releaseHandle') == handle
+              for row in events), 'TIRE_PUBLICATION_RECEIPT_REQUIRED')
+    return receipt
+
+
+def release_receipts(events):
     intents = {row['requestId']:row for row in events if row.get('state') == 'DISPATCH_INTENT'}
     result = {}
     for key,action,team,profile in (('vdp-v3-prepare','prepare',None,'v3'),
@@ -230,7 +260,8 @@ def run(args, transport, config):
         prior = h.unlinked(args.cards_from_release_records)
         h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_RELEASE_RECORD_REQUIRED')
         report = h.parse((prior/'pilot-report.json').read_bytes())
-        bind = completed_release_binding if report.get('scenario') == 'release-story' else settled_release_binding
+        bind = (completed_release_binding if report.get('outcome') == 'PASS' else interrupted_tire_binding) \
+            if report.get('scenario') == 'release-story' else settled_release_binding
         receipt = bind(report, h.parse((prior/'browser-report.json').read_bytes()),
             [json.loads(line) for line in (prior/'ui-events.jsonl').read_text().splitlines()],
             config['manifestSha256'],args.test)
@@ -380,7 +411,7 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return', 'moving-sota'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota'), default='installed')
     parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')
     parser.add_argument('--cards-from-release-records', type=Path,
                         help='Passed release story or exact native-witness-interrupted continuation records')
@@ -398,8 +429,8 @@ def main():
     config = j.configuration(args.journey, transport['user'])
     h.require((args.scenario == 'release-continuation') == (args.continue_from is not None),
               'CONTINUATION_RECORD_BOUNDARY')
-    h.require(not args.cards_from_release_records or args.scenario in ('installed','road-return','moving-sota'), 'INSTALLED_CARD_RECORD_BOUNDARY')
-    h.require(args.scenario not in ('road-return','moving-sota') or args.cards_from_release_records is not None,
+    h.require(not args.cards_from_release_records or args.scenario in ('installed','tire-review','road-return','moving-sota'), 'INSTALLED_CARD_RECORD_BOUNDARY')
+    h.require(args.scenario not in ('tire-review','road-return','moving-sota') or args.cards_from_release_records is not None,
               'ROAD_RETURN_RELEASE_RECORD_REQUIRED')
     if args.query:
         print(json.dumps(read_query(transport, config, args.test, args.query, args.team, args.release)))
