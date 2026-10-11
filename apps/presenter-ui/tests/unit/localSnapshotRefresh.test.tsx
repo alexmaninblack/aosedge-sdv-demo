@@ -83,15 +83,16 @@ describe("local lifecycle refresh", () => {
     const view = render(<PresenterReadModelProvider dependencies={dependencies}><PresenterApp /></PresenterReadModelProvider>);
     try {
       expect(await screen.findByText("Retirement paused")).toBeInTheDocument();
-      await waitFor(() => expect(screen.getByRole("button", { name: /^Refresh$/ })).toBeEnabled());
+      await waitFor(() => expect(screen.getByRole("button", { name: "Refresh Cloud state" })).toBeEnabled());
       local = retired;
       await act(async () => {
         if (trigger === "focus") window.dispatchEvent(new Event("focus"));
-        else fireEvent.click(screen.getByRole("button", { name: /^Refresh$/ }));
+        else fireEvent.click(screen.getByRole("button", { name: "Refresh Cloud state" }));
       });
       expect(await screen.findByRole("button", { name: "Create controller" })).toBeInTheDocument();
       expect(screen.queryByText("Retirement paused")).not.toBeInTheDocument();
-      expect(screen.getByRole("combobox", { name: "Factory image" })).toBeEnabled();
+      expect(screen.queryByRole("combobox", { name: "Factory image" })).toBeNull();
+      expect(screen.getByText("Factory .33")).toBeVisible();
       expect(fetcher.mock.calls.every(([path]) => ["/api/presenter/snapshot", "/api/presenter/platform", "/api/presenter/client-state"].includes(path))).toBe(true);
     } finally { view.unmount(); }
   });

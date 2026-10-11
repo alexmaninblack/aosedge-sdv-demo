@@ -18,5 +18,5 @@ export function FinishAcknowledgement({ jobs, noController, emptyMessage }: { jo
     return () => clearInterval(timer);
   }, [noController, job?.id]);
   if (!visible) return emptyMessage ? <p>{emptyMessage}</p> : null;
-  return <div className="studio-finish-ack" role="status"><span><strong>Demo finished</strong> · {job.results.find(result => result.operation === "demo.retire" && result.state === "COMPLETED")?.message}</span><button onClick={() => setDismissed(job.id)}>Dismiss</button></div>;
+  return <div className="studio-finish-ack" role="status"><span><strong>Test deleted</strong> · {job.results.find(result => result.operation === "demo.retire" && result.state === "COMPLETED")?.message}</span><button onClick={() => setDismissed(job.id)}>Dismiss</button></div>;
 }

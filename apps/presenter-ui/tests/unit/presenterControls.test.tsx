@@ -20,7 +20,7 @@ function setup(jobs: OperationSession["jobs"] = []) {
   return port;
 }
 describe("protected Presenter controls", () => {
-  it("only backend reset skips confirmation, retaining duplicate and session guards", async () => {
+  it("backend reset remains one click, retaining duplicate and session guards", async () => {
     const port = setup();
     await waitFor(() => expect(screen.getByText("Reset Brake")).toBeEnabled());
     const button = screen.getByText("Reset Brake"); fireEvent.click(button); fireEvent.click(button);
@@ -39,18 +39,18 @@ describe("protected Presenter controls", () => {
   });
   it("cancel has no effect; confirmed double click submits exactly one bound action", async () => {
     const port = setup();
-    await waitFor(() => expect(screen.getByText("Create")).toBeEnabled());
-    fireEvent.click(screen.getByText("Create"));
-    expect(screen.getByRole("dialog")).toHaveTextContent("31/arm64");
+    await waitFor(() => expect(screen.getByText("Publish")).toBeEnabled());
+    fireEvent.click(screen.getByText("Publish"));
+    expect(screen.getByRole("dialog")).toHaveTextContent("13.0.0");
     expect(port.submit).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Cancel"));
     expect(port.submit).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Create"));
-    const button = within(screen.getByRole("dialog")).getByRole("button", { name: "Create controller" });
+    fireEvent.click(screen.getByText("Publish"));
+    const button = within(screen.getByRole("dialog")).getByRole("button", { name: "Publish VDP to Aos Cloud" });
     fireEvent.click(button); fireEvent.click(button);
     await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
-    expect(port.submit.mock.calls[0]).toEqual([{ action: "create", image: "31/arm64" }, expect.any(String), "native-generation"]);
-    await waitFor(() => expect(screen.getByText(/Create controller · ACCEPTED/)).toBeInTheDocument());
+    expect(port.submit.mock.calls[0]).toEqual([{ action: "upload", version: "13.0.0" }, expect.any(String), "native-generation"]);
+    await waitFor(() => expect(screen.getByText(/Publish VDP to Aos Cloud · Starting/)).toBeInTheDocument());
     expect(screen.getByText("Create")).toBeDisabled();
   });
   it("publication identifies OEM authority and immediate Test eligibility without an approval gate", async () => {
@@ -63,7 +63,8 @@ describe("protected Presenter controls", () => {
     expect(dialog).toHaveTextContent("Selected session OEM certificate");
     expect(dialog).toHaveTextContent("13.0.0");
     expect(dialog).toHaveTextContent("no Production membership or assignment is changed");
-    expect(dialog).toHaveTextContent("no batch-approval step is required");
+    expect(dialog).toHaveTextContent("Eligible vehicles may receive it immediately");
+    expect(dialog).toHaveTextContent("native Safe Stop");
     expect(port.submit).not.toHaveBeenCalled();
   });
   it("explicit read requires no mutation confirmation", async () => {
@@ -73,6 +74,14 @@ describe("protected Presenter controls", () => {
     await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
     expect(port.submit.mock.calls[0]?.[0]).toEqual({ action: "observe-test" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+  it("Create is one click and rapid duplicate clicks still submit once", async () => {
+    const port = setup();
+    await waitFor(() => expect(screen.getByText("Create")).toBeEnabled());
+    fireEvent.click(screen.getByText("Create")); fireEvent.click(screen.getByText("Create"));
+    await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(port.submit.mock.calls[0]).toEqual([{ action: "create", image: "31/arm64" }, expect.any(String), "native-generation"]);
   });
   it.each([
     ["selected.stage.example", "brake/70", true],
@@ -107,5 +116,33 @@ describe("protected Presenter controls", () => {
     expect(request).toHaveBeenCalledTimes(1);
     expect(request.mock.calls[0]![0]).toBe("/api/presenter/operations");
     expect(JSON.parse(request.mock.calls[0]![1].body)).toEqual({ action: "approve", version: "13.0.0", requestId: "request", sessionId: "generation" });
+  });
+  it.each([
+    { action: "prepare", profile: "v1" }, { action: "service-prepare", team: "tire", profile: "v1" },
+    { action: "start-simulation" }, { action: "start-demo" }, { action: "workspace-restore" },
+  ] as DemoCommand[])("routine $action sends one bound request without confirmation", async command => {
+    const value: OperationSession = { sessionId: "bound-session", active: null, uncertain: false, jobs: [] };
+    const port = { read: async () => value, submit: vi.fn(async (sent: DemoCommand, id: string) => ({ id, ...sent, state: "ACCEPTED", startedAt: "now", results: [], progress: [] })) };
+    function Action() { const controls = usePresenterControls(); return <button disabled={controls.blocked} onClick={() => controls.request(command)}>Run</button>; }
+    render(<PresenterControls port={port}><Action /></PresenterControls>);
+    await waitFor(() => expect(screen.getByText("Run")).toBeEnabled());
+    fireEvent.click(screen.getByText("Run")); fireEvent.click(screen.getByText("Run"));
+    await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
+    expect(port.submit.mock.calls[0]).toEqual([command, expect.any(String), "bound-session"]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+  it.each(["stop-demo", "reset", "service-assign", "provision", "prepare-demo", "cloud-select", "cloud-prepare"] as const)("$action stays confirmed; cancellation submits nothing", async action => {
+    const value: OperationSession = { sessionId: "bound-session", active: null, uncertain: false, jobs: [] };
+    const port = { read: async () => value, submit: vi.fn() };
+    function Action() { const controls = usePresenterControls(); return <button disabled={controls.blocked} onClick={() => controls.request({ action })}>Run</button>; }
+    render(<PresenterControls port={port}><Action /></PresenterControls>);
+    await waitFor(() => expect(screen.getByText("Run")).toBeEnabled()); fireEvent.click(screen.getByText("Run"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Technical details and execution checks").closest("details")).not.toHaveAttribute("open");
+    if (action === "reset") expect(dialog).toHaveTextContent("Permanently delete");
+    if (action === "stop-demo") { expect(dialog).toHaveTextContent("Keep its Cloud identity, disk, models and history"); expect(dialog).not.toHaveTextContent("Permanently delete"); }
+    expect(port.submit).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull(); expect(port.submit).not.toHaveBeenCalled();
   });
 });

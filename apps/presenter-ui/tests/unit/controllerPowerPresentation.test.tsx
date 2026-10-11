@@ -23,8 +23,9 @@ test("ignition off is not Finish or legacy Park/Resume; writes remain guarded", 
   expect(screen.queryByText(/Reset unavailable during Finish/)).toBeNull();
   expect(screen.getAllByText(/Reset unavailable while the controller is switched off/)).toHaveLength(2);
   for (const team of ["Brake", "Tire"]) expect(screen.getByRole("button", { name: `Reset Driver Advisory — ${team}` })).toBeDisabled();
-  expect(screen.queryByRole("button", { name: "Finish demo" })).toBeNull();
-  expect(controls.request).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: "Delete Test & start over" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Start controller" }));
+  expect(controls.request).toHaveBeenCalledWith({ action: "start-demo" });
 });
 test("powered-off controller cannot prepare or publish a release", () => {
   view("STOPPED", undefined, "platform");
@@ -34,15 +35,15 @@ test("powered-off controller cannot prepare or publish a release", () => {
 });
 test.each(["park", "resume"])("legacy %s stays separate from ignition and actual Finish", action => {
   view("STOPPED", { action, state: "PARTIAL" });
-  expect(screen.getByText("Demo interrupted", { selector: "strong" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Finish demo" })).toBeVisible();
+  expect(screen.getByText("Legacy run interrupted", { selector: "strong" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Delete Test & start over" })).toBeVisible();
   expect(screen.queryByText(/Reset unavailable during Finish/)).toBeNull();
 });
 test("actual partial retirement still offers only Continue Finish", () => {
   view("STOPPED", { action: "retire", state: "PARTIAL", phase: "stop-test" });
   expect(screen.getByText("Retirement paused", { selector: "strong" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Continue Finish" })).toBeVisible();
-  expect(screen.getAllByText("Reset unavailable during Finish.")).toHaveLength(2);
+  expect(screen.getByRole("button", { name: "Continue Test deletion" })).toBeVisible();
+  expect(screen.getAllByText("Reset unavailable during Test deletion.")).toHaveLength(2);
   expect(screen.queryByText("Controller switched off", { selector: "strong" })).toBeNull();
 });
 test("recovery busy is not a premature manual-connect instruction", () => {
@@ -54,7 +55,8 @@ test("recovery busy is not a premature manual-connect instruction", () => {
 });
 test("Session describes ignition recovery without destructive shutdown advice", () => {
   view("RUNNING");
-  fireEvent.click(screen.getByRole("button", { name: "Session" }));
+  fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));
+  fireEvent.click(screen.getByText("Ignition recovery limits"));
   expect(screen.getByRole("dialog")).toHaveTextContent("After controller ignition off/on");
   expect(screen.getByRole("dialog")).not.toHaveTextContent("Finish before shutting down");
 });

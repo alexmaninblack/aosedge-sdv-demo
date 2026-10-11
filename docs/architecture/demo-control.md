@@ -3,6 +3,31 @@
 
 # Demo Control
 
+## Isolated Presenter operator increment — 11 October 2026
+
+The [authorized operator-experience packet](../planning/active/work-packets/presenter-human-friendly.md)
+is implemented on `codex/presenter-human-friendly`, not accepted on main or in
+the installed kit. Its two fixed Presenter actions compose existing owners:
+
+- `stop-demo`: Test-scoped simulation stop, Test VM stop, Tire backend stop,
+  then Brake backend stop. Each owner must confirm before the next step.
+  Preserve Unit/Node identity, disks, models, context and history. Do not invoke
+  retirement, Cloud deletion, Docker Engine shutdown or Production operations.
+- `start-demo`: start the existing Test VM, then Brake and Tire backends using
+  retained images/data. Do not Create, provision or publish. Existing simulator
+  startup and stationary Manual attachment remain separate guided operations;
+  do not start Autopilot.
+
+The command envelope remains action/request/session only. These actions accept
+no caller-selected target, path, shell or force flag. They share the existing
+single-job, request-receipt, workspace/recovery interlocks and unknown-result
+reconciliation. Partial owner results stop the composition; no new lifecycle
+journal, credential channel, implicit retry or fallback is introduced.
+Presenter's legacy `reset` still invokes exact Test retirement, now labelled
+Delete Test & start over. Closing Presenter only closes its UI; it is neither
+the new preservation stop nor deletion. Source/browser tests are not a live
+native stop/start or clean-install qualification claim.
+
 ## Portable preparation input increment — 26 September 2026
 
 The accepted [Stage 2 distribution plan](../planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts)

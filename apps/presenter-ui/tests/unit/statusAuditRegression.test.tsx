@@ -32,8 +32,8 @@ test('provisioned controller can connect to the already running simulator',async
 test.each(['park','resume'])('historical %s checkpoint offers Finish, never same-run restart',async(action)=>{
  const snapshot={...local,source:{state:'STOPPED',currentVehicle:null},lifecycle:{action,state:'PARTIAL',phase:'start-test',reason:'CLOUD_GUEST_CONFIGURATION_UNCONFIRMED'}};
  app(async()=>cloud(),snapshot);
- expect(await screen.findByText('Demo interrupted',{selector:'strong'})).toBeVisible();
- expect(screen.getByRole('button',{name:'Finish demo'})).toBeVisible();
+ expect(await screen.findByText('Legacy run interrupted',{selector:'strong'})).toBeVisible();
+ expect(screen.getByRole('button',{name:'Delete Test & start over'})).toBeVisible();
  expect(screen.queryByRole('button',{name:/Resume/})).toBeNull();
  expect(screen.queryByRole('button',{name:'Start simulator'})).toBeNull();
  expect(screen.getByText(/CLOUD_GUEST_CONFIGURATION_UNCONFIRMED/)).toBeVisible();
@@ -64,7 +64,7 @@ test('regression: open details follow refreshed inventory',async()=>{
  vi.useFakeTimers();
  let value=cloud(); const read=vi.fn(async()=>value);
  await act(async()=>{app(read);});
- fireEvent.click(screen.getByRole('button',{name:/Vehicle Data Platform.*1.0.0/}));
+ fireEvent.click(screen.getByRole('button',{name:'Vehicle Data Platform installed details'}));
  expect(screen.getByRole('dialog')).toHaveTextContent('1.0.0');
  value=cloud('2.0.0');
  // Background controls are correctly inert while the modal is open.

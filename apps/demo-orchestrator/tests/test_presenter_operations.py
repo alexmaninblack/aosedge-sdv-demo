@@ -27,6 +27,60 @@ def completed(request):
 
 
 class OperationTests(unittest.TestCase):
+    def test_preserving_stop_and_start_have_fixed_owner_plans(self):
+        session = SessionOperations()
+        stop = operation_plan(payload(session, "stop-demo"))[1]
+        self.assertEqual([dict(domain="simulation", action="stop", target="test"),
+            dict(domain="vm", action="stop", target="test"),
+            dict(domain="backend", action="stop", team="tire"),
+            dict(domain="backend", action="stop", team="brake")], stop)
+        start = operation_plan(payload(session, "start-demo"))[1]
+        self.assertEqual([dict(domain="vm", action="start", target="test"),
+            dict(domain="backend", action="start", team="brake"),
+            dict(domain="backend", action="start", team="tire")], start)
+        for action in ("stop-demo", "start-demo"):
+            for field in (dict(target="production"), dict(force=True), dict(path="/tmp/state")):
+                with self.assertRaises(ValueError):
+                    operation_plan(payload(session, action, **field))
+
+    def test_preserving_stop_halts_on_unconfirmed_owner_and_never_replays(self):
+        def execute(request):
+            return dict(operation=request["domain"] + "." + request["action"],
+                        state="BLOCKED" if request["domain"] == "vm" else "COMPLETED", message="observed")
+        worker = Mock(side_effect=execute)
+        session = SessionOperations(worker)
+        request = payload(session, "stop-demo")
+        session.submit(request)
+        self.assertEqual("BLOCKED", self.finish(session)["state"])
+        self.assertEqual(["simulation", "vm"], [call.args[0]["domain"] for call in worker.call_args_list])
+        session.submit(request)
+        self.assertEqual(2, worker.call_count)
+
+    def test_preserving_stop_unknown_result_blocks_start_and_delete(self):
+        worker = Mock(side_effect=RuntimeError("private failure"))
+        session = SessionOperations(worker)
+        request = payload(session, "stop-demo")
+        session.submit(request)
+        self.assertEqual("UNCERTAIN", self.finish(session)["state"])
+        session.submit(request)
+        worker.assert_called_once()
+        for action in ("start-demo", "reset"):
+            with self.assertRaisesRegex(ValueError, "UNCERTAIN_OPERATION"):
+                session.submit(payload(session, action))
+
+    def test_preserving_plans_cross_existing_api_without_cloud_or_retirement(self):
+        for action in ("start-demo", "stop-demo"):
+            application = Mock()
+            application.execute.side_effect = lambda request: OperationResult(
+                request.domain + "." + request.action, OperationState.COMPLETED, "owner confirmed")
+            session = SessionOperations(lambda request: execute_operation(request, application))
+            session.submit(payload(session, action))
+            self.assertEqual("COMPLETED", self.finish(session)["state"])
+            calls = [call.args[0] for call in application.execute.call_args_list]
+            self.assertTrue(all(request.domain in ("vm", "simulation", "backend") for request in calls))
+            self.assertTrue(all(request.target == VehicleTarget.TEST for request in calls if request.domain != "backend"))
+            self.assertTrue(all(not request.restart_cm and not request.restart_sm for request in calls))
+
     def test_boot_recovery_interlock_and_public_status(self):
         session = SessionOperations(Mock(side_effect=completed))
         session.source_recovery_busy = True

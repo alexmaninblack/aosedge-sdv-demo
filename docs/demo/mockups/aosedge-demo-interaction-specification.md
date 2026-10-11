@@ -32,6 +32,17 @@
 
 ## UI-STUDIO-026 — current Test Studio contract
 
+### Presenter operator experience October amendment
+
+The operator authorized the [Presenter operator experience packet](../../planning/active/work-packets/presenter-human-friendly.md)
+on 11 October 2026 for implementation and testing on a separate branch.
+For that branch, its ordinary controls, contextual next-step guidance, compact
+confirmations, explicit non-destructive stop/start and clearly named Test
+deletion supersede conflicting earlier Studio presentation rules below.
+Existing operation ownership, Safe Stop, serial delivery, uncertain-response
+reconciliation and Production exclusion remain unchanged. Branch test results
+do not establish acceptance or integration on main.
+
 Accepted scope reconciliation: 9 September 2026. This section is the current
 interaction contract for the Test-only Studio B flow. It incorporates the
 [accepted questionnaire and subsequent amendments](../../planning/active/demo-studio-delivery-plan.md).

@@ -1,6 +1,11 @@
 # Presenter UI
 
-## Current Studio integration — 7 October 2026
+## Presenter operator-experience branch — 11 October 2026
+
+This revision is isolated on `codex/presenter-human-friendly`, for testing before
+integration into main. The [authorized work packet](../../docs/planning/active/work-packets/presenter-human-friendly.md)
+defines its scope. It does not replace the accepted installed kit or claim live
+M1 qualification. The implementation and test evidence are recorded there.
 
 The accepted visual/interaction reference is [Studio 2.8](../../docs/demo/mockups/aosedge-demo-interaction-mockup-2-8.html), qualified by the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 The original mockup is unchanged. Live state comes from existing Demo Control operations, not mockup timers.
@@ -8,11 +13,13 @@ The original mockup is unchanged. Live state comes from existing Demo Control op
 The physical workspace remains CARLA upper-left, the combined native Driving
 Control/telemetry below, and Studio on the right. CARLA is neither embedded nor
 restyled. The shared header contains brand, accepted vehicle assignment and
-Session; team navigation belongs to the right panel.
+no session/configuration controls; team navigation and the single Demo controls
+entry belong to the right panel, including the native browser window.
 
 ### Operator flow
 
-1. Full story: choose Factory firmware, Create controller, then start the
+1. Full story: inspect Factory firmware (choose only when multiple images are
+   available), Create controller, then start the
    detached simulator. Create prepares Test and its backends, not Production;
    it does not provision. Connect to that Test only after provisioning/Online,
    starting stationary in Manual.
@@ -24,20 +31,28 @@ Session; team navigation belongs to the right panel.
 4. VDP installation follows native Safe Stop. Installed and Pending are Cloud
    facts; VDP process state is **Not reported by Cloud**.
 5. Brake/Tire: Prepare, Sign & publish through the configured Service Provider.
-   The first READY release exposes Deploy to Test: Demo Control first runs
+   The first READY release exposes Assign to Test: Demo Control first runs
    `service runtime-prepare test`, then OEM binds the dedicated retained Group
    Subject and exact service identity, preserving its peer. Preparation failure
    prevents assignment; unchanged inputs are reused without an SM restart.
    Later higher releases use only Publish. No service update requires Safe Stop.
 6. Backend cards open product results; Aos Cloud opens Software/Resources.
-   Component/service cards expose only their scoped details.
-7. Session offers Finish demo; Park/Resume have been removed. Pause with
-   Safe Stop while the controller stays running. Ignition recovery is separate.
-   Finish retires only owned Test state; Factory originals, Cloud releases and
-   release continuity survive. Production remains untouched.
+   Installed component/service details and Manage releases are separate actions.
+   Preparation, publication, assignment and running have separate observed stages.
+7. Demo controls defaults to Runtime. Pause with Safe Stop while the controller
+   stays running. Stop demo and keep data stops the owned Test simulator, VM and
+   two backends, preserving identity, disk, models and history. Docker Engine
+   stays running. A stopped controller offers Start controller without Create,
+   provisioning or republication; the guide then leads through simulator and
+   Manual connection readiness. Ignition recovery remains separate.
+8. Delete Test & start over is explicitly destructive, under Delete this Test.
+   It uses the existing retirement owner, not the preservation stop. Factory
+   originals, Cloud releases and release continuity survive; Production remains
+   untouched. Unknown or conflicting outcomes block both stop and deletion.
 
-Quick preparation is an explicit alternative composing the existing Test-only
-sequence. Opening a page never starts it. The contextual guide derives the next
+Quick preparation is a pre-Create alternative under Advanced preparation,
+composing the existing Test-only sequence. Its recorded recipe survives reload
+and cannot be changed during a run. Opening a page never starts it. The contextual guide derives the next
 action from observations; it cannot manufacture missed intermediate states.
 Studio simulation Start/Stop always pass `--target test`; the unscoped CLI
 simulation path is not used by Presenter actions.
@@ -53,14 +68,21 @@ simulation path is not used by Presenter actions.
   synthetic .33 receipts and fixture mode are separate, never live evidence.
 - Native telemetry observes vehicle data only. It reads the existing advisory
   contract, rejects unknown values, and does not consume synthetic backend data.
-- Confirmation shows actor, exact candidate, target and effect. Cancel emits no
-  mutation. VM credentials use the existing macOS Use once / Save in Keychain
+- Routine local actions require one deliberate click. Publication, assignment,
+  provisioning, Cloud changes, quick preparation, stop and deletion retain an
+  effect-specific confirmation; technical actor/target checks are expandable.
+  Cancel emits no mutation. VM credentials use the existing macOS Use once / Save in Keychain
   dialog; no password, native capability, caller-selected shell/path/endpoint
   enters the browser.
 - One writer/job, no queue and no automatic mutation retry. Reload does not
   cancel work. Lost responses reconcile the original request ID. Unknown native
   outcomes refuse new mutations; terminal recovery remains an engineering
   intervention, not an invented Cancel/rollback operation.
+- Configure the complete OEM/SP pair in Setup. Presenter offers exceptional
+  OEM-only selection and Cloud checks under Advanced settings. Local certificate
+  presence is separate from authenticated access. Activity exposes scoped
+  operation receipts. Synthetic history is under Engineering history, not
+  an ordinary result mode; it retains its explicit mock labels.
 
 ### Observation and native refresh
 
@@ -117,4 +139,5 @@ The [current baseline](../../docs/qualification/current-baseline.md) separates
 Driver Advisory is on each backend's main card; independent result history is
 preserved. Cloud resource history, installed-profile mapping and backend
 function observation have separate authorities. Open demo opens Presenter,
-not a stopped controller; no native Power on action is implemented.
+not a stopped controller; this branch adds explicit Start controller through
+the existing Test VM/backend owners, without automatic driving.

@@ -31,7 +31,7 @@ test("Cloud entry/reentry and a failed refresh retain visibly last-known invento
   expect(cloudReads).toBeGreaterThanOrEqual(1);
   const initialReads = cloudReads;
   fail = true;
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
   await expect(page.getByText("Cloud installed · 18.0.0 · last known", { exact: true })).toBeVisible();
   await expect(page.getByText("Test Vehicle · Last known Cloud report", { exact: true })).toBeVisible();
   await expect.poll(() => cloudReads).toBe(initialReads + 1);

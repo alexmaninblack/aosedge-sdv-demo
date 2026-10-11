@@ -93,7 +93,7 @@ async function scenario(page: Page) {
   const state = { uid: "test-a", failBrake: false, oldBrake: false, pending: false, reset: false, failResources: false,
     statusOnlyPending: false, cloudCurrent: true, receiptAge: 0, partialEvents: false, productConflict: false, firstServicePending: false,
     profileState: "CURRENT", vdpProfile: "v3", profileId: "vdp-78", functionAge: 0, functionInput: "RECEIVING", functionActivity: "ACTIVE", functionConflict: false, windowMode: false, windowInterrupted: false, noResult: false, resetVersion: "58.0.0", resetOutcome: "CLEARED", resetConnected: true };
-  const calls: { path: string; method: string }[] = [];
+  const calls: { path: string; method: string; action?: string }[] = [];
   const now = new Date().toISOString();
   const windowRecord = { unitSystemUid: state.uid, serviceVersion: "56.0.0", eventId: "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
     serviceInstance: { serviceId: "brake-id", subjectId: "brake-subject", instanceIndex: 0, instanceId: "native-brake-v1" },
@@ -103,14 +103,22 @@ async function scenario(page: Page) {
     releaseHandle: `${team}/current`, runId: "dialog-run", serviceId: `${team}-id`, submitted: true, signed: true, demoMockedData: false, publication: { stage: "READY" } }));
   await page.route("**/api/**", route => {
     const path = new URL(route.request().url()).pathname;
-    calls.push({ path, method: route.request().method() });
+    const body = route.request().method() === "POST" ? route.request().postDataJSON() : undefined;
+    calls.push({ path, method: route.request().method(), action: body?.action });
     if (path === `/api/presenter/backend/brake/windows/${windowRecord.eventId}`) return route.fulfill({ json: {
       schemaVersion: 2, contractVersion: "2.0.0", resourceType: "WINDOW_DETAIL", unitRole: "VALIDATION", unitSystemUid: state.uid,
       window: { ...windowRecord, terminalState: state.windowInterrupted ? "INCOMPLETE_SOURCE_GAP" : "COMPLETE" }, samples: Array.from({ length: state.windowInterrupted ? 30 : 150 }, (_, i) => ({ sampleIndex: i,
         sourceTimestamp: new Date(Date.parse(now) + i * 100).toISOString(), phase: i < 50 ? "PRE" : i < 100 ? "ACTIVE" : "POST",
         speedKph: Math.max(0, 50 - Math.max(0, i - 50)), brakePedalPercent: i >= 50 && i < 100 ? 70 : 0,
         longitudinalAccelerationMps2: i >= 50 && i < 100 ? -3 : 0 })) } });
-    if (path.endsWith("/operations")) return route.fulfill({ json: { sessionId: "dialog", cloudDomain: "fixture.test", active: null, uncertain: false, jobs: [] } });
+    if (path.endsWith("/operations")) {
+      if (body) {
+        expect(body.action).toBe("cloud-inspect");
+        return route.fulfill({ status: 202, json: { id: body.requestId, action: "cloud-inspect", state: "COMPLETED", startedAt: now,
+          progress: [], results: [{ operation: "cloud.inspect", state: "OBSERVED", message: "Fixture local inspection", facts: { domain: "fixture.test" } }] } });
+      }
+      return route.fulfill({ json: { sessionId: "dialog", cloudDomain: "fixture.test", active: null, uncertain: false, jobs: [] } });
+    }
     if (path.endsWith("/snapshot")) return route.fulfill({ json: {
       mode: "LOCAL_READ_ONLY", runId: "dialog-run", observedAt: now, registrationComplete: true, access: {}, serviceReleases: releases,
       candidates: [{ version: "78.0.0", contentProfile: "v3", submitted: true }],
@@ -199,7 +207,8 @@ test("reaudit: first service delivery has observation guidance, without republis
   await expect(guide).toContainText("Brake 58.0.0");
   await expect(guide).toContainText("Safe Stop is not required");
   await expect(guide).not.toContainText("Prepare and publish");
-  await expect(guide.getByRole("button", { name: "Refresh Cloud state" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Refresh Cloud state", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Refresh Cloud state", exact: true })).toHaveCount(1);
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
@@ -225,7 +234,7 @@ test("audit: old receipt and stale binding have matching qualifiers on card and 
   await expect(card).toContainText("Latest result received · 2d ago");
   await expect(card).toContainText(/Backend checked · \d+s ago/);
   fixture.state.cloudCurrent = false;
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
   await expect(card).toContainText("Inspection recommended · last known");
   await card.click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toContainText("Latest product result · last known");
@@ -341,7 +350,7 @@ test("service dialog separates installed compatibility from input and refreshes 
   fixture.state.vdpProfile = "v2";
   fixture.state.pending = true;
   await page.goto("/#native-browser");
-  await page.locator('[data-anchor="brake-service"]').click();
+  await page.getByRole("button", { name: "Brake service details", exact: true }).click();
   const compatibility = page.getByRole("region", { name: "Installed software compatibility" });
   await expect(compatibility).toContainText("VDP V3 or later");
   await expect(compatibility).toContainText("Required VDP profile not installed · VDP V2");
@@ -350,7 +359,7 @@ test("service dialog separates installed compatibility from input and refreshes 
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(compatibility).toContainText("Compatible · VDP V3");
   await page.keyboard.press("Escape");
-  await page.locator('[data-anchor="tire-service"]').click();
+  await page.getByRole("button", { name: "Tire service details", exact: true }).click();
   await expect(compatibility).toContainText("VDP V3 or later");
   await expect(compatibility).toContainText("Compatible · VDP V3");
   expect(fixture.calls.every(call => call.method === "GET" && !/guest|runtime-inspect/.test(call.path))).toBe(true);
@@ -361,10 +370,10 @@ for (const condition of ["STALE", "UNKNOWN", "wrong-artifact"]) test(`profile ${
   if (condition === "wrong-artifact") fixture.state.profileId = "vdp-pending";
   else fixture.state.profileState = condition;
   await page.goto("/#native-browser");
-  await expect(page.locator(".studio-guide")).not.toContainText("Software story complete");
+  await expect(page.locator(".studio-guide")).not.toContainText("Capabilities delivered");
   await expect(page.locator(".studio-guide")).toContainText(condition === "STALE" ? "Refresh installed profile" : "Installed profile not confirmed");
   if (condition === "STALE") await expect(page.locator(".studio-vdp")).toContainText("last known");
-  await page.locator('[data-anchor="brake-service"]').click();
+  await page.getByRole("button", { name: "Brake service details", exact: true }).click();
   const compatibility = page.getByRole("region", { name: "Installed software compatibility" });
   await expect(compatibility).toContainText(condition === "STALE" ? "Compatible · VDP V3 · last known" : "Not confirmed");
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
@@ -383,20 +392,22 @@ test("team dialog retains its authoring profile; details have no reset action an
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
-test("completed story offers confirmed Finish; old-release evidence never completes it", async ({ page }) => {
+test("completed software story offers confirmed non-destructive Stop; old-release evidence never completes it", async ({ page }) => {
   const fixture = await scenario(page);
   fixture.state.oldBrake = true;
   await page.goto("/#native-browser");
   await expect(page.getByRole("button", { name: "Brake backend Open dashboard" })).toContainText("No current-release result");
-  await expect(page.locator(".studio-guide")).not.toContainText("Software story complete");
+  await expect(page.locator(".studio-guide")).not.toContainText("Capabilities delivered");
   fixture.state.oldBrake = false;
   await page.getByRole("button", { name: "Brake backend Open dashboard" }).click();
   await page.getByRole("button", { name: "Refresh backend" }).click();
   await expect(page.getByText("INSPECTION RECOMMENDED", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.locator(".studio-guide")).toContainText("Software story complete");
-  await page.locator(".studio-guide").getByRole("button", { name: "Finish demo", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("Permanent, no backup");
+  await expect(page.locator(".studio-guide")).toContainText("Capabilities delivered");
+  await expect(page.locator(".studio-guide")).toContainText("not full qualification");
+  await page.locator(".studio-guide").getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Keep its Cloud identity, disk, models and history");
+  await expect(page.getByRole("dialog")).not.toContainText("There is no undo");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
@@ -448,19 +459,22 @@ for (const outcome of ["PENDING", "EXPIRED", "FAILED", "REJECTED"]) test(`reset 
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
-test("Session defaults to lifecycle without credential inspection; setup is an explicit section", async ({ page }) => {
+test("Demo controls default to runtime without credential inspection; settings are explicit", async ({ page }) => {
   const fixture = await scenario(page);
   await page.goto("/#native-browser");
   await expect(page.getByRole("heading", { name: "Your vehicle" })).toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new Event("presenter-session")));
-  await expect(page.getByRole("dialog", { name: "Demo session" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Demo controls" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^(Park|Resume|Continue Resume)$/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Finish demo", exact: true })).toBeEnabled();
-  await expect(page.getByRole("dialog")).toContainText("Use Safe Stop in Driving Control for a pause");
-  await expect(page.getByRole("button", { name: "Finish demo", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Test setup", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Check Cloud setup", exact: true })).toBeEnabled();
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Stop demo and keep data", exact: true })).toBeEnabled();
+  await expect(page.getByRole("dialog")).toContainText("For a driving pause, use Safe Stop");
+  await expect(page.getByRole("button", { name: "Delete Test & start over", exact: true })).toHaveCount(0);
+  await page.getByText("Delete this Test", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Delete Test & start over", exact: true })).toBeEnabled();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
+  await page.getByRole("button", { name: "Advanced settings", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Check Cloud setup", exact: true })).toBeEnabled();
+  expect(fixture.calls.every(call => call.method === "GET" || call.action === "cloud-inspect")).toBe(true);
 });
 
 test("switching the observed Test drops prior summaries and a resource failure stays labelled", async ({ page }) => {
@@ -483,11 +497,11 @@ test("switching the observed Test drops prior summaries and a resource failure s
   await expect(cloud).toContainText("DMIPS");
   await expect(cloud).toContainText("Memory");
   fixture.state.uid = "test-b"; fixture.state.failBrake = true;
-  await page.locator(".studio-footer").getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.locator(".studio-footer").getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
   await expect(cloud).not.toContainText("0 DMIPS");
   const brake = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
   await expect(brake).not.toContainText("Inspection recommended");
-  await expect(page.locator(".studio-guide")).not.toContainText("Software story complete");
+  await expect(page.locator(".studio-guide")).not.toContainText("Capabilities delivered");
 });
 
 test("service colors link matching backends while AosCore and Cloud share platform identity", async ({ page }) => {
@@ -496,7 +510,8 @@ test("service colors link matching backends while AosCore and Cloud share platfo
   await expect(core).toContainText("AosCore");
   await expect(core).toContainText("In-vehicle runtime");
   await expect(core.locator(".b2-service")).toBeVisible();
-  await expect(core.getByRole("combobox", { name: "Factory image" })).toBeDisabled();
+  await expect(core.getByRole("combobox", { name: "Factory image" })).toHaveCount(0);
+  await expect(core).toContainText("Factory .35");
   await expect(page.getByText("AosEdge platform", { exact: true })).toHaveCount(2);
   for (const team of ["brake", "tire"]) {
     const card = page.locator(`[data-anchor='${team}-backend']`);
@@ -574,7 +589,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1327, height: 851
     if (selector === ".studio-body" && !box.height) {
       expect(await page.locator(selector).evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
       await page.locator(".studio-controller").scrollIntoViewIfNeeded();
-      await expect(page.getByLabel("Factory image")).toBeInViewport();
+      await expect(page.locator(".studio-factory")).toBeInViewport();
       await page.locator('[data-anchor="cloud-backend"]').scrollIntoViewIfNeeded();
     } else if (!box.height && await page.getByRole("region", { name: "CPU and memory history" }).count()) {
       expect(await page.locator(selector).evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
@@ -608,7 +623,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1327, height: 851
     await page.keyboard.press("Escape");
   }
   for (const team of ["brake", "tire"]) {
-    await page.locator(`[data-anchor='${team}-service']`).click();
+    await page.getByRole("button", { name: `${team === "brake" ? "Brake" : "Tire"} service details`, exact: true }).click();
     await expect(page.getByRole("region", { name: "Installed software compatibility" })).toContainText("Compatible · VDP V3");
     await fit(".studio-modal-layer > .modal > .modal-body");
     await page.screenshot({ path: `test-results/compatibility-${team}-${viewport.width}.png` });

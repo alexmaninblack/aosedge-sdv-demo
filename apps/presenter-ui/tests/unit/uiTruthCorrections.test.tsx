@@ -146,9 +146,9 @@ test("O2 acknowledgement requires a recent completed retirement receipt and expi
   vi.useFakeTimers(); vi.setSystemTime(new Date(checked));
   const job: DemoJob = { id: "finish", action: "reset", state: "COMPLETED", startedAt: old, finishedAt: checked, progress: [], results: [] };
   const view = render(<FinishAcknowledgement jobs={[job]} noController />);
-  expect(screen.queryByText("Demo finished")).not.toBeInTheDocument();
+  expect(screen.queryByText("Test deleted")).not.toBeInTheDocument();
   job.results = [{ operation: "demo.retire", state: "COMPLETED", message: "Owned Test retired", facts: {} }];
   view.rerender(<FinishAcknowledgement jobs={[job]} noController />);
-  expect(screen.getByText("Demo finished")).toBeVisible();
-  act(() => vi.advanceTimersByTime(61000)); expect(screen.queryByText("Demo finished")).not.toBeInTheDocument();
+  expect(screen.getByText("Test deleted")).toBeVisible();
+  act(() => vi.advanceTimersByTime(61000)); expect(screen.queryByText("Test deleted")).not.toBeInTheDocument();
 });

@@ -74,11 +74,12 @@ describe("local composition preview", () => {
     expect(screen.queryByText("Connection confirmed")).not.toBeInTheDocument();
     expect(snapshot.vehicle.value).toBe("test");
   });
-  it("keeps the shared header to brand, assignment and Session; teams live in the right panel", () => {
+  it("keeps the shared header to brand and assignment; controls and teams live in the right panel", () => {
     const snapshot = composeLocalSnapshot(data);
     const { container } = render(<SharedHeader snapshot={snapshot} perspective="global" onNavigate={() => {}} />);
     expect(screen.getByRole("button", { name: "AosEdge Software Evolution Demo" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Session" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Session" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Demo controls" })).toBeNull();
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     expect(screen.queryByText("Open the run-wide Demo Lifecycle")).not.toBeInTheDocument();
     expect(screen.queryByText("Test Vehicle pass")).not.toBeInTheDocument();
@@ -147,11 +148,15 @@ describe("local composition preview", () => {
     const dependencies = { readPort: { read: async () => snapshot, subscribe: () => () => {} } };
     render(<PresenterReadModelProvider dependencies={dependencies}><PresenterApp /></PresenterReadModelProvider>);
     expect(await screen.findByTestId("studio-workspace")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Factory image" })).toHaveValue("factory-31/arm64");
-    expect(screen.getByText("Production · Deferred")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Factory image" })).toBeNull();
+    expect(screen.getByText("factory-31")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Production Vehicle" })).toBeNull();
     expect(screen.getByRole("button", { name: "Create controller" })).toBeDisabled();
-    await userEvent.click(screen.getAllByRole("button", { name: "Session" })[0]);
-    expect(screen.getByRole("button", { name: "Finish demo" })).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: "Demo controls" })).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Demo controls" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Production remains unchanged");
+    await userEvent.click(screen.getByText("Delete this Test"));
+    expect(screen.getByRole("button", { name: "Delete Test & start over" })).toBeDisabled();
     expect(screen.queryByText("FIXTURE ONLY")).not.toBeInTheDocument();
   });
 });
