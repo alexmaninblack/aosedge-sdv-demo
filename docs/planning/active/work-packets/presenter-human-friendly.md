@@ -206,3 +206,91 @@ media was normally detached; Test, packages, credentials and evidence remain.
 The branch is ready for operator review. Main stays unchanged; moving SOTA,
 complete native acceptance and installation interruption/repair retain their
 separate gates, and VDP-TIMEOUT-01 stays deferred.
+
+## Accepted automated browser pilot
+
+On 11 October the operator approved a short real-UI automation pilot on the
+retained M1 Test: Start controller, Start simulator, Connect in Manual, inspect
+installed cards, cancel Stop, then confirm Stop. Extend only qualification
+scripts on this branch. Do not change product behavior or rebuild the DMG.
+
+Use working-Mac Playwright against the installed M1 web assets over one pinned
+SSH loopback forward. Keep the original Host/Origin checks intact. Bootstrap
+and final shutdown use existing installed owners; all four scenario mutations
+must originate from browser clicks, not direct API/CLI calls. Additional owner
+reads confirm the exact candidate, Test/Unit/Node/system identity, running or
+stopped owners and stationary Manual attachment. Preserve Docker and Test data.
+
+The pilot allows only start-demo, start-simulation, connect-test and stop-demo,
+in that order, once each. Record request identity before forwarding an action.
+Cancellation must dispatch no mutation. Unknown outcomes prohibit a new action
+and require read-only reconciliation. Do not publish, provision, Reset, delete,
+start Autopilot or replay an uncertain click. Reuse verified installed media;
+record bounded timings and masked screenshots, not raw network traces or logs.
+
+Acceptance requires the complete sequence, independent owner observations,
+unchanged software cards and identity, no request on cancellation, normal final
+shutdown, zero demo processes/listeners, unchanged running Docker and closed
+browser/tunnel/owned media. This is browser UI acceptance of one installed
+scenario, not native Setup/WKWebView/layout or full release acceptance.
+
+The first real-browser pilot on restored installed media passed Start controller
+and Start simulator but failed at Connect in Manual. The whole run took
+348.725 seconds, including a wrongly awaited rejected submission. The harness
+now checks the actual acknowledgement and fails immediately on rejection,
+preserving uncertainty/no-replay and all owner-busy gates. Ten local guard tests
+pass; no new live pass is claimed. Final shutdown, browser/tunnel close and
+normal media detach were verified, with Test data and running Docker preserved.
+The [qualification receipt](../../../qualification/presenter-human-friendly-2026-10-11.md)
+records the separate one-time SSH configuration, exact temporary-cache cleanup,
+actual timings and remaining connection investigation. No product or DMG
+change was made for this pilot. Main integration is still pending.
+
+## Authorized UI automation extension
+
+The operator requested completion of the automation scripts and live execution
+on 11 October after the pilot failure. Extend the branch qualification boundary,
+not the product interface. Keep the retained Test and installed candidate.
+
+The installed scenario adds all four perspectives, installed-detail dialogs,
+Cloud software/resources, both functional backends, independent correlated
+Brake/Tire Reset, Activity, Stop cancellation and confirmed Stop. Each mutation
+must match the exact command armed immediately before its UI click; no arbitrary
+mutation endpoint or input is accepted. Read-only owner evidence remains separate.
+
+The retained release-story scenario prepares and publishes VDP V1/V2/V3 and
+Brake V1/V2/V3 serially, then Tire V1. Bind allocated versions and service handles
+to the returned preparation receipts, verify each installation before advancing,
+and preserve the existing assignments. Native Safe Stop and maneuvers are
+explicit gates for supported CUA clicks, with independent physical/result
+postconditions. No driver RPC or direct action adapter can satisfy a UI gate.
+The native witness helper records an already performed CUA click; it cannot
+perform a click or prove success on its own. This scenario is agent-assisted,
+not fully unattended native automation.
+
+### Visible M1 amendment — 11 October 2026
+
+The operator now requires Presenter, CARLA and Driving Control to be visible on
+M1 throughout the live UI experiment. The hidden development-side browser is
+not sufficient for this requirement. Stop its current retained release story
+before publication; retain the interrupted attempt and ordinary shutdown.
+
+Run the browser executor visibly on M1 against the same installed Presenter
+server. Keep it in the canonical right-hand Presenter rectangle, alongside the
+ordinary CARLA and Driving Control owners. A separate signed Chrome app-mode
+window is browser acceptance, not acceptance of the native WKWebView shell.
+Reuse the development Mac's verified Google-signed browser, existing Playwright
+packages and a vendor-digest-pinned ARM64 Node executable, stored only under the
+private M1 qualification tools directory. This explicit testing dependency is
+not shipped in the DMG or installed into the product/system. No additional SSH
+port, Accessibility grant, Cloud credential, Docker restart or product rebuild
+is needed. Transport only fixed read queries and witnessed native clicks through
+the existing pinned SSH connection. Close the owned browser and remove its
+temporary profile at the end; retain compact evidence and reusable testing tools.
+
+Keep uncertainty terminal and retain failed attempts. A completed scenario closes
+the browser, tunnel, owned media and ordinary demo owners, preserving Docker,
+Test data and Production. Report installed-browser acceptance and retained
+release-story acceptance separately from clean installation, native Setup,
+moving SOTA, offline/ignition and full E2E acceptance. Do not infer those separate
+gates from script implementation or local guard tests.

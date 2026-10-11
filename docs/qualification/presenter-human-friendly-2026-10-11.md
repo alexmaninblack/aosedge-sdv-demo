@@ -9,6 +9,14 @@ offline recovery, ignition and same-Test Stop/Start. Native Setup/Open,
 stopped-controller Start, Stop cancellation and confirmed Stop also passed.
 Demo-owned applications and listeners are closed; Test data and Docker are
 preserved. The branch is ready for review, not full release acceptance.
+Subsequent browser experiments are recorded below. The installed browser
+scenario passed on the development Mac, but that headless result does not meet
+the operator's new requirement to watch all three surfaces on M1. The first
+visible M1 scenario passed 13 stages and stopped at Activity after loss of the
+current UI run observation. The later visible release story installed VDP V1
+and Brake V1, then stopped before preparing VDP V2 when the request guard
+rejected an unexpected UI submission. A complete visible release story is not
+yet accepted.
 
 ## Scope and candidate
 
@@ -340,3 +348,174 @@ containers. Docker Engine remained running with identity
 `fa9259a6-f8b1-44e2-80ba-2ad68e9d00d6`; it was not restarted in this corrected
 cycle. The corrected image was normally detached without force. The new Test,
 three installed candidate/rollback packages, credentials and reports remain.
+
+## Automated browser pilot
+
+The accepted pilot uses a real headless browser on the development Mac against
+the installed M1 Presenter, over a pinned same-port loopback SSH forward. It
+does not replace native Setup, window-layout or full operator acceptance. Its
+four allowed mutations must originate from UI buttons, with independent owner
+observations and retained Test identity. No Create, publication, Reset,
+Autopilot, rebuild or installation is included.
+
+The first attempt stopped before any UI mutation because SSH forwarding was
+disabled. Ordinary shutdown passed. After explicit operator approval, the
+existing key retained its source restriction and received only permission for
+`127.0.0.1:18080`. The server separately requires local forwarding, permits
+only that destination and disallows reverse listeners. The effective server
+configuration was validated without restarting SSH.
+
+An administrative helper was then incorrectly launched with the installed
+Python interpreter without `-B`. It created 44 root-owned bytecode cache files
+inside the immutable runtime. Inventory validation blocked bootstrap before
+any UI action. This was a qualification-tool error, not a product defect. The
+operator executed the exact verified cleanup wrapper; only those temporary
+caches and their six empty directories were removed. Independent observation
+confirmed zero undeclared Python files and preserved Test data. All further
+installed-interpreter invocations require `-I -B`; inventory checks remain
+unchanged. The earlier blocked attempt and its separate cleanup resolution are
+retained, not rewritten as a pass.
+
+The restored pilot completed in 348.725 seconds, including ordinary shutdown:
+
+| Stage | Outcome | Seconds |
+| --- | --- | --- |
+| Presenter bootstrap | PASS | 14.128 |
+| Open installed Presenter and verify stopped owners | PASS | 3.687 |
+| Start controller and verify running owners | PASS | 49.238 |
+| Start simulator | PASS | 67.150 |
+| Connect in Manual | FAIL | 180 second operation deadline |
+| Ordinary final shutdown | PASS | 27.241 |
+
+The UI reported rejection, and no connection job was observed during the
+bounded read. The original harness recorded dispatch intent but did not inspect
+the POST acknowledgement; it consequently waited for a job that was absent.
+The exact rejection cause is not established by this record. Installed-card,
+Cancel and confirmed Stop checks were not reached in this pilot. Their earlier
+bounded native evidence remains separately scoped.
+
+The harness correction checks the actual POST acknowledgement: explicit
+rejection fails immediately, while response loss or mismatched request identity
+is uncertain and must not be replayed. It also checks all owner-busy conditions
+before clicking, including workspace retries and unresolved source recovery.
+Six JavaScript and four Python guard tests pass. These local tests do not pass
+the failed M1 scenario; the corrected browser harness has not yet completed a
+new live pilot. Cold owner startup and the avoidable three-minute wait are
+reported separately rather than presented as UI-click execution time.
+
+Private restored-pilot records and the masked failure screenshot are in
+`.local/remote-qualification/m1-ui-pilot-20261011-restored/`. Final observations
+confirmed zero demo-owned processes/listeners, preserved Test data and the same
+running Docker Engine. The owned browser and tunnel closed, and the exact
+owned media was normally detached. Main, the installed candidate and Production
+remain unchanged. Browser-pilot acceptance is FAIL; full E2E remains
+NOT_COMPLETE.
+
+## Subsequent browser experiments and visible M1 requirement
+
+Each attempt has a separate private evidence directory. No failed record is
+rewritten as a pass. The installed candidate, Test and shared Docker Engine are
+retained; browser-tool corrections below do not modify the DMG.
+
+| Attempt | Result | Total seconds | Classification |
+| --- | --- | --- | --- |
+| Acknowledgement-aware pilot | FAIL | 280.367 | Manual connection completed; harness incorrectly expected a differently spelled mode and brake units |
+| Extended installed UI, first attempt | FAIL | 101.532 | Completed controller start; harness rejected nullable optional receipt metadata |
+| Extended installed UI, corrected receipts | PASS | 232.859 | All 16 stages and six real button-originated mutations passed, development-side headless browser only |
+| Retained release story, background | INTERRUPTED | 269.183 | Stopped before first publication when the operator required visible M1 execution |
+| First visible M1 installed UI | FAIL | 241.081 | 13 stages passed; Activity lost its current-run observation and displayed no current receipts |
+
+The first two corrections use the actual stationary Manual contract
+(`MANUAL`, fresh/unheld, brake fraction 0.99–1.0, speed at most 0.5) and accept
+absent optional receipt fields without accepting malformed values. Neither
+correction weakens product identity, freshness, at-most-once submission or
+correlated Reset checks. The corrected installed scenario covered detail cards,
+all team perspectives, Cloud resources, both backend views, independent Reset,
+Activity, Stop cancellation and confirmed Stop. It is not a visible M1 pass.
+
+The first visible attempt covered the same startup and connection, installed
+details, team views, CPU/Disk/Inbound/Outbound resource navigation, backend
+Records and Brake windows filtering, and both independent Resets. At Activity,
+the UI reported that current controller state was unavailable and showed zero
+current-run operations despite earlier completed receipts. The cause of that
+read failure is not established. A bounded current-run observation gate and
+fixed failure projection were added to the harness; this is not a product fix
+or a passed Activity check. Normal shutdown was initially uncertain, then
+read-only reconciliation confirmed completion without replaying shutdown.
+Every completed attempt confirmed closed demo owners/listeners, preserved Test
+data and Docker, and normal detachment of media owned by that attempt.
+
+The visible driver runs on M1 in a signed Chrome app-mode window at the product's
+canonical right-hand Presenter rectangle. Ordinary product buttons start CARLA
+and Driving Control; browser actions are not sent to a hidden development-side
+client. This verifies the real web build, not the native WKWebView shell. Tools
+are stored separately under the M1 qualification directory, never in the
+installed payload. Strict copied-browser signature verification passed after
+preserving framework symlinks while omitting Finder/resource-fork metadata.
+The development Mac's Chrome and its attributes remain unchanged. ARM64 Node
+22.23.3 is vendor-digest pinned; existing Playwright modules are reused.
+
+The first visible launch used Playwright's default sandbox-disabled setting.
+The harness now explicitly enables Chromium sandboxing. No OS security policy,
+SSH Accessibility or product trust setting is changed. A later release-story
+preflight observed a locked desktop and stopped before starting any product
+owner or publishing a release. It did not request or use a Mac login password.
+
+The latest local checks passed 11 JavaScript guard tests, seven Python guard
+tests, the documentation quality gate and whitespace checks. These local
+results do not close live visible, native-shell or full E2E acceptance.
+
+## Visible retained release story — bounded partial result
+
+After the desktop was unlocked, the sandbox-enabled visible browser launched
+successfully on M1. Screen Sharing confirmed the real CARLA window at upper
+left, Driving Control/Telemetry at lower left and the automated Presenter at
+right, all visible together. The native control window must be focused before
+clicking a maneuver or mode button: the initial click on an inactive window
+may only focus it. A CUA click witness never replaces the independent physical
+or backend result postcondition.
+
+The scenario took 583.120 seconds including ordinary final shutdown:
+
+| Stage | Result | Seconds |
+| --- | --- | --- |
+| Open installed visible Presenter | PASS | 2.837 |
+| Start controller | PASS | 49.660 |
+| Start simulator | PASS | 68.937 |
+| Connect in stationary Manual | PASS | 15.004 |
+| VDP V1, witnessed Safe Stop, UI preparation/publication and matching installation | PASS | 187.324 |
+| Brake V1, UI preparation/publication, matching installation and native maneuver's new backend product | PASS | 108.136 |
+| VDP V2 | FAIL | Unexpected UI request rejected before forwarding to the product |
+| Ordinary shutdown | PASS | 29.989 |
+
+Allocated and installed versions were VDP `150.0.0` and Brake `127.0.0`.
+Tire `64.0.0` was not changed. All seven browser mutations originated from the
+visible UI. Publications were serial: the next component/service was not
+submitted until the preceding installation had been independently confirmed.
+No new Create, provisioning, assignment, reset or retirement was performed.
+
+The UI displayed unavailable local/controller state during this stage, then
+reported an unknown submission after the browser guard rejected a request
+that did not match its armed command. No VDP V2 preparation/publication was
+forwarded to the product. The record does not establish which request field
+differed; the subsequently added fixed diagnostic reports only the bounded
+guard code, supported profile values and session equality, not raw payloads.
+At failure, fixed
+read-only diagnostics confirmed the expected run and session, the recorded
+current job, no active or uncertain operation, and placed native workspace.
+This does not establish the cause of the UI read failure, nor justify replaying
+an operation or overriding a disabled control. The complete browser release
+story remains FAIL / full E2E NOT_COMPLETE. Its private evidence directory is
+`.local/remote-qualification/m1-ui-visible-releases-20261011/`.
+
+Shutdown confirmed zero owned processes/listeners, retained Test data and the
+unchanged running Docker Engine. The owned browser/profile closed and only the
+scenario-owned mounted DMG was normally detached. Production is unchanged.
+
+The harness was subsequently tightened to require the native owner's settled
+placement/ordering receipt before business stages and actions, and to check
+that its browser remains normal and at the canonical rectangle. This new
+explicit composition gate has local guard coverage; a new live scenario using
+that stricter gate has not yet been run. The prior Screen Sharing observation
+is actual visual evidence for the completed attempt, not a fabricated pass of
+the subsequently amended script. Native-shell acceptance remains separate.

@@ -15,6 +15,191 @@ not Setup. Do not grant SSH Accessibility to make this check pass. The journey
 adapter blocks `setup/launch`; reconciliation of an earlier attempt only
 verifies normal cleanup and records failed acceptance without replaying launch.
 
+## Real browser UI pilot
+
+### Visible M1 mode (default)
+
+The default is now `--scenario installed --display m1`: the browser driver runs
+on M1, visibly, against its installed Presenter server. CARLA and Driving Control
+are started by their ordinary product owners. The browser window occupies the
+canonical right-hand Presenter rectangle and is brought to the front for each
+step so the operator sees dialogs and navigation, not a hidden second client.
+Before business checks, and again before each subsequent stage/action, the
+driver requires the native owner's settled window placement and verified
+ordering, and checks that its own visible browser remains in its normal,
+canonical rectangle. A missing/locked native placement receipt or a
+minimized/displaced browser stops the check instead of switching to headless
+execution. Human readability/visual review remains
+separate from the native owner's geometry receipt. Startup naturally precedes
+the point where all three windows exist; confirmed Stop deliberately removes
+them.
+This is the real Presenter web build in a signed Chrome app-mode window, **not**
+the native WKWebView shell. Native-shell acceptance remains a separate gate.
+
+```sh
+python3 -B scripts/qualification/ui_pilot.py \
+  --scenario installed --display m1 \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --test RETAINED_TEST_UUID --dmg VERIFIED_LOCAL_DMG \
+  --remote-dmg VERIFIED_M1_DMG --records NEW_PRIVATE_RECORD_DIRECTORY \
+  --workspace EXISTING_SCRATCH_WORKSPACE
+```
+
+The explicit qualification tools live outside the installed product, under the
+M1 test user's `SDV-Qualification/ui-tools/`. The first run copies the development
+Mac's Google-signed Chrome and existing Playwright packages, and downloads a
+vendor-digest-pinned ARM64 Node runtime into the selected build workspace. Strict
+signature verification of the copied browser precedes execution. Framework
+symlinks are retained, but Finder/resource-fork attributes are not copied; the
+original Chrome application is unchanged. Later runs reuse the same tools.
+No package manager, additional SSH port, SSH Accessibility, credential transfer,
+Docker restart, product install or DMG rebuild is involved. The browser sandbox
+is enabled. Private read requests return only the existing fixed owner
+projections. They cannot publish, control the car or replace UI clicks.
+
+At completion the owned visible browser closes, its temporary profile is removed
+only after process exit is observed, and ordinary demo shutdown closes the other
+owners. Reusable test tools and compact evidence remain; Docker and Test data
+are preserved. Use `--scenario release-story` for the additional serial releases
+and witnessed native maneuvers below. The following development-side mode is
+retained explicitly for diagnostics.
+
+### Development-side background pilot (explicit opt-in)
+
+`ui_pilot.py` automates one short browser journey on a retained, already
+qualified M1 Test. Playwright runs on the development Mac; M1 needs no Node,
+browser-testing package or development checkout. One pinned SSH forward exposes
+M1's installed Presenter at the same loopback port, without weakening product
+Host/Origin checks. The normal harness continues to disable forwarding.
+
+The one-time SSH exception needs explicit approval before it is configured.
+Both the existing key and the server restrict the destination to
+`127.0.0.1:18080`; the server allows local forwarding only and rejects reverse
+listeners. Source-host and other key restrictions remain in place. The
+administrative helper is not part of Setup or the runtime. When using a bundled
+immutable Python interpreter, invoke it with **`-I -B`**, preferably from a
+verified shell wrapper: never let an administrative launch write bytecode
+caches into the installed package. Do not give SSH Accessibility or broaden
+forwarding to make the pilot pass.
+
+```sh
+python3 -B scripts/qualification/ui_pilot.py \
+  --scenario pilot --display background \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --test RETAINED_TEST_UUID --dmg VERIFIED_LOCAL_DMG \
+  --remote-dmg VERIFIED_M1_DMG --records NEW_PRIVATE_RECORD_DIRECTORY \
+  --workspace EXISTING_SCRATCH_WORKSPACE --node DEVELOPMENT_NODE_EXECUTABLE
+```
+
+The private journey record binds the exact installed candidate and retained
+Test. Expected card versions come from that Test's qualified VDP V3, Brake V3
+and Tire V1 observations, not a guessed latest Cloud release. Matching signed
+Setup media supplies the existing bootstrap/shutdown helper. A changed consumer
+file identity requires one digest re-verification; unchanged media is not
+retransferred or repeatedly hashed. No installation or DMG build is performed.
+The optional `--media-records PRIVATE_PREVIOUS_RECORD_DIRECTORY` reuses an
+earlier successful consumer verification only when its digest, byte count and
+current remote file identity match. A receipt alone is not proof that a changed
+consumer copy remains intact.
+
+The script clicks Start controller, Start simulator and Connect in Manual,
+opens the three installed-detail cards, cancels Stop, then confirms Stop. All
+four scenario actions originate from actual buttons. A request guard permits
+only those actions in that order, with the current session and unique request
+IDs. Intent is flushed before forwarding, with no header/payload rewriting or
+mock responses. Cancellation must send no mutation. Terminal failure stops the
+scenario; an unknown outcome is observed, never blindly replayed.
+Observe the actual submission acknowledgement before polling a job: HTTP
+400/403/409 stops immediately as rejected; a lost or mismatched acknowledgement
+is uncertain and prohibits replay. Wait at most 30 seconds for the complete
+owner idle gate, including window-placement retries and source recovery, before
+clicking. Do not confuse a recorded dispatch intent with an accepted operation.
+
+Keep one-time host authorization outside the measured scenario. Stage timings
+include real controller/backend or simulator startup when the pilot deliberately
+starts those owners. A fast UI check on an already running environment is a
+different scenario; do not skip Start/Stop acceptance while reporting it passed.
+
+Independent read-only owner checks corroborate controller/backends, exact
+Test/Unit/Node/system identity, stationary Manual attachment, preserved journal
+and unchanged Docker Engine. Stage timings, bounded codes and screenshots with
+input fields masked go into private records. Raw network traces, credentials,
+product responses and exception text are not retained. Temporary browser
+profiles use the selected workspace's owned `.tmp` and are removed on exit.
+
+Final ordinary shutdown closes demo-owned applications and listeners. The
+browser and tunnel close; only media mounted for the pilot is normally detached.
+Docker remains running; Test disks, history, credentials and packages remain.
+The report distinguishes browser-pilot acceptance from native Setup/WKWebView,
+layout and full E2E acceptance. A browser pass does not close those native gates.
+The browser runs headlessly on the development Mac, not in an M1 browser
+window. This does not establish native window visibility or placement on M1.
+
+Local guard tests do not start M1 or the demo:
+
+```sh
+node --test scripts/qualification/test_ui_pilot.mjs
+PYTHONPATH=scripts/qualification python3 -B -m unittest scripts/qualification/test_ui_pilot.py
+```
+
+### Extended installed UI scenarios
+
+The same entry point accepts `--scenario installed` or `--scenario release-story`.
+Use the same candidate/Test/media arguments above and a new private record
+directory for each diagnosed experiment. Never erase a failed attempt or reuse
+its request IDs. The script does not change the DMG. Background mode requires no
+M1 testing tools; visible mode uses the separate tools described above.
+
+`installed` exercises Start controller, Start simulator, Connect in Manual,
+all installed-detail cards, Platform/Brake/Tire perspectives, Cloud software and
+resource views, both backend views, independent Brake/Tire Reset with correlated
+CLEAR and preserved peer model/history, Activity, Stop cancellation and confirmed
+Stop. Publication is not part of this scenario. Every mutation comes from an
+actual browser click and must match the exact currently armed command. Unknown
+responses stop the sequence; no direct mutation adapter or blind retry exists.
+
+`release-story` additionally prepares and publishes VDP V1/V2/V3 and Brake
+V1/V2/V3 serially, then Tire V1, on the retained Test. Release values are obtained
+from preparation receipts. Each matching installation must be observed before
+the next publication. Existing Subjects remain assigned; the scenario does not
+create, provision, retire or reassign. It is a retained-Test release story, not
+a clean first-user installation.
+
+Native Safe Stop and maneuvers are not HTML buttons. This scenario writes a
+bounded `native-ui-gate.json` and waits for supported CUA control of the named
+visible Driving Control button. After the click, record its exact witness:
+
+```sh
+python3 -B scripts/qualification/ui_native_gate.py \
+  --records PRIVATE_UI_RECORD_DIRECTORY --stage EXACT_WAITING_STAGE \
+  --action 'EXACT_VISIBLE_NATIVE_ACTION' --witness-cua-click
+```
+
+The witness helper does not click, invoke driver RPC or prove the postcondition.
+The browser runner independently confirms physical Safe Stop or a new matching
+backend product after the click. Do not acknowledge a gate before a supported
+CUA click. Wrong stages/actions/identities and repeated acknowledgements fail
+closed. This is agent-assisted native UI execution, not a fully unattended
+native test. An unexecuted gate times out, fails the scenario and triggers
+ordinary shutdown. Native gates retain their failed evidence.
+
+The initial desktop check requires an unlocked M1 before owners start. A lock
+observed during placement stops instead of waiting minutes for a nonexistent
+operation. Control evidence uses the native `MANUAL` mode and a brake fraction
+of at least `0.99`, not display wording or a percentage. Input freshness,
+ownership, stationary speed and at-most-once safeguards remain unchanged.
+
+```sh
+node --test scripts/qualification/test_ui_pilot.mjs scripts/qualification/test_ui_journey.mjs
+PYTHONPATH=scripts/qualification python3 -B -m unittest scripts/qualification/test_ui_pilot.py
+```
+
+Reports distinguish these scenarios from native Setup/WKWebView/layout,
+first assignment, moving SOTA, offline/ignition and clean installation/repair.
+Those separate gates cannot be inferred from a browser pass; `fullE2E` remains
+`NOT_COMPLETE`. Actual M1 outcomes are recorded in the
+[branch qualification receipt](../../docs/qualification/presenter-human-friendly-2026-10-11.md).
+
 ## Record and acceptance rules
 
 The private configuration and records live under `.local/remote-qualification/`,
