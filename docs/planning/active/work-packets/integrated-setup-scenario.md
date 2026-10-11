@@ -3,7 +3,7 @@
 
 # Integrated Setup user scenario
 
-- Status: Authorized implementation scenario; acceptance pending
+- Status: Implemented scenario; existing-access native acceptance passed; new-access gates open
 - Date: 2026-10-11
 - Parent: [Integrated Setup work packet](integrated-setup.md)
 - Live qualification: Aos Cloud staging only

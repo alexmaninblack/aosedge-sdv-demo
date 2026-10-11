@@ -3,7 +3,7 @@
 
 # Integrated SDV Lab Setup plan
 
-- Status: Authorized for implementation on 11 October 2026; qualification pending
+- Status: Implemented; native existing-access first/returning use passed; new-access gates open
 - Date: 2026-10-11
 - Parent: [Installable distribution plan](../installable-distribution-and-reproducibility.md)
 - Scope: Complete DMG, first installation, Cloud onboarding and repeat launch
@@ -184,3 +184,6 @@ support must not authorize testing against existing production resources.
 The [complete user scenario](integrated-setup-scenario.md) specifies the screens,
 continuation rules and acceptance cases. Signing/notarization and the previously
 open runtime gates remain separate from Setup usability acceptance.
+
+Implementation tests, candidate identity and separately observed native outcomes
+are recorded in the [11 October qualification record](../../../qualification/integrated-setup-2026-10-11.md).
