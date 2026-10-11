@@ -3,7 +3,7 @@
 
 # Integrated SDV Lab Setup plan
 
-- Status: Implemented; native existing-access first/returning use passed; new-access gates open
+- Status: Implemented; native existing-access and scripted vehicle journey passed; new-access gates open
 - Date: 2026-10-11
 - Parent: [Installable distribution plan](../installable-distribution-and-reproducibility.md)
 - Scope: Complete DMG, first installation, Cloud onboarding and repeat launch

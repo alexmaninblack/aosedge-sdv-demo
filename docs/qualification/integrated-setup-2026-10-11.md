@@ -3,7 +3,7 @@
 
 # Integrated Setup qualification — 11 October 2026
 
-- Status: Existing-certificate first and returning use passed on M1; new-access gates open
+- Status: Native existing-access first/returning use and scripted vehicle journey passed on M1; new-access gates open
 - Scope: [Integrated Setup scenario](../planning/active/work-packets/integrated-setup-scenario.md)
 - Implementation revision: `ba99d3f`
 - Live environment: Aos Cloud staging only
@@ -154,13 +154,86 @@ tokens directly into the native secure fields and submitting Get certificates;
 never paste them into chat, commands or qualification evidence. Registration
 must not be repeated to recover from this input boundary.
 
+## Scripted vehicle journey on M1
+
+The installed candidate completed the fixed staging journey from 09:23:22 to
+09:52:02 UTC (11:23:22 to 11:52:02 Europe/Berlin), approximately 28 minutes
+40 seconds including a preserved stop and continuation. The matching verified
+DMG was remounted for the signed Setup workers; installation, media transfer
+and Factory/CARLA compilation were not repeated. Existing authorized OEM/SP
+certificates were used. This run does not qualify the newly registered account.
+
+All 100 primary steps and six restoration checks finished PASS. The runner
+reported `scriptedSequence: PASS`, no unresolved operations and no source-review
+warning. Private append-only evidence retains all 110 attempts, including the
+initial blocked step and both shutdowns; a later pass did not erase that history.
+
+The exact Test run is `524ed2c5-23b6-4ec7-ab81-e8687f4be096`, Cloud Unit
+`5c2e41b1-19cf-43c9-9428-89460015d243`. Releases were signed and published
+sequentially, with installation and functional checks before the next version:
+
+| Component or service | Logical profiles | Published releases |
+| --- | --- | --- |
+| VDP | V1, V2, V3 | 141.0.0, 142.0.0, 143.0.0 |
+| Brake Health | V1, V2, V3 | 118.0.0, 119.0.0, 120.0.0 |
+| Tire Health | V1 | 62.0.0 |
+
+The journey passed controller creation/start, simulator startup, provisioning
+and connection; physical Safe Stop before each VDP update; exact Cloud service
+publication/readiness; new assessments from real Brake/Tire maneuvers; Brake V3
+and Tire advisory correlation; independent Reset with peer-state and history
+preservation; and Return to road.
+
+Both services processed maneuvers with external connectivity OFF and queued
+results locally. The offline invariant was observed through the full 300-second
+interval (303.346 seconds including the final read). After ON, exact queued
+assessment IDs appeared in backend history, local queues emptied and Cloud
+returned ONLINE. IAM, CM, SM and VDP remained active with successful results
+and zero restarts during the observed offline interval.
+
+### Preserved continuation before ignition
+
+The first `ignition-safe` attempt stopped with CURRENT_RUN_BUSY before the
+driver command was dispatched. The diagnostic showed no active Presenter
+operation, a completed lifecycle and no uncertain effect. Normal shutdown
+passed. This was local writer contention, not a controller crash or a failed
+ignition attempt; the competing writer was not identified.
+
+Continuation used the same immutable binding and Test, freshly observed the
+installation, restored stopped owners through their product paths and resumed
+at ignition. It did not recreate/provision a Unit or replay publications,
+assignments, Reset or the completed offline experiment. No product or harness
+source was changed. Bounded waiting for this pre-dispatch lock contention
+remains an automation improvement, not evidence that the contention is fixed.
+
+The resumed ignition off/on changed the boot ID while preserving Unit/Node
+identity, service models and backend history, with the vehicle stationary in
+Safe Stop. VDP V3 readiness passed. Each service independently reported fresh
+CONNECTED/RECEIVING inputs with a producer generation greater than before
+ignition, and each produced a new assessment after its post-boot maneuver.
+
+### Final shutdown and acceptance boundary
+
+Normal shutdown confirmed zero owned demo processes/listeners, stopped backend
+containers and preserved durable Test state. The idle Setup had no active
+helper and was closed; the exact candidate DMG was normally ejected. Port 18080
+was absent and shared Docker Engine remained Linux/arm64. The stopped Test,
+VM disk, credentials, releases, models and history are retained; Finish was not
+executed and Production was untouched.
+
+The runner correctly retains `fullE2E: NOT_COMPLETE` and native acceptance
+NOT_RUN: its scripted result does not replace the separately recorded native
+existing-access proof or qualify secure token entry, moving SOTA, installation
+interruption/repair, new-account connection or distribution notarization.
+
 ## Open gates
 
 - Paired certificate issuance and authenticated connection for the new staging
   account; production registration feasibility remains unqualified.
 - Native secure-field token entry and paired enrollment on this candidate.
 - Distribution notarization and unrestricted third-party installation.
-- Previously separate cold-controller resume and complete vehicle release gates.
+- Moving SOTA, installation interruption/repair and native cold-controller
+  resume; scripted stationary ignition and the serial release journey passed.
 
 Production resource mutation, private-key transfer from the development Mac and
 unrelated Docker restart are outside this qualification.
