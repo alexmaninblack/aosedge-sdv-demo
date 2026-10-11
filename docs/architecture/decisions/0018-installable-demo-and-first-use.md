@@ -4,7 +4,7 @@
 # ADR 0018: Installable Demo and First-use Boundary
 
 - Status: Accepted direction; staged implementation and qualification incomplete
-- Version: 1.1
+- Version: 1.2
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team
 - Change class: C for installed-state/first-use integration; the first delivery
@@ -15,6 +15,14 @@
 - Parent: [Distribution plan](../../planning/active/installable-distribution-and-reproducibility.md)
 
 ## Decision
+
+On 11 October the user authorized the [integrated Setup scenario](../../planning/active/work-packets/integrated-setup-scenario.md): automatic default
+installation, one authenticated OEM/SP Connect action, bounded missing-SP
+repair without Test deletion, paired token enrollment with official registration
+handoff, and a signed per-user persistent launcher. Reuse all existing owners;
+no new lifecycle/readiness store. The [native contract](../../../contracts/distribution-installation/native-setup.md)
+defines the exact paths and operations. Implementation and native qualification
+are pending; this decision does not close runtime or distribution gates.
 
 Deliver a macOS DMG with an application and first-use wizard, supported by
 versioned components. The first implementation accepts a complete local kit;

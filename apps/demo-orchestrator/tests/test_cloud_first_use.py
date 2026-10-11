@@ -132,6 +132,85 @@ class PairTests(unittest.TestCase):
         with patch.object(runtime_paths, '_active', None), self.assertRaisesRegex(ValueError, 'INSTALLED_INSTANCE_REQUIRED'):
             self.preview()
 
+    def connect_report(self, stage='READY'):
+        return dict(domain='stage.example.test', stage=stage,
+                    owners={'oem': '11111111-1111-4111-8111-111111111111',
+                            'sp': '22222222-2222-4222-8222-222222222222'},
+                    checks=[dict(key=k, state='READY') for k in
+                            ('oem', 'sp', 'association', 'componentDelivery', 'serviceDelivery')])
+
+    def connect(self, authenticate):
+        return self.connection.connect_pair(str(self.oem), str(self.sp), authenticate)
+
+    def retained(self):
+        report = self.connect_report()
+        self.save(self.preview()['selectionToken'])
+        data = json.loads((self.state/CONFIG).read_bytes())
+        data['cloudProfiles']['service-provider']['credential'] = str(self.root/'missing.p12')
+        data['cloudConnection']['domain'] = report['domain']
+        atomic_json(self.state/CONFIG, data)
+        self.env._directory('.run/demo-current')
+        atomic_json(self.state/JOURNAL, dict(schemaVersion=1, kind='democtl.current-run', stage='LOCAL_ACTIVE',
+            selectedCloudDomain=report['domain'], vehicles={'test': {'unitId':'33333333-3333-4333-8333-333333333333'}},
+            cloudContexts={report['domain']: {'cloudBinding': {'ownerId': report['owners']['oem']}}},
+            componentOperations={}, serviceOperations={}))
+        return report
+
+    def test_connect_authenticates_before_save_and_repeat_is_idempotent(self):
+        def authenticate(*args):
+            self.assertFalse((self.state/CONFIG).exists())
+            return self.connect_report()
+        self.connect(authenticate)
+        before = (self.state/CONFIG).read_bytes()
+        self.connect(lambda *args: self.connect_report())
+        self.assertEqual(before, (self.state/CONFIG).read_bytes())
+        self.assertFalse((self.state/JOURNAL).exists())
+
+    def test_retained_missing_sp_repair_preserves_journal_and_ledger(self):
+        report = self.retained()
+        journal = (self.state/JOURNAL).read_bytes()
+        sentinel = self.state/'ledger'; sentinel.write_bytes(b'keep')
+        self.connect(lambda *args: report)
+        self.assertEqual(journal, (self.state/JOURNAL).read_bytes())
+        self.assertEqual(b'keep', sentinel.read_bytes())
+        self.assertEqual(str(self.sp), json.loads((self.state/CONFIG).read_bytes())['cloudProfiles']['service-provider']['credential'])
+        # Original fresh-only operations remain forbidden.
+        with self.assertRaisesRegex(ValueError, 'CURRENT_RUN_RETAINED'): self.preview()
+        self.connect(lambda *args: report)
+        self.assertEqual(journal, (self.state/JOURNAL).read_bytes())
+
+    def test_wrong_owner_or_unassociated_pair_never_saved(self):
+        self.retained()
+        before = (self.state/CONFIG).read_bytes()
+        report = self.connect_report(); report['owners']['oem'] = report['owners']['sp']
+        with self.assertRaisesRegex(ValueError, 'OWNER_CHANGED'): self.connect(lambda *args: report)
+        report = self.connect_report(); report['checks'][2]['state'] = 'BLOCKED'
+        with self.assertRaisesRegex(ValueError, 'AUTHENTICATION_REQUIRED'): self.connect(lambda *args: report)
+        self.assertEqual(before, (self.state/CONFIG).read_bytes())
+
+    def test_changed_journal_during_authentication_never_saved(self):
+        report = self.retained(); before = (self.state/CONFIG).read_bytes()
+        def changed(*args):
+            data = json.loads((self.state/JOURNAL).read_bytes()); data['sentinel'] = 'change'
+            atomic_json(self.state/JOURNAL, data)
+            return report
+        with self.assertRaisesRegex(ValueError, 'CHANGED_SINCE_PREVIEW'): self.connect(changed)
+        self.assertEqual(before, (self.state/CONFIG).read_bytes())
+
+    def test_known_verification_response_is_not_retirement_or_uncertainty(self):
+        report = self.retained()
+        path = self.state/JOURNAL; state = json.loads(path.read_bytes())
+        record = dict(deploymentId='33333333-3333-4333-8333-333333333333', publication={'stage':'ACCEPTED'},
+                      upload=dict(attemptStarted=True, state='RESPONDED', response=dict(httpStatus=201,
+                                  deploymentId='33333333-3333-4333-8333-333333333333')))
+        state['componentOperations'] = {'140.0.0':record}; atomic_json(path, state)
+        before = path.read_bytes()
+        self.connect(lambda *args: report)
+        self.assertEqual(before, path.read_bytes())
+        for change in (dict(state='UNCERTAIN'), dict(response={})):
+            state['componentOperations']['140.0.0']['upload'].update(change); atomic_json(path, state)
+            with self.assertRaisesRegex(ValueError, 'RECONCILIATION_REQUIRED'): self.connect(lambda *args: report)
+
 
 class PermissionTests(unittest.TestCase):
     def delivery_report(self, *, sp_denied=None, oem_denied=None, occupied=False):

@@ -60,9 +60,11 @@ class CompleteMediaTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'MEDIA_SETUP_PIN_MISMATCH'): media.setup_pin(self.setup, self.f.pin)
             call.assert_not_called()
 
-    def test_guide_discloses_first_slice(self):
+    def test_guide_discloses_integrated_journey_and_delivery_limits(self):
         self.assertIn('separately installed', media.GUIDE)
-        self.assertIn('persistent Applications launcher', media.GUIDE)
+        self.assertIn('user Applications', media.GUIDE)
+        self.assertIn('Install SDV Lab', media.GUIDE)
+        self.assertIn('no DMG or reinstall', media.GUIDE)
         self.assertIn('not a notarized public release', media.GUIDE)
 
     def test_media_success_and_error_clean_staging_without_touching_inputs(self):

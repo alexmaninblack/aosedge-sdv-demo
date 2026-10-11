@@ -4,10 +4,37 @@
 # Cloud First-use Completion
 
 - Status: Accepted implementation detail of the two user decisions of 29 September 2026
-- Version: 1.1
+- Version: 1.2
 - Prepared: 2026-09-29
 - Owner: Demo Solution Team
 - Parent: [native setup](native-setup.md), [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
+
+## Integrated connection accepted on 11 October 2026
+
+The [integrated scenario](../../docs/planning/active/work-packets/integrated-setup-scenario.md)
+adds one explicit Connect intent above the low-level first-use operations. Both
+candidate roles and their association/delivery permissions are authenticated
+before reference save. Save uses the existing writer and a metadata/config/
+selection compare-and-swap token. Fresh Connect may call existing CloudSetup
+preparation only for its exact absent model and Test-set prerequisites, with
+existing attempt reconciliation; no implicit Subject adoption, Unit, publish
+or permission mutation.
+
+A separate bounded repair can configure an absent SP on a stable retained Test
+with the exact same OEM file, selected domain and authenticated owner. It rejects
+pending writes, uncertain/unstable runs, an established different SP and changed
+pair/journal metadata. Authenticate SP association before one atomic reference
+write. Preserve journal bytes, Unit, VM, VDP, ledger, Subjects and history. Do
+not call fresh preparation or weaken the existing fresh-only pair selector.
+
+Repair checks stable configuration/publication receipts, not retirement rules.
+A component upload `RESPONDED` is a known response only with the matching
+deployment ID, HTTP 201 and recorded ACCEPTED or READY publication; CONFIRMED actions are
+also terminal. Unknown/attempting operations and unconfirmed service assignments
+block. This does not mark an upload CONFIRMED or change its ledger; the original
+component owner retains publication/readiness authority. ACCEPTED means the
+request response is known, not that software was delivered. Adding same-OEM SP
+access does not require retiring or changing that independent component record.
 
 The existing Demo Control writer and selected installed-package leases own
 first use. Neither path initializes a vehicle journal, changes package selection,

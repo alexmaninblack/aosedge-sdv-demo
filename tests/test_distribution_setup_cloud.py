@@ -89,6 +89,44 @@ class CloudBridgeTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.req('cloud-save')
         with self.assertRaises(ValueError): self.req('cloud-save', 'invalid')
 
+    def test_integrated_connect_prepares_fresh_prerequisites_but_not_retained_run(self):
+        report = dict(domain='stage.example.test', stage='READY', checks=[dict(key='oem', state='READY')])
+        with patch.object(CloudConnection, 'connect_pair', return_value=report), \
+                patch.object(CloudSetup, 'prepare', return_value=report) as prepare, \
+                patch.object(CloudSetup, 'check', return_value=report):
+            result = self.run_action('cloud-connect')
+            self.assertEqual('CLOUD_CONNECTED_OBSERVED', result['status'])
+            prepare.assert_called_once()
+        journal = self.state/'.run/demo-current/journal.json'
+        journal.parent.mkdir(exist_ok=True); journal.write_text('{}'); journal.chmod(0o600)
+        before = journal.read_bytes()
+        with patch.object(CloudConnection, 'connect_pair', return_value=report), patch.object(CloudSetup, 'prepare') as prepare:
+            self.run_action('cloud-connect')
+            prepare.assert_not_called()
+        self.assertEqual(before, journal.read_bytes())
+
+    def test_paired_enrollment_preserves_received_oem_and_never_retries_uncertain_sp(self):
+        value = dict(action='cloud-enrollment-pair', state=str(self.state), domain='aoscloud.io',
+                     oemToken='synthetic-oem-token', spToken='synthetic-sp-token')
+        replies = [dict(enrollmentStage='RECEIVED', role='oem', cloudAccessed=False),
+                   dict(enrollmentStage='RECONCILIATION_REQUIRED', role='sp', cloudAccessed=False)]
+        with patch.object(cloud_enrollment, 'run_worker', side_effect=replies) as worker:
+            result = local_setup.bridge.perform(local_setup.bridge.request(json.dumps(value).encode()), self.f.f.pin)
+        self.assertEqual(['status', 'status'], [call.args[3] for call in worker.call_args_list])
+        self.assertEqual('RECONCILIATION_REQUIRED', result['enrollmentStage'])
+        self.assertIn('oemPath', result); self.assertNotIn('spPath', result)
+        self.assertNotIn('synthetic-', json.dumps(result))
+        with self.assertRaises(ValueError): local_setup.bridge.request(json.dumps(dict(value, domain='unreviewed.test')).encode())
+
+    def test_integrated_blocked_role_is_not_reported_as_authenticated(self):
+        report = dict(domain='stage.example.test', stage='BLOCKED',
+                      checks=[dict(key='oem', state='READY'), dict(key='sp', state='BLOCKED')])
+        with patch.object(CloudConnection, 'connect_pair', return_value=report), patch.object(CloudSetup, 'prepare') as prepare:
+            result = self.run_action('cloud-connect')
+        self.assertFalse(result['rolesChecked'])
+        self.assertEqual('BLOCKED', result['cloudStage'])
+        prepare.assert_not_called()
+
     def test_enrollment_protocol_uses_stdin_fields_and_separate_read_only_inspection(self):
         base = dict(action='cloud-enrollment-status', state=str(self.state), domain='stage.example.test', role='oem')
         reply = dict(enrollmentStage='NOT_STARTED', role='oem', domain=base['domain'], cloudAccessed=False, rolesChecked=False)

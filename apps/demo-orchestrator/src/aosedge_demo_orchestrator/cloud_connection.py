@@ -199,11 +199,14 @@ class CloudConnection:
         if path.exists():
             small_json(path, owned=True)
 
-    def _pair_stamp(self, oem, sp):
+    def _pair_stamp(self, oem, sp, *, connect=False):
         import hashlib
         from .runtime_paths import canonical, private
         from .installed_control import RECORD
-        self.first_use_guard()
+        if connect:
+            self.connect_guard(oem)
+        else:
+            self.first_use_guard()
         records = []
         for raw in (oem, sp):
             if not isinstance(raw, str) or not raw.startswith('/') or str(Path(raw)) != raw:
@@ -219,7 +222,107 @@ class CloudConnection:
             raise EnvironmentError("CLOUD_DISTINCT_OEM_SP_CERTIFICATES_REQUIRED")
         # Metadata only, never a hash of reusable certificate/key contents.
         records.extend([self._configuration(), read_json(self.root / RECORD)])
+        if connect and (self.root / JOURNAL).exists():
+            # Public run identity/state only; never credential contents.
+            records.append(read_json(self.root / JOURNAL))
         return hashlib.sha256(json.dumps(records, sort_keys=True).encode()).hexdigest()
+
+    def connect_guard(self, oem):
+        """Fresh setup or same-OEM repair, never general retained-run adoption."""
+        from .runtime_paths import instance, canonical, small_json, installed
+        if not installed(self.root):
+            raise EnvironmentError('CLOUD_FIRST_USE_INSTALLED_INSTANCE_REQUIRED')
+        instance(self.root)
+        for name in (JOURNAL + '.pending', CONFIG + '.pending'):
+            if canonical(self.root / name).exists():
+                raise EnvironmentError('CLOUD_SELECTION_RECONCILIATION_REQUIRED')
+        journal = canonical(self.root / JOURNAL)
+        configuration = canonical(self.root / CONFIG)
+        if configuration.exists():
+            small_json(configuration, owned=True)
+        if not journal.exists():
+            self.first_use_guard()
+            return None
+        state, _ = small_json(journal, owned=True)
+        if (state.get('schemaVersion') != 1 or state.get('kind') != 'democtl.current-run'
+                or state.get('stage') not in ('MANUFACTURED', 'LOCAL_ACTIVE', 'LOCAL_STOPPED')):
+            raise EnvironmentError('CLOUD_SELECTION_REQUIRES_STABLE_LOCAL_RUN')
+        for record in state.get('componentOperations', {}).values():
+            for action in ('upload', 'approve', 'unapprove', 'send'):
+                attempt = record.get(action, {})
+                if not attempt.get('attemptStarted') or attempt.get('state') == 'CONFIRMED':
+                    continue
+                response = attempt.get('response', {})
+                known = (action == 'upload' and attempt.get('state') == 'RESPONDED'
+                    and record.get('deploymentId') and response.get('httpStatus') == 201
+                    and response.get('deploymentId') == record['deploymentId']
+                    and record.get('publication', {}).get('stage') in ('ACCEPTED', 'READY'))
+                if not known:
+                    raise EnvironmentError('COMPONENT_OPERATION_RECONCILIATION_REQUIRED')
+        if any(record.get('state') != 'ASSIGNED' for record in state.get('serviceOperations', {}).values()):
+            raise EnvironmentError('SERVICE_OPERATION_RECONCILIATION_REQUIRED')
+        if any(record.get('state') in ('UNCERTAIN', 'ATTEMPTING') for record in state.get('operations', [])):
+            raise EnvironmentError('CLOUD_SELECTION_RECONCILIATION_REQUIRED')
+        if state.get('source', {}).get('operation') or state.get('source', {}).get('stopOperation'):
+            raise EnvironmentError('CLOUD_SELECTION_REQUIRES_STABLE_LOCAL_RUN')
+        config = self._configuration()
+        profile = config.get('cloudProfiles', {}).get('oem-delivery', {})
+        if (profile.get('credential') != oem or profile.get('expectedRole') != 'oem'
+                or config.get('cloudConnection', {}).get('domain') != selected_domain(state)):
+            raise EnvironmentError('CLOUD_REPAIR_SAME_OEM_REQUIRED')
+        return state
+
+    def connect_pair(self, oem, sp, authenticate):
+        """One explicit intent, authentication before save, journal never written."""
+        with self.environment._writer():
+            state = self.connect_guard(oem)
+            before = self._pair_stamp(oem, sp, connect=True)
+            first, second = self.inspect(oem), self.inspect(sp)
+            if first['domain'] != second['domain']:
+                raise EnvironmentError('CLOUD_OEM_SP_DOMAIN_MISMATCH')
+            config = self._configuration()
+            profiles = config.get('cloudProfiles', {})
+            if state:
+                if first['domain'] != selected_domain(state):
+                    raise EnvironmentError('CLOUD_REPAIR_SAME_OEM_REQUIRED')
+                prior_sp = profiles.get('service-provider', {}).get('credential')
+                if prior_sp and prior_sp != sp and Path(prior_sp).is_file():
+                    raise EnvironmentError('CLOUD_REPAIR_SP_ALREADY_CONFIGURED')
+            report = authenticate(first['domain'], config, state)
+            required = {'oem', 'sp', 'association', 'componentDelivery', 'serviceDelivery'}
+            ready = {row['key'] for row in report.get('checks', []) if row.get('state') == 'READY'}
+            if (report.get('domain') != first['domain'] or not required <= ready
+                    or report.get('stage') not in ('READY', 'MISSING', 'BLOCKED')):
+                raise EnvironmentError('CLOUD_PAIR_AUTHENTICATION_REQUIRED')
+            if report['stage'] == 'BLOCKED':
+                return report
+            owners = report['owners']
+            from .status import object_id
+            if set(owners) != {'oem', 'sp'}:
+                raise EnvironmentError('CLOUD_PAIR_AUTHENTICATION_REQUIRED')
+            for owner in owners.values():
+                object_id(owner)
+            if state:
+                established = (config.get('cloudConnection', {}).get('owners') or {})
+                bound = cloud_binding(state).get('ownerId')
+                expected_sp = established.get('sp') or profiles.get('service-provider', {}).get('expectedOwnerId')
+                if bound != owners['oem'] or (expected_sp and expected_sp != owners['sp']):
+                    raise EnvironmentError('CLOUD_REPAIR_OWNER_CHANGED')
+            if self._pair_stamp(oem, sp, connect=True) != before:
+                raise EnvironmentError('CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW')
+            data = self._configuration()
+            profiles = data.setdefault('cloudProfiles', {})
+            for name, role, path in (('oem-delivery', 'oem', oem), ('service-provider', 'sp', sp)):
+                profiles[name] = dict(profiles.get(name, {}), credential=path,
+                    expectedRole='oem' if role == 'oem' else 'service provider', expectedOwnerId=owners[role])
+            data['cloudConnection'] = dict(data.get('cloudConnection', {}), domain=first['domain'],
+                                          owners=owners, source='OEM_CERTIFICATE_ORGANIZATION')
+            destination = self.environment._directory('.local/demo-control') / 'status.json'
+            if self._pair_stamp(oem, sp, connect=True) != before:
+                raise EnvironmentError('CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW')
+            if data != config:
+                atomic_json(destination, data)
+            return report
 
     def inspect_pair(self, oem, sp):
         before = self._pair_stamp(oem, sp)

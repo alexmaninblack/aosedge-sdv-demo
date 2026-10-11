@@ -4,10 +4,55 @@
 # Native Setup — Installation and First-use Actions
 
 - Status: Accepted bounded implementation detail of ADR 0018 / REQ-DEMO-025
-- Version: 1.9
-- Date: 2026-10-01
+- Version: 2.0
+- Date: 2026-10-11
 - Parent: [installation](README.md), [installed state](installed-state.md),
   [version selection](version-selection.md)
+
+## Integrated journey accepted on 11 October 2026
+
+The [authorized scenario](../../docs/planning/active/work-packets/integrated-setup-scenario.md)
+supersedes the ordinary presentation of the separate engineering actions below;
+their transaction and authority constraints remain. Normal screens are Install
+SDV Lab, Connect to Aos Cloud and Open SDV Lab. The fixed sibling Runtime Kit is
+the only media source. Defaults are `~/AosEdge SDV Packages` and `~/SDV-Lab-Data`;
+Advanced may change the package store, never relocate existing private state.
+
+`setup-status` reads validated selection and saved certificate references,
+without runtime start or cached readiness. `setup-install` performs existing
+preflight and local Docker validation before install, prepare and backend
+transactions. Existing receipts govern repeats and uncertain responses. A
+retained run may only observe already available backend images, never import
+missing images through this first-use action.
+
+`install-launcher` installs only the running signed Setup bootstrap at
+`~/Applications/AosEdge SDV Lab.app`. Independent pin, stable identifier and
+signature team must match before/after copying. Replace only a same-identifier,
+same-team signed prior launcher; preserve foreign or active applications. Stage
+on the destination volume, validate, then atomically rename. No duplicate kit
+or credentials. Reopen validates existing selection without requiring media.
+The fixed `.AosEdge SDV Lab.previous.app` predecessor is owned only when its
+identifier/team signature matches the running Setup. After interruption, restore
+it if the target is absent, or remove it only after the target's matching pin
+and signature are verified and both paths have no active owner. Unknown or
+ambiguous predecessors block without deletion. Launcher copying uses its own
+private same-volume transaction directory; it is not general build scratch.
+
+`cloud-connect` is one explicit intent: private local pair inspection,
+authenticated roles/association/permissions, atomic reference save, and bounded
+creation of the agreed absent model/Test-set through CloudSetup. No Unit,
+provisioning or publication. The bounded retained-Test SP repair follows
+[Cloud first use](cloud-first-use.md). Low-level actions remain compatible for
+diagnostics, not ordinary required clicks. Paired token enrollment uses fixed
+staging/production endpoints and existing per-role receipts; official signup,
+email and terms are explicit Cloud interactions, not anonymous API registration.
+
+Readiness requires fresh independent local, Docker and Cloud observations.
+Copy progress uses actual bytes; other phases are named indeterminate states.
+The launcher opens Presenter, not CARLA/a controller. Cold controller resume,
+notarization and distribution remain separately qualified gates.
+
+## Existing low-level engines
 
 The native application wraps existing transaction, selection and Demo Control
 engines; it is not a second runtime orchestrator. Its installation actions

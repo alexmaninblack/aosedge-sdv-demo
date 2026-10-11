@@ -4,8 +4,8 @@
 # Install the demo and connect Cloud access
 
 - Status: current engineering-preview instructions; complete native acceptance open
-- Version: 2.2
-- Prepared: 2026-10-09
+- Version: 3.0
+- Prepared: 2026-10-11
 - Owner: Demo Solution Team
 - Implementation: Kit028 / Setup042 / Factory .41
 
@@ -13,8 +13,10 @@ First [select the exact release and obtain access](release-status.md), then
 use its complete approved DMG. The new source-Factory `1.2.0-rc.1` candidate
 awaits fresh installation/live qualification; earlier Kit028 / Setup042 results
 remain in the [qualification baseline](../qualification/current-baseline.md).
-This guide describes the implemented Setup actions, not the proposed simplified
-wizard or a claim of native acceptance for new media. No source checkout,
+The integrated Setup source follows the [authorized scenario](../planning/active/work-packets/integrated-setup-scenario.md).
+Its new candidate must pass the recorded native gates before release acceptance.
+For older Setup042 media use its original guide rather than expecting the new UI.
+No source checkout,
 Unreal Editor or local compilation is required.
 
 ## Before opening Setup
@@ -49,23 +51,17 @@ do not disable Gatekeeper or grant broad disk permissions as a workaround.
 
 ## Install and select local data
 
-1. Mount the DMG and open **AosEdge SDV Lab Setup**. The matching sibling
-   **Runtime Kit** is discovered automatically; if absent, select the exact
-   matching kit explicitly. Do not combine a Setup with another kit.
-2. Choose package storage and a separate private-data folder. For the M1
-   campaign both are on the internal disk. Keep the private instance path short
-   enough for local Unix sockets. A foreign nonempty folder is not adopted.
-3. Choose **Check installation**. This checks platform, pins, inventory,
-   storage/volume and destinations. It is not complete payload verification.
-4. Choose **Install package**. Setup copies/verifies the immutable version and
-   records `INSTALLED_NOT_ACTIVATED`; this does not mean a vehicle is running.
-5. Choose **Prepare local data**. Setup creates or validates the private
-   instance and selects the verified version: `SELECTED_NOT_STARTED`.
-   It does not create a vehicle journal, provision or replace a retained run.
-6. Choose **Prepare backends**. It verifies the pinned archive and exact images
-   in the existing Docker engine, importing once if necessary. Success means
-   images available, not running backend containers. Uncertain imports require
-   reconciliation; do not repeat them blindly.
+1. Mount the complete DMG and open **AosEdge SDV Lab Setup**. Its fixed sibling
+   Runtime Kit is the only source; Setup never searches for a substitute.
+2. Choose **Install SDV Lab**. No kit, package-store or private-data questions
+   are required. Defaults are `~/AosEdge SDV Packages` and `~/SDV-Lab-Data`.
+   Advanced settings can change program storage, not silently move existing data.
+3. Wait for the named checks, verified copy, local selection, backend-image
+   preparation and signed launcher installation. Copy progress measures actual
+   verified bytes; other phases show an indeterminate indicator. Missing Docker
+   or insufficient space stops before copying and gives a specific next action.
+4. Continue to **Connect to Aos Cloud**. Installed files and imported images
+   are not a created vehicle, running backend or provisioned Unit.
 
 Do not edit installed program files, add Python caches or use the private
 runtime interpreter as a development environment. Version selection, runtime
@@ -75,29 +71,37 @@ permission to delete an unknown folder or lower verification requirements.
 
 ## Set up Cloud access
 
-Choose **Set up Cloud access…** after local preparation. Two routes exist:
+Choose **Connect to Aos Cloud…** after local preparation. Two routes exist:
 
 - **Existing certificates:** select the intended OEM and associated SP PKCS#12
-  files, then **1. Inspect locally**, **2. Use this pair**, and
-  **3. Check Cloud access**. Setup stores references, not a copy of the working
+  files, then **Connect**. Setup authenticates both roles, their association and
+  delivery permissions before storing references. It stores no copy of the working
   private keys. Files must satisfy the private ownership/permissions contract.
-- **New certificate:** choose **Need a new certificate? Enroll with a Cloud
-  token…**, select the role and submit its one-time token through
-  **Receive certificate**. New enrollment uses the package-signing-compatible
+- **New certificates:** choose **Get new certificates…**, select Staging or
+  Production, use the official registration/sign-in flow and enter the OEM and
+  associated SP tokens in secure fields. Choose **Get certificates** to receive
+  both and connect them. New enrollment uses the package-signing-compatible
   RSA path. Register accounts/obtain invitations through the official Cloud
   process; Setup is not an automatic account-registration or mailbox client.
 
-For response loss, use **Inspect saved attempt** and the supported recovery
+For response loss, use **Details and enrollment recovery…** and the supported
+**Inspect saved attempt** / recovery
 path. An uncertain token submission is not replayed automatically. Keep tokens,
 passwords and private keys out of screenshots, logs and reports. Never replace
 working access merely to repeat a first-use test.
 
-A successful Cloud check establishes the observed role/domain/association and
+A successful Connect establishes the observed role/domain/association and
 required permissions/prerequisites. Missing objects and an occupied Test set
-are not authentication failures. The read-only check does not create them,
-provision a Unit or publish a package.
+are not authentication failures. Connect can explicitly prepare only the fixed
+absent model and Test set through the existing owner. It never provisions a Unit,
+publishes a package or deletes a conflicting object. Reopening checks are read-only.
 
-When reusing existing unbound Brake/Tire objects, choose **Review existing
+For a retained Test missing SP access, keep the same OEM reference and select
+the associated SP, then Connect. The bounded repair preserves the Unit, VDP,
+journal, history and ledger; it cannot change the OEM or Cloud environment.
+
+For diagnostic reference reuse, expand **Details and existing references…**,
+inspect/save the pair through the low-level controls, then choose **Review existing
 Brake / Tire assignments…**, **Read existing objects**, and the exact intended
 reference. Do not pick by a similar display name. Missing objects are handled
 by the ordinary explicit Demo Control preparation flow, not guessed or silently
@@ -111,7 +115,8 @@ permission; it is not needed for the internal-disk campaign. Neither Full Disk
 Access nor screen recording is a prerequisite for installation/placement.
 An older app's permission entry may not authorize this executable.
 
-Choose **Open demo**. It opens the selected instance's Presenter through the
+Choose **Open SDV Lab**. It rechecks local installation/backend images and saved
+Cloud access, then opens the selected instance's Presenter through the
 existing Demo Control owner. It does not start Docker, create/power on a VM,
 start CARLA, provision, publish, reset models or enable Autopilot. A successful
 Open is Presenter availability, not full demo readiness.
@@ -133,8 +138,9 @@ qualify every display scale, monitor topology or lock/unlock transition.
 
 ## Returning, stopping and removing
 
-Reopen the matching Setup, choose the existing private-data folder and
-**Open demo**; the original source kit is not needed for that action.
+Open **AosEdge SDV Lab** from your user Applications folder and choose
+**Open SDV Lab**; the DMG/source kit is not needed. The installed selection and
+saved access are revalidated, not inferred from a cached Ready indicator.
 Do not repeat installation or reselect a version over a retained vehicle run.
 Opening Presenter does **not** power on a stopped retained controller:
 the current UI has no native Power on action. Engineering restoration observed
@@ -162,7 +168,8 @@ are not part of the current M1 internal-disk campaign.
 The [candidate record](../../workspace/checkpoints/installer-kit-028-candidate.json)
 separates 98 passed installed scripted steps from open moving-SOTA, secure
 native token entry, full native journey and interruption/repair gates.
-The newer complete DMG does not close the simplified-wizard, returning-user,
+The integrated candidate still requires its own native acceptance. It does not
+close cold controller resume,
 Developer ID/notarization or public-distribution work.
 
 See the [native Setup contract](../../contracts/distribution-installation/native-setup.md)

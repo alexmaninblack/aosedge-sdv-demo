@@ -103,6 +103,14 @@ blocks without rotation. Cloud identities and client mTLS remain distinct.
 
 <a id="ut-demo-025"></a>
 
+The [integrated Setup scenario](../../planning/active/work-packets/integrated-setup-scenario.md),
+accepted on 11 October, additionally requires a default path-free install,
+authenticated one-action OEM/SP connection, bounded same-Test missing-SP repair,
+paired token enrollment and a persistent signed launcher. Installation, Docker,
+Cloud and Presenter must retain independent observations and existing owners.
+Verify interruption, repeat, media ejection, foreign-owner rejection, secret
+redaction and journal preservation before native acceptance.
+
 - ID: `UT-DEMO-025`
 - Obligation: Prove exact root routing, legacy preservation, private marker first/repeat/failure behavior, no developer credential/input fallback, installed command identity and persistence of a ledger sentinel across version selection using isolated fixtures.
 - Requirement: [installed instance path separation](#req-demo-025).

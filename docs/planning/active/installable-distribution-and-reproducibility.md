@@ -28,6 +28,14 @@ secure native token entry and target-host installation interruption/repair.
 The native Power on gap for a retained stopped controller remains explicit.
 No additional live gate is closed by this documentation revision.
 
+On 11 October the user requested a focused redesign of Setup after manual
+OEM-only progress exposed the missing-SP recovery gap. The
+[integrated Setup work packet](work-packets/integrated-setup.md) and
+[complete user scenario](work-packets/integrated-setup-scenario.md) were authorized
+on 11 October: automatic local installation, unified Cloud connection and
+repeat launch. Execute their delivery sequence; implementation and qualification
+remain pending and no previous acceptance verdict changes.
+
 This section is the single current execution checklist. The numbered delivery
 stages below retain their acceptance criteria. Dated kit/preview notes record
 evidence, not separate projects, new approval gates or competing queues of

@@ -52,6 +52,10 @@ class UnitService:
     def _cloud(self, action, **values):
         config = load_configuration(self.root)
         profile = config["cloudProfiles"].get("oem-delivery")
+        return self._cloud_profile(action, profile, config, **values)
+
+    def _cloud_profile(self, action, profile, config, **values):
+        """Authenticate an explicit candidate without changing saved references."""
         if not profile or profile["expectedRole"] != "oem":
             raise EnvironmentError("OEM_DELIVERY_PROFILE_REQUIRED")
         path = profile["credential"]

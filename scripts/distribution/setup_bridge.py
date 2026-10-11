@@ -60,6 +60,9 @@ def request(raw):
     value = parse(raw)
     require(isinstance(value, dict), 'SETUP_REQUEST_INVALID')
     action = value.get('action')
+    if action in ('setup-status', 'setup-install', 'install-launcher'):
+        from setup_workflow import request as workflow_request
+        return workflow_request(value)
     if action == 'prepare-backends':
         from setup_backends import request as backends_request
         return backends_request(value)
@@ -103,6 +106,10 @@ def state_check(path):
 
 def perform(value, pin, emit=lambda event: None):
     supported_platform()
+    if value['action'] in ('setup-status', 'setup-install', 'install-launcher'):
+        from setup_workflow import perform as workflow_perform
+        state_check(Path(value['state']))
+        return workflow_perform(value, pin, emit)
     if value['action'] == 'prepare-backends':
         from setup_backends import perform as backends_perform
         state_check(Path(value['state']))

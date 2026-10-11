@@ -25,8 +25,8 @@ Complete local installation preview for Apple Silicon / macOS 26 or later.
 This engineering candidate is not a notarized public release.
 
 1. Open AosEdge SDV Lab Setup. The included runtime is selected automatically.
-2. Check installation, then Install package and Prepare local data.
-3. Follow Setup for Docker, Cloud access and opening Presenter.
+2. Choose Install SDV Lab. Setup checks Docker and prepares the local package.
+3. Connect one OEM and one associated SP, then choose Open SDV Lab.
 
 No Unreal Editor, source checkout, compiler or separate runtime download is needed.
 Docker Desktop is a separately installed dependency with its own terms.
@@ -35,10 +35,10 @@ Installation does not create a vehicle or publish software.
 
 Keep this disk image until Setup has finished; do not move the Runtime Kit folder.
 The program files are copied to the chosen package store. After quitting Setup,
-the image can be ejected. For this first consolidated-media preview, reopen Setup
-and select the existing private-data folder for Open demo. Do not reinstall just
-to launch again. The persistent Applications launcher and simplified wizard are
-subsequent work; this preview does not claim to implement them.
+the image can be ejected. Later, open AosEdge SDV Lab in your user Applications
+folder. It rechecks the installed selection and access; no DMG or reinstall is
+needed. Opening Presenter does not create the simulated vehicle. Continue with
+Create Controller in Presenter. Existing run data is preserved.
 
 Do not bypass a macOS security warning. Contact the kit provider if access is blocked.
 '''

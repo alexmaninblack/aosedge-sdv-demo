@@ -21,7 +21,7 @@ import setup_signing
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PYTHON = 'demo-artifacts/aosedge-sdv-demo/host-runtime/python/'
-HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py')
+HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_workflow.py', 'setup_signing.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py')
 
 
 def python_files(bundle):
@@ -75,10 +75,10 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
             'SETUP_SIGNING_HARDENED_MODE_INVALID')
     signer = setup_signing.select(developer_id_identity if distribution else signing_identity,
                                   ad_hoc, distribution=distribution)
+    require((input_checkpoint is None) == (release_checkpoint is None), 'SETUP_CHECKPOINT_PAIR_REQUIRED')
     kit, output = unlinked(kit), unlinked(output)
     require(output.parent.is_dir() and not output.exists(), 'SETUP_OUTPUT_MUST_BE_NEW')
     require(not output.is_relative_to(kit) and not kit.is_relative_to(output), 'SETUP_OUTPUT_OVERLAP')
-    require((input_checkpoint is None) == (release_checkpoint is None), 'SETUP_CHECKPOINT_PAIR_REQUIRED')
     if release_checkpoint is None:
         trusted = release()
     else:

@@ -14,8 +14,10 @@ from aosedge_demo_orchestrator.units import UnitService
 from aosedge_demo_orchestrator.vm import VMService
 
 ENROLLMENT = ('cloud-enrollment-status', 'cloud-enrollment-recover', 'cloud-enrollment-submit')
+PAIR_ENROLLMENT = 'cloud-enrollment-pair'
+ENVIRONMENTS = ('aws-stage.epmp-aos.projects.epam.com', 'aoscloud.io')
 SUBJECTS = ('cloud-subjects-inspect', 'cloud-subjects-save')
-ACTIONS = ('cloud-inspect', 'cloud-save', 'cloud-check', *ENROLLMENT, *SUBJECTS)
+ACTIONS = ('cloud-inspect', 'cloud-save', 'cloud-check', 'cloud-connect', 'cloud-observe', PAIR_ENROLLMENT, *ENROLLMENT, *SUBJECTS)
 LABELS = dict(oem='OEM access', sp='Service Provider access', association='OEM / SP association',
               fleet='Default fleet', architecture='arm64 support', model='Factory model',
               nodeType='Node type', testSet='Test verification set',
@@ -26,11 +28,20 @@ LABELS = dict(oem='OEM access', sp='Service Provider access', association='OEM /
 def request(value):
     action = value.get('action')
     require(action in ACTIONS, 'SETUP_ACTION_INVALID')
+    if action == PAIR_ENROLLMENT:
+        require(set(value) == {'action', 'state', 'domain', 'oemToken', 'spToken'}, 'SETUP_REQUEST_INVALID')
+        require(value['domain'] in ENVIRONMENTS, 'SETUP_ENROLLMENT_ENVIRONMENT_INVALID')
+        from setup_launch import request as path_request
+        path_request(dict(action='launch', state=value['state']))
+        for key in ('oemToken', 'spToken'):
+            token = value[key]
+            require(isinstance(token, str) and len(token) <= 4096 and all(33 <= ord(c) <= 126 for c in token), 'SETUP_TOKEN_INVALID')
+        return value
     enrollment = action in ENROLLMENT
     keys = {'action', 'state', 'domain', 'role'} if enrollment else {'action', 'state', 'oem', 'sp'}
     if action == 'cloud-enrollment-submit':
         keys |= {'token', 'reconcileAttempt'}
-    elif not enrollment and action != 'cloud-inspect':
+    elif not enrollment and action not in ('cloud-inspect', 'cloud-connect', 'cloud-observe'):
         keys.add('selectionToken')
     if action == 'cloud-subjects-save':
         keys.add('reference')
@@ -58,7 +69,7 @@ def request(value):
             if value['reconcileAttempt'] is not None:
                 from aosedge_demo_orchestrator.status import object_id
                 object_id(value['reconcileAttempt'])
-    elif action != 'cloud-inspect':
+    elif action not in ('cloud-inspect', 'cloud-connect', 'cloud-observe'):
         require(isinstance(value['selectionToken'], str) and SHA.fullmatch(value['selectionToken']),
                 'SETUP_SELECTION_TOKEN_INVALID')
     return value
@@ -75,6 +86,23 @@ def perform(value, pin, emit=lambda event: None):
     # to the explicitly selected, leased package. No developer credential fallback.
     progress('CLOUD_PACKAGE_LEASE')
     with runtime_paths.installed_session(state, _program=program):
+        if value['action'] == PAIR_ENROLLMENT:
+            from aosedge_demo_orchestrator.cloud_enrollment import run_worker, directory
+            progress('CLOUD_ENROLLMENT_STATE')
+            result = dict(status='PAIR_ENROLLMENT_OBSERVED', runtimeChanged=False, demoReady=False,
+                          cloudAccessed=False, rolesChecked=False, domain=value['domain'])
+            for role in ('oem', 'sp'):
+                reply = run_worker(state, value['domain'], role, 'status')
+                if reply['enrollmentStage'] == 'LOCAL_RECOVERY_AVAILABLE':
+                    reply = run_worker(state, value['domain'], role, 'recover')
+                elif reply['enrollmentStage'] in ('NOT_STARTED', 'PREPARED') and value[role + 'Token']:
+                    reply = run_worker(state, value['domain'], role, 'enroll', value[role + 'Token'])
+                result['cloudAccessed'] |= reply['cloudAccessed']
+                if reply['enrollmentStage'] != 'RECEIVED':
+                    return dict(result, role=role, enrollmentStage=reply['enrollmentStage'],
+                                attemptId=reply.get('attemptId'))
+                result[role + 'Path'] = str(directory(state, role) / 'client.p12')
+            return dict(result, enrollmentStage='RECEIVED')
         if value['action'] in ENROLLMENT:
             from aosedge_demo_orchestrator.cloud_enrollment import run_worker, directory
             action = {'cloud-enrollment-status': 'status', 'cloud-enrollment-recover': 'recover', 'cloud-enrollment-submit': 'enroll'}[value['action']]
@@ -96,6 +124,50 @@ def perform(value, pin, emit=lambda event: None):
         with env._writer():
             progress('CLOUD_PAIR_CHECK')
             oem, sp = value['oem'], value['sp']
+            if value['action'] == 'cloud-observe':
+                config = connection._configuration()
+                profiles = config.get('cloudProfiles', {})
+                require(profiles.get('oem-delivery', {}).get('credential') == oem
+                        and profiles.get('service-provider', {}).get('credential') == sp, 'SETUP_SAVE_PAIR_FIRST')
+                before = connection._pair_stamp(oem, sp, connect=True)
+                report = CloudSetup(UnitService(VMService(environment=env))).check(first_use=True)
+                require(before == connection._pair_stamp(oem, sp, connect=True), 'CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW')
+                require(report.get('stage') in ('READY', 'MISSING', 'BLOCKED'), 'SETUP_CLOUD_REPORT_INVALID')
+                checks = []
+                for row in report['checks']:
+                    require(row['key'] in LABELS and row['state'] in ('READY', 'MISSING', 'BLOCKED', 'CONFLICT', 'AFTER_PROVISION'), 'SETUP_CLOUD_REPORT_INVALID')
+                    checks.append(dict(label=LABELS[row['key']], state=row['state']))
+                return dict(status='CLOUD_CONNECTED_OBSERVED', runtimeChanged=False, cloudAccessed=True,
+                            demoReady=False, domain=report['domain'], rolesChecked=all(any(r['key'] == key and r['state'] == 'READY' for r in report['checks']) for key in ('oem', 'sp', 'association')),
+                            cloudStage=report['stage'], checks=checks)
+            if value['action'] == 'cloud-connect':
+                from aosedge_demo_orchestrator.environment import JOURNAL
+                from aosedge_demo_orchestrator.status import load_configuration, read_json
+                units = UnitService(VMService(environment=env))
+                setup = CloudSetup(units)
+                retained = (state / JOURNAL).exists()
+                def authenticate(domain, configuration, journal):
+                    progress('CLOUD_ACCESS_CHECK')
+                    config = load_configuration(state)
+                    profile = dict(credential=Path(oem), expectedRole='oem', cloudDomain=domain)
+                    request = dict(cloudDomain=domain, spCredential=sp, firstUse=True,
+                        testUnitId=(journal or {}).get('vehicles', {}).get('test', {}).get('unitId'),
+                        unitConfig=read_json(program / 'config/aosvm-single-node-unitconfig.json'))
+                    return units._cloud_profile('cloud-setup-check', profile, config, **request)
+                report = connection.connect_pair(oem, sp, authenticate)
+                if not retained and report['stage'] != 'BLOCKED':
+                    progress('CLOUD_PREREQUISITES')
+                    report = setup.prepare()
+                    if report['stage'] == 'READY':
+                        report = setup.check(first_use=True)
+                require(report.get('stage') in ('READY', 'MISSING', 'BLOCKED'), 'SETUP_CLOUD_REPORT_INVALID')
+                checks = []
+                for row in report['checks']:
+                    require(row['key'] in LABELS and row['state'] in ('READY', 'MISSING', 'BLOCKED', 'CONFLICT', 'AFTER_PROVISION'), 'SETUP_CLOUD_REPORT_INVALID')
+                    checks.append(dict(label=LABELS[row['key']], state=row['state']))
+                return dict(status='CLOUD_CONNECTED_OBSERVED', runtimeChanged=False, cloudAccessed=True,
+                            demoReady=False, domain=report['domain'], rolesChecked=all(any(r['key'] == key and r['state'] == 'READY' for r in report['checks']) for key in ('oem', 'sp', 'association')),
+                            cloudStage=report['stage'], checks=checks)
             metadata = connection.inspect_pair(oem, sp)
             result = dict(runtimeChanged=False, cloudAccessed=False, demoReady=False, **metadata)
             action = value['action']

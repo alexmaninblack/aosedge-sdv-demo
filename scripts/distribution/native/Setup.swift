@@ -41,6 +41,13 @@ struct SetupReply: Decodable {
     let attemptId: String?
     let credentialPath: String?
     let subjects: [CloudSubjectRow]?
+    let localInstalled: Bool?
+    let backendsObserved: Bool?
+    let launcherObserved: Bool?
+    let storePath: String?
+    let oemPath: String?
+    let spPath: String?
+    let prerequisite: String?
 }
 
 struct CloudCheck: Decodable { let label: String; let state: String }
@@ -80,6 +87,7 @@ func launchPermissionFailure(accessibilityTrusted: Bool) -> String? {
 
 let storageAccessHint = "Checking access to the selected package storage… If macOS asks for removable-disk access, review its system prompt. File verification waits for your response."
 let cloudStages = ["CLOUD_LOCAL_STATE": "Checking the private installed instance…",
+                   "CLOUD_PREREQUISITES": "Preparing only the missing demo model and Test verification set…",
                    "CLOUD_ENROLLMENT_STATE": "Checking the preserved enrollment attempt. A submission sends at most one request; no automatic retry…",
                    "CLOUD_SUBJECTS_CHECK": "Reading exact OEM/SP, Subject, service and recipient identities. No Cloud object is changed…",
                    "CLOUD_PACKAGE_LEASE": storageAccessHint,
@@ -104,6 +112,13 @@ let backendStages = ["BACKENDS_VERIFYING_SELECTION": "Verifying the selected ins
 // A certificate domain mismatch is not evidence of a damaged installation.
 func setupFailureHint(action: String, code: String) -> String {
     if code == "SETUP_FILE_ACCESS_DENIED" { return "Access to a selected file or folder was denied. Review folder permissions and any macOS removable-disk prompt. Setup does not change permissions or retry automatically." }
+    if code == "SETUP_BACKENDS_DOCKER_MISSING" { return "Install Docker Desktop for Apple silicon using the Docker instructions, complete its first-run prompts, then choose Install SDV Lab again. No demo files were copied." }
+    if code == "SETUP_BACKENDS_ENGINE_UNAVAILABLE" { return "Start the existing Docker Engine and wait until it is ready, then continue installation. Setup will reuse it without restarting it or opening Dashboard." }
+    if code == "SETUP_LAUNCHER_FOREIGN_APPLICATION" || code == "SETUP_LAUNCHER_IDENTITY_INVALID" { return "The existing Applications entry is not an authorized SDV Lab launcher. It was preserved; resolve the application-name conflict before continuing." }
+    if code == "SETUP_LAUNCHER_RECONCILIATION_REQUIRED" { return "A launcher replacement was interrupted or has an unknown predecessor. Existing applications are preserved. Review the signed launcher transaction before continuing." }
+    if code == "CLOUD_REPAIR_SAME_OEM_REQUIRED" || code == "CLOUD_REPAIR_OWNER_CHANGED" { return "This retained Test belongs to its original OEM and Cloud environment. Keep the same OEM certificate and choose its associated SP. Setup will not repoint or delete the Test." }
+    if code == "CLOUD_REPAIR_SP_ALREADY_CONFIGURED" { return "This Test already has an SP certificate. This repair only adds missing access; it does not replace an established Service Provider." }
+    if code == "CLOUD_PAIR_AUTHENTICATION_REQUIRED" { return "Both accounts, their OEM/SP association and delivery permissions must be confirmed. Check that these are the intended OEM and associated Service Provider certificates; local file validity alone is insufficient." }
     if action == "prepare-backends" {
         if code.contains("DOCKER_MISSING") || code.contains("ENGINE_UNAVAILABLE") { return "Open Docker Desktop and wait until its engine is running, then choose Prepare backends. Setup does not install or start Docker." }
         if code.contains("LOCAL_CONTEXT") || code.contains("PLATFORM") { return "Use Docker Desktop's local desktop-linux context on this Apple silicon Mac. A remote or incompatible engine cannot be used; no Docker settings were changed." }
@@ -171,7 +186,7 @@ struct SetupExchange {
         guard terminal == nil else { throw SetupFault.protocolFailure }
         switch event.kind {
         case "progress":
-            guard (["COPY_VERIFIED", "VERIFYING_AND_INSTALLING", "VERIFYING_LOCAL_SELECTION"].contains(event.stage ?? "") || cloudStages[event.stage ?? ""] != nil || launchStages[event.stage ?? ""] != nil || backendStages[event.stage ?? ""] != nil),
+            guard (["COPY_VERIFIED", "VERIFYING_AND_INSTALLING", "VERIFYING_LOCAL_SELECTION", "CHECKING_DOCKER", "INSTALLING_LAUNCHER"].contains(event.stage ?? "") || cloudStages[event.stage ?? ""] != nil || launchStages[event.stage ?? ""] != nil || backendStages[event.stage ?? ""] != nil),
                   event.stage != "COPY_VERIFIED" || event.fraction != nil else { throw SetupFault.protocolFailure }
         case "result":
             guard event.result != nil else { throw SetupFault.protocolFailure }
@@ -187,8 +202,41 @@ struct SetupExchange {
     func finish(action: String, exit: Int32) throws -> SetupReply {
         guard exit == 0, let event = terminal, event.kind == "result", let reply = event.result,
               reply.runtimeChanged == (action == "launch"), reply.cloudAccessed != nil,
-              action == "cloud-enrollment-submit" || reply.cloudAccessed == (["cloud-check", "cloud-subjects-inspect", "cloud-subjects-save"].contains(action)) else { throw SetupFault.protocolFailure }
+              ["cloud-enrollment-submit", "cloud-enrollment-pair"].contains(action) || reply.cloudAccessed == (["cloud-check", "cloud-connect", "cloud-observe", "cloud-subjects-inspect", "cloud-subjects-save"].contains(action)) else { throw SetupFault.protocolFailure }
         switch action {
+        case "cloud-enrollment-pair":
+            guard reply.status == "PAIR_ENROLLMENT_OBSERVED", reply.demoReady == false, reply.rolesChecked == false,
+                  ["aws-stage.epmp-aos.projects.epam.com", "aoscloud.io"].contains(reply.domain ?? ""),
+                  ["NOT_STARTED", "PREPARED", "RECEIVED", "RECONCILIATION_REQUIRED", "LOCAL_RECOVERY_AVAILABLE"].contains(reply.enrollmentStage ?? "") else { throw SetupFault.protocolFailure }
+            for (role, path) in [("oem", reply.oemPath), ("sp", reply.spPath)] {
+                if let path {
+                    guard path.hasPrefix("/"), path.count <= 1024, !path.contains("/../"),
+                          !path.unicodeScalars.contains(where: { $0.value < 32 }),
+                          path.hasSuffix("/credentials/enrollment/\(role)/client.p12") else { throw SetupFault.protocolFailure }
+                }
+            }
+            if reply.enrollmentStage == "RECEIVED" {
+                guard reply.oemPath != nil, reply.spPath != nil else { throw SetupFault.protocolFailure }
+            } else { guard ["oem", "sp"].contains(reply.role ?? "") else { throw SetupFault.protocolFailure } }
+        case "setup-status":
+            guard ["SETUP_NOT_INSTALLED", "SETUP_INSTALLED_OBSERVED"].contains(reply.status),
+                  reply.localInstalled == (reply.status == "SETUP_INSTALLED_OBSERVED"),
+                  reply.backendsObserved != nil, reply.launcherObserved != nil,
+                  reply.localInstalled == true || (reply.backendsObserved == false && reply.launcherObserved == false),
+                  reply.demoReady == false else { throw SetupFault.protocolFailure }
+        case "setup-install":
+            guard reply.status == "SETUP_LOCAL_INSTALLED", reply.localInstalled == true,
+                  reply.backendsObserved == true, reply.launcherObserved == true,
+                  reply.demoReady == false else { throw SetupFault.protocolFailure }
+        case "install-launcher":
+            guard reply.status == "SETUP_LAUNCHER_INSTALLED", reply.demoReady == false else { throw SetupFault.protocolFailure }
+        case "cloud-connect", "cloud-observe":
+            guard reply.status == "CLOUD_CONNECTED_OBSERVED", reply.demoReady == false,
+                  reply.rolesChecked != nil, ["READY", "MISSING", "BLOCKED"].contains(reply.cloudStage ?? ""),
+                  let domain = reply.domain, domain.count <= 253,
+                  domain.range(of: "^[a-z0-9.-]+$", options: .regularExpression) != nil,
+                  let checks = reply.checks, checks.count <= 20,
+                  checks.allSatisfy({ $0.label.count <= 80 && ["READY", "MISSING", "BLOCKED", "CONFLICT", "AFTER_PROVISION"].contains($0.state) }) else { throw SetupFault.protocolFailure }
         case "prepare-backends":
             guard reply.status == "BACKEND_IMAGES_AVAILABLE", reply.demoReady == false,
                   reply.dockerEngineChecked == true, reply.imagesVerified == 2,
@@ -257,29 +305,34 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     private let store = NSTextField(string: NSHomeDirectory() + "/AosEdge SDV Packages")
     private let state = NSTextField(string: NSHomeDirectory() + "/SDV-Lab-Data")
     private let check = NSButton(title: "Check installation", target: nil, action: nil)
-    private let install = NSButton(title: "Install package", target: nil, action: nil)
+    private let install = NSButton(title: "1. Install SDV Lab", target: nil, action: nil)
     private let prepare = NSButton(title: "Prepare local data", target: nil, action: nil)
     private let backends = NSButton(title: "Prepare backends", target: nil, action: nil)
-    private let cloud = NSButton(title: "Set up Cloud access…", target: nil, action: nil)
-    private let launch = NSButton(title: "Open demo", target: nil, action: nil)
+    private let cloud = NSButton(title: "2. Connect to Aos Cloud…", target: nil, action: nil)
+    private let launch = NSButton(title: "3. Open SDV Lab", target: nil, action: nil)
     private var cloudWindow: NSWindow?
     private let oem = NSTextField(string: "")
     private let sp = NSTextField(string: "")
-    private let inspectPair = NSButton(title: "1. Inspect locally", target: nil, action: nil)
+    private let inspectPair = NSButton(title: "Connect", target: nil, action: nil)
     private let savePair = NSButton(title: "2. Use this pair", target: nil, action: nil)
     private let checkCloud = NSButton(title: "3. Check Cloud access", target: nil, action: nil)
     private let closeCloud = NSButton(title: "Close", target: nil, action: nil)
     private let cloudStatus = NSTextField(wrappingLabelWithString: "")
     private let cloudDetail = NSTextField(wrappingLabelWithString: "")
+    private let cloudDiagnostics = NSStackView()
+    private let enrollmentDiagnostics = NSStackView()
+    private let diagnostic = NSTextField(wrappingLabelWithString: "")
     private var cloudPickers: [NSButton] = []
     private var pairToken: String?
     private var pairSaved = false
     private var enrollmentWindow: NSWindow?
+    private let enrollmentEnvironment = NSPopUpButton()
+    private let enrollmentSPToken = NSSecureTextField(string: "")
     private let enrollmentDomain = NSTextField(string: "")
     private let enrollmentRole = NSPopUpButton()
     private let enrollmentToken = NSSecureTextField(string: "")
     private let enrollmentInspect = NSButton(title: "Inspect saved attempt", target: nil, action: nil)
-    private let enrollmentSubmit = NSButton(title: "Receive certificate", target: nil, action: nil)
+    private let enrollmentSubmit = NSButton(title: "Get certificates", target: nil, action: nil)
     private let enrollmentRecover = NSButton(title: "Recover saved certificate", target: nil, action: nil)
     private let enrollmentReconciled = NSButton(checkboxWithTitle: "I reconciled this exact attempt in Cloud and obtained a replacement token", target: nil, action: nil)
     private let enrollmentClose = NSButton(title: "Back to certificate pair", target: nil, action: nil)
@@ -300,6 +353,12 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     private var pickers: [NSButton] = []
     private var checked: SetupReply?
     private var installed = false
+    private var localInstalled = false
+    private var backendsObserved = false
+    private var launcherObserved = false
+    private var cloudObserved = false
+    private var pendingLaunch = false
+    private let advancedRow = NSStackView()
     private var busy = false
     private var generation = UUID()
 
@@ -323,7 +382,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         menu.addItem(edit)
         NSApp.mainMenu = menu
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 850, height: 800),
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 780, height: 660),
                           styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = "AosEdge Platform — SDV Lab Setup"
         window.delegate = self
@@ -332,7 +391,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let column = NSStackView()
         column.orientation = .vertical
         column.alignment = .leading
-        column.spacing = 15
+        column.spacing = 12
         column.translatesAutoresizingMaskIntoConstraints = false
         window.contentView!.addSubview(column)
         NSLayoutConstraint.activate([
@@ -347,33 +406,18 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         column.addArrangedSubview(label("AosEdge Platform", 14, .semibold))
         column.addArrangedSubview(label("Set up your SDV Lab", 30, .bold))
-        let subtitle = label("1  Choose & check     →     2  Install     →     3  Prepare local data", 15, .medium)
+        let subtitle = label("Install SDV Lab  →  Connect to Aos Cloud  →  Open your lab", 15, .medium)
         subtitle.textColor = .systemBlue
         column.addArrangedSubview(subtitle)
         column.addArrangedSubview(label("Local engineering preview · Apple silicon · macOS 26 or later", 12))
-        for (index, title, field, caption) in [
-            (0, "Complete offline kit", source, "Select the complete kit supplied with this installer. Its release is independently pinned."),
-            (1, "Package storage", store, "Large, verified program files. An external disk with ownership enabled is supported."),
-            (2, "Private demo data", state, "Keep this short path on the internal disk. Credentials and run data are never copied from a developer setup.")
-        ] {
-            column.addArrangedSubview(label(title, 15, .semibold))
-            field.font = .systemFont(ofSize: 13)
-            field.placeholderString = index == 0 ? "Choose a complete kit folder…" : nil
-            field.delegate = self
-            field.setAccessibilityLabel(title)
-            let choose = NSButton(title: "Choose…", target: self, action: #selector(pick(_:)))
-            choose.tag = index
-            choose.setAccessibilityLabel("Choose " + title.lowercased())
-            pickers.append(choose)
-            let row = NSStackView(views: [field, choose])
-            row.spacing = 10
-            column.addArrangedSubview(row)
-            row.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
-            field.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            let note = label(caption, 12)
-            note.textColor = .secondaryLabelColor
-            column.addArrangedSubview(note)
-        }
+        column.addArrangedSubview(label("A simulated vehicle and controller, powered by the real AosEdge platform. The complete package is included; Docker Desktop is a separate prerequisite.", 15))
+        column.addArrangedSubview(NSButton(title: "Advanced installation location…", target: self, action: #selector(toggleAdvanced)))
+        store.delegate = self; store.setAccessibilityLabel("Program installation location")
+        let choose = NSButton(title: "Choose…", target: self, action: #selector(pick(_:))); choose.tag = 1
+        pickers.append(choose)
+        advancedRow.addArrangedSubview(store); advancedRow.addArrangedSubview(choose); advancedRow.spacing = 10
+        advancedRow.isHidden = true; column.addArrangedSubview(advancedRow)
+        advancedRow.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
         check.target = self; check.action = #selector(doCheck)
         install.target = self; install.action = #selector(doInstall)
         prepare.target = self; prepare.action = #selector(doPrepare)
@@ -381,8 +425,8 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         cloud.target = self; cloud.action = #selector(openCloud)
         launch.target = self; launch.action = #selector(doLaunch)
         check.bezelStyle = .rounded; install.bezelStyle = .rounded; prepare.bezelStyle = .rounded
-        column.addArrangedSubview(NSStackView(views: [check, install, prepare]))
-        column.addArrangedSubview(NSStackView(views: [backends, cloud, launch]))
+        column.addArrangedSubview(NSStackView(views: [install, cloud, launch]))
+        column.addArrangedSubview(NSButton(title: "Docker installation instructions…", target: self, action: #selector(openDockerHelp)))
         progress.style = .bar; progress.isIndeterminate = false
         progress.minValue = 0; progress.maxValue = 1
         column.addArrangedSubview(progress)
@@ -395,9 +439,22 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             column.addArrangedSubview(view)
             view.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
         }
+        diagnostic.font = .systemFont(ofSize: 11); diagnostic.textColor = .secondaryLabelColor
+        diagnostic.isHidden = true
+        column.addArrangedSubview(NSButton(title: "Details…", target: self, action: #selector(toggleDetails)))
+        column.addArrangedSubview(diagnostic)
         refresh()
         window.center(); window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        run("setup-status")
+    }
+
+    @objc private func toggleAdvanced() { guard !busy else { return }; advancedRow.isHidden.toggle() }
+    @objc private func toggleDetails() { diagnostic.isHidden.toggle() }
+    @objc private func toggleCloudDetails() { cloudDiagnostics.isHidden.toggle() }
+    @objc private func toggleEnrollmentDetails() { enrollmentDiagnostics.isHidden.toggle() }
+    @objc private func openDockerHelp() {
+        NSWorkspace.shared.open(URL(string: "https://docs.docker.com/desktop/setup/install/mac-install/")!)
     }
 
     private func refresh() {
@@ -405,27 +462,27 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         // while an operation owns the window. Restore it after the result.
         next.isHidden = busy
         check.isEnabled = !busy && !source.stringValue.isEmpty
-        install.isEnabled = !busy && checked != nil && !installed
+        install.isEnabled = !busy && (!source.stringValue.isEmpty || localInstalled)
         prepare.isEnabled = !busy && installed && checked != nil
-        cloud.isEnabled = !busy && !state.stringValue.isEmpty
+        cloud.isEnabled = !busy && localInstalled
         backends.isEnabled = !busy && !state.stringValue.isEmpty
-        launch.isEnabled = !busy && !state.stringValue.isEmpty
-        for field in [source, store, state] { field.isEnabled = !busy }
-        for button in pickers { button.isEnabled = !busy }
+        launch.isEnabled = !busy && localInstalled && backendsObserved && launcherObserved && cloudObserved
+        for field in [source, state] { field.isEnabled = !busy }
+        store.isEnabled = !busy && !localInstalled
+        for button in pickers { button.isEnabled = !busy && !localInstalled }
         for field in [oem, sp] { field.isEnabled = !busy }
         for button in cloudPickers { button.isEnabled = !busy }
         inspectPair.isEnabled = !busy && !oem.stringValue.isEmpty && !sp.stringValue.isEmpty
         savePair.isEnabled = !busy && pairToken != nil && !pairSaved
         checkCloud.isEnabled = !busy && pairToken != nil && pairSaved
         closeCloud.isEnabled = !busy
-        for field in [enrollmentDomain, enrollmentToken] { field.isEnabled = !busy }
+        for field in [enrollmentDomain, enrollmentToken, enrollmentSPToken] { field.isEnabled = !busy }
+        enrollmentEnvironment.isEnabled = !busy
         enrollmentRole.isEnabled = !busy; enrollmentClose.isEnabled = !busy
         enrollmentInspect.isEnabled = !busy && !enrollmentDomain.stringValue.isEmpty
         let enrollmentStage = enrollmentObservation?.enrollmentStage
         enrollmentReconciled.isEnabled = !busy && enrollmentStage == "RECONCILIATION_REQUIRED"
-        enrollmentSubmit.isEnabled = !busy && !enrollmentToken.stringValue.isEmpty &&
-            (["NOT_STARTED", "PREPARED"].contains(enrollmentStage ?? "") ||
-             (enrollmentStage == "RECONCILIATION_REQUIRED" && enrollmentReconciled.state == .on))
+        enrollmentSubmit.isEnabled = !busy && (!enrollmentToken.stringValue.isEmpty || !enrollmentSPToken.stringValue.isEmpty)
         enrollmentRecover.isEnabled = !busy && enrollmentStage == "LOCAL_RECOVERY_AVAILABLE"
         subjectsOpen.isEnabled = !busy && pairToken != nil && pairSaved
         subjectsInspect.isEnabled = subjectsOpen.isEnabled
@@ -437,8 +494,9 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
 
     private func invalidate() {
         guard !busy else { return }
-        generation = UUID(); checked = nil; installed = false
-        enrollmentObservation = nil; enrollmentToken.stringValue = ""; enrollmentReconciled.state = .off
+        generation = UUID(); checked = nil; installed = false; cloudObserved = false
+        enrollmentObservation = nil; enrollmentToken.stringValue = ""; enrollmentSPToken.stringValue = ""; enrollmentReconciled.state = .off
+        enrollmentDomain.stringValue = enrollmentEnvironment.indexOfSelectedItem == 1 ? "aoscloud.io" : "aws-stage.epmp-aos.projects.epam.com"
         progress.doubleValue = 0
         status.stringValue = "Check your selected folders before installing."
         status.textColor = .labelColor
@@ -448,7 +506,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
 
     func controlTextDidChange(_ obj: Notification) {
-        if let field = obj.object as? NSTextField, field === enrollmentToken { refresh(); return }
+        if let field = obj.object as? NSTextField, field === enrollmentToken || field === enrollmentSPToken { refresh(); return }
         if let field = obj.object as? NSTextField, field === enrollmentDomain { resetEnrollment(); return }
         if let field = obj.object as? NSTextField, field === oem || field === sp { invalidatePair() }
         else { invalidate() }
@@ -457,10 +515,11 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     private func invalidatePair() {
         guard !busy else { return }
         pairToken = nil; pairSaved = false
+        cloudObserved = false
         subjectRows = []; subjectsChoose.removeAllItems(); subjectsChoose.addItem(withTitle: "Choose an exact object after inspection…")
         cloudStatus.stringValue = "Choose your existing OEM and SP certificate files."
         cloudStatus.textColor = .labelColor
-        cloudDetail.stringValue = "Inspection is local only. It checks format, validity and a common domain — not account roles. Files stay in their current locations; only their references will be saved."
+        cloudDetail.stringValue = "Connect checks both accounts and their association, then saves file references. It can prepare the missing demo model and Test set. Keys stay in their current locations; no vehicle or package is created."
         refresh()
     }
 
@@ -482,7 +541,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             ])
             let title = NSTextField(labelWithString: "Connect your own Cloud access")
             title.font = .systemFont(ofSize: 24, weight: .bold); column.addArrangedSubview(title)
-            let intro = NSTextField(wrappingLabelWithString: "One OEM and one associated Service Provider for Brake and Tire.\nThis step never creates an account, publishes packages, provisions a unit or starts the demo.")
+            let intro = NSTextField(wrappingLabelWithString: "Use existing certificates, or get new ones below. One OEM and one associated Service Provider for both services. The environment is determined by your certificates.")
             intro.font = .systemFont(ofSize: 14); column.addArrangedSubview(intro)
             for (index, name, field) in [(0, "OEM certificate", oem), (1, "Service Provider certificate", sp)] {
                 column.addArrangedSubview(NSTextField(labelWithString: name))
@@ -498,9 +557,18 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             inspectPair.target = self; inspectPair.action = #selector(doInspectPair)
             savePair.target = self; savePair.action = #selector(doSavePair)
             checkCloud.target = self; checkCloud.action = #selector(doCheckCloud)
-            column.addArrangedSubview(NSStackView(views: [inspectPair, savePair, checkCloud]))
-            column.addArrangedSubview(NSButton(title: "Need a new certificate? Enroll with a Cloud token…", target: self, action: #selector(openEnrollment)))
-            subjectsOpen.target = self; subjectsOpen.action = #selector(openSubjects); column.addArrangedSubview(subjectsOpen)
+            column.addArrangedSubview(inspectPair)
+            column.addArrangedSubview(NSButton(title: "Get new certificates…", target: self, action: #selector(openEnrollment)))
+            column.addArrangedSubview(NSButton(title: "Details and existing references…", target: self, action: #selector(toggleCloudDetails)))
+            cloudDiagnostics.orientation = .vertical; cloudDiagnostics.alignment = .leading
+            cloudDiagnostics.isHidden = true
+            let inspect = NSButton(title: "Inspect pair only", target: self, action: #selector(inspectOnly))
+            savePair.target = self; savePair.action = #selector(doSavePair)
+            checkCloud.target = self; checkCloud.action = #selector(doCheckCloud)
+            cloudDiagnostics.addArrangedSubview(NSStackView(views: [inspect, savePair, checkCloud]))
+            subjectsOpen.target = self; subjectsOpen.action = #selector(openSubjects)
+            cloudDiagnostics.addArrangedSubview(subjectsOpen)
+            column.addArrangedSubview(cloudDiagnostics)
             cloudStatus.font = .systemFont(ofSize: 16, weight: .semibold)
             cloudDetail.font = .systemFont(ofSize: 13)
             for view in [cloudStatus, cloudDetail] {
@@ -531,7 +599,8 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
     }
 
-    @objc private func doInspectPair() { run("cloud-inspect") }
+    @objc private func doInspectPair() { run("cloud-connect") }
+    @objc private func inspectOnly() { run("cloud-inspect") }
     @objc private func doSavePair() { run("cloud-save") }
     @objc private func doCheckCloud() { run("cloud-check") }
 
@@ -578,11 +647,15 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     @objc private func enrollmentCheckboxChanged() { refresh() }
     @objc private func inspectEnrollment() { run("cloud-enrollment-status") }
-    @objc private func submitEnrollment() { run("cloud-enrollment-submit") }
+    @objc private func submitEnrollment() { run("cloud-enrollment-pair") }
+    @objc private func submitSingleEnrollment() { run("cloud-enrollment-submit") }
+    @objc private func openRegistration() {
+        NSWorkspace.shared.open(URL(string: "https://" + enrollmentDomain.stringValue + "/")!)
+    }
     @objc private func recoverEnrollment() { run("cloud-enrollment-recover") }
     @objc private func closeEnrollment() {
         guard !busy, let sheet = enrollmentWindow else { return }
-        enrollmentToken.stringValue = ""; window.endSheet(sheet); sheet.orderOut(nil)
+        enrollmentToken.stringValue = ""; enrollmentSPToken.stringValue = ""; window.endSheet(sheet); sheet.orderOut(nil)
         window.beginSheet(cloudWindow!); refresh()
     }
     @objc private func openEnrollment() {
@@ -593,23 +666,34 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 14
             column.translatesAutoresizingMaskIntoConstraints = false; sheet.contentView!.addSubview(column)
             NSLayoutConstraint.activate([column.leadingAnchor.constraint(equalTo: sheet.contentView!.leadingAnchor, constant: 24), column.trailingAnchor.constraint(equalTo: sheet.contentView!.trailingAnchor, constant: -24), column.topAnchor.constraint(equalTo: sheet.contentView!.topAnchor, constant: 24)])
-            let title = NSTextField(labelWithString: "Receive your own certificate"); title.font = .systemFont(ofSize: 24, weight: .bold)
+            let title = NSTextField(labelWithString: "Get OEM and Service Provider certificates"); title.font = .systemFont(ofSize: 24, weight: .bold)
             column.addArrangedSubview(title)
-            column.addArrangedSubview(NSTextField(wrappingLabelWithString: "Register and confirm your account in the official Aos Cloud portal first. Obtain an OEM or associated Service Provider certificate token there. Review Cloud terms yourself; do not paste an email command here. Use one SP for Brake and Tire."))
-            enrollmentDomain.placeholderString = "Cloud domain only — no https:// or port"; enrollmentDomain.delegate = self
-            enrollmentDomain.setAccessibilityLabel("Enrollment Cloud domain")
+            column.addArrangedSubview(NSTextField(wrappingLabelWithString: "Choose your Cloud environment. Register or sign in through the official portal, then paste the OEM and associated SP issuance tokens below. Account confirmation and Cloud terms remain yours to review. No terminal commands are needed."))
+            enrollmentEnvironment.addItems(withTitles: ["Staging", "Production"])
+            enrollmentEnvironment.target = self; enrollmentEnvironment.action = #selector(resetEnrollment)
+            enrollmentEnvironment.setAccessibilityLabel("Cloud environment")
+            column.addArrangedSubview(enrollmentEnvironment)
+            column.addArrangedSubview(NSButton(title: "Open official Cloud registration…", target: self, action: #selector(openRegistration)))
             enrollmentRole.addItems(withTitles: ["OEM", "Service Provider"]); enrollmentRole.target = self; enrollmentRole.action = #selector(resetEnrollment)
-            let row = NSStackView(views: [enrollmentDomain, enrollmentRole]); row.spacing = 10
-            column.addArrangedSubview(row); row.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
-            enrollmentDomain.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            enrollmentInspect.target = self; enrollmentInspect.action = #selector(inspectEnrollment); column.addArrangedSubview(enrollmentInspect)
-            enrollmentToken.placeholderString = "One-time token — cleared after submission"; enrollmentToken.delegate = self
-            enrollmentToken.setAccessibilityLabel("One-time certificate token"); column.addArrangedSubview(enrollmentToken)
+            enrollmentToken.placeholderString = "OEM issuance token"; enrollmentToken.delegate = self
+            enrollmentToken.setAccessibilityLabel("OEM issuance token"); column.addArrangedSubview(enrollmentToken)
             enrollmentToken.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
-            enrollmentReconciled.target = self; enrollmentReconciled.action = #selector(enrollmentCheckboxChanged); column.addArrangedSubview(enrollmentReconciled)
+            enrollmentSPToken.placeholderString = "Service Provider issuance token"; enrollmentSPToken.delegate = self
+            enrollmentSPToken.setAccessibilityLabel("Service Provider issuance token"); column.addArrangedSubview(enrollmentSPToken)
+            enrollmentSPToken.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
             enrollmentSubmit.target = self; enrollmentSubmit.action = #selector(submitEnrollment)
             enrollmentRecover.target = self; enrollmentRecover.action = #selector(recoverEnrollment)
-            column.addArrangedSubview(NSStackView(views: [enrollmentSubmit, enrollmentRecover]))
+            column.addArrangedSubview(enrollmentSubmit)
+            column.addArrangedSubview(NSTextField(wrappingLabelWithString: "If issuance is uncertain, the saved attempt is preserved and will not be retried. Reconcile it in Cloud before requesting a replacement token."))
+            column.addArrangedSubview(NSButton(title: "Details and enrollment recovery…", target: self, action: #selector(toggleEnrollmentDetails)))
+            enrollmentDiagnostics.orientation = .vertical; enrollmentDiagnostics.alignment = .leading
+            enrollmentDiagnostics.isHidden = true
+            enrollmentInspect.target = self; enrollmentInspect.action = #selector(inspectEnrollment)
+            enrollmentReconciled.target = self; enrollmentReconciled.action = #selector(enrollmentCheckboxChanged)
+            enrollmentDiagnostics.addArrangedSubview(NSStackView(views: [enrollmentRole, enrollmentInspect, enrollmentRecover]))
+            enrollmentDiagnostics.addArrangedSubview(enrollmentReconciled)
+            enrollmentDiagnostics.addArrangedSubview(NSButton(title: "Submit reconciled role token", target: self, action: #selector(submitSingleEnrollment)))
+            column.addArrangedSubview(enrollmentDiagnostics)
             enrollmentDetail.font = .systemFont(ofSize: 13); column.addArrangedSubview(enrollmentDetail)
             enrollmentDetail.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
             enrollmentClose.target = self; enrollmentClose.action = #selector(closeEnrollment); column.addArrangedSubview(enrollmentClose)
@@ -619,7 +703,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
 
     @objc private func pick(_ sender: NSButton) {
-        guard !busy else { return }
+        guard !busy, !localInstalled else { return }
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false
         panel.canCreateDirectories = false; panel.allowsMultipleSelection = false
@@ -641,7 +725,10 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
 
     @objc private func doCheck() { run("preflight") }
-    @objc private func doInstall() { run("install") }
+    @objc private func doInstall() {
+        if localInstalled { run(backendsObserved ? "install-launcher" : "prepare-backends") }
+        else { run("setup-install") }
+    }
     @objc private func doPrepare() { run("prepare") }
     @objc private func doLaunch() {
         guard !busy else { return }
@@ -654,7 +741,8 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             progress.doubleValue = 0
             return
         }
-        run("launch")
+        pendingLaunch = true
+        run("setup-status")
     }
 
     @objc private func doBackends() { run("prepare-backends") }
@@ -665,21 +753,25 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let launchAction = action == "launch"
         let enrollmentAction = action.hasPrefix("cloud-enrollment-")
         let subjectsAction = action.hasPrefix("cloud-subjects-")
-        guard !busy, cloudAction || launchAction || backendAction || action == "preflight" || checked != nil else { return }
+        let workflowAction = ["setup-status", "setup-install", "install-launcher"].contains(action)
+        guard !busy, cloudAction || launchAction || backendAction || workflowAction || action == "preflight" || checked != nil else { return }
         var request: [String: Any] = ["action": action, "source": source.stringValue,
                                       "store": store.stringValue, "state": state.stringValue]
-        if launchAction || backendAction {
+        if launchAction || backendAction || action == "setup-status" || action == "install-launcher" {
             request = ["action": action, "state": state.stringValue]
+        } else if action == "cloud-enrollment-pair" {
+            request = ["action": action, "state": state.stringValue, "domain": enrollmentDomain.stringValue,
+                       "oemToken": enrollmentToken.stringValue, "spToken": enrollmentSPToken.stringValue]
         } else if enrollmentAction {
             request = ["action": action, "state": state.stringValue, "domain": enrollmentDomain.stringValue, "role": enrollmentRole.indexOfSelectedItem == 0 ? "oem" : "sp"]
-            if action == "cloud-enrollment-submit" {
+        if action == "cloud-enrollment-submit" {
                 guard enrollmentSubmit.isEnabled else { return }
-                request["token"] = enrollmentToken.stringValue
+                request["token"] = enrollmentRole.indexOfSelectedItem == 0 ? enrollmentToken.stringValue : enrollmentSPToken.stringValue
                 request["reconcileAttempt"] = enrollmentReconciled.state == .on ? (enrollmentObservation?.attemptId as Any? ?? NSNull()) : NSNull()
             }
         } else if cloudAction {
             request = ["action": action, "state": state.stringValue, "oem": oem.stringValue, "sp": sp.stringValue]
-            if action != "cloud-inspect" {
+            if !["cloud-inspect", "cloud-connect", "cloud-observe"].contains(action) {
                 guard let pairToken else { return }; request["selectionToken"] = pairToken
             }
             if action == "cloud-subjects-save" {
@@ -687,15 +779,17 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 guard subjectsSave.isEnabled, subjectRows.indices.contains(index), let ref = subjectRows[index].reference else { return }
                 request["reference"] = ref
             }
-        } else if action != "preflight" {
+        } else if action != "preflight" && action != "setup-install" {
             request["volumeUUID"] = checked!.volumeUUID!
             request["revision"] = checked!.revision!
         } else { checked = nil; installed = false }
         guard let raw = try? JSONSerialization.data(withJSONObject: request),
               let resources = Bundle.main.resourceURL else { return }
         busy = true; generation = UUID(); let token = generation
+        if cloudAction { cloudObserved = false }
         if enrollmentAction {
-            enrollmentToken.stringValue = ""; request.removeValue(forKey: "token")
+            enrollmentToken.stringValue = ""; enrollmentSPToken.stringValue = ""
+            request.removeValue(forKey: "token"); request.removeValue(forKey: "oemToken"); request.removeValue(forKey: "spToken")
             enrollmentObservation = nil; enrollmentReconciled.state = .off
             enrollmentDetail.stringValue = "Checking preserved state and the verified private Cloud runtime…"
         }
@@ -708,14 +802,18 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             status.stringValue = "Preparing the local backend images…"
             detail.stringValue = "Docker Desktop must already be running. Only the two packaged images are loaded; no container or vehicle is started."
         }
+        if workflowAction {
+            status.stringValue = action == "setup-install" ? "Installing SDV Lab…" : "Checking your installed lab…"
+            detail.stringValue = "Verifying installation, local Docker and the selected package. No vehicle is started."
+        }
         if launchAction {
             status.stringValue = "Opening the selected demo…"
             detail.stringValue = "Only Presenter and its windows are opened. No machine, simulator, provisioning or driving action will be started."
         }
         if cloudFeedbackTarget(action) == .pair {
             cloudStatus.textColor = .labelColor
-            cloudStatus.stringValue = action == "cloud-inspect" ? "Inspecting files locally…" : action == "cloud-save" ? "Rechecking and saving both references…" : "Checking the selected Cloud — read only…"
-            cloudDetail.stringValue = action == "cloud-check" ? "Authenticating OEM and SP, checking association and prerequisites. This can take up to 45 seconds after local SDK verification. No Cloud objects will be created." : "Verifying the installed SDK and certificate files. No Cloud request is made."
+            cloudStatus.stringValue = action == "cloud-connect" ? "Connecting both Cloud accounts…" : "Checking Cloud access…"
+            cloudDetail.stringValue = action == "cloud-connect" ? "Authenticating both roles and their association. Only missing demo prerequisites may be prepared; no Unit is created or package published." : "Reading authenticated access and prerequisites without changing Cloud."
         }
         progress.isIndeterminate = true; progress.startAnimation(nil)
         refresh()
@@ -732,7 +830,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             var deadline: CloudDeadline?
             do {
                 try process.run()
-                if cloudAction || launchAction || backendAction { deadline = CloudDeadline(process, seconds: backendAction ? 180 : 120) }
+                if cloudAction || launchAction || backendAction { deadline = CloudDeadline(process, seconds: backendAction || action == "cloud-enrollment-pair" ? 180 : 120) }
                 try input.fileHandleForWriting.write(contentsOf: raw)
                 try input.fileHandleForWriting.close()
                 var buffer = Data()
@@ -763,10 +861,14 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                                 if let stage = event.stage, let message = backendStages[stage] {
                                     self.detail.stringValue = message
                                 }
+                                if event.stage == "CHECKING_DOCKER" { self.detail.stringValue = "Checking your existing local Docker Engine…" }
+                                if event.stage == "INSTALLING_LAUNCHER" { self.detail.stringValue = "Installing the signed SDV Lab launcher in Applications…" }
                                 if let fraction = event.fraction {
                                     self.progress.stopAnimation(nil); self.progress.isIndeterminate = false
                                     self.progress.doubleValue = fraction
                                     self.detail.stringValue = "Verified \(event.files!) of \(event.totalFiles!) files · \(Int(fraction * 100))%"
+                                } else if event.kind == "progress" {
+                                    self.progress.isIndeterminate = true; self.progress.startAnimation(nil)
                                 }
                             }
                         } catch { failed = true }
@@ -797,11 +899,69 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         guard generation == token else { return }
         busy = false; progress.stopAnimation(nil); progress.isIndeterminate = false; progress.doubleValue = 1
         status.textColor = .labelColor
+        if action == "cloud-enrollment-pair" {
+            if let path = reply.oemPath { oem.stringValue = path }
+            if let path = reply.spPath { sp.stringValue = path }
+            if reply.enrollmentStage == "RECEIVED" {
+                if let sheet = enrollmentWindow { window.endSheet(sheet); sheet.orderOut(nil) }
+                window.beginSheet(cloudWindow!)
+                refresh(); run("cloud-connect")
+            } else {
+                enrollmentDetail.stringValue = reply.enrollmentStage == "RECONCILIATION_REQUIRED" ? "\(reply.role == "oem" ? "OEM" : "SP") issuance needs reconciliation. No request was retried. Your key and received certificates are preserved." : "\(reply.role == "oem" ? "OEM" : "SP") still needs an issuance token. Any received certificate is preserved."
+                refresh()
+            }
+            return
+        }
+        if action == "setup-status" || action == "setup-install" {
+            localInstalled = reply.localInstalled == true; backendsObserved = reply.backendsObserved == true
+            launcherObserved = reply.launcherObserved == true
+            cloudObserved = false
+            if let path = reply.storePath { store.stringValue = path }
+            if let path = reply.oemPath { oem.stringValue = path }
+            if let path = reply.spPath { sp.stringValue = path }
+            install.title = localInstalled ? (backendsObserved && launcherObserved ? "Check installation again" : "Continue installation") : "1. Install SDV Lab"
+            status.stringValue = localInstalled ? "Installed — connect to Aos Cloud" : "Ready to install SDV Lab"
+            detail.stringValue = localInstalled ? (backendsObserved ? "Program and backend images verified. Connect your OEM and Service Provider accounts next." : "Program is installed. Local Docker or its backend images need attention. Continue installation after starting Docker.") : "Everything is included in the DMG. Install prepares the program, backend images and a persistent launcher."
+            next.stringValue = "Later, open AosEdge SDV Lab from your user Applications folder. Create Controller and the simulated vehicle journey remain in Presenter."
+            refresh()
+            if localInstalled && backendsObserved && launcherObserved && !oem.stringValue.isEmpty && !sp.stringValue.isEmpty && FileManager.default.fileExists(atPath: oem.stringValue) && FileManager.default.fileExists(atPath: sp.stringValue) {
+                run("cloud-observe")
+            } else {
+                pendingLaunch = false
+                if !localInstalled && source.stringValue.isEmpty {
+                    status.stringValue = "Open Setup from the complete SDV Lab DMG"
+                    detail.stringValue = "No installed selection or matching media was found. Setup will not search for another kit."
+                }
+            }
+            return
+        }
+        if action == "install-launcher" {
+            launcherObserved = true
+            status.stringValue = "SDV Lab launcher installed"
+            detail.stringValue = "You can eject the DMG after closing Setup. Later, open AosEdge SDV Lab from your user Applications folder."
+            refresh(); run("setup-status"); return
+        }
+        if action == "cloud-connect" || action == "cloud-observe" {
+            cloudObserved = reply.cloudStage == "READY" && reply.rolesChecked == true
+            pairSaved = cloudObserved
+            let environment = reply.domain == "aws-stage.epmp-aos.projects.epam.com" ? "Staging" : reply.domain == "aoscloud.io" ? "Production" : "Cloud"
+            cloudStatus.stringValue = cloudObserved ? "Connected to \(environment)" : "Cloud access needs attention"
+            cloudDetail.stringValue = "\(reply.domain!)\n" + (reply.checks ?? []).filter { $0.state != "READY" }.map { "\($0.label): \($0.state.lowercased())" }.joined(separator: "\n")
+            status.stringValue = cloudObserved && backendsObserved && launcherObserved ? "Ready to open SDV Lab" : "Continue SDV Lab setup"
+            detail.stringValue = cloudObserved ? "\(environment): \(reply.domain!). Open SDV Lab opens Presenter; Create Controller starts the vehicle journey." : "Check the Cloud access window. Your installed program and retained Test are preserved."
+            refresh()
+            if pendingLaunch {
+                pendingLaunch = false
+                if cloudObserved && backendsObserved && launcherObserved { run("launch") }
+            }
+            return
+        }
         if action == "prepare-backends" {
+            backendsObserved = true; localInstalled = true
             status.stringValue = "Backend images available — demo not started"
             detail.stringValue = reply.importAttempted == true ? "Brake and Tire images were loaded and verified in local Docker Desktop. No containers were started." : "Both exact images are already available and verified. No import was needed."
             next.stringValue = "Continue first use\nSet up or check Cloud access, then Open demo and use Create Controller.\nThis check confirms images only, not a running vehicle or backend."
-            refresh(); return
+            refresh(); run("install-launcher"); return
         }
         if action == "launch" {
             status.stringValue = reply.presenterObserved == true ? "Presenter opened" : "Presenter needs attention — inspect the desktop"
@@ -876,12 +1036,13 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
 
     private func fail(_ action: String, _ code: String, _ token: UUID) {
         guard generation == token else { return }
-        busy = false; checked = nil; installed = false
+        busy = false; checked = nil; installed = false; cloudObserved = false; pendingLaunch = false
         progress.stopAnimation(nil); progress.isIndeterminate = false; progress.doubleValue = 0
         status.textColor = .systemRed
         status.stringValue = "Setup stopped safely — review and check again"
         let hint = setupFailureHint(action: action, code: code)
-        detail.stringValue = hint + "\nDiagnostic: " + code
+        detail.stringValue = hint
+        diagnostic.stringValue = "Diagnostic: " + code
         if action == "prepare-backends" { status.stringValue = "Backend preparation needs attention — demo preserved" }
         if action == "launch" { status.stringValue = "Presenter opening needs attention — demo preserved" }
         if action.hasPrefix("cloud-") {
@@ -962,6 +1123,25 @@ func selfTest() throws {
     func rejects(_ action: () throws -> Void) {
         do { try action(); fatalError("Expected rejection") } catch {}
     }
+    for (action, raw) in [
+        ("setup-status", #"{"kind":"result","result":{"status":"SETUP_NOT_INSTALLED","runtimeChanged":false,"cloudAccessed":false,"demoReady":false,"localInstalled":false,"backendsObserved":false,"launcherObserved":false}}"#),
+        ("setup-install", #"{"kind":"result","result":{"status":"SETUP_LOCAL_INSTALLED","runtimeChanged":false,"cloudAccessed":false,"demoReady":false,"localInstalled":true,"backendsObserved":true,"launcherObserved":true}}"#),
+        ("cloud-connect", #"{"kind":"result","result":{"status":"CLOUD_CONNECTED_OBSERVED","runtimeChanged":false,"cloudAccessed":true,"demoReady":false,"rolesChecked":true,"domain":"stage.example.test","cloudStage":"READY","checks":[]}}"#),
+        ("cloud-enrollment-pair", #"{"kind":"result","result":{"status":"PAIR_ENROLLMENT_OBSERVED","runtimeChanged":false,"cloudAccessed":false,"demoReady":false,"rolesChecked":false,"domain":"aoscloud.io","enrollmentStage":"RECONCILIATION_REQUIRED","role":"sp"}}"#)
+    ] {
+        var integrated = SetupExchange(); try integrated.receive(event(raw))
+        _ = try integrated.finish(action: action, exit: 0)
+        rejects { _ = try integrated.finish(action: action, exit: 1) }
+        rejects { _ = try integrated.finish(action: "launch", exit: 0) }
+    }
+    for raw in [
+        #"{"kind":"result","result":{"status":"SETUP_NOT_INSTALLED","runtimeChanged":false,"cloudAccessed":false,"demoReady":false,"localInstalled":true,"backendsObserved":true,"launcherObserved":true}}"#,
+        #"{"kind":"result","result":{"status":"SETUP_LOCAL_INSTALLED","runtimeChanged":false,"cloudAccessed":false,"demoReady":false,"localInstalled":true,"backendsObserved":true}}"#
+    ] {
+        var invalidInstallation = SetupExchange(); try invalidInstallation.receive(event(raw))
+        rejects { _ = try invalidInstallation.finish(action: "setup-status", exit: 0) }
+        rejects { _ = try invalidInstallation.finish(action: "setup-install", exit: 0) }
+    }
     let copy = try event(#"{"kind":"progress","stage":"COPY_VERIFIED","bytes":10,"totalBytes":10,"files":1,"totalFiles":1}"#)
     precondition(copy.fraction == 0.99)
     let invalid = try event(#"{"kind":"progress","stage":"COPY_VERIFIED","bytes":11,"totalBytes":10,"files":1,"totalFiles":1}"#)
@@ -1000,7 +1180,7 @@ func selfTest() throws {
     var incompleteBackend = SetupExchange()
     try incompleteBackend.receive(event(backendRaw.replacingOccurrences(of: "\"imagesVerified\":2", with: "\"imagesVerified\":1")))
     rejects { _ = try incompleteBackend.finish(action: "prepare-backends", exit: 0) }
-    precondition(setupFailureHint(action: "prepare-backends", code: "SETUP_BACKENDS_ENGINE_UNAVAILABLE").contains("Open Docker Desktop"))
+    precondition(setupFailureHint(action: "prepare-backends", code: "SETUP_BACKENDS_ENGINE_UNAVAILABLE").contains("without restarting"))
     precondition(setupFailureHint(action: "prepare-backends", code: "SETUP_BACKENDS_IMPORT_UNCONFIRMED").contains("will not repeat"))
     sleeper.arguments = ["5"]
     try sleeper.run()
