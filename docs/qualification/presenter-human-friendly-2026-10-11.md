@@ -763,3 +763,67 @@ profile and tunnel closed, and owned media detached. Evidence is retained in
 separate from native WKWebView, token-entry and installation-repair acceptance.
 Only unit tests may run on the development Mac; all subsequent installation,
 recovery and live UI checks use the dedicated M1 internal disk.
+
+## Clean successor campaign
+
+The operator requested removal of owned M1 experiments, fresh installation,
+then the full API campaign followed by UI checks. The previous Test
+`918df550-d41a-4e06-8052-23df0f60a74f` and staging Unit
+`7efa7804-1f71-46cb-9f38-38c9e31618b3` were retired through the normal owner.
+COMPLETED / RETIRED and an absent run journal were independently observed.
+
+After the operator's exact-target approval, the old current `fbdf35e…`, rollback
+`6f9b039…` and unselected `e296fd…` package installations, old run-data directory
+and Presenter-Review-Fixed DMG were removed. Credentials and compact reports
+remain outside those targets. Cleanup recovered 113.234 GiB; M1 had 203.339 GiB
+free afterward. An idle Docker file-sharing holder required one maintenance
+restart before deletion. Zero containers and the unchanged Engine identity
+were confirmed; this is not a routine campaign step or a Docker test.
+
+The successor was assembled on the development SSD from the corrected review
+branch at `aab218e`, retaining Factory 41 and CARLA without rebuilding either.
+Only unit tests ran on the development Mac: 368 Presenter tests, 16 Node
+qualification guards and 11 Python UI guards passed. The additional Python
+guard binds a subsequent moving-SOTA check to a completely passed, same-candidate
+release story without replaying its publications.
+
+| Successor artifact | Binding |
+| --- | --- |
+| DMG | `AosEdge-SDV-Lab-Clean-M1-20261011.dmg` |
+| Application manifest | `862bf19b8f345718b986c9a779b95583091ae6d373c13e3966ce715da95315e9` |
+| Setup binary | `3f305be50c311a2400f9505da8e894cba01ab8f998e68df2f67241044178904c` |
+| DMG digest | `5700df588b64c95e275dc32f58b1212ac93be477d9b6a740135cce3965c88753` |
+| DMG bytes | 14,161,403,156 |
+| Payload | 17,699 files / 35,456,536,149 logical bytes |
+| Signature | Authorized Apple Development; not notarized |
+
+The canonical media build and image verification passed. The actual M1
+consumer transfer/digest check passed without a Drive round trip. Fresh
+signed Setup installation and backend preparation passed on M1. API/UI
+acceptance are separate gates and are not inferred
+from the preceding candidate's successful experiments. Private receipts use
+`.local/remote-qualification/m1-clean-20261011-api-installation/` and
+`.local/remote-qualification/m1-clean-20261011-api/`. Main remains unchanged.
+
+The fresh API Test is `b86da97e-f54c-43ed-b97a-dade76dd81a9`, with staging Unit
+`20174976-c230-4e70-a7c5-8133a840f262`. Create, controller/simulator start,
+provisioning, physical Safe Stop, attachment and VDP 153.0.0/V1 passed.
+Brake 131.0.0/V1 publication reached READY. Assignment stopped at a final Cloud
+GET returning HTTP 503 after the Unit bind returned 201 and both assignment
+steps were confirmed. The uncertain attempt and normal shutdown are retained.
+
+Fresh authoritative reads confirmed the exact Unit, retained Subject and
+published service. The ordinary assignment owner reconciled its local record
+to ASSIGNED using a Cloud adapter that permits observation only; no publication,
+Subject creation, binding or assignment POST was repeated. The qualification
+adapter now supports this confirmed-terminal reconciliation after the original
+Presenter session closes. Exact Test/version guards, no-op verification and
+negative mutation guards passed in the 95-test Python qualification suite.
+The installed product and DMG did not change. Earlier API evidence retains its
+original qualification-source digest; the resumed report flags that source
+revision for review rather than rewriting old passes.
+
+A subsequent campaign media recheck stopped on a changed consumer file identity.
+The completed installation remains intact. Continuation uses the installed
+journey directly; a UI campaign must re-verify the existing media digest before
+use, without retransmission or reinstallation.

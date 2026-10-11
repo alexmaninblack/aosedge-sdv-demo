@@ -619,6 +619,32 @@ class Worker:
                         'ASSIGNMENT_ABSENCE_UNCONFIRMED')
                 return result(dict(assignmentNotSubmitted=True, cloudMutation=False), outcome='FAIL',
                               code='ASSIGNMENT_NOT_SUBMITTED')
+            # A final Cloud GET can fail after every assignment step was
+            # confirmed. Reconcile through the ordinary owner, with a read-only
+            # Cloud adapter; an expired Presenter session cannot authorize POST.
+            if (operation.get('state') == 'ASSIGNED' or operation.get('state') == 'UNCERTAIN'
+                    and operation.get('reason') == 'CLOUD_HTTP_503'):
+                test = {key:state['vehicles']['test'].get(key)
+                        for key in ('unitId','systemUid','unitSetId')}
+                require(operation.get('serviceId') == self.args['serviceId']
+                        and operation.get('test') == test
+                        and all(operation.get('steps',{}).get(step,{}).get('stage') == 'CONFIRMED'
+                                for step in ('bind','assign')), 'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED')
+                from aosedge_demo_orchestrator.service_assignment import ServiceAssignment
+                units = self.app.unit_service
+                class ReadOnlyUnits:
+                    def _cloud(self, action, **fields):
+                        require(action == 'service-assignment-observe', 'ASSIGNMENT_MUTATION_FORBIDDEN')
+                        return units._cloud(action, **fields)
+                resolved = ServiceAssignment(self.app.environment_service, ReadOnlyUnits()).assign(self.args['serviceId'])
+                observation = resolved.get('observation') or {}
+                require(resolved.get('state') == 'ASSIGNED' and resolved.get('noOp') is True
+                        and resolved.get('test') == test and observation.get('unitBound') is True
+                        and observation.get('serviceBound') is True
+                        and (observation.get('package') or {}).get('version') == operation.get('publishedVersion'),
+                        'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED')
+                return result(dict(serviceId=self.args['serviceId'], cloudMutation=False,
+                                   reconciliationOnly=True, runtimeQualified=False))
         operations = exchange('operations')
         require(operations['sessionId'] == prepared['sessionId'], 'SESSION_CHANGED_RECONCILE_REQUIRED')
         if self.request['phase'] == 'execute':

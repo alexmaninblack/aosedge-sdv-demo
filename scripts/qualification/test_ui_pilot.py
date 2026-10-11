@@ -10,6 +10,28 @@ from ui_m1 import read_request, Observer
 
 
 class PilotGuards(unittest.TestCase):
+    def test_completed_story_binds_followup_without_inheriting_another_candidate(self):
+        report=dict(outcome='PASS',scenario='release-story',candidate='a'*64,test='bound',ownersClosed=True)
+        names=('vdp-v1','brake-v1','vdp-v2','brake-v2','vdp-v3','brake-v3','tire-v1',
+               'return-to-road','confirmed-stop')
+        browser=dict(outcome='PASS',scenario='release-story',stages=[dict(stage=n,outcome='PASS') for n in names])
+        events=[]
+        for i,(action,team,profile,version) in enumerate((('prepare',None,'v3','153.0.0'),
+                ('service-prepare','brake','v3','131.0.0'),('service-prepare','tire','v1','67.0.0'))):
+            events.extend([dict(state='DISPATCH_INTENT',requestId=str(i),action=action,team=team,profile=profile),
+                           dict(requestId=str(i),productState='COMPLETED',version=version)])
+        self.assertEqual(p.completed_release_binding(report,browser,events,'a'*64,'bound')['vdp-v3-prepare'],
+                         dict(version='153.0.0'))
+        for change in ({'outcome':'FAIL'},{'candidate':'b'*64},{'test':'other'},
+                       {'ownersClosed':False},{'scenario':'installed'}):
+            with self.assertRaises(ValueError):
+                p.completed_release_binding(dict(report,**change),browser,events,'a'*64,'bound')
+        for changed in (dict(browser,outcome='FAIL'),dict(browser,stages=browser['stages'][:-1]),
+                        dict(browser,stages=[dict(stage=n,outcome='FAIL') for n in names])):
+            with self.assertRaises(ValueError): p.completed_release_binding(report,changed,events,'a'*64,'bound')
+        for changed in ([],events+events,[dict(row,version='latest') if 'version' in row else row for row in events]):
+            with self.assertRaises(ValueError): p.completed_release_binding(report,browser,changed,'a'*64,'bound')
+
     def test_autopilot_witness_is_restricted_to_moving_sota_stage(self):
         identifier='01234567-89ab-cdef-0123-456789abcdef'
         gate=dict(schemaVersion=1,stage='moving-sota-autopilot',action='Autopilot',

@@ -679,6 +679,45 @@ class DockerPolicyTests(unittest.TestCase):
         with patch.dict(sys.modules,modules),patch.object(worker,'binding',return_value={}):
             with self.assertRaisesRegex(ValueError,'ASSIGNMENT_ABSENCE_UNCONFIRMED'):worker.presenter()
 
+    def test_confirmed_assignment_reconciles_after_session_exit_without_cloud_mutation(self):
+        from types import SimpleNamespace as N
+        test=dict(unitId='unit',systemUid='system',unitSetId='set')
+        operation=dict(state='UNCERTAIN',reason='CLOUD_HTTP_503',serviceId='sid',test=test,
+            publishedVersion='131.0.0',steps={s:dict(stage='CONFIRMED') for s in ('bind','assign')})
+        state=dict(vehicles={'test':test},serviceOperations={'sid':operation})
+        worker=self.worker();worker.args={'action':'service-assign','serviceId':'sid'}
+        worker.request.update(phase='reconcile')
+        cloud=Mock(return_value={})
+        worker.app=N(environment_service='environment',unit_service=N(_cloud=cloud))
+        resolution=dict(state='ASSIGNED',noOp=True,test=test,observation=dict(
+            unitBound=True,serviceBound=True,package=dict(version='131.0.0')))
+        def owner(environment, units):
+            self.assertEqual(environment,'environment')
+            def assign(sid):
+                self.assertEqual(sid,'sid')
+                units._cloud('service-assignment-observe',serviceId=sid)
+                with self.assertRaisesRegex(ValueError,'ASSIGNMENT_MUTATION_FORBIDDEN'):
+                    units._cloud('service-assignment-step',serviceId=sid)
+                return resolution
+            return N(assign=assign)
+        modules={'aosedge_demo_orchestrator.presenter_operations':N(operation_plan=lambda v:None),
+                 'aosedge_demo_orchestrator.service_assignment':N(ServiceAssignment=owner)}
+        with patch.dict(sys.modules,modules),patch.object(worker,'binding',return_value=state), \
+             patch.object(w,'exchange',side_effect=AssertionError('expired Presenter not needed')):
+            self.assertTrue(worker.presenter()['facts']['reconciliationOnly'])
+            self.assertFalse(worker.attempted)
+            for key,bad in [('test',dict(test,unitId='another')),('steps',{}),('serviceId','another')]:
+                changed=copy.deepcopy(state);changed['serviceOperations']['sid'][key]=bad
+                with patch.object(worker,'binding',return_value=changed), \
+                     self.assertRaisesRegex(ValueError,'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED'):
+                    worker.presenter()
+            for key,bad in [('noOp',False),('state','UNCERTAIN'),('test',{}),('observation',{})]:
+                saved=resolution[key];resolution[key]=bad
+                with self.assertRaisesRegex(ValueError,'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED'):
+                    worker.presenter()
+                resolution[key]=saved
+        self.assertTrue(all(call.args == ('service-assignment-observe',) for call in cloud.call_args_list))
+
     def test_publication_read_projects_only_fixed_fields(self):
         from types import SimpleNamespace as N
         worker=self.worker();worker.args={'query':'publication','release':'brake/104.0.0'}

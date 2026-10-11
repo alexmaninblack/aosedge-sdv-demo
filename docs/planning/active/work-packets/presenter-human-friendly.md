@@ -426,3 +426,22 @@ corrections; keep it on the review branch, with main unchanged. Bind all new
 installation, API and UI evidence to that successor and new Test. API results
 must not count as UI acceptance. Only unit tests may run on the development Mac;
 all installation and live checks execute on the M1 internal disk.
+
+The follow-up moving-SOTA experiment may consume either the existing exact
+native-witness-interrupted continuation receipt or a fully passed release-story
+receipt. The latter must bind the same candidate and Test, contain every serial
+release stage, Return to road and confirmed Stop, record closed owners, and
+identify exactly one completed preparation receipt for each current version.
+It authorizes no replay of the preceding publications. Negative unit cases cover
+another candidate/Test, failed or incomplete stages and missing/duplicate release
+receipts. This qualification-only binding does not change the product or DMG.
+
+Confirmed assignment recovery after a final Cloud HTTP 503 uses the existing
+assignment owner, with a Cloud adapter restricted to authoritative reads.
+Require both recorded assignment steps CONFIRMED, the exact current Test,
+matching publication and fresh Unit/Subject/service relations. The owner must
+return ASSIGNED and no-op; no publication or assignment mutation is replayed.
+This handles loss of the original Presenter session after ordinary cleanup,
+retains the uncertain attempt and does not turn runtime readiness into an
+assignment fact. The installed candidate remains unchanged. Negative unit gates
+cover changed Test, service, steps and resolution, plus attempted Cloud mutation.

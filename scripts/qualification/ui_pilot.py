@@ -198,13 +198,40 @@ def settled_release_binding(report, browser, events, candidate, test):
     return result
 
 
+def completed_release_binding(report, browser, events, candidate, test):
+    """Bind a subsequent experiment to a fully passed same-candidate story."""
+    h.require(report.get('scenario') == browser.get('scenario') == 'release-story'
+              and report.get('outcome') == browser.get('outcome') == 'PASS'
+              and report.get('candidate') == candidate and report.get('test') == test
+              and report.get('ownersClosed') is True, 'COMPLETED_RELEASE_BINDING_REQUIRED')
+    stages = browser.get('stages', [])
+    h.require(stages and all(row.get('outcome') == 'PASS' for row in stages)
+              and {'vdp-v1','brake-v1','vdp-v2','brake-v2','vdp-v3','brake-v3',
+                   'tire-v1','return-to-road','confirmed-stop'} <= {row.get('stage') for row in stages},
+              'COMPLETED_RELEASE_STAGES_REQUIRED')
+    intents = {row['requestId']:row for row in events if row.get('state') == 'DISPATCH_INTENT'}
+    result = {}
+    for key,action,team,profile in (('vdp-v3-prepare','prepare',None,'v3'),
+            ('brake-v3-prepare','service-prepare','brake','v3'),
+            ('tire-v1-prepare','service-prepare','tire','v1')):
+        found = [row.get('version') for row in events if row.get('productState') == 'COMPLETED'
+            and intents.get(row.get('requestId'),{}).get('action') == action
+            and intents.get(row.get('requestId'),{}).get('team') == team
+            and intents.get(row.get('requestId'),{}).get('profile') == profile]
+        h.require(len(found) == 1 and isinstance(found[0],str)
+                  and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',found[0]), 'RELEASE_RECEIPT_REQUIRED')
+        result[key] = dict(version=found[0])
+    return result
+
+
 def run(args, transport, config):
     cards = qualified_cards(config, transport, args.test)
     if args.cards_from_release_records:
         prior = h.unlinked(args.cards_from_release_records)
         h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_RELEASE_RECORD_REQUIRED')
-        receipt = settled_release_binding(h.parse((prior/'pilot-report.json').read_bytes()),
-            h.parse((prior/'browser-report.json').read_bytes()),
+        report = h.parse((prior/'pilot-report.json').read_bytes())
+        bind = completed_release_binding if report.get('scenario') == 'release-story' else settled_release_binding
+        receipt = bind(report, h.parse((prior/'browser-report.json').read_bytes()),
             [json.loads(line) for line in (prior/'ui-events.jsonl').read_text().splitlines()],
             config['manifestSha256'],args.test)
         for name,key,profile in (('Vehicle Data Platform installed details','vdp-v3-prepare','v3'),
@@ -356,7 +383,7 @@ def main():
     parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return', 'moving-sota'), default='installed')
     parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')
     parser.add_argument('--cards-from-release-records', type=Path,
-                        help='Completed release stages interrupted only at the native Return to road witness')
+                        help='Passed release story or exact native-witness-interrupted continuation records')
     parser.add_argument('--display',choices=('m1','background'),default='m1')
     parser.add_argument('--dmg', type=Path)
     parser.add_argument('--remote-dmg')
