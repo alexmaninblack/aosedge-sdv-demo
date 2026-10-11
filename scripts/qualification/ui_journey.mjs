@@ -64,10 +64,27 @@ export function transitionBaseline(value, test) {
     && !v.pendingVersion;
 }
 
+export async function nativeBrokerReply(id, fd = 0) {
+  // Keep Playwright routing and the installed UI's polling alive while the
+  // operator clicks a native control. A synchronous stdin read freezes both.
+  let line = ''; const byte = Buffer.alloc(1);
+  while (!line.endsWith('\n')) {
+    const count = await new Promise((resolve, reject) => fs.read(fd, byte, 0, 1, null,
+      (error, size) => error ? reject(error) : resolve(size)));
+    assert(count === 1, 'NATIVE_UI_BROKER_CLOSED');
+    line += byte.toString(); assert(line.length < 524288, 'NATIVE_UI_BROKER_TOO_LARGE');
+  }
+  const reply = JSON.parse(line);
+  assert(reply.id === id && reply.ok === true, 'NATIVE_UI_BROKER_UNAVAILABLE');
+  return reply.value;
+}
+
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story', 'vdp-transition'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  if (input.scenario === 'release-continuation')
+    assert(version.test(input.continuation?.preparedV2), 'CONTINUATION_RECEIPT_REQUIRED');
   const require = createRequire(input.modulePath ?? path.join(input.repository, 'apps/presenter-ui/package.json'));
   const { chromium, expect } = require('@playwright/test');
   const record = value => {
@@ -180,7 +197,9 @@ export async function main(inputPath) {
     finally { fs.closeSync(gateFd); }
     record({ stage:label,state:'WAITING_FOR_NATIVE_UI',action }); console.log(`native-ui: ${label} · ${action}`);
     if(input.visibleM1) {
-      const receipt=broker('native',gate);
+      const id=++readSequence;
+      process.stdout.write(JSON.stringify({uiRead:true,id,kind:'native',args:gate})+'\n');
+      const receipt=await nativeBrokerReply(id);
       assert.deepEqual(receipt,{...gate,state:'CLICKED_THROUGH_CUA'},'NATIVE_UI_WITNESS_MISMATCH');
       fs.writeFileSync(path.join(input.records,'native-ui-click.json'),JSON.stringify(receipt)+'\n',{mode:0o600});
     }
@@ -293,8 +312,12 @@ export async function main(inputPath) {
         await shot('vdp-v2-prepared');
       });
     }
-    if (input.scenario==='release-story') {
-      const platform=async profile => {
+    if (['release-story','release-continuation'].includes(input.scenario)) {
+      if (input.scenario === 'release-continuation') await stage('continuation-current-v1', async () => {
+        assert(transitionBaseline(await read('platform'),input.test),'CURRENT_VDP_V1_REQUIRED');
+        assert(query('component-idle').idle,'COMPONENT_PENDING');
+      });
+      const platform=async (profile, existingVersion) => {
         await stage('vdp-'+profile,async () => {
           await native('vdp-'+profile+'-safe','Safe Stop',()=>{
             const c=query('local').controller;return c.fresh && !c.held && c.mode==='SAFE_STOP' && c.speed<=.5 && c.brake>=.99;
@@ -303,8 +326,15 @@ export async function main(inputPath) {
           await button('Platform Team').click();
           await page.getByRole('group',{name:'Capability profile',exact:true}).getByRole('button',
             {name:`${profile} ${profiles.platform[Number(profile[1])-1]}`,exact:true}).click();
-          const prepared=await operate({action:'prepare',profile},()=>button('Prepare '+profile).click());
+          let prepared;
+          if (existingVersion) {
+            // Require the current UI candidate to agree with the prior completed receipt.
+            await expect(page.getByText(`Selected candidate · ${profile} · ${existingVersion}`,{exact:true})).toBeVisible();
+            prepared={version:existingVersion};
+            record({state:'PREPARED_VERSION_REUSED',profile,version:existingVersion});
+          } else prepared=await operate({action:'prepare',profile},()=>button('Prepare '+profile).click());
           assert(version.test(prepared.version),'PREPARED_VERSION_REQUIRED');
+          await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
           await confirmed({action:'publish',version:prepared.version},()=>button('Sign & publish').click(),'Sign & publish VDP');
           await until(()=>installed(query('component'),'platform',prepared.version),'VDP_INSTALL_NOT_CONFIRMED',180000);
           cards['Vehicle Data Platform installed details']=`${profile} · ${prepared.version}`;
@@ -317,6 +347,7 @@ export async function main(inputPath) {
             {name:`${profile} ${profiles[team][Number(profile[1])-1]}`,exact:true}).click();
           const prepared=await operate({action:'service-prepare',team,profile},()=>button('Prepare '+profile).click());
           assert(prepared.releaseHandle && prepared.version,'PREPARED_SERVICE_REQUIRED');
+          await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
           const action={action:'service-publish',release:prepared.releaseHandle};
           await confirmed(action,()=>button('Sign & publish').click(),'Sign & publish service');
           await until(()=>query('publication',null,prepared.releaseHandle).stage==='READY','SERVICE_PUBLICATION_NOT_READY',180000);
@@ -329,7 +360,9 @@ export async function main(inputPath) {
           });
         });
       };
-      for (const p of ['v1','v2','v3']) { await platform(p); await service('brake',p); }
+      for (const p of input.scenario === 'release-continuation' ? ['v2','v3'] : ['v1','v2','v3']) {
+        await platform(p, p === 'v2' ? input.continuation?.preparedV2 : undefined); await service('brake',p);
+      }
       await service('tire','v1');
       await stage('return-to-road',async () => {
         await native('return-to-road','Return to road',()=>{
@@ -337,7 +370,23 @@ export async function main(inputPath) {
         });
       });
     }
-    if (input.scenario !== 'vdp-transition') {
+    if (input.scenario === 'road-return') {
+      await stage('current-installed-releases',async () => {
+        for (const [team,name] of [['platform','Vehicle Data Platform installed details'],
+          ['brake','Brake service details'],['tire','Tire service details']]) {
+          const release = cards[name].split(' · ')[1];
+          assert(version.test(release),'PINNED_RELEASE_REQUIRED');
+          await until(()=>installed(query(team==='platform'?'component':'service',
+            team==='platform'?undefined:team),team,release),'CURRENT_INSTALLED_RELEASE_REQUIRED',180000);
+        }
+      });
+      await stage('return-to-road',async () => {
+        await native('return-to-road','Return to road',()=>{
+          const c=query('local').controller;return c.fresh && !c.held && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99;
+        });
+      });
+    }
+    if (!['vdp-transition','road-return'].includes(input.scenario)) {
     await stage('installed-details',async () => {
       await button('Vehicle').click();
       for (const [name,text] of Object.entries(cards)) {

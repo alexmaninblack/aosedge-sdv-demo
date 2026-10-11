@@ -2,8 +2,37 @@
 // SPDX-License-Identifier: MIT
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spawn } from 'node:child_process';
 import { command, facts, installed, resetPreserved, visibleWorkspace, transitionBaseline } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('native witness wait leaves browser routing and polling responsive', async () => {
+  const url = new URL('./ui_journey.mjs', import.meta.url).href;
+  const child = spawn(process.execPath, ['--input-type=module', '-e',
+    `import {nativeBrokerReply} from ${JSON.stringify(url)};
+     setTimeout(()=>process.stdout.write('POLLING_ALIVE\\n'),10);
+     try { const value=await nativeBrokerReply(1);process.stdout.write(value.state+'\\n'); }
+     catch { process.stdout.write('FAIL_CLOSED\\n'); }`], {stdio:['pipe','pipe','pipe']});
+  let output=''; child.stdout.on('data', data => {
+    output+=data;
+    if (output === 'POLLING_ALIVE\n') child.stdin.end(JSON.stringify({id:1,ok:true,value:{state:'CLICKED_THROUGH_CUA'}})+'\n');
+  });
+  const timer=setTimeout(()=>child.kill(),3000);
+  const code=await new Promise(resolve=>child.on('exit',resolve));clearTimeout(timer);
+  assert.equal(code,0);assert.equal(output,'POLLING_ALIVE\nCLICKED_THROUGH_CUA\n');
+});
+test('native witness wait rejects a failed or mismatched broker reply', async () => {
+  const url = new URL('./ui_journey.mjs', import.meta.url).href;
+  for (const reply of [{id:2,ok:true,value:{}},{id:1,ok:false}]) {
+    const child=spawn(process.execPath,['--input-type=module','-e',
+      `import {nativeBrokerReply} from ${JSON.stringify(url)};
+       try {await nativeBrokerReply(1);process.exitCode=1;} catch {process.stdout.write('FAIL_CLOSED\\n');}`],
+      {stdio:['pipe','pipe','pipe']});
+    let output='';child.stdout.on('data',data=>output+=data);
+    child.stdin.end(JSON.stringify(reply)+'\n');
+    const code=await new Promise(resolve=>child.on('exit',resolve));
+    assert.equal(code,0);assert.equal(output,'FAIL_CLOSED\n');
+  }
+});
 test('transition diagnosis requires current same-Test V1 installation, not a historical card', () => {
   const v = { state: 'CURRENT', bindingKey: id + ':unit', value: { target: 'test', installedVersion: '150.0.0', pendingVersion: null,
     installedProfile: { state: 'CURRENT', profile: 'v1', releaseVersion: '150.0.0' } } };

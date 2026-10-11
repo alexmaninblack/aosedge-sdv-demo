@@ -158,8 +158,65 @@ def verified_media(records, media):
         and r['observations'].get('bytes') == media['bytes']), None)
 
 
+def continuation_binding(report, events, candidate, test):
+    """Pin the one completed prepare-only experiment; never invent a release."""
+    h.require(report.get('outcome') == 'PASS' and report.get('scenario') == 'vdp-transition'
+              and report.get('candidate') == candidate and report.get('test') == test
+              and report.get('ownersClosed') is True, 'CONTINUATION_RECEIPT_REQUIRED')
+    rows = [row for row in events if row.get('state') == 'VDP_V2_PREPARATION_CONFIRMED']
+    h.require(len(rows) == 1 and rows[0].get('publication') == 'NOT_REQUESTED'
+              and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', rows[0].get('version', '')),
+              'CONTINUATION_PREPARED_VERSION_REQUIRED')
+    return dict(preparedV2=rows[0]['version'])
+
+
+def settled_release_binding(report, browser, events, candidate, test):
+    """Resume only after completed releases and a closed native-witness timeout."""
+    h.require(report.get('scenario') == browser.get('scenario') == 'release-continuation'
+              and report.get('candidate') == candidate and report.get('test') == test
+              and report.get('ownersClosed') is True, 'SETTLED_RELEASE_BINDING_REQUIRED')
+    passed = {r['stage'] for r in browser.get('stages', []) if r.get('outcome') == 'PASS'}
+    h.require({'vdp-v2','brake-v2','vdp-v3','brake-v3','tire-v1'} <= passed,
+              'SETTLED_RELEASE_STAGES_REQUIRED')
+    failures = [r for r in browser.get('stages', []) if r.get('outcome') != 'PASS']
+    h.require(report.get('outcome') == browser.get('outcome') == 'FAIL'
+              and len(failures) == 1 and failures[0].get('stage') == 'return-to-road'
+              and failures[0].get('code') == 'NATIVE_UI_BROKER_UNAVAILABLE',
+              'NATIVE_WITNESS_TIMEOUT_REQUIRED')
+    intents = {r['requestId']:r for r in events if r.get('state') == 'DISPATCH_INTENT'}
+    result = {}
+    for key,action,team,profile in (('vdp-v3-prepare','prepare',None,'v3'),
+            ('brake-v3-prepare','service-prepare','brake','v3'),
+            ('tire-v1-prepare','service-prepare','tire','v1')):
+        found = [r.get('version') for r in events if r.get('productState') == 'COMPLETED'
+            and intents.get(r.get('requestId'),{}).get('action') == action
+            and intents.get(r.get('requestId'),{}).get('team') == team
+            and intents.get(r.get('requestId'),{}).get('profile') == profile]
+        h.require(len(found) == 1 and isinstance(found[0],str)
+                  and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',found[0]), 'RELEASE_RECEIPT_REQUIRED')
+        result[key] = dict(version=found[0])
+    return result
+
+
 def run(args, transport, config):
     cards = qualified_cards(config, transport, args.test)
+    if args.cards_from_release_records:
+        prior = h.unlinked(args.cards_from_release_records)
+        h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_RELEASE_RECORD_REQUIRED')
+        receipt = settled_release_binding(h.parse((prior/'pilot-report.json').read_bytes()),
+            h.parse((prior/'browser-report.json').read_bytes()),
+            [json.loads(line) for line in (prior/'ui-events.jsonl').read_text().splitlines()],
+            config['manifestSha256'],args.test)
+        for name,key,profile in (('Vehicle Data Platform installed details','vdp-v3-prepare','v3'),
+                ('Brake service details','brake-v3-prepare','v3'),('Tire service details','tire-v1-prepare','v1')):
+            cards[name] = profile+' · '+receipt[key]['version']
+    continuation = None
+    if args.scenario == 'release-continuation':
+        prior = h.unlinked(args.continue_from)
+        h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_CONTINUATION_RECORD_REQUIRED')
+        continuation = continuation_binding(h.parse((prior/'pilot-report.json').read_bytes()),
+            [json.loads(line) for line in (prior/'ui-events.jsonl').read_text().splitlines()],
+            config['manifestSha256'], args.test)
     records = h.unlinked(args.records)
     h.require('/.local/remote-qualification/' in str(records) and not records.exists(),
               'NEW_PRIVATE_RECORD_REQUIRED')
@@ -226,6 +283,7 @@ def run(args, transport, config):
                 value = dict(repository=str(HERE.parent.parent), records=str(records), python=sys.executable,
                     helper=str(Path(__file__).resolve()), config=str(args.config.resolve()),
                     journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario)
+                if continuation: value['continuation'] = continuation
                 h.atomic(scratch/'browser-input.json', value)
                 with j.Progress('real-browser-pilot', emit=lambda value: print(value, flush=True)):
                     if visible:
@@ -295,7 +353,10 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'road-return'), default='installed')
+    parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')
+    parser.add_argument('--cards-from-release-records', type=Path,
+                        help='Completed release stages interrupted only at the native Return to road witness')
     parser.add_argument('--display',choices=('m1','background'),default='m1')
     parser.add_argument('--dmg', type=Path)
     parser.add_argument('--remote-dmg')
@@ -308,6 +369,11 @@ def main():
     h.require(str(UUID(args.test)) == args.test, 'TEST_UUID_INVALID')
     transport, _ = h.configuration(args.config)
     config = j.configuration(args.journey, transport['user'])
+    h.require((args.scenario == 'release-continuation') == (args.continue_from is not None),
+              'CONTINUATION_RECORD_BOUNDARY')
+    h.require(not args.cards_from_release_records or args.scenario in ('installed','road-return'), 'INSTALLED_CARD_RECORD_BOUNDARY')
+    h.require(args.scenario != 'road-return' or args.cards_from_release_records is not None,
+              'ROAD_RETURN_RELEASE_RECORD_REQUIRED')
     if args.query:
         print(json.dumps(read_query(transport, config, args.test, args.query, args.team, args.release)))
         return 0

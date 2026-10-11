@@ -209,6 +209,64 @@ V2 and clicks Prepare once, guarded against any other request, then confirms
 ordinary Stop. It does not sign, publish, install, assign, Reset or delete.
 Historical installed-card expectations are not used to establish its baseline.
 
+### Continue the prepared V2 and check recovery
+
+`--scenario release-continuation --continue-from ABSOLUTE_PREPARATION_RECORDS`
+requires a completed `vdp-transition` receipt from the same candidate and Test,
+with exactly one unpublished V2 preparation. It freshly confirms current V1,
+then requires the on-screen selected V2 candidate to match that receipt before
+publication. It does not prepare V2 again or repeat completed V1 publications.
+The remaining sequence is VDP V2, Brake V2, VDP V3, Brake V3 and Tire V1,
+followed by the installed details, backend records, independent resets and Stop.
+
+While a native click is pending, the browser executor waits asynchronously so
+Playwright routing and the installed UI's ordinary polling remain responsive.
+The witness still requires a real CUA click and independent postcondition.
+Use the absolute private records path when recording the witness, regardless
+of the terminal's current directory. A terminal scenario cannot be acknowledged
+after its deadline; retain the failed attempt instead.
+
+If every release stage passed but the Return to road witness expired, do not
+publish those versions again. `--scenario installed
+--cards-from-release-records ABSOLUTE_INTERRUPTED_RECORDS` requires that exact
+failure boundary, completed same-candidate release receipts and verified owner
+closure. It rechecks the installed cards and remaining views, resets and Stop
+against those versions. The interrupted release story remains FAIL; the new
+installed-browser result is separate. After it passes, supply
+`--installed-records COMPLETED_INSTALLED_RECORDS` to `recovery_tail.py` as well
+as the original `--ui-records`. Recovery requires both evidence sets and fresh
+current inputs; it does not convert the failed native witness into a pass.
+
+`--scenario road-return --cards-from-release-records ABSOLUTE_INTERRUPTED_RECORDS`
+is the bounded native-button recheck: restore the same visible owners, confirm
+all three current installed versions against those receipts, witness a real
+CUA Return to road click and stationary Manual postcondition, then Stop. It
+performs no preparation, publication, assignment or Reset. Its result remains
+separate from the interrupted story and from engineering recovery.
+
+After that UI chain passes, `recovery_tail.py` runs a fresh engineering experiment
+against its exact completed release receipts. It restores the retained owners,
+checks current inputs, exercises the actual 300-second offline interval and
+delivery recovery, ignition, same-Test Stop/Start, new products and ordinary
+shutdown. It does not create, provision, publish, assign, Reset or delete.
+Presenter remains visible in a read-only browser alongside the native owners;
+this viewer performs no action and cannot establish UI acceptance of the
+engineering recovery operations.
+
+```sh
+python3 -B scripts/qualification/recovery_tail.py \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --ui-records COMPLETED_UI_CONTINUATION_RECORDS \
+  --records NEW_PRIVATE_RECOVERY_RECORDS --test RETAINED_TEST_UUID \
+  --dmg VERIFIED_LOCAL_DMG --remote-dmg VERIFIED_M1_DMG \
+  --media-records VERIFIED_CONSUMER_RECORDS --workspace EXISTING_SCRATCH_WORKSPACE
+```
+
+Both experiments preserve candidate/Test bindings, Docker and data, retain
+failed attempts, and close owned runtime, browser/profile and mounted media.
+Neither closes the separate moving-SOTA, native-shell, credential-entry or
+installation interruption/repair gates. The deferred VDP timeout is unchanged.
+
 Snapshot request records contain only status, elapsed time and matching/missing
 run classification. Rejected requests retain only the fixed guard code,
 supported expected/actual profiles and session equality. Missing observations

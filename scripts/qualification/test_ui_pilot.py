@@ -1,14 +1,39 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+from io import StringIO
 import ui_pilot as p
 from ui_forward_admin import rule
 from ui_native_gate import validate
-from ui_m1 import read_request
+from ui_m1 import read_request, Observer
 
 
 class PilotGuards(unittest.TestCase):
+    def test_read_only_viewer_closes_profile_even_after_failed_start(self):
+        for code,passed in ((0,True),(1,False)):
+            viewer=Observer.__new__(Observer)
+            viewer.transport={};viewer.root='/fixed/ui-tools';viewer.python='/fixed/python'
+            viewer.records='/fixed/records';viewer.process=Mock()
+            viewer.process.poll.return_value=code;viewer.process.wait.return_value=code
+            viewer.process.stdout=StringIO('OBSERVER_CLOSED\n')
+            with patch('ui_m1.h.remote') as remote:
+                self.assertEqual(viewer.close(),passed)
+                self.assertEqual(remote.call_count,1)
+                self.assertIn('browser-profile',remote.call_args.args[1])
+                self.assertIn('/fixed/records/browser-profile',remote.call_args.args[1])
+            self.assertTrue(viewer.process.stdout.closed)
+
+    def test_continuation_pins_one_completed_unpublished_prepare(self):
+        report=dict(outcome='PASS',scenario='vdp-transition',candidate='a'*64,test='bound',ownersClosed=True)
+        events=[dict(state='VDP_V2_PREPARATION_CONFIRMED',version='151.0.0',publication='NOT_REQUESTED')]
+        self.assertEqual(p.continuation_binding(report,events,'a'*64,'bound'),dict(preparedV2='151.0.0'))
+        for change in ({'outcome':'FAIL'},{'scenario':'release-story'},{'candidate':'b'*64},
+                       {'test':'other'},{'ownersClosed':False}):
+            with self.assertRaises(ValueError): p.continuation_binding(dict(report,**change),events,'a'*64,'bound')
+        for rows in ([],events+events,[dict(events[0],version='latest')],[dict(events[0],publication='READY')]):
+            with self.assertRaises(ValueError): p.continuation_binding(report,rows,'a'*64,'bound')
+
     def test_visible_broker_has_no_action_or_secret_input(self):
         request=dict(uiRead=True,id=1,kind='query',args=dict(name='combined'))
         self.assertEqual(read_request(request,0),(1,'query',dict(name='combined')))

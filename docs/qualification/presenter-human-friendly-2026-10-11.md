@@ -3,20 +3,17 @@
 
 # Presenter branch DMG and M1 qualification — 11 October 2026
 
-Status: Corrected DMG built, verified and installed on M1. Its fresh scripted
-campaign passed all 117 steps, including serial releases, products, resets,
-offline recovery, ignition and same-Test Stop/Start. Native Setup/Open,
-stopped-controller Start, Stop cancellation and confirmed Stop also passed.
-Demo-owned applications and listeners are closed; Test data and Docker are
-preserved. The branch is ready for review, not full release acceptance.
-Subsequent browser experiments are recorded below. The installed browser
-scenario passed on the development Mac, but that headless result does not meet
-the operator's new requirement to watch all three surfaces on M1. The first
-visible M1 scenario passed 13 stages and stopped at Activity after loss of the
-current UI run observation. The later visible release story installed VDP V1
-and Brake V1, then stopped before preparing VDP V2 when the request guard
-rejected an unexpected UI submission. A complete visible release story is not
-yet accepted.
+Status: The retained M1 candidate passed serial VDP/Brake V2 and V3 updates and
+Tire V1, a separate 17-stage visible installed-browser check, and a fresh
+53-step offline/ignition/Stop-Start recovery experiment on those exact releases.
+The interrupted release-story attempt remains FAIL; its Return to road button
+passed a separate fresh visible recheck. Failed and passing experiments retain
+separate results rather than forming a synthetic uninterrupted journey.
+The original clean scripted campaign passed 117 steps on earlier releases.
+Native Setup/Open and stopped-controller Start/Stop checks also passed.
+Full E2E acceptance remains open at the separate gates below. The profile
+correction is source-tested, not installed in this DMG. Main, the DMG and
+Production remain unchanged; normal cleanup preserves Test data and Docker.
 
 ## Scope and candidate
 
@@ -598,3 +595,126 @@ Targeted installed-browser preparation is PASS; live acceptance of the source
 profile-recovery correction requires a separately built and installed candidate.
 The full release story remains NOT_COMPLETE, native-shell acceptance is separate,
 and main and Production are unchanged.
+
+## Remaining release and recovery checks
+
+The operator requested the remaining checks before putting the profile correction
+into another DMG. The retained installed candidate and Test remain unchanged.
+The continuation binds the completed, unpublished VDP V2 `151.0.0` preparation,
+freshly requires installed V1, and checks the matching on-screen candidate
+before publication. It skips the already completed V1 publications.
+
+The first continuation failed in 364.599 seconds at the native Safe Stop witness
+wait, before any preparation or publication request. The recorded three actions
+were controller start, simulator start and connection. The failed witness was
+not accepted, and the 120-second native gate expired. Normal shutdown closed
+the owned runtime, browser and media, preserving Docker and Test data.
+Evidence remains under
+`.local/remote-qualification/m1-ui-release-continuation-20261011/`.
+
+Diagnosis reproduced a qualification-driver defect: its synchronous stdin read
+blocked the Node event loop while awaiting a native witness, preventing normal
+Playwright routing and browser polling. An isolated delayed-reply experiment
+confirmed that the heartbeat ran only after the synchronous read returned.
+The native wait now reads asynchronously. Regression tests require polling to
+run before the witness arrives and reject failed or mismatched replies. This
+changes the test driver, not installed Presenter behavior or native controls.
+It does not retrospectively establish the cause of earlier unavailable reads.
+
+The corrected continuation and subsequent recovery experiment retain separate
+records and candidate-bound release receipts. The recovery experiment uses the
+existing fixed offline, ignition and same-Test Stop/Start plans with fresh
+baselines; it cannot inherit historical runtime readiness or mark engineering
+actions as UI clicks. A separate read-only visible browser shows the installed
+Presenter during those operations and closes with the other test owners.
+
+### Completed releases and installed browser checks
+
+The asynchronous driver completed these serial release stages on the retained
+Test, checking each installation before the next publication. Service stages
+also required a new backend product from the exact installed version after a
+real CUA maneuver click.
+
+| Stage | Release | Result | Seconds |
+| --- | --- | --- | --- |
+| VDP V2 through physical Safe Stop | 151.0.0 | PASS | 89.111 |
+| Brake V2 and new product | 128.0.0 | PASS | 123.392 |
+| VDP V3 through physical Safe Stop | 152.0.0 | PASS | 115.148 |
+| Brake V3 and new product | 129.0.0 | PASS | 107.327 |
+| Tire V1 and new product | 65.0.0 | PASS | 155.458 |
+
+The later Return to road gate expired while awaiting the operator witness.
+The attempt remains FAIL with `NATIVE_UI_BROKER_UNAVAILABLE`; no native click
+or postcondition is inferred after that deadline. Normal cleanup again closed
+all owned runtime and browser processes and detached owned media. This witness
+timeout is not evidence of a Presenter or vehicle failure. The interrupted
+attempt is retained in
+`.local/remote-qualification/m1-ui-release-continuation-async-20261011/`.
+
+A separate installed-browser continuation passed all 17 stages in 264.679
+seconds against the completed release receipts, without preparing or publishing
+again. It verified current version labels and detail dialogs, all three team
+views, Cloud resource-tab navigation, both backend dashboards and record tabs,
+independent Brake and Tire resets with peer model/history preservation,
+Activity, Stop cancellation and confirmed Stop. Resource-tab navigation does
+not establish fresh numerical metric samples. Its only mutations were Start,
+simulator Start, Manual connection, the two resets and Stop. Evidence is in
+`.local/remote-qualification/m1-ui-post-release-checks-20261011/`.
+
+The continuation confirmed zero owned demo processes/listeners, preserved Test
+data and the same running Docker Engine, closed its browser and tunnel, and
+normally detached the owned DMG. The failed release-story attempt and the
+passing installed continuation remain separate results, not a synthetic full
+journey pass. Recovery is bound to both receipts and must establish fresh
+runtime postconditions for VDP 152, Brake 129 and Tire 65.
+
+### Fresh recovery results
+
+All 53 engineering steps passed with no failed, uncertain, stale or unrun
+steps, no unresolved actions and no source-review warning. Recorded step
+durations total 964.284 seconds; this is not a split between product work and
+transport overhead. The offline soak itself lasted 303.099 seconds.
+
+- Both offline maneuvers advanced their local models and queued results without
+  changing backend history. Services remained active with zero restarts during
+  the complete five-minute interval; Cloud reported OFFLINE.
+- Reconnection drained both queues and delivered every queued assessment.
+  Delivery confirmation took 15.930 seconds, followed by Cloud ONLINE.
+- Ignition produced a new boot with the same Test/Unit/Node identity, protected
+  Safe Stop and preserved models/history. VDP readiness and fresh consumer
+  generations were re-established; both maneuvers produced new matching results.
+- Ordinary Stop closed the retained controller, source and backends without
+  changing Docker. Start restored stationary Manual, identity, models/history
+  and fresh consumer generations; both services delivered new matching results.
+
+Final read-only reconciliation confirmed zero owned demo processes/listeners,
+preserved Test data and the unchanged running Docker Engine. The read-only
+visible browser and its profile closed, and the owned DMG detached normally.
+Evidence is retained in
+`.local/remote-qualification/m1-recovery-after-ui-20261011/`.
+
+These are engineering recovery results, not UI button acceptance. They do not
+qualify the source-only profile correction or close moving SOTA, complete
+native-shell/token-entry acceptance, or installation interruption/repair.
+VDP-TIMEOUT-01 remains deferred and unchanged.
+
+### Native Return to road recheck
+
+The bounded visible recheck passed all eight stages in 253.257 seconds. It
+restored the retained owners, independently confirmed VDP 152, Brake 129 and
+Tire 65, witnessed the real CUA Return to road click and confirmed fresh,
+unheld, stationary Manual with full braking. It then confirmed Stop and normal
+cleanup. No preparation, publication, assignment, Reset or deletion was
+dispatched. The original witness timeout remains in its failed record.
+
+Final reconciliation again confirmed zero owned demo processes/listeners,
+preserved Test data and the unchanged Docker Engine, closed browser/profile
+and tunnel, and normally detached owned media. Evidence is in
+`.local/remote-qualification/m1-ui-road-return-20261011/`.
+
+Local gates passed: 12 qualification-script guards, 15 Node guards, 79 journey
+tests, 15 remote-qualification tests and 19 documentation tests. Documentation
+navigation/traceability, syntax, whitespace and confidential-input checks passed.
+These fixture/source gates are separate from the M1 observations above. No
+additional product defect was established in the completed checks; the existing
+source-only profile correction still needs new-candidate live acceptance.

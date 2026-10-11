@@ -321,3 +321,52 @@ The [qualification receipt](../../../qualification/presenter-human-friendly-2026
 retains the preceding failure and separates completed owner preparation from
 the immediate screenshot's still-updating UI. New-candidate live recovery,
 settled visual receipts and the complete release story remain open.
+
+## Continued release and recovery qualification
+
+The operator requested all remaining checks before another DMG includes the
+profile correction. Keep the installed candidate and retained Test; do not
+rebuild, replace media, merge main or republish completed releases.
+
+The asynchronous native-witness reader corrects a reproduced test-driver
+event-loop blockage. It leaves browser routing and ordinary polling responsive
+while preserving real CUA clicks, exact witness identity and independent
+postconditions. This is qualification infrastructure, not a product fix.
+
+Serial VDP V2 151, Brake V2 128, VDP V3 152, Brake V3 129 and Tire V1 65 all
+passed installation checks. Service stages produced new matching results after
+real native maneuvers. The later Return to road witness expired, so the complete
+release-story attempt remains FAIL. Its ordinary shutdown passed.
+
+A separate visible installed-browser continuation passed all 17 stages in
+264.679 seconds on those exact completed release receipts. Current version
+cards/detail dialogs, team views, Cloud resource navigation, backend dashboards
+and records, independent resets with preserved peer models/history, Activity,
+Stop cancellation and confirmed Stop passed. It published nothing. All owned
+processes/listeners and browser/profile closed; data and Docker were preserved,
+and owned media detached.
+
+Fresh recovery uses both evidence sets, current VDP/consumer inputs and the
+original offline/ignition/Stop-Start contracts. A read-only visible browser
+accompanies engineering actions; it cannot turn them into UI acceptance.
+Interrupted and passing experiments remain separately recorded in the
+[qualification receipt](../../../qualification/presenter-human-friendly-2026-10-11.md).
+Moving SOTA, complete native acceptance and installation interruption/repair
+remain separate gates. VDP-TIMEOUT-01 remains deferred.
+
+The fresh recovery experiment completed all 53 steps with no failed/uncertain
+steps or source-review warning. It confirmed offline model progress, an actual
+303.099-second soak, complete queued delivery, Cloud Offline/Online, ignition
+identity/model/history preservation, fresh consumer generations and new results,
+then the same preservation and result checks after ordinary Stop/Start.
+Final cleanup closed all owned runtime and the read-only browser/profile,
+normally detached owned media, and retained the Test and unchanged Docker Engine.
+
+The separate visible Return to road recheck then passed all eight stages in
+253.257 seconds. It freshly confirmed the three current installed versions,
+recorded a real CUA click and stationary Manual postcondition, and confirmed
+Stop/owner closure without publication or Reset. The earlier interrupted
+release-story record remains FAIL. No new product defect was established in
+these completed checks; main and the DMG remain unchanged. Local qualification,
+journey, remote, Node and documentation gates passed. Remaining separate gates
+are not inferred from these results.

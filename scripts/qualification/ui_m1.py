@@ -9,6 +9,7 @@ from pathlib import Path
 import plistlib
 import shlex
 import subprocess
+import select
 import time
 import remote_harness as h
 from build_scratch import directory
@@ -96,10 +97,49 @@ def prepare(transport,workspace,repository,python):
         ' 2>&1; '+shlex.quote(root+'/node')+' --version',timeout=15)
     h.require('CDHash='+cdhash+'\n' in observed and 'TeamIdentifier=EQHXZ8M8AV\n' in observed
               and observed.rstrip().endswith('v'+NODE_VERSION),'COPIED_UI_TOOLS_CHANGED')
-    for name in ('ui_journey.mjs','ui_pilot.mjs'):
+    for name in ('ui_journey.mjs','ui_pilot.mjs','ui_observer.mjs'):
         transfer(transport,str(HERE/name),root+'/'+name)
     print('visible-m1-tools: ready; no Docker or product installation changes',flush=True)
     return root,pin
+
+
+class Observer:
+    """Read-only website viewer, never evidence of engineering action via UI."""
+    def __init__(self,transport,root,records,python,test,bounds):
+        self.transport,self.root,self.python=transport,root,python
+        self.records=root+'/runs/'+records.name+'-observer'
+        self.process=None
+        payload=dict(test=test,records=self.records,windowBounds=dict(zip(('left','top','width','height'),bounds)),
+            modulePath=root+'/node_modules/@playwright/test/package.json',
+            browserExecutable=root+'/Google Chrome.app/Contents/MacOS/Google Chrome',
+            profileDirectory=self.records+'/browser-profile')
+        program='import pathlib,os; os.umask(0o077); p=pathlib.Path('+repr(self.records)+'); '+\
+            'p.mkdir(mode=0o700); (p/"input.json").write_text('+repr(json.dumps(payload))+')'
+        h.remote(transport,shlex.quote(python)+' -I -B -c '+shlex.quote(program),timeout=15)
+
+    def start(self):
+        self.process=subprocess.Popen(h.ssh_args(self.transport)+[shlex.join(
+            [self.root+'/node',self.root+'/ui_observer.mjs',self.records+'/input.json'])],
+            stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True)
+        ready,_,_=select.select([self.process.stdout],[],[],45)
+        h.require(ready and self.process.stdout.readline().strip()=='OBSERVER_READY','OBSERVER_START_UNCONFIRMED')
+
+    def close(self):
+        if self.process is None:return True
+        if self.process.poll() is None:
+            program='import pathlib; p=pathlib.Path('+repr(self.records+'/observer-stop.json')+'); '+\
+                'p.write_text("{}") if not p.exists() else None'
+            h.remote(self.transport,shlex.quote(self.python)+' -I -B -c '+shlex.quote(program),timeout=15)
+        code=self.process.wait(timeout=30)
+        output=self.process.stdout.read();self.process.stdout.close()
+        closed=code==0 and 'OBSERVER_CLOSED' in output
+        program='import pathlib,shutil,subprocess; '+\
+            'names=subprocess.run(["/bin/ps","-axo","comm="],capture_output=True,text=True,check=True).stdout.splitlines(); '+\
+            'assert not any(n.startswith('+repr(self.root+'/Google Chrome.app/')+') for n in names); '+\
+            'p=pathlib.Path('+repr(self.records+'/browser-profile')+'); '+\
+            'shutil.rmtree(p) if p.is_dir() and not p.is_symlink() else None'
+        h.remote(self.transport,shlex.quote(self.python)+' -I -B -c '+shlex.quote(program),timeout=20)
+        return closed
 
 
 def execute(transport,root,value,records,observe,query,python):
