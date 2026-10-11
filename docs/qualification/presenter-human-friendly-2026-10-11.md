@@ -3,14 +3,20 @@
 
 # Presenter branch DMG and M1 qualification — 11 October 2026
 
-Status: Complete DMG built and verified; candidate M1 installation and live/native
-acceptance NOT_RUN. Do not promote this record to release acceptance.
+Status: Corrected DMG built, verified and installed on M1. Its fresh scripted
+campaign passed all 117 steps, including serial releases, products, resets,
+offline recovery, ignition and same-Test Stop/Start. Native Setup/Open,
+stopped-controller Start, Stop cancellation and confirmed Stop also passed.
+Demo-owned applications and listeners are closed; Test data and Docker are
+preserved. The branch is ready for review, not full release acceptance.
 
 ## Scope and candidate
 
 Branch: `codex/presenter-human-friendly`. Presenter product source:
 `d65c4f0af952253d64a65141fa4e25358c610000`. Main is unchanged at
 `a4afa82e2dd2e6007102797cb785e5f004e46db6`.
+The corrected Presenter source and journey expectations are committed at
+`3863db63b2d04c8e5e43174c11f311e878ccbf44` on the same review branch.
 
 Candidate output:
 `/Volumes/SDV-Build/sdv/build/candidates/presenter-human-friendly-20261011-dmg`.
@@ -103,10 +109,234 @@ are preserved. An overly broad local cleanup preflight checked preserved state
 as well as the actual removed copies; it was narrowed to the deletion targets.
 The separate product installation guard was not changed.
 
-That installation guard still reports `INSTALLED_NATIVE_CONSUMER_ACTIVE`.
-The only foreign holder of the retired instance is the Docker Virtualization
-file-sharing cache; zero containers are running. A separate explicit request
-was sent for one M1-only Docker Engine restart with images/data preserved.
-This is exceptional host maintenance, never a routine Engine lifecycle test.
-Candidate installation/live testing remain NOT_RUN pending release of that
-holder. Do not bypass the guard, alter the journal or force version selection.
+The installation guard reported `INSTALLED_NATIVE_CONSUMER_ACTIVE` while the
+Docker Virtualization file-sharing cache held the retired instance; zero
+containers were running. The operator explicitly approved one M1-only normal
+Docker restart. That restart completed, preserved the Engine identity
+`fa9259a6-f8b1-44e2-80ba-2ad68e9d00d6`, and the unmodified installed-state
+quiescence check passed. Images and data were not removed. This is exceptional
+host maintenance, never a routine Engine lifecycle test.
+
+Continuation detected a changed media `ctime` after its first mount, with the
+same device, inode, size, modification time and mode. The guard stopped before
+installation. One full consumer digest verification confirmed the original DMG
+bytes and recorded its current stable identity without another transfer. The
+earlier blocked observation remains in the append-only evidence. Signed Setup
+installation and backend preparation subsequently passed.
+No journal alteration, forced selection or guard bypass was used.
+
+## First installed journey and order correction
+
+The first journey passed installed-package, Docker, backend-image, Cloud-pair,
+Cloud-readiness, VM-access, service-subject, Presenter, Create, controller-start,
+simulator and provisioning checks. The following redundant connection
+confirmation stopped with `SOURCE_EXISTING_ASSIGNMENT_NOT_READY`. Provisioning
+had already selected the Test in stationary Manual mode; this failure occurred
+in the existing-assignment read branch, before a new source assignment. Normal
+shutdown passed and confirmed zero owned processes and listeners.
+
+Bounded diagnosis restored the same Test through its normal owners. An
+unconfirmed VM response was reconciled by a read-only observation rather than
+a second start. A later source connection checkpoint reached `RESET_CONFIRMED`.
+The guest reported incoming VDP `143.0.0` waiting for Safe Stop, with a recorded
+`safe_stop_timeout`. One exact checkpoint continuation stopped at
+`SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE`, preserving its operation identity
+and generation. No trust, TLS, freshness or transaction guard was weakened.
+
+The harness now keeps simulator-before-provisioning and performs the first
+physical Safe Stop and prior-update settlement before redundant connection
+confirmation. The 117-step plan and all 78 qualification-harness tests pass.
+This is a harness-order correction: the installed product and DMG are unchanged.
+A suspected short frame-probe timing race was not established as the cause of
+the original failure and is not presented as a product defect.
+
+After classification, normal retirement removed only failed Test
+`0c95b7b3-3ccb-4781-8092-4165be0171ad` and its staging Unit
+`e87f478f-7359-4e8e-a5f6-2bec86d471c0`. Retirement completed, the run journal
+was absent, and fresh host checks confirmed zero owned processes and listeners.
+Published releases, credentials, Factory, installed packages and Production
+were preserved. The failed campaign's compact evidence remains retained.
+
+The corrected journey uses a separate append-only record directory with the
+same installed candidate and authorized staging references. It does not resend
+media, reinstall the package, rebuild Factory/CARLA or restart Docker again.
+
+## Live release and recovery results
+
+The corrected 117-step campaign recorded 110 PASS, one failed assertion and six
+steps not run. Serial VDP V1–V3 and Brake V1–V3, Tire V1, new maneuver products,
+advisories, independent resets, 300-second offline operation, queued delivery
+after reconnection and ignition off/on all passed. New post-ignition products
+were observed for both teams. Normal shutdown passed and preserved the Test.
+
+Stop demo and Start controller, fresh stopped-owner observation, explicit
+simulator restart, connection and VDP readiness also passed. The preservation
+assertion failed only because it reused raw ignition's Safe Stop expectation
+after the explicit `connect-test` action. Recorded telemetry was fresh, unheld
+Manual, 0 km/h, 100% brake. The boot changed; Unit/Node/system identity, both
+models and both product histories were preserved. This is a test expectation
+defect, not lost state or a runtime crash.
+
+The corrected `demo-restart` postcondition requires stationary Manual after
+that deliberate action, while raw `ignition` still requires Safe Stop. Identity,
+boot, model and history requirements remain unchanged. All 79 harness tests
+pass, including rejection of moving, held, stale, Autopilot and state-loss cases.
+The original failed assertion remains failed in its append-only campaign.
+
+A separate follow-up repeats the complete continuous Stop/Start experiment on
+retained Test `1f3cfbff-6323-4282-b3dd-f6a1705de60e`, staging Unit
+`4f73881b-037c-4bf5-aafa-3c628cddb749`. It obtains a new before/after pair and new
+post-restart products; it does not combine observations across the earlier
+shutdown or republish the already verified releases. All 26 planned follow-up
+steps passed. Fresh observations confirmed the same Unit/Node/system identity,
+preserved models and product histories, the changed boot, stationary Manual
+after deliberate connection, and new Brake/Tire products. Shutdown passed.
+The original 117-step campaign remains 110 PASS, one failed assertion and six
+not run; the follow-up is separately scoped evidence, not a retroactive rewrite.
+
+## Native review and stopped controller correction
+
+The signed Setup's native Cloud dialog connected the existing certificate pair
+to staging. Continue installation reached Ready to open SDV Lab; its native
+Open SDV Lab button opened Presenter. The stopped Test displayed the installed
+VDP V3, Brake V3 and Tire V1. The ordinary interface exposed one Demo controls
+entry, Runtime, Activity, separate installed-details/release-management actions,
+and Cloud configuration under Advanced settings. OEM/SP file presence was
+shown separately from authenticated access. No token/PIN input gate is claimed
+from reusing this pair.
+
+Native review found Continue preparation where a fully created but stopped
+controller should offer Start controller. A read-only snapshot showed a
+COMPLETED story Create, a stopped VM and `preparation: {}`. The empty object is
+the read port's no-checkpoint sentinel; JavaScript truthiness incorrectly
+classified it as an unfinished quick-preparation recipe. No incomplete
+preparation action was submitted during diagnosis.
+
+Presenter now treats only the empty object as absent. A nonempty partial
+checkpoint still follows the guarded continuation path. New tests first
+reproduced the defect, then passed after the correction. TypeScript passed;
+the complete unit suite passed 361 tests across 34 files, and the browser suite
+passed 142 tests with the live empty-checkpoint shape in its fixtures. An
+earlier concurrent run recorded one unrelated asynchronous fixture timeout;
+the isolated complete unit run passed. Both logs remain retained.
+
+This correction changes UI interpretation only. No lifecycle journal, installed
+selection, certificate authority, trust guard or vehicle state was rewritten.
+One corrected complete DMG was assembled using the retained Factory/CARLA
+inputs. The subsequent corrected-media campaign and native check below qualify
+that candidate separately; fixture passes alone do not close native gates.
+
+The corrected file is `AosEdge-SDV-Lab-Presenter-Review-Fixed-20261011.dmg` in
+the sibling `presenter-human-friendly-20261011-corrected` SSD candidate directory.
+Its completed image verification and Setup protocol self-test passed. The media
+receipt records 14,150,132,370 bytes, SHA-256
+`99ca5094746eb762f7ebd69904026f1de9ecb2f9cb89ccead76fdc5cd77b9f28`, application
+manifest `fbdf35e18bc9553d665465aee69b6c2e63e248a272c96db39f37e4a88fb12720`,
+and signed Setup executable
+`301d8ba38fd098fdfa4cb215dee684b3a9f8fd1ebe4cbde1f72b25fcdaa73ead`.
+It remains an Apple Development engineering preview, not notarized.
+
+## Corrected candidate installation boundary
+
+Before corrected installation, M1 had approximately 103.7 GiB free. Both
+installed packages were about 33.1 GiB each, the retained Test state about
+7.8 GiB, and the current review DMG about 13.2 GiB. The ordinary installer
+required its 90 GiB reserve in addition
+to the new payload. A separate complete installation could not fit without
+cleanup; the existing instance also correctly rejected a replacement while its
+run was retained. Neither check was weakened.
+
+Auto-review rejected a proposed clean-cycle retirement and deletion of two
+old installer files before execution because those specific preserved objects
+were outside the earlier exact-target cleanup approval. A new explicit
+confirmation was obtained for Test `1f3cfbff-6323-4282-b3dd-f6a1705de60e`, Unit
+`4f73881b-037c-4bf5-aafa-3c628cddb749`, and the review/Kit028 DMG copies. The Test,
+both installed packages, credentials and installer files remain unchanged by
+that rejected attempt. The accepted rollback package is not a cleanup target.
+
+After explicit confirmation, normal retirement reported COMPLETED / RETIRED
+and observed the journal absent. The two approved unused M1 DMGs were removed,
+freeing about 26.4 GiB of installer files in addition to retired run storage.
+The original review master remains on the build SSD; both installed packages
+and credentials remain on M1. No installed selection was forced and no journal
+was deleted by the harness. Earlier preflight-only failures resulted from
+harness assumptions about completed lifecycle receipts; the normal installed
+retirement owner performed its full checks and cleanup.
+
+The original native review ended with ordinary demo shutdown and Setup Quit.
+A fresh host probe confirmed zero owned demo processes and zero occupied ports.
+The original read-only review image was normally detached. Docker Engine was
+preserved with its original identity and both demo backends stopped.
+
+## Corrected media campaign results
+
+The fresh corrected candidate passed **117 of 117** scripted steps in one
+continuous journey, from 14:00:06 to 14:27:40 UTC on 11 October 2026 (about
+27 minutes 35 seconds). Media delivery, verification, installation and backend
+preparation have separate records and are outside that runtime interval.
+There are no failed, blocked or uncertain campaign steps and no source-revision
+review warning. No earlier candidate's result is inherited.
+
+The retained Test is `918df550-d41a-4e06-8052-23df0f60a74f`, staging Unit
+`7efa7804-1f71-46cb-9f38-38c9e31618b3`, Node
+`2c89ef7b-6d5e-433f-8624-c6b7151cc69a`. Releases were published and verified
+one at a time:
+
+| Component | Demo version | Installed release |
+| --- | --- | --- |
+| VDP | V1 → V2 → V3 | 147.0.0 → 148.0.0 → 149.0.0 |
+| Brake | V1 → V2 → V3 | 124.0.0 → 125.0.0 → 126.0.0 |
+| Tire | V1 | 64.0.0 |
+
+VDP application passed through physical Safe Stop. Maneuvers produced fresh
+Brake/Tire results and correlated advisories. Independent resets preserved
+history and the other service's state. Return to road, the full 300-second
+offline interval, queued delivery after reconnection and ignition recovery all
+passed. The separate same-Test Stop/Start experiment preserved identities,
+models and histories and produced new results after deliberate simulator
+attachment in stationary Manual. Its raw-ignition comparison still requires
+Safe Stop. Campaign shutdown confirmed zero demo-owned processes/listeners.
+
+Private records are under
+`.local/remote-qualification/m1-presenter-20261011-fixed-journey/`, with
+installation evidence in its `-installation` sibling. The machine report says
+`scriptedSequence: PASS`; `nativeAcceptance: NOT_RUN` and
+`fullE2E: NOT_COMPLETE` remain unchanged because this runner cannot certify
+native interaction. VDP-TIMEOUT-01 remains deferred. Moving SOTA, secure token
+entry, the complete native operator journey and installation interruption/repair
+retain separate gates. Host sleep/wake and external SSD are excluded from this
+M1 profile.
+
+## Corrected native Start and Stop acceptance
+
+Through unlocked Screen Sharing, the signed Setup connected the existing
+OEM/SP pair to staging, reached Ready to open SDV Lab and opened Presenter
+using its native button. No new token-entry gate is claimed. Presenter correctly
+displayed Controller switched off / Start controller for the completed stopped
+Test with `preparation: {}`.
+
+One native Start click started that same controller and both backends. Fresh
+owner observations confirmed RUNNING, unchanged Test/Unit/Node/system identity
+and a preserved journal. Simulator startup remained a deliberate next step;
+this check did not create, provision, publish or start Autopilot.
+
+Cancel in the native Stop demo and keep data confirmation left the controller
+and both backends RUNNING. Confirming Stop once then stopped the source,
+controller and both backends. Presenter returned to Controller switched off /
+Start controller. Independent reads confirmed STOPPED with the same identity
+and retained data. These observations are in the private
+`.local/presenter-human-friendly/native-fixed-*.json` records.
+
+This is bounded native Start/Cancel/Stop acceptance, not the entire native
+operator journey. With the simulator closed, Presenter reported that desktop
+window layout could not be verified; a complete live window-layout pass is not
+claimed from this check.
+
+Final cleanup used ordinary shutdown and native Setup Quit. The immediate
+shutdown observation was unavailable; a separate read-only reconciliation
+confirmed completion without replaying shutdown. A fresh host probe confirmed
+zero demo-owned processes/listeners, zero Setup processes and zero running
+containers. Docker Engine remained running with identity
+`fa9259a6-f8b1-44e2-80ba-2ad68e9d00d6`; it was not restarted in this corrected
+cycle. The corrected image was normally detached without force. The new Test,
+three installed candidate/rollback packages, credentials and reports remain.

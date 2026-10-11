@@ -3,7 +3,7 @@
 
 # Presenter operator experience
 
-- Status: Branch DMG built and verified; native/live M1 review pending
+- Status: Branch ready for review; 117 scripted steps and bounded native Start/Stop passed; main integration pending
 - Date: 2026-10-11
 - Branch: `codex/presenter-human-friendly`
 - Baseline: `a4afa82` on main
@@ -136,11 +136,73 @@ all subsequent evidence; no previous M1 candidate's passes are inherited.
 
 M1 preparation retired the old Test through its normal lifecycle owner after
 the tool-required exact-target approval. The agreed unused copies were removed;
-the accepted package and credentials remain. Product installation is still
+the accepted package and credentials remain. Product installation was
 blocked by an idle Docker file-sharing holder, with zero running containers.
-A single explicit M1-only Engine restart request is pending. Packaging/local
-checks continue independently; the M1 gate is not a successful deployment.
+The operator approved one M1-only Engine restart; it completed and the unchanged
+product quiescence check passed, with images/data and Engine identity preserved.
+This exceptional host maintenance is not part of the routine campaign.
 
 The complete media was subsequently delivered and verified on M1. Transfer,
 read-only mount and exact signed Setup/application pins passed. Installation
 and live/native tests were not dispatched through the blocked state gate.
+After that gate cleared, a changed media `ctime` caused another fail-closed
+preflight. Full consumer digest re-verification confirmed unchanged bytes and
+recorded the current stable identity without retransmission. Signed Setup
+installation and backend preparation passed.
+
+The first installed journey stopped at redundant connection confirmation after
+provisioning. Diagnosis found an incoming VDP transaction waiting for Safe Stop;
+the existing-assignment and trust guards remained unchanged. The harness now
+observes physical Safe Stop and settlement of that incoming update before
+confirming the connection. All 78 harness tests pass; the DMG needs no rebuild.
+Normal retirement removed only that failed disposable Test after diagnosis.
+The corrected clean journey reused the same verified installed package. Serial
+releases, products, resets, offline operation and ignition passed. Its final
+same-Test preservation assertion revealed a harness expectation defect:
+explicit connection selects stationary Manual, unlike raw ignition's Safe Stop.
+The assertion was corrected without relaxing freshness, identity or history
+requirements; all 79 harness tests pass. The campaign remains 110 PASS, one
+failed assertion and six not run. A separate fresh 26-step Stop/Start experiment
+passed completely, including new results and ordinary shutdown.
+
+Native Setup Cloud connection and Open SDV Lab were observed. Review exposed
+a real stopped-controller UI defect: an empty `preparation` object was treated
+as an unfinished quick recipe and hid Start controller. The source correction
+keeps nonempty partial checkpoints guarded. TypeScript, 361 unit tests and
+142 browser tests passed; a corrected complete DMG was assembled with
+retained heavy inputs. No prior candidate's passes are transferred to it.
+
+Before corrected installation, the ordinary installer required its 90 GiB
+reserve and the current instance retained the tested run.
+Auto-review rejected proposed retirement/media cleanup before execution.
+The operator then approved the specific completed Test/Unit and two old DMGs.
+Normal retirement confirmed COMPLETED / RETIRED and an absent journal; only
+the named unused media copies were deleted. Both installed packages, rollback,
+credentials and compact evidence remain intact. A fresh 117-step campaign is
+bound to the corrected media manifest, without inherited candidate results.
+The preceding native review runtime and Setup were closed, the review media
+detached, and a fresh host probe confirmed zero owned processes/listeners.
+Shared Docker remains running; it was not restarted for this new cycle.
+
+The corrected campaign subsequently passed all 117 steps on new Test
+`918df550-d41a-4e06-8052-23df0f60a74f`, including serial VDP 147/148/149,
+Brake 124/125/126 and Tire 64, real products/advisories, independent resets,
+300-second offline processing/recovery, ignition and same-Test Stop/Start with
+preserved models/history and new results. No failed or uncertain campaign steps
+or source-revision warnings remain. Source correction is committed at
+`3863db63b2d04c8e5e43174c11f311e878ccbf44`.
+
+The corrected signed Setup also passed native existing-pair Cloud connection,
+Continue installation and Open SDV Lab. Presenter offered Start controller,
+started that same Test, left it running after Stop cancellation, and stopped
+it with data preserved after one confirmed Stop. Fresh normal-owner reads
+corroborated each transition. This closes the stopped-controller button check,
+not full native layout, token-entry or operator-journey acceptance.
+
+Final ordinary shutdown and Setup Quit were verified by read-only reconciliation
+and a host probe: zero demo processes/listeners, zero Setup processes and zero
+running containers. Docker retains its original running identity. The corrected
+media was normally detached; Test, packages, credentials and evidence remain.
+The branch is ready for operator review. Main stays unchanged; moving SOTA,
+complete native acceptance and installation interruption/repair retain their
+separate gates, and VDP-TIMEOUT-01 stays deferred.

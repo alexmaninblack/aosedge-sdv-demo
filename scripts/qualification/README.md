@@ -287,8 +287,10 @@ The fixed journey also exercises the Presenter `stop-demo` and `start-demo`
 plans after ignition. Fresh observations must confirm the Test VM, source and
 both owned backends stopped, unchanged Unit/Node identity and the same running
 Docker Engine. Restart explicitly starts the simulator and attaches the same
-Test; it must preserve models and product history, retain Safe Stop, and produce
-new Brake/Tire results from fresh post-restart inputs. It does not create,
+Test; it must preserve models and product history, confirm fresh stationary
+Manual after that explicit connection, and produce new Brake/Tire results from
+fresh post-restart inputs. Raw ignition remains subject to its separate Safe Stop
+requirement. It does not create,
 provision, publish or assign again. This is live engineering coverage of normal
 product plans, not native-button acceptance or destructive retirement.
 
