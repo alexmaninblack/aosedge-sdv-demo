@@ -129,9 +129,35 @@ running as Linux/aarch64. Installed programs, instance configuration, retained
 credentials and qualification evidence were preserved. No test consumer was
 left running for a future session.
 
+## New account registration on staging
+
+The operator submitted the official staging signup for the authorized Google
+Workspace account on 11 October 2026. The portal displayed **Your account has
+been created**. The OEM and associated Service Provider welcome emails both
+arrived at 08:42:58 UTC (10:42:58 Europe/Berlin). This confirms the staging
+signup and email-delivery path, not authenticated roles or certificate issuance.
+
+The emails name `api.aws-stage.epmp-aos.projects.epam.com`; Setup selects
+`aws-stage.epmp-aos.projects.epam.com`. Read-only HTTPS checks using the
+packaged Aos CA succeeded against both names on port 10000, without redirects.
+Both returned the same v11 schema, version 6.1.97 with 151 paths. The issued
+certificate's Organization and authenticated account association still require
+the ordinary product checks; matching endpoint observations do not waive them.
+
+Both enrollment receipts on the installed M1 candidate were NOT_STARTED.
+The execution safety review rejected transmitting live tokens as tool-call
+arguments, including hidden terminal input, before any issuance dispatch.
+The waiting transport was closed and temporary in-memory token copies cleared.
+No certificate was requested, no token was consumed by this attempt, and the
+prior certificate references were unchanged. Continue by pasting the two email
+tokens directly into the native secure fields and submitting Get certificates;
+never paste them into chat, commands or qualification evidence. Registration
+must not be repeated to recover from this input boundary.
+
 ## Open gates
 
-- Full first-account signup and production registration feasibility.
+- Paired certificate issuance and authenticated connection for the new staging
+  account; production registration feasibility remains unqualified.
 - Native secure-field token entry and paired enrollment on this candidate.
 - Distribution notarization and unrestricted third-party installation.
 - Previously separate cold-controller resume and complete vehicle release gates.
