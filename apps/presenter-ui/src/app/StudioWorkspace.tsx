@@ -109,7 +109,16 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const details: Detail | null = selection?.kind === "release" ? (() => { const row = releases.find(row => row.releaseHandle === selection.row.releaseHandle); return row ? { kind: "release", row } : null; })()
     : selectedRow ? { kind: selection!.kind, row: selectedRow } as Detail : null;
   useEffect(() => { setDetails(null); }, [local.runId, inventory?.unitId]);
-  useEffect(() => { setProfiles({ platform: "v1", brake: "v1", tire: "v1" }); }, [local.runId]);
+  const authoringRun = useRef(local.runId ?? null);
+  useEffect(() => {
+    // An unavailable read is not a new/empty Test. Preserve only the operator's
+    // selection; current facts and mutation eligibility still come from reads.
+    if (!local.available || (!local.runId && !noController)) return;
+    const confirmedRun = local.runId ?? null;
+    if (authoringRun.current === confirmedRun) return;
+    authoringRun.current = confirmedRun;
+    setProfiles({ platform: "v1", brake: "v1", tire: "v1" });
+  }, [local.available, local.runId, noController]);
   const sessionJobs = controls.session?.jobs ?? [];
   // First-create can fail before a journal exists. Keep those receipts only
   // in this session's empty-controller epoch, never across an allocated run.

@@ -56,11 +56,18 @@ export function visibleWorkspace(value, session) {
   // The native owner verifies CARLA/Driving Control geometry and ordering.
   // Its receipt is not a substitute for human readability/visual acceptance.
 }
+export function transitionBaseline(value, test) {
+  const v = value?.value, p = v?.installedProfile;
+  return value?.state === 'CURRENT' && value.bindingKey?.startsWith(test + ':')
+    && v?.target === 'test' && p?.state === 'CURRENT' && p.profile === 'v1'
+    && p.releaseVersion === v.installedVersion && version.test(v.installedVersion)
+    && !v.pendingVersion;
+}
 
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   const require = createRequire(input.modulePath ?? path.join(input.repository, 'apps/presenter-ui/package.json'));
   const { chromium, expect } = require('@playwright/test');
   const record = value => {
@@ -101,7 +108,19 @@ export async function main(inputPath) {
     assert(placed.bounds.windowState === 'normal', 'VISIBLE_BROWSER_NOT_NORMAL');
     for (const key of ['left', 'top', 'width', 'height'])
       assert(Math.abs(placed.bounds[key] - input.windowBounds[key]) <= 3, 'VISIBLE_BROWSER_PLACEMENT_FAILED');
-    if (workspaceRequired) visibleWorkspace(await read('operations'), session);
+    if (workspaceRequired) {
+      let value = await read('operations');
+      if (!idle(value, session)) record({ state: 'VISIBLE_WORKSPACE_SETTLING',
+        sessionMatches: value.sessionId === session, activeOperation: Boolean(value.active),
+        workspaceBusy: Boolean(value.workspaceBusy), sourceRecoveryBusy: Boolean(value.sourceRecoveryBusy),
+        retryPending: Boolean(value.workspace?.retryPending), uncertain: Boolean(value.uncertain) });
+      await until(async () => {
+        assert(value.sessionId === session && !value.uncertain, 'VISIBLE_WORKSPACE_UNKNOWN_OPERATION');
+        if (idle(value, session)) return true;
+        value = await read('operations'); return idle(value, session);
+      }, 'VISIBLE_WORKSPACE_OWNER_NOT_SETTLED', 30000, 250);
+      visibleWorkspace(value, session);
+    }
   }
   const dialog = () => page.getByRole('dialog');
   const close = async () => { await dialog().getByRole('button', { name: 'Close dialog', exact: true }).click();
@@ -197,6 +216,21 @@ export async function main(inputPath) {
       context=await browser.newContext({viewport:{width:1440,height:1000}});page=await context.newPage();
     }
     page.setDefaultTimeout(30000);
+    const readStarts = new WeakMap();
+    const isSnapshot = req => req.method() === 'GET' && req.url() === `${origin}/api/presenter/snapshot`;
+    page.on('request', req => { if (isSnapshot(req)) readStarts.set(req, performance.now()); });
+    page.on('requestfailed', req => {
+      if (isSnapshot(req) && readStarts.has(req)) record({ state: 'UI_LOCAL_READ_FAILED', milliseconds: Math.round(performance.now() - readStarts.get(req)) });
+    });
+    page.on('response', async response => {
+      const req = response.request();
+      if (!isSnapshot(req) || !readStarts.has(req)) return;
+      const event = { state: 'UI_LOCAL_READ', httpStatus: response.status(), milliseconds: Math.round(performance.now() - readStarts.get(req)) };
+      try {
+        const data = await response.json();
+        record({ ...event, runState: data.runId === input.test ? 'MATCHING' : data.runId ? 'OTHER' : 'MISSING' });
+      } catch { record({ ...event, runState: 'UNREADABLE' }); }
+    });
     await context.route('**/*',async route => {
       const req=route.request(), url=new URL(req.url());
       if (url.origin!==origin) { refused=true; return route.abort(); }
@@ -243,6 +277,22 @@ export async function main(inputPath) {
           nativeOwners: 'PLACEMENT_AND_ORDERING_CONFIRMED', visualAcceptance: 'SEPARATE_CUA_REVIEW' });
       });
     }
+    if (input.scenario === 'vdp-transition') {
+      await stage('vdp-v1-current-baseline', async () => {
+        await until(async () => transitionBaseline(await read('platform'), input.test), 'CURRENT_VDP_V1_REQUIRED', 65000);
+        assert(await query('component-idle').idle, 'COMPONENT_PENDING');
+      });
+      await stage('vdp-v2-prepare-only', async () => {
+        await button('Platform Team').click();
+        const selected = button('v2 Brake analysis');
+        await selected.click(); await expect(selected).toHaveAttribute('aria-pressed', 'true');
+        const prepared = await operate({ action: 'prepare', profile: 'v2' }, () => button('Prepare v2').click());
+        assert(version.test(prepared.version), 'PREPARED_VERSION_REQUIRED');
+        await expect(selected).toHaveAttribute('aria-pressed', 'true');
+        record({ state: 'VDP_V2_PREPARATION_CONFIRMED', version: prepared.version, publication: 'NOT_REQUESTED' });
+        await shot('vdp-v2-prepared');
+      });
+    }
     if (input.scenario==='release-story') {
       const platform=async profile => {
         await stage('vdp-'+profile,async () => {
@@ -287,6 +337,7 @@ export async function main(inputPath) {
         });
       });
     }
+    if (input.scenario !== 'vdp-transition') {
     await stage('installed-details',async () => {
       await button('Vehicle').click();
       for (const [name,text] of Object.entries(cards)) {
@@ -346,6 +397,7 @@ export async function main(inputPath) {
       const count=sent.length; await stopDialog(); await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
       assert.equal(sent.length,count,'CANCEL_DISPATCHED_MUTATION'); owners(observed('cancelled'),before,'RUNNING',true);
     });
+    }
     await stage('confirmed-stop',async () => {
       await stopDialog(); workspaceRequired = false; // Stopping deliberately removes native surfaces.
       await operate({action:'stop-demo'},()=>dialog().getByRole('button',{name:'Stop demo and keep data',exact:true}).click());
@@ -361,6 +413,8 @@ export async function main(inputPath) {
         record({state:'FAILURE_OWNER_PROJECTION',expectedRunMatches:snapshot.runId===input.test,
           snapshotObserved:snapshot.state??null,sessionMatches:ops.sessionId===session,
           activeOperation:Boolean(ops.active),uncertain:Boolean(ops.uncertain),
+          workspaceBusy:Boolean(ops.workspaceBusy),sourceRecoveryBusy:Boolean(ops.sourceRecoveryBusy),
+          workspaceRetryPending:Boolean(ops.workspace?.retryPending),
           workspaceState:ops.workspace?.state??null,currentJobRecorded:ops.jobs.some(j=>j.id===sent.at(-1)?.requestId)});
       } catch { record({state:'FAILURE_OWNER_PROJECTION_UNAVAILABLE'}); }
     }

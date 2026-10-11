@@ -295,7 +295,7 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition'), default='installed')
     parser.add_argument('--display',choices=('m1','background'),default='m1')
     parser.add_argument('--dmg', type=Path)
     parser.add_argument('--remote-dmg')

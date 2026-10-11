@@ -519,3 +519,82 @@ explicit composition gate has local guard coverage; a new live scenario using
 that stricter gate has not yet been run. The prior Screen Sharing observation
 is actual visual evidence for the completed attempt, not a fabricated pass of
 the subsequently amended script. Native-shell acceptance remains separate.
+
+## Targeted VDP profile recovery diagnosis
+
+The targeted diagnosis confirmed a Presenter source defect independently of
+the earlier live failure: when a local read becomes unavailable, `runId`
+disappears and the original effect resets the operator's selected VDP/Brake
+profile to V1. Two new unit regressions failed before correction. The minimal
+correction preserves only that selection through unknown reads; preparation
+remains disabled until current controller facts return. A confirmed different
+run or confirmed empty-controller state still resets the profiles. It does not
+retain stale readiness, receipts or installation facts.
+
+The corrected source passed TypeScript, all 363 unit tests in 34 files and all
+144 browser tests. The two new browser fixtures exercise actual refresh,
+unavailable state, disabled preparation, recovery and exactly one matching V2
+request for Platform and Brake. Qualification guards passed 13 JavaScript and
+seven Python tests; documentation, whitespace and confidential-input checks
+also passed. Only the affected Presenter assets were built on SSD, under
+`build/candidates/presenter-profile-recovery-20261011/presenter-ui`. Factory,
+CARLA, the DMG and the installed M1 payload were not rebuilt or replaced.
+
+The visible M1 experiment used the retained installed candidate and Test,
+confirmed the current V1 baseline rather than historical campaign cards,
+selected V2 and prepared it once. Signing, publication, installation,
+assignment, Reset and deletion were excluded. The installed versions remained
+VDP `150.0.0`, Brake `127.0.0` and Tire `64.0.0`.
+
+The first attempt stopped at `VISIBLE_WORKSPACE_OWNER_BUSY` before any V2
+preparation request. Current V1 and idle component state had already passed.
+The strict visibility gate rejected a transient busy owner immediately. That
+attempt did not record which busy field was set; its 242.096-second failed
+result and normal 29.597-second shutdown are retained separately.
+
+The corrected harness waits at most 30 seconds for the same session to settle,
+retaining all uncertainty, ownership, native placement and browser-geometry
+guards. It does not retry a mutation. The subsequent attempt directly observed
+`sourceRecoveryBusy: true`, with no active operation, workspace busy flag,
+retry or uncertainty, then observed settlement before clicking Prepare V2.
+This identifies that attempt's temporary busy owner; it does not prove the
+unrecorded field in the preceding attempt.
+
+The corrected targeted scenario passed in 246.011 seconds:
+
+| Stage | Result | Seconds |
+| --- | --- | --- |
+| Open visible installed Presenter | PASS | 2.381 |
+| Start controller | PASS | 50.389 |
+| Start simulator | PASS | 70.085 |
+| Connect in stationary Manual | PASS | 12.327 |
+| Verify native workspace and browser placement | PASS | 0.052 |
+| Confirm current VDP V1 without pending update | PASS | 6.185 |
+| Select and prepare VDP V2 once | PASS | 7.720 |
+| Confirm ordinary Stop | PASS | 16.085 |
+
+The exact UI request was `prepare` with profile `v2`, acknowledged with HTTP
+202. Its correlated owner receipt completed with version `151.0.0`. No signing
+or publication request was dispatched. All recorded UI snapshot responses in
+this attempt returned HTTP 200 with the matching run; most took 139–625 ms,
+with slower reads of 1.465 and 4.180 seconds. The original unavailable-read
+incident did not recur, so its underlying read failure remains unlocalized.
+The profile-reset defect is proven, but cannot retrospectively identify the
+unrecorded request mismatch in the earlier full release story.
+
+The screenshot taken immediately after the independent preparation receipt
+still shows the UI's preceding candidate and in-progress poll. It confirms V2
+selection, not a settled on-screen `151.0.0` receipt. The completed preparation
+is established by the correlated owner record; visual receipt settlement
+requires a separate current UI observation before acceptance of a new candidate.
+
+Normal cleanup confirmed zero demo-owned processes/listeners, preserved Test
+data, the unchanged running Docker Engine, closed browser/profile and tunnel,
+and normal detachment of the scenario-owned DMG. Private evidence is retained
+separately in `.local/remote-qualification/m1-ui-vdp-transition-20261011/` and
+`.local/remote-qualification/m1-ui-vdp-transition-settled-20261011/`.
+
+Targeted installed-browser preparation is PASS; live acceptance of the source
+profile-recovery correction requires a separately built and installed candidate.
+The full release story remains NOT_COMPLETE, native-shell acceptance is separate,
+and main and Production are unchanged.

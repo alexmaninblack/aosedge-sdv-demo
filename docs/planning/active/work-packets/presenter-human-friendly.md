@@ -294,3 +294,30 @@ Test data and Production. Report installed-browser acceptance and retained
 release-story acceptance separately from clean installation, native Setup,
 moving SOTA, offline/ignition and full E2E acceptance. Do not infer those separate
 gates from script implementation or local guard tests.
+
+## Profile recovery diagnosis
+
+The operator requested a targeted investigation of the V1-to-V2 failure. Two
+new regression tests reproduce a real Presenter defect: an unavailable local
+read removes `runId` and resets selected VDP/Brake authoring profiles to V1.
+The minimal UI correction retains the selection during unknown reads and resets
+it only for a confirmed different run or confirmed empty-controller state.
+Controller facts, mutation guards, release receipts and history remain scoped
+to current observations; no last-known green state is substituted.
+
+The targeted M1 scenario prepares V2 once on the retained V1 Test without signing
+or publishing. It keeps the installed candidate and distinguishes its result
+from the source correction's local tests. Main remains unchanged. The correction
+requires a separately built and installed candidate before live acceptance.
+
+The source correction passed TypeScript, 363 unit tests and 144 browser tests;
+only the affected Presenter assets were built on SSD. The retained M1 candidate
+passed the targeted visible preparation in 246.011 seconds, allocating VDP
+`151.0.0`/V2 without signing or publishing it. The harness now waits boundedly
+for owner settlement; the successful attempt recorded temporary source-recovery
+activity before the click. All owned runtime processes, windows, browser,
+tunnel and mounted media closed normally, with Test data and Docker preserved.
+The [qualification receipt](../../../qualification/presenter-human-friendly-2026-10-11.md)
+retains the preceding failure and separates completed owner preparation from
+the immediate screenshot's still-updating UI. New-candidate live recovery,
+settled visual receipts and the complete release story remain open.

@@ -237,6 +237,12 @@ waiver of platform requirements outside the bounded demo.
 
 ### State and action contract
 
+Release-profile selection is operator input, not an observation of controller
+readiness. A temporary unavailable local read must not reset that selection;
+mutations still require current owner facts. Reset authoring selections only
+after a confirmed different run or a confirmed empty-controller state, not
+because an unavailable read omits the run identity.
+
 1. **Create** composes creation of a disposable working copy from the catalog's
    immutable factory image, boot with role/DNS initialized, and preparation of
    both product backends. It does not provision or deploy a service. Empty

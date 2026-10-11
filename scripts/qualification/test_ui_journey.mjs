@@ -2,8 +2,18 @@
 // SPDX-License-Identifier: MIT
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { command, facts, installed, resetPreserved, visibleWorkspace } from './ui_journey.mjs';
+import { command, facts, installed, resetPreserved, visibleWorkspace, transitionBaseline } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('transition diagnosis requires current same-Test V1 installation, not a historical card', () => {
+  const v = { state: 'CURRENT', bindingKey: id + ':unit', value: { target: 'test', installedVersion: '150.0.0', pendingVersion: null,
+    installedProfile: { state: 'CURRENT', profile: 'v1', releaseVersion: '150.0.0' } } };
+  assert.equal(transitionBaseline(v, id), true);
+  for (const other of [null, { ...v, state: 'UNAVAILABLE' }, { ...v, bindingKey: 'other:unit' },
+    { ...v, value: { ...v.value, pendingVersion: '151.0.0' } },
+    { ...v, value: { ...v.value, installedProfile: { ...v.value.installedProfile, profile: 'v2' } } },
+    { ...v, value: { ...v.value, installedProfile: { ...v.value.installedProfile, releaseVersion: '149.0.0' } } }])
+    assert.equal(Boolean(transitionBaseline(other, id)), false);
+});
 test('visible M1 business checks require settled native window composition',()=>{
   const value={sessionId:id,uncertain:false,active:null,workspaceBusy:false,
     workspace:{state:'PLACED_AWAITING_VISUAL_REVIEW',retryPending:false,zOrder:{state:'VERIFIED'}}};

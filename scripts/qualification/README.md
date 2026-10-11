@@ -200,6 +200,21 @@ Those separate gates cannot be inferred from a browser pass; `fullE2E` remains
 `NOT_COMPLETE`. Actual M1 outcomes are recorded in the
 [branch qualification receipt](../../docs/qualification/presenter-human-friendly-2026-10-11.md).
 
+### Targeted VDP profile transition diagnosis
+
+`--scenario vdp-transition --display m1` starts the retained Test and its visible
+native surfaces, connects in stationary Manual and requires a current same-Test
+Cloud binding for installed VDP V1 with no pending component update. It selects
+V2 and clicks Prepare once, guarded against any other request, then confirms
+ordinary Stop. It does not sign, publish, install, assign, Reset or delete.
+Historical installed-card expectations are not used to establish its baseline.
+
+Snapshot request records contain only status, elapsed time and matching/missing
+run classification. Rejected requests retain only the fixed guard code,
+supported expected/actual profiles and session equality. Missing observations
+and failed submissions remain terminal. This diagnostic cannot establish a
+complete V1-to-V2 deployment, a new candidate's acceptance or full E2E.
+
 ## Record and acceptance rules
 
 The private configuration and records live under `.local/remote-qualification/`,
