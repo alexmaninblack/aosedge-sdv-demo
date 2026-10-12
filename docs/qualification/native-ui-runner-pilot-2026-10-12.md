@@ -1,0 +1,115 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
+# Native UI runner mechanical qualification
+
+- Date: 12 October 2026
+- Status: Mechanical pilot PASS; installed-package and live vehicle integration pending
+- Review branch: `codex/presenter-human-friendly` in both source repositories
+- Gateway source: `e67657033a81a390caf55ee30d5b98ff12cdf39c`
+- Target: Dedicated Apple Silicon M1, macOS 27.0.1, internal storage
+
+The signed local runner delivered real mouse input to all five semantic
+Driving Control buttons before and after moving/resizing the window. Both
+autonomous campaigns passed 21 stages in about five seconds. Invalid targets
+were refused without input, and both owned apps closed normally. This proves
+the input/layout mechanism, not vehicle motion, release delivery or full E2E.
+
+The [research and authorized design](../planning/active/work-packets/native-ui-runner-pilot.md)
+defines the semantic-ID contract and separate live gate. Main, the installed
+immutable package, persistent Test, VM, credentials, shared Docker and heavy
+CARLA/Factory inputs were not changed by these campaigns.
+
+## Accepted execution
+
+The fixture compiles the exact production `ControlView` prefix from
+`carla-ego-runtime/tools/KeyboardControl.swift`. Its callbacks record
+`fixture=true`, the action ID and `mouseDownObserved=true` only from the normal
+production mouse dispatch. It has no simulator, VM or Cloud connection. The
+runner cannot use a fixture callback as a real vehicle-result observation.
+
+The executor resolves each unique Accessibility ID in the exact signed
+fixture process, reads its current frame, requires enabled/foreground state,
+checks system-wide hit-testing for obstruction and rechecks identity/geometry
+before one Quartz mouse down/up. It records intent before dispatch and an
+exclusive correlated receipt afterward. No AXPress, Gateway RPC or mutation
+API substitutes for a mouse event in these tests.
+
+The operator explicitly approved the new signed Native UI Runner Accessibility
+client and completed macOS administrator authorization in the system dialog.
+The repeat campaign used the same signed binaries without another permission
+prompt. No SSH, Full Disk Access, screen-recording or other permission setting
+was changed by the pilot.
+
+## Results and measured durations
+
+| Gate | First campaign | Final repeat |
+| --- | ---: | ---: |
+| Ordered mechanical stages | 21 PASS | 21 PASS |
+| Complete worker duration, including fixture launch and closure | 5.075 s | 4.661 s |
+| Measured mouse actions, five before and five after transformation | 10 | 10 |
+| Median click stage, including receipt and callback observation | 108.5 ms | 106 ms |
+| Click stage range | 53–168 ms | 55–113 ms |
+| Fixture and runner closed | PASS | PASS |
+| Owned pilot processes in final independent process inventory | 0 | 0 |
+
+The 21 stages cover semantic inspection, the ten clicks, movement/resize,
+disabled, missing, duplicate, obstructed and minimized targets, unsupported
+action, wrong executable digest, wrong application process and repeated polling
+of an already receipted request. Each negative case required both
+`inputDispatched=false` and no new fixture callback.
+
+An additional M1 check called the final worker with its already completed
+campaign: it returned `CAMPAIGN_REPLAY_FORBIDDEN`, preserved the original report
+byte-for-byte and left zero pilot processes. Unit tests additionally prohibit
+writing a report outside a verified root and passing a blocked inspection or
+unconfirmed mouse effect.
+
+The final targeted build took 10.029 seconds across compilation, signing,
+signature checks and the pure Swift request-parser test. Development-side
+Gateway native unit coverage passed 10 tests in 22.228 seconds; qualification
+guard coverage passed 7 tests. No development-Mac GUI/live acceptance occurred.
+
+One-time permission handling, compilation, transfer, model/tool round trips
+and human authorization are outside the worker durations. Callback observation
+time is measured after receipt retrieval and is not event-to-callback latency.
+The five-second mechanical campaign does not replace real controller/CARLA
+startup, maneuver execution, installation settlement or independent physical
+and backend-result checks. It cannot be compared as a full-E2E speedup against
+the [original campaign totals](ui-qualification-timing-2026-10-12.md).
+
+## Evidence and source pins
+
+Compact private reports are retained under
+`.local/remote-qualification/m1-native-ui-pilot-20261012/` and
+`.local/remote-qualification/m1-native-ui-pilot-20261012-repeat/`.
+The candidate is the small `native-ui-pilot-20261012-r2` build; it is not a DMG
+or an installed product release. Both campaigns verified signatures and exact
+executable digests on M1 before execution.
+
+| Input or executable | SHA-256 |
+| --- | --- |
+| Production KeyboardControl.swift | `1917a15524badeb292016086c7a79200c4575b392ba4b1aca786d90c0cb37028` |
+| ControlFixture.swift | `3d41b18bef435499c7c73eb5a8a99e380354ae885fe4c111f0846653e4d1f6a1` |
+| NativeUIRunner.swift | `3f62ac43587a021dec1131d970f6091723bf618e98441b2fd0de8cdede42b48d` |
+| Signed ControlFixture executable | `1411f304191e5fdd45950cf3f3d05856ca64f1494dfd0c01a35568e18ea9be09` |
+| Signed NativeUIRunner executable | `eca28dbc3db9cb518826d7abd7817b6bb3eb4980d7deb623816cf89ebf687399` |
+| Final repeat worker | `da6e14f743ed78f12c8705983010a3d810ad6b5989a098269672eb48b2f27bc2` |
+
+No reusable credentials, raw product responses or browser profiles enter this
+receipt. Permission state is not inferred from an old report: the repeat
+client freshly reported READY before execution.
+
+## Next integration gate
+
+Stages 1–4 of the pilot packet are complete. Stage 5 must adapt the executor
+to the normal product application with exact installed-payload identity and
+current Test/session/action binding, then connect its actual mouse receipt to
+the existing independent physical/product postconditions. The changed native
+payload requires normal immutable package reassembly/signing; do not patch the
+installed package in place. No heavy simulator or Factory rebuild follows
+from a UI-only change.
+
+Until that separate M1 gate passes, the existing live scenarios retain their
+CUA-only native witness requirement. Native Setup/WKWebView, first-user input,
+repair, release qualification and complete live E2E remain separately scoped.

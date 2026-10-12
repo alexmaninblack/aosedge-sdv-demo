@@ -6,8 +6,61 @@
 This development-side tool records bounded checks and transfers one pinned
 engineering kit to the dedicated M1. It is not an installer, runtime owner,
 Cloud client or formal qualification dossier. Native Setup and Demo Control
-remain the installation and lifecycle authorities. UI acceptance is performed
-through Screen Sharing, not inferred from SSH output.
+remain the installation and lifecycle authorities. UI acceptance requires
+actual input and independently observed effects, not an SSH launch receipt.
+
+## Native semantic runner pilot
+
+The [approved pilot](../../docs/planning/active/work-packets/native-ui-runner-pilot.md)
+uses stable Accessibility IDs and fresh screen frames rather than stored click
+coordinates. A separate signed GUI-session client on M1 posts genuine mouse
+down/up events to five buttons in the exact production Driving Control view.
+A test fixture records whether the normal mouse handler actually received each
+action. This is a mechanical fixture gate, not a connected vehicle or installed
+package E2E test. The existing Presenter Playwright scenarios remain unchanged.
+
+Build only the two small native apps on the development Mac, using SSD scratch:
+
+```sh
+python3 -B scripts/qualification/native_ui_build.py \
+  --workspace EXISTING_BUILD_WORKSPACE --gateway GATEWAY_CHECKOUT \
+  --output NEW_CANDIDATE_DIRECTORY
+```
+
+Transfer, verify signatures/digests and launch the fixed client on M1:
+
+```sh
+python3 -B scripts/qualification/native_ui_pilot.py prepare \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --build VERIFIED_NATIVE_CANDIDATE --run-id native-ui-pilot-YYYYMMDD
+```
+
+The first use requires a one-time, explicitly authorized Accessibility grant to
+**Native UI Runner**, not SSH. `ACCESSIBILITY_PERMISSION_REQUIRED` is not a
+passed input test. Once `runner-status.json` reports `READY`, execute one fixed
+local campaign on M1:
+
+```sh
+python3 -B scripts/qualification/native_ui_pilot.py run \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --build VERIFIED_NATIVE_CANDIDATE --run-id native-ui-pilot-YYYYMMDD
+```
+
+The campaign checks all five actions, movement/resize, disabled/missing/duplicate
+and obstructed targets, a minimized window, invalid action, wrong binary/process
+and persistent-request non-reexecution. Each request has an exclusive intent
+and correlated receipt. No direct Gateway RPC, shell action, OCR fallback or
+silent replay can satisfy the gate. Failures retain evidence and close both
+owned apps; the installed Test, VM, credentials and shared Docker remain intact.
+After an uncertain transport response, inspect the same report instead of
+rerunning the campaign. Use a new run ID only after a diagnosed failure and
+verified normal cleanup.
+
+Local unit gates never launch a GUI:
+
+```sh
+python3 -B -m unittest discover -s scripts/qualification -p 'test_native_ui_*.py' -v
+```
 
 Native `Open demo` must be invoked in the signed Setup GUI. Launching its
 Python helper through SSH can attribute Accessibility to `sshd-keygen-wrapper`,

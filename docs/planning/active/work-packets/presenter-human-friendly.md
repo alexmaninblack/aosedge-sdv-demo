@@ -517,4 +517,25 @@ contract must be defined before implementation. Recording the plan does not
 select a framework, grant permissions, change product authority, launch a live
 test or merge main. Preserve serial publication, VDP Safe Stop, fresh independent
 proofs, explicit lifecycle tests, uncertainty/no-replay and final owner closure.
-Implementation and optimized-run results are not yet claimed.
+The original campaign measurements remain intact. The isolated native
+mechanical pilot below is now implemented; optimized live-E2E results are not
+yet claimed.
+
+### Authorized native runner pilot
+
+On 12 October the operator approved the research direction and requested its
+pilot implementation on this review branch. The
+[native runner packet](native-ui-runner-pilot.md) records the public-framework
+comparison, semantic identifiers, exact mouse-input/uncertainty contract and
+source ownership. Gateway changes use its same-named review branch, not main.
+First validate actual `ControlView` mouse dispatch in an isolated signed M1
+fixture; its callback is not real vehicle-result evidence. Preserve the installed
+immutable candidate/Test. Normal-package/live integration remains a separate
+gate after that mechanical pilot; no heavy CARLA/Factory rebuild is implied.
+
+The first M1 campaign passed 21 mechanical stages in 5.075 seconds, with
+genuine mouse delivery before/after movement and resize, negative refusals,
+at-most-once polling and normal closure. See the
+[native pilot receipt](../../../qualification/native-ui-runner-pilot-2026-10-12.md).
+This closes only the input/layout pilot, not full vehicle-result acceptance or
+the existing native Setup/WKWebView and first-user gates.

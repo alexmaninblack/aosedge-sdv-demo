@@ -6,15 +6,17 @@
 - Date: 12 October 2026
 - Branch: `codex/presenter-human-friendly`
 - Source checkpoint: `fd15f7d`
-- Status: Timing analysis recorded; optimization direction accepted; implementation not started
+- Status: Baseline retained; mechanical native pilot passed; optimized live campaign pending
 
 The six visible UI attempts in the clean M1 campaign took 42 minutes 22 seconds
 of measured runner time. Three early harness failures accounted for 10 minutes
 6 seconds. Browser navigation was fast; repeated controller/simulator startup,
 agent-assisted native clicks and independent result checks dominated the runs.
 Retain Playwright and improve those boundaries before considering another
-browser framework. No optimized-run timing or unattended native acceptance is
-claimed yet.
+browser framework. The separate
+[native runner pilot](native-ui-runner-pilot-2026-10-12.md) now confirms
+unattended mechanical mouse execution. No optimized live-campaign timing or
+full native vehicle acceptance is claimed.
 
 The [candidate qualification receipt](presenter-human-friendly-2026-10-11.md)
 defines the installed successor, Test, artifact pins and separate acceptance
@@ -199,8 +201,11 @@ automation. They do not establish a guaranteed future runtime.
 ## Ordered follow-up plan
 
 The operator requested recording this direction on 12 October. This checkpoint
-changes documentation only. The steps below remain planned; it does not launch
-tests, change permissions, choose a new native framework or merge main.
+was documentation-only. The table preserves the accepted campaign-level plan.
+The later authorized
+[native pilot packet](../planning/active/work-packets/native-ui-runner-pilot.md)
+implements only the mechanical portion of Step 2; its live Test/session binding
+and physical/result proof remain pending. Main is not merged.
 
 | Step | Work | Required exit evidence |
 | --- | --- | --- |
