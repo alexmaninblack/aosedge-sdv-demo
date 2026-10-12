@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 LABELS = {'before', 'running', 'connected', 'cancelled', 'stopped', 'closed'}
 
 
-def read_query(transport, config, test, query, team=None, release=None):
+def read_query(transport, config, test, query, team=None, release=None, channel=None):
     """Reuse only the existing read adapter; never call its action adapters."""
     h.require(query in ('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication', 'exercise'),
               'QUERY_NOT_ALLOWED')
@@ -40,14 +40,24 @@ def read_query(transport, config, test, query, team=None, release=None):
         h.require(query == 'publication' and re.fullmatch(r'(brake|tire)/[0-9]+\.[0-9]+\.[0-9]+', release),
                   'QUERY_RELEASE_INVALID')
         args['release'] = release
-    with contextlib.redirect_stdout(io.StringIO()):
-        result = j.Remote(transport, config)(dict(id='ui-owner-read', kind='observe', args=args, timeout=45),
-            'observe', dict(runId=test), str(uuid4()))
+    if channel is None:
+        with contextlib.redirect_stdout(io.StringIO()):
+            result = j.Remote(transport, config)(dict(id='ui-owner-read', kind='observe', args=args, timeout=45),
+                'observe', dict(runId=test), str(uuid4()))
+    else:
+        payload=dict(config=config,kind='observe',phase='observe',args=args,
+                     expectedRun=test,requestId=str(uuid4()),prepared={})
+        script=j.WORKER.read_text()+'\nmain('+repr(json.dumps(payload))+')\n'
+        python=config['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+        result=h.parse(channel.remote(shlex.quote(python)+" -I -B - <<'SDV_FRESH_OWNER_READ'\n"+
+            script+'\nSDV_FRESH_OWNER_READ\n',timeout=65))
+        h.require(isinstance(result,dict) and set(result)=={'outcome','code','facts'}
+            and isinstance(result['facts'],dict) and len(json.dumps(result))<=512*1024,'WORKER_RESPONSE_INVALID')
     h.require(result['outcome'] == 'PASS', 'UI_OWNER_READ_UNAVAILABLE')
     return result['facts']
 
 
-def observe(transport, config, test, label):
+def observe(transport, config, test, label, channel=None):
     """Read independent owners; never perform an action or persist a raw response."""
     h.require(label in LABELS, 'OBSERVATION_LABEL_INVALID')
     payload = dict(config=config, kind='observe', args=dict(query='snapshot'),
@@ -94,7 +104,7 @@ print(json.dumps(answer),flush=True)
 '''
     python = config['packageRoot'] + '/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
     command = shlex.quote(python) + " -I -B - <<'SDV_UI_PILOT_READ'\n" + program + '\nSDV_UI_PILOT_READ\n'
-    value = h.parse(h.remote(transport, command, timeout=50))
+    value = h.parse(channel.remote(command,timeout=50) if channel else h.remote(transport, command, timeout=50))
     h.require(isinstance(value, dict) and len(json.dumps(value)) < 16384, 'OBSERVATION_RESPONSE_INVALID')
     return value
 
@@ -255,7 +265,7 @@ def release_receipts(events):
 
 
 def run(args, transport, config):
-    cards = {} if args.scenario == 'native-controls' else qualified_cards(config, transport, args.test)
+    cards = {} if args.scenario in ('native-controls','continuous-campaign') else qualified_cards(config, transport, args.test)
     if args.cards_from_release_records:
         prior = h.unlinked(args.cards_from_release_records)
         h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_RELEASE_RECORD_REQUIRED')
@@ -314,10 +324,11 @@ def run(args, transport, config):
     pin = hashlib.sha256(json.dumps(dict(candidate=config['manifestSha256'], test=args.test,
         connection=j.identity(config, transport), scenario=scenario,display=args.display,
         runner=hashlib.sha256(b''.join((HERE/name).read_bytes() for name in
-            ('ui_pilot.py','ui_m1.py','ui_native_gate.py','native_ui_live.py'))).hexdigest(),
+            ('ui_pilot.py','ui_m1.py','ui_native_gate.py','native_ui_live.py','ui_read_transport.py'))).hexdigest(),
         ownerReader=j.source_pin(),
         nativeBuild=h.digest(args.native_build/'build-receipt.json') if args.native_build else None,
-        browser=hashlib.sha256(browser_script.read_bytes()+(HERE/'ui_pilot.mjs').read_bytes()).hexdigest()),
+        browser=hashlib.sha256(browser_script.read_bytes()+(HERE/'ui_pilot.mjs').read_bytes()
+            +(HERE/'ui_read_broker.mjs').read_bytes()).hexdigest()),
         sort_keys=True).encode()).hexdigest()
     started, tunnel, mount_owned, bootstrap_attempted = time.monotonic(), None, False, False
     native = None
@@ -327,9 +338,9 @@ def run(args, transport, config):
     with h.Journal(records, pin) as journal:
         runner = j.Runner(journal, j.Remote(transport, config), emit=lambda value: print(value, flush=True))
         try:
-            if scenario == 'native-controls':
+            if scenario in ('native-controls','continuous-campaign'):
                 from native_ui_live import Live
-                native = Live(transport,config,args.test,args.native_build,records,args.native_run_id)
+                native = Live(transport,config,args.test,args.native_build,records,args.native_run_id,scenario=scenario)
             if changed_media:
                 # A changed consumer identity invalidates the cached digest,
                 # not the product. Verify this existing copy once; no transfer.
@@ -350,7 +361,7 @@ def run(args, transport, config):
                     journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario)
                 if native is not None: value['nativeRunner'] = True
                 if getattr(args,'native_versions',None) is not None:
-                    h.require(scenario=='native-controls','NATIVE_VERSION_SCOPE_INVALID')
+                    h.require(scenario in ('native-controls','continuous-campaign'),'NATIVE_VERSION_SCOPE_INVALID')
                     value['nativeVersions']=args.native_versions
                 if continuation: value['continuation'] = continuation
                 h.atomic(scratch/'browser-input.json', value)
@@ -359,9 +370,14 @@ def run(args, transport, config):
                         x,y,width,height=initial['browserBounds']
                         value['windowBounds']=dict(left=x,top=y,width=width,height=height)
                         h.atomic(records/'tools-pin.json',tools_pin)
-                        code=ui_m1.execute(transport,m1_tools,value,records,
-                            lambda label:observe(transport,config,args.test,label),
-                            lambda name,team,release:read_query(transport,config,args.test,name,team,release),python,native=native)
+                        from ui_read_transport import ReadTransport
+                        channel=ReadTransport(transport,scratch)
+                        try:
+                            with channel:
+                                code=ui_m1.execute(transport,m1_tools,value,records,
+                                    lambda label:observe(transport,config,args.test,label,channel=channel),
+                                    lambda name,team,release:read_query(transport,config,args.test,name,team,release,channel=channel),python,native=native)
+                        finally:h.atomic(records/'read-transport-report.json',channel.report())
                     else:
                         child=subprocess.run([str(args.node),str(browser_script),str(scratch/'browser-input.json')],
                             env=dict(os.environ,TMPDIR=str(scratch)),timeout=700 if scenario=='pilot' else 3600,
@@ -417,6 +433,7 @@ def run(args, transport, config):
             report=h.parse((records/'pilot-report.json').read_bytes())
             report['nativeRunnerClosed']=native_closed
             report['nativeControls']='PASS' if scenario=='native-controls' and outcome=='PASS' and native_closed else 'NOT_QUALIFIED'
+            report['continuousCampaign']='PASS' if scenario=='continuous-campaign' and outcome=='PASS' and native_closed and closed else 'NOT_QUALIFIED'
             h.atomic(records/'pilot-report.json',report)
     print(json.dumps(h.parse((records/'pilot-report.json').read_bytes())), flush=True)
     return 0 if outcome == 'PASS' else 1
@@ -432,7 +449,7 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication', 'exercise'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign'), default='installed')
     parser.add_argument('--native-build',type=Path,help='Verified separate signed native qualification build')
     parser.add_argument('--native-run-id',default='native-ui-live-20261012')
     parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')
@@ -461,8 +478,8 @@ def main():
     if args.observe:
         print(json.dumps(observe(transport, config, args.test, args.observe)))
         return 0
-    h.require((args.scenario=='native-controls')==(args.native_build is not None)
-              and (args.scenario!='native-controls' or args.display=='m1'), 'NATIVE_RUNNER_SCOPE_INVALID')
+    h.require((args.scenario in ('native-controls','continuous-campaign'))==(args.native_build is not None)
+              and (not args.native_build or args.display=='m1'), 'NATIVE_RUNNER_SCOPE_INVALID')
     h.require(all((args.dmg, args.remote_dmg, args.records, args.workspace))
               and (args.display=='m1' or args.node), 'PILOT_INPUT_REQUIRED')
     return run(args, transport, config)

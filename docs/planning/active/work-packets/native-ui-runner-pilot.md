@@ -4,7 +4,7 @@
 # Native UI runner pilot
 
 - Date: 12 October 2026
-- Status: Mechanical pilot passed; live package installed; retained Test conflicts with fresh-instance Cloud setup
+- Status: Mechanical pilot and live five-control gate passed on M1
 - Integration branch: `codex/presenter-human-friendly`
 - Gateway branch: `codex/presenter-human-friendly`
 - Scope: Five Driving Control buttons and a separate signed M1 qualification tool
@@ -128,8 +128,10 @@ separate from the installer/runtime payload.
 ## Authorized live connection
 
 The operator authorized Stage 5 on 12 October, after the mechanical campaign.
-Preserve the retained M1 Test and reuse published VDP/Brake/Tire releases. Reuse
-CARLA and Factory; publish no new vehicle component or service.
+The initial plan preserved the retained M1 Test. The subsequent explicit request
+to delete that Test authorizes its normal retirement before replacement. Reuse
+published VDP/Brake/Tire releases, CARLA and Factory; publish no new vehicle
+component or service.
 Reassemble the changed native UI through the normal immutable package and Setup
 selection owners. Do not patch the installed package or reinterpret the earlier
 candidate's receipts as qualification of its successor.
@@ -137,7 +139,7 @@ candidate's receipts as qualification of its successor.
 Observed contract constraint: both instance initialization and version selection
 refuse a retained vehicle journal. A stopped Test is not permission to migrate
 it. The normal successor therefore uses a separate private M1 instance and Test;
-the earlier instance, VM, Unit and history remain paused and unchanged. This is
+retire the earlier Test through Finish rather than migrating its journal. This is
 an isolated qualification deployment, not proof of retained-run upgrades.
 
 The network checkpoint was resolved on 12 October. OEM and SP authentication,
@@ -147,9 +149,9 @@ verification set contains the retained Test's Unit. A separate local instance
 does not isolate this account-level set. No new Test or native input was created.
 
 Preserving the retained Test and creating another independent Test with the same
-accounts cannot both satisfy the existing first-use contract. A plan decision is
-pending: retain the previous Test and defer live qualification, or replace it
-through the normal Finish lifecycle before creating the successor. Do not move
+accounts cannot both satisfy the existing first-use contract. The operator has
+chosen replacement through the normal Finish lifecycle before creating the
+successor. Do not move
 the journal, edit set membership directly, bypass occupancy guards or modify the
 installed immutable payload. Existing package/media and completed preparation
 receipts are reusable; no new heavy build or publication is needed.
@@ -190,11 +192,99 @@ preflight, normal preparation, unattended visible UI execution and final cleanup
 The agent no longer schedules normal test stages. No product payload, new
 publication, retirement or permission grant is added by this amendment.
 
-Keep the retained-Test decision above unchanged. Fresh preflight checks shared
+Apply the explicit replacement decision above. Fresh preflight checks shared
 Cloud occupancy before expensive media work and reports its exact fixed blocker.
 Do not use a blocked preflight or source unit tests as live-control acceptance.
 The declared profile includes API baseline preparation and subsequent cold UI
 startup; those costs must not be presented as a warm-only control benchmark.
+
+## Authorized replacement checkpoint
+
+The scoped replacement scenario records the exact old Test, Unit and Node,
+verifies their current staging ownership, invokes normal Finish once and reads
+Cloud absence, the empty verification set and local journal/overlay absence
+before starting the existing visible controls campaign. Preserve packages,
+Factory, certificates, reports, Production and shared Docker. Never repeat an
+uncertain retirement; reconcile its original owner receipt first.
+
+The early cable attempts stopped at read-only SSH preflight without a retirement
+intent. Once transport recovered, normal Finish retired the previous Test and
+confirmed Cloud absence, the empty verification set and journal/overlay removal
+in 69.765 seconds. The successor controller was created and provisioned, but its
+API preparation stopped at `CURRENT_RUN_BUSY` before Safe Stop dispatched any
+driver request. Normal shutdown preserved that interrupted Test and closed its
+runtime. No live native mouse input was submitted.
+
+Three qualification-only corrections preserve the product guards: wait at most
+five seconds for the ordinary writer lock before an action begins, inspect a
+retained certificate pair through the existing same-OEM guard rather than a
+first-use-only inspector, and open the normal native Presenter during preparation.
+The last correction requires current window geometry and ordering; a listening
+server alone is not a visible Presenter. No package or release rebuild is needed.
+
+Read-only diagnosis found the successor's initial VDP update still pending.
+VM trust restoration correctly refused `SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE`.
+The operator authorized retiring that interrupted Test and starting a fresh
+scenario, rather than recovering its intermediate update state. The same entry
+owns exact-target retirement, fresh API preparation, visible UI checks and final
+closure. Keep the earlier negative evidence and report live acceptance separately.
+
+## Earlier parked checkpoint
+
+The clean campaign retired the interrupted Test, opened the native Presenter,
+created and provisioned a new controller, completed Safe Stop and initial VDP
+installation, and confirmed connection. Its next action stopped at
+`SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_REQUIRED`. The separate fresh instance
+has no local proof of the earlier service publications. No Brake assignment
+was submitted. Native UI remained NOT_RUN; normal cleanup passed.
+
+The original retired instance still has verified same-provider publication
+receipts for Brake 137 and Tire 69, with the same certificate references,
+Factory and package store. A normal quiescent version-selection approach avoids
+copying journals or publication receipts and avoids new releases. Its attempted
+selection helper failed; fresh parking reads confirmed that the original
+selection remains unchanged and no further retirement intent was submitted.
+Diagnose that helper before any new action; never replay an unknown selection.
+
+The operator paused work for travel. The current Test is preserved with VDP
+installed and its VM STOPPED. Parking confirmed zero owned demo processes and
+listeners, zero running Docker containers, a closed native runner/display
+assertion and detached owned media. Exact identities and recovery receipts are
+retained in the private `m1-native-live-clean-authoring-20261012` records.
+The publication prerequisite now runs before vehicle preparation; 31 targeted
+Python tests, 20 additional native/UI guards and 15 JavaScript tests passed.
+Source and English documentation changes remain uncommitted on the review
+branch. Main, Production and the video repository are unchanged.
+
+## Live acceptance
+
+The resumed single-entry scenario passed on the dedicated M1. Normal signed
+Setup selected the successor in the quiescent original instance, preserving its
+same-provider publication history in place. The earlier helper failures were
+qualification import/location errors before selection or retirement, not a
+product defect. The final scenario used the embedded Setup tooling; no receipt
+copy, retained-Test migration, package rebuild or new publication occurred.
+
+Fresh preparation confirmed VDP 158, Brake 137 and Tire 69. Visible browser
+startup then cold-started the controller and simulator, connected in Manual,
+restored layout and verified the complete visible composition. Six genuine
+native mouse actions passed: Autopilot, Safe Stop, Brake maneuver, Return to road,
+Tire maneuver and Return to road. Independent observations confirmed motion,
+physical stopping, new source-bound completed maneuvers and new same-version
+backend products. Installed versions remained unchanged.
+
+The controls campaign took 780.101 seconds, including API preparation and cold
+UI startup; the clean replacement wrapper took 894.579 seconds. Final closure
+passed, preserving only the prepared Test and persistent data. One unavailable
+cleanup observation was resolved by read-only exit reconciliation without
+repeating a stop. Normal owners, native runner, browser, listeners, display
+assertion and owned media closed; shared Docker remained running with no demo
+containers. Compact evidence is in the private
+`m1-native-live-clean-authoring-20261012-r2` records.
+
+This completes Stage 5's live five-control boundary. Installer/WKWebView,
+first-user input, repair and complete release E2E remain separate gates. The
+qualification receipt and campaign contract retain that distinction.
 
 ## Mechanical acceptance
 
@@ -206,5 +296,5 @@ The same recorded request remained present through repeated polling without
 being executed again. Both application processes were absent after cleanup.
 
 The [qualification receipt](../../../qualification/native-ui-runner-pilot-2026-10-12.md)
-records the measured boundaries and remaining live gate. This result closes
-stages 1–4 of this packet only; Stage 5 remains pending.
+records both boundaries separately. The mechanical result closes stages 1–4;
+the later live acceptance above closes Stage 5's five-control boundary.

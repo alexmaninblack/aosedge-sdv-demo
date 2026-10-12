@@ -3,8 +3,34 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions } from './ui_journey.mjs';
+import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,continuousActions } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('continuous campaign keeps the accepted section order',()=>{
+  assert.deepEqual(continuousSections,['release-story','installed-views','moving-sota','stop-start']);
+});
+test('continuous actions prove serial publication and no extra healthy startup between sections',()=>{
+  const startup=['start-demo','start-simulation','connect-test'];
+  const publications=['publish','service-publish','publish','service-publish','publish','service-publish','service-publish','service-publish','service-publish'];
+  const valid=[...startup,...publications,'backend-reset','backend-reset','stop-demo',...startup,'stop-demo'].map(action=>({action}));
+  assert.equal(continuousActions(valid),true);
+  for(const value of [valid.slice(1),[...valid,{action:'retire'}],valid.filter(a=>a.action!=='backend-reset'),
+    valid.toSpliced(5,0,{action:'stop-demo'},{action:'start-demo'},{action:'start-simulation'},{action:'connect-test'})])
+    assert.throws(()=>continuousActions(value));
+});
+test('same-Test Stop/Start requires a new boot, stationary Manual, preserved models/history and healthy services',()=>{
+  const before={local:{bootId:id,identity:{unitId:id},teams:{brake:{model:['a']},tire:{model:['b']}}},
+    brake:{productIds:['a']},tire:{productIds:['b']}};
+  const after=structuredClone(before);
+  after.local.bootId='11234567-89ab-cdef-0123-456789abcdef';
+  after.local.controller={fresh:true,held:false,mode:'MANUAL',speed:0,brake:1};
+  after.local.services=Object.fromEntries(['iam','cm','sm','vdp'].map(s=>[s,{ActiveState:'active',Result:'success',NRestarts:'0'}]));
+  assert.equal(lifecyclePreserved(before,after),true);
+  for(const change of [v=>v.local.bootId=id,v=>v.local.identity.unitId='other',v=>v.local.controller.fresh=false,
+    v=>v.local.controller.mode='AUTOPILOT',v=>v.local.controller.speed=1,v=>v.local.teams.brake.model=['changed'],
+    v=>v.tire.productIds=[],v=>v.local.services.cm.NRestarts='1',v=>delete v.local.services.vdp]) {
+    const value=structuredClone(after);change(value);assert.equal(Boolean(lifecyclePreserved(before,value)),false);
+  }
+});
 test('campaign baseline pins exact versions before native input', () => {
   const expected={vdp:'158.0.0',brake:'137.0.0',tire:'69.0.0'};
   assert.deepEqual(nativeVersions(expected,expected),expected);

@@ -539,3 +539,108 @@ at-most-once polling and normal closure. See the
 [native pilot receipt](../../../qualification/native-ui-runner-pilot-2026-10-12.md).
 This closes only the input/layout pilot, not full vehicle-result acceptance or
 the existing native Setup/WKWebView and first-user gates.
+
+### Authorized continuous UI campaign
+
+On 12 October, after the live five-control pilot passed, the operator authorized
+Step 3 of the ordered optimization plan. Add a single `continuous-campaign`
+entry on this review branch: release story, installed views, moving QM updates,
+then explicit same-Test Stop/Start. Use the dedicated M1 and its internal data,
+the existing immutable package and current compatible Test. No retirement,
+Factory/CARLA/product rebuild or main merge is required by this step.
+
+The browser scenario uses real UI for prepare, signing/publication, dialogs,
+Reset and lifecycle controls. Publish VDP and Brake versions serially and
+confirm installation before the next publication; keep VDP physically in Safe
+Stop. Both Subjects remain assigned to the same Test. Follow V1, V2 and V3 VDP
+and Brake with Tire V1, then inspect installed cards, team views, resources,
+backend records, independent Reset/history and Activity. Next update Brake V3
+and Tire V1 while actual fresh Autopilot motion is independently observed.
+Confirm their new same-version products with new completed source maneuvers.
+
+Normal owners remain healthy and running across these sections. The explicit
+final Stop/Start must still prove a changed boot, unchanged Test identity,
+models/history and installed releases, healthy services and stationary Manual
+attachment. Recheck the visible layout after restart. No native input occurs
+after that restart: the runner stays bound to its original exact PID/digest,
+so lifecycle coverage does not silently rebind a client to another process.
+
+The signed qualification-only Native UI Runner gains a separate fixed scenario
+stage allowlist, using the same five semantic action IDs and the existing
+Accessibility grant. Control-only profiles cannot issue campaign stages and
+campaign profiles cannot issue arbitrary/control-pilot stages. The browser,
+Python broker and Swift parser must agree; retain exact Test/session/window
+binding, one intent per action and no replay of uncertain input/publication.
+
+One entry owns preflight, bounded display assertion, ordered actions, timings,
+failure evidence and final normal closure of VM, simulator, browser, native
+helper, backends and owned media. Preserve shared Docker and persistent Test
+data. Partial or blocked sections are not a Step 3 PASS. Installer/WKWebView,
+first-user permissions/token entry, repair, offline soak and complete release
+E2E retain their independent acceptance boundaries. The deferred VDP timeout
+is unchanged; asynchronous query transport remains Step 4, not this amendment.
+
+Step 3 passed on M1 on 12 October: 42 browser stages, 14 native mouse actions,
+nine serial UI publications, both independent Reset checks, moving QM updates
+and same-Test Stop/Start. Complete measured time was 1,210.107 seconds (20:10),
+including closure. Independent final inventory found zero owned demo processes,
+listeners and qualification clients; Test data and shared Docker were preserved.
+The [continuous campaign receipt](../../../qualification/continuous-ui-campaign-2026-10-12.md)
+records versions, timings, prior failures and scope. The installed DMG remained
+unchanged. Step 4 is next; this pass does not close full installer E2E or merge main.
+
+### Authorized asynchronous independent reads
+
+The operator authorized Step 4 on 12 October. Keep the Step 3 scenario, target,
+immutable package, retained Test and semantic input controls. Replace synchronous
+browser query waits with one bounded asynchronous reply reader. Await every
+independent query; reject concurrent, mismatched, oversized, failed or timed-out
+replies without replay. Browser routing and timers remain responsive while reads
+run. Capture fixed timing fields, not raw responses.
+
+Reuse one owned, pinned SSH connection for the scenario's read-only adapters.
+Keep a fresh Python Worker, installed selection check, Test binding and owner
+observation for every request: reuse transport, not mutable product objects or
+cached success. Scope its private control socket to existing SSD scratch and
+close it on all exits. A lost master fails closed without automatic reconnect.
+Native input, lifecycle and publication keep their existing owners and guards;
+the reused transport cannot admit a mutation query. No new port, permission,
+credential or product/DMG change follows from this step.
+
+Run async/freshness/negative/timeout/cancellation/cleanup unit gates before one
+bound M1 campaign. Preserve serial publications, moving-service result proof,
+independent Reset/history, explicit Stop/Start and final closure. Record the
+complete work-session duration separately from campaign runtime. Step 5 retains
+the comparative acceptance report; a faster timer alone does not close Step 4.
+
+Step 4 passed on M1: the unchanged 42-stage campaign completed with 166 fresh
+reads, one SSH connection, zero failed reads or reconnects and verified final
+closure. Separate timeout/repeat transport proof passed, as did 64 Python and
+25 JavaScript unit gates. Complete campaign time was 1,220.281 seconds (20:20),
+not an overall improvement over Step 3's 20:10. The
+[asynchronous read receipt](../../../qualification/asynchronous-ui-reads-2026-10-12.md)
+records the boundary, counters, scope and separate work-session timestamps.
+Step 5 is next. Product/DMG and main remain unchanged.
+
+### Comparative UI acceptance
+
+The operator authorized Step 5 on 12 October. Reuse the completed bound M1
+campaigns rather than launching another full test for a stopwatch comparison.
+Match candidate, Test, executor, ordered stages and action names; distinguish
+cold startup, healthy retained sections, explicit Stop/Start and cleanup.
+Preserve the historical failures and report work-session time separately.
+
+Step 5 passed the comparison and acceptance criteria: both campaigns have the
+same 42 passing stages, 32 ordered guarded Presenter submissions, 14 native
+inputs and nine serial publications, with verified zero owned processes,
+listeners and qualification clients. Test data and shared Docker were preserved.
+Complete runtimes were 1,210.107 and 1,220.281 seconds; overall performance
+improvement is NOT ESTABLISHED. The historical 42:22 aggregate is not a matched
+benchmark. See the
+[comparative acceptance receipt](../../../qualification/ui-campaign-comparison-2026-10-12.md)
+for ordered results, source pins, timing boundaries and remaining scope.
+
+This closes comparative UI acceptance, not complete installer E2E,
+first-user/native acceptance, external release or main integration. No new
+live action, heavy artifact or product/DMG change was needed for Step 5.
+Keep all pending acceptance boundaries and the deferred VDP timeout explicit.

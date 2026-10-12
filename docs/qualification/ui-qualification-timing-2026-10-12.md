@@ -5,8 +5,8 @@
 
 - Date: 12 October 2026
 - Branch: `codex/presenter-human-friendly`
-- Source checkpoint: `fd15f7d`
-- Status: Baseline retained; mechanical native pilot passed; optimized live campaign pending
+- Historical source checkpoint: `fd15f7d`
+- Status: Historical baseline retained; Steps 2–5 passed; overall speedup not established
 
 The six visible UI attempts in the clean M1 campaign took 42 minutes 22 seconds
 of measured runner time. Three early harness failures accounted for 10 minutes
@@ -15,8 +15,13 @@ agent-assisted native clicks and independent result checks dominated the runs.
 Retain Playwright and improve those boundaries before considering another
 browser framework. The separate
 [native runner pilot](native-ui-runner-pilot-2026-10-12.md) now confirms
-unattended mechanical mouse execution. No optimized live-campaign timing or
-full native vehicle acceptance is claimed.
+mechanical and live five-control acceptance. The subsequent
+[continuous campaign receipt](continuous-ui-campaign-2026-10-12.md) closes Step 3
+with 42 passing stages in 20:10. The
+[comparative acceptance receipt](ui-campaign-comparison-2026-10-12.md) closes
+Step 5: the same ordered scenario passed again in 20:20 with asynchronous reads,
+but no overall speedup is established. These scopes remain separate from full
+installer E2E; the historical attempt measurements below are unchanged.
 
 The [candidate qualification receipt](presenter-human-friendly-2026-10-11.md)
 defines the installed successor, Test, artifact pins and separate acceptance
@@ -44,19 +49,25 @@ confirm versions, identity, controller state and correlated backend results.
 They do not perform the action under test.
 
 Safe Stop, Brake maneuver, Tire maneuver, Return to road and Autopilot are
-native Driving Control buttons, not HTML controls. The current scenario emits
-a native gate and waits for the agent to click the visible button through CUA.
+native Driving Control buttons, not HTML controls. The historical baseline emitted
+a native gate and waited for the agent to click the visible button through CUA.
 [The witness helper](../../scripts/qualification/ui_native_gate.py) only records
 an already performed click; it cannot click or establish success. The runner
-then checks the physical/result postcondition independently. This is hybrid
-agent-assisted execution, not an unattended native UI runner.
+then checked the physical/result postcondition independently. That baseline was
+hybrid agent-assisted execution. The accepted live profiles now dispatch genuine
+mouse input through the signed local Native UI Runner, with exact semantic
+control, process, executable, Test and session binding. Independent result checks
+remain mandatory; the agent no longer schedules native clicks.
 
 Native Setup and the installed WKWebView Presenter shell were checked separately
 through Screen Sharing/CUA. Chrome browser acceptance does not qualify those
-native surfaces. The current CUA-only witness contract remains in force until
-a supported replacement execution method and its guards are defined.
+native surfaces. The local runner replaces the Driving Control witness path
+only; it does not qualify native Setup or the WKWebView shell.
 
 ## Measurement boundaries
+
+These boundaries describe the six historical attempts. The continuous campaign
+receipt separately reports its native input and complete campaign timers.
 
 - `pilot-report.json` records monotonic runner duration. Its timer starts after
   transport preflight, the initial owner observation and reusable UI-tool
@@ -70,7 +81,7 @@ a supported replacement execution method and its guards are defined.
 - `attempt-*.json` records individual media/setup/API/cleanup operations.
   `ui-events.jsonl` provides timestamped events, not a separately timed native
   click or a complete latency breakdown.
-- Native-stage time currently combines agent response, the click, physical
+- Native-stage time in those attempts combined agent response, the click, physical
   execution and postcondition checks. The records cannot attribute all of
   that time to the vehicle or all of it to the agent.
 - Diagnosis, edits, one-time tooling and separate native acceptance are not
@@ -172,7 +183,10 @@ The session extended from delivery around 22:02 to the source commit at 00:15
 on 12 October, approximately 2 hours 12 minutes. That includes separate native
 checks, investigation and documentation; it is not the runner benchmark.
 
-## Bottlenecks and optimization priorities
+## Historical bottlenecks and optimization priorities
+
+These observations describe the original hybrid campaign. The comparison
+receipt above records the completed changes and current performance limits.
 
 1. **Agent-assisted native execution.** A missed native gate caused the Tire
    interruption. Removing the dependency on conversational agent scheduling
@@ -204,8 +218,15 @@ The operator requested recording this direction on 12 October. This checkpoint
 was documentation-only. The table preserves the accepted campaign-level plan.
 The later authorized
 [native pilot packet](../planning/active/work-packets/native-ui-runner-pilot.md)
-implements only the mechanical portion of Step 2; its live Test/session binding
-and physical/result proof remain pending. Main is not merged.
+records the completed mechanical and live five-control proof for Step 2.
+The continuous campaign linked above closes Step 3. The
+[asynchronous read receipt](asynchronous-ui-reads-2026-10-12.md) closes Step 4,
+including fresh reads, timeout/cancellation proof and final closure. It does not
+establish an overall speedup. The
+[comparative receipt](ui-campaign-comparison-2026-10-12.md) now closes Step 5,
+with complete ordered results, matched scope, cold/retained-runtime boundaries
+and verified closure. The original ordered table and historical measurements
+are retained. Main is not merged.
 
 | Step | Work | Required exit evidence |
 | --- | --- | --- |

@@ -108,6 +108,61 @@ class CampaignExecution(unittest.TestCase):
         with patch.object(c.h,'remote',side_effect=read_only),patch('builtins.print'):
             self.assertEqual(c.preflight({},config,None,'native-ui-live-20261012-test')['outcome'],'BLOCKED')
 
+    def test_preflight_keeps_delivery_permission_reads_in_both_modes(self):
+        import ast
+        config=dict(packageRoot='/Users/test/Packages/candidate')
+        def read_only(transport,program,timeout):
+            source=program.split("<<'SDV_CAMPAIGN_PREFLIGHT'\n",1)[1].rsplit('\nSDV_CAMPAIGN_PREFLIGHT',1)[0]
+            calls=[n for n in ast.walk(ast.parse(source)) if isinstance(n,ast.Call)
+                   and isinstance(n.func,ast.Attribute) and n.func.attr=='check'
+                   and any(k.arg=='first_use' for k in n.keywords)]
+            self.assertEqual(len(calls),1)
+            expression=next(k.value for k in calls[0].keywords if k.arg=='first_use')
+            code=compile(ast.Expression(expression),'<read-only-check>','eval')
+            self.assertTrue(eval(code,{'REQUEST':{'expectedRun':None}}))
+            self.assertTrue(eval(code,{'REQUEST':{'expectedRun':TEST}}))
+            return json.dumps(answer())
+        with patch.object(c.h,'remote',side_effect=read_only),patch('builtins.print'):
+            c.preflight({},config,TEST,'native-ui-live-20261012-test')
+
+    def test_preflight_checks_normal_publication_proof_without_upload_or_copy(self):
+        config=dict(packageRoot='/Users/test/Packages/candidate')
+        def read_only(transport,program,timeout):
+            source=program.split("<<'SDV_CAMPAIGN_PREFLIGHT'\n",1)[1].rsplit('\nSDV_CAMPAIGN_PREFLIGHT',1)[0]
+            self.assertIn("assignment._publication(reference['serviceId'])", source)
+            self.assertIn("row['publishedVersion']==VERSIONS[reference['team']]", source)
+            self.assertNotIn('.upload(', source);self.assertNotIn('copyfile(', source)
+            return json.dumps(answer())
+        with patch.object(c.h,'remote',side_effect=read_only),patch('builtins.print'):
+            c.preflight({},config,None,'native-ui-live-20261012-test',dict(brake='137.0.0',tire='69.0.0'))
+
+    def test_retained_pair_reuses_same_oem_guard_without_first_use_or_save(self):
+        connection=Mock()
+        connection._pair_stamp.return_value='metadata'
+        connection.inspect.return_value={'domain':'staging'}
+        self.assertEqual(c.inspect_preflight_pair(connection,'oem','sp',True)['domain'],'staging')
+        connection.inspect_pair.assert_not_called()
+        self.assertEqual(connection._pair_stamp.call_args_list,
+                         [unittest.mock.call('oem','sp',connect=True)]*2)
+        self.assertEqual(connection.inspect.call_count,2)
+        connection.connect_pair.assert_not_called();connection.select_pair.assert_not_called()
+
+    def test_fresh_pair_still_uses_normal_first_use_owner(self):
+        connection=Mock();connection.inspect_pair.return_value={'domain':'staging'}
+        self.assertEqual(c.inspect_preflight_pair(connection,'oem','sp',False),{'domain':'staging'})
+        connection.inspect_pair.assert_called_once_with('oem','sp')
+        connection._pair_stamp.assert_not_called()
+
+    def test_retained_pair_refuses_changed_metadata_or_mismatched_domains(self):
+        connection=Mock();connection.inspect.return_value={'domain':'staging'}
+        connection._pair_stamp.side_effect=['before','after']
+        with self.assertRaisesRegex(ValueError,'CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW'):
+            c.inspect_preflight_pair(connection,'oem','sp',True)
+        connection=Mock();connection._pair_stamp.return_value='metadata'
+        connection.inspect.side_effect=[{'domain':'staging'},{'domain':'production'}]
+        with self.assertRaisesRegex(ValueError,'CLOUD_OEM_SP_DOMAIN_MISMATCH'):
+            c.inspect_preflight_pair(connection,'oem','sp',True)
+
 
 class CampaignPlans(unittest.TestCase):
     def plan(self,root):
@@ -147,6 +202,14 @@ class CampaignPlans(unittest.TestCase):
             root=Path(tmp).resolve();value=self.plan(root);Path(value['records']).mkdir(parents=True)
             path=root/'plan.json';path.write_text(json.dumps(value));path.chmod(0o600)
             with self.assertRaisesRegex(ValueError,'NEW_PRIVATE_CAMPAIGN_REQUIRED'):c.configuration(path)
+
+    def test_cleanup_policy_does_not_claim_retired_previous_test_was_preserved(self):
+        ops=c.Operations(dict(test=None),{},dict(manifestSha256='a'*64),Path('/private/unused'))
+        value=ops.cleanup()['facts']
+        self.assertFalse(value['currentPreparedTestPreserved'])
+        self.assertNotIn('previousTestPreserved',value)
+        self.assertNotIn('normalOwnersStarted',value)
+        self.assertEqual(value['sharedDocker'],'PRESERVED')
 
     def test_preparation_has_no_publication_retirement_or_reset(self):
         plan=dict(mode='fresh',versions=dict(vdp='158.0.0',brake='137.0.0',tire='69.0.0'))

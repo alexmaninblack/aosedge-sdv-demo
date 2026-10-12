@@ -1,10 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Native UI runner mechanical qualification
+# Native UI runner mechanical and live qualification
 
 - Date: 12 October 2026
-- Status: Mechanical pilot PASS; normal package installed; live vehicle gate pending Test replacement decision
+- Status: Mechanical pilot PASS and live five-control gate PASS; full release E2E separate
 - Review branch: `codex/presenter-human-friendly` in both source repositories
 - Gateway source: `e67657033a81a390caf55ee30d5b98ff12cdf39c`
 - Target: Dedicated Apple Silicon M1, macOS 27.0.1, internal storage
@@ -100,7 +100,7 @@ No reusable credentials, raw product responses or browser profiles enter this
 receipt. Permission state is not inferred from an old report: the repeat
 client freshly reported READY before execution.
 
-## Live integration checkpoint
+## Initial live integration checkpoint
 
 The live connection is implemented on the review branch, with the bounded
 `native-controls` scenario, signed executor profile and distinct mouse receipts.
@@ -201,18 +201,85 @@ guards; documentation validation passed with 354 Markdown documents. The
 permission-only client and complete positive live path remain unqualified until
 the real prerequisites permit them to run.
 
-## Remaining integration gate
+## Earlier live preparation failures
 
-Stages 1–4 remain complete and network access is restored. The live gate requires
-a decision about replacing the retained Test: the same OEM verification set
-cannot accept the proposed independent first-use instance while that Unit remains
-present. If replacement is selected, use normal Finish, confirm retirement, resume
-the existing fresh-instance API baseline with published releases, then execute
-the visible `native-controls` scenario. Otherwise retain the previous Test and
-defer the live gate. Exact installed-payload/Test/session/action binding and
-independent physical/product postconditions are implemented but not yet
-live-qualified. No CARLA, Unreal or Factory rebuild is needed.
+Stages 1–4 remain complete. The operator chose normal Test replacement and the
+old Test was retired with Cloud and local absence checks in 69.765 seconds.
+Fresh controller preparation then stopped before Safe Stop input at an ordinary
+writer-lock collision. That 351.313-second campaign included preparation and
+normal cleanup; native UI was NOT_RUN. Subsequent retained recovery exposed an
+unfinished initial VDP FOTA transaction, not a missing certificate or authority.
+The product refused trust restoration during that transaction. Final normal
+shutdown completed; no live native input or new release publication occurred.
 
-Until that separate M1 gate passes, the existing live scenarios retain their
-CUA-only native witness requirement. Native Setup/WKWebView, first-user input,
-repair, release qualification and complete live E2E remain separately scoped.
+The operator authorized a clean replacement rather than further recovery of
+that intermediate state. Qualification corrections retain the normal lock,
+same-OEM certificate and active-update guards. API preparation now opens the
+normal native Presenter as well as its server and checks current surfaces and
+ordering. Targeted coverage passed 31 campaign, lock and live-adapter tests.
+Private evidence remains under `m1-native-live-replacement-20261012-r8`; the
+clean successor scenario uses `m1-native-live-clean-20261012`.
+
+The separate fresh instance next refused service assignment because its local
+publication history was absent. Read-only inspection confirmed same-provider
+Brake 137 and Tire 69 publication receipts in the original retired instance.
+Use normal quiescent version selection to preserve them in place, not copying
+or adopting receipts. The selection helper first used an unavailable installed
+tool location, then omitted a product import. Both failures were reconciled
+before any selection or retirement mutation; the final scenario used the
+existing signed Setup's embedded tooling.
+
+## Live controls acceptance
+
+The resumed single-entry campaign passed on M1 with the same immutable package
+and existing published releases. Normal Finish retired the exact previous Test
+and confirmed Cloud absence, an empty verification set and local data removal.
+Normal Setup selected the successor in the quiescent original instance without
+migrating a Test or copying authoring history. Fresh preparation and subsequent
+cold UI startup confirmed VDP 158, Brake 137 and Tire 69.
+
+Visible Presenter, CARLA and Driving Control composition passed. Each native
+stage has its own `MOUSE_DOWN_UP_POSTED` receipt with `inputDispatched=true`.
+Independent product reads verified the effects, not just event submission:
+
+| Native stage | Result | Duration including independent effects |
+| --- | --- | ---: |
+| Autopilot and real motion | PASS | 11.168 s |
+| Safe Stop and physical stopping | PASS | 10.668 s |
+| Brake maneuver and new same-version backend product | PASS | 36.597 s |
+| Brake return with new completed source receipt and stationary Manual | PASS | 12.490 s |
+| Tire maneuver and new same-version backend product | PASS | 41.466 s |
+| Tire return with new completed source receipt and stationary Manual | PASS | 16.184 s |
+
+| Complete campaign phase | Duration |
+| --- | ---: |
+| Prerequisite checks and permission-only probe | 12.071 s |
+| Fresh API baseline including normal closure | 350.849 s |
+| Visible UI phase including tools, cold startup, controls and closure | 411.635 s |
+| Final read-only closure reconciliation | 5.540 s |
+| Controls entry total | 780.101 s |
+| Clean wrapper including selection and old-Test retirement | 894.579 s |
+
+The six native stages total 128.573 seconds, including maneuver execution and
+backend/physics observation. These are not mouse-dispatch latency figures and
+the cold-start campaign is not a warm-only speed benchmark. All 15 browser
+stages passed. The browser pilot total was 404.812 seconds within the UI phase.
+
+Final closure passed: zero owned demo processes/listeners, closed browser and
+native executor, detached owned media and a closed temporary display assertion.
+The prepared Test is preserved; shared Docker remained running. An unavailable
+initial cleanup observation was resolved by read-only exit checks, not another
+shutdown mutation. The result is `nativeControls=PASS`, with full release E2E
+still `NOT_COMPLETE`. No new release, package, CARLA or Factory build occurred.
+
+Private receipts are retained under
+`m1-native-live-clean-authoring-20261012-r2/controls`; earlier failure evidence
+remains unchanged. Current unit gates passed 32 campaign/lock/live-adapter tests,
+20 additional native/browser guards and 15 JavaScript guards. The later cleanup
+metadata correction distinguishes the current prepared Test from the wrapper's
+already retired previous Test; it changes no product payload or live action.
+
+This qualifies the `native-controls` broker on M1 only. Other scenarios keep
+their existing native witness contracts until integrated separately. Native
+Setup/WKWebView, first-user input, repair and complete release E2E remain scoped
+separately.

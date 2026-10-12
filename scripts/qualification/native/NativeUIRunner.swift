@@ -9,9 +9,16 @@ import Darwin
 let nativeActions: Set<String> = ["driving.safe-stop", "driving.autopilot", "driving.brake-maneuver", "driving.tire-maneuver", "driving.return-to-road"]
 let fixtureBundle = "org.aosedge.sdv.qualification.control-fixture"
 let clientBundle = "org.aosedge.sdv.qualification.native-ui-runner"
-let liveStages = ["native-controls-autopilot": "driving.autopilot", "native-controls-safe-stop": "driving.safe-stop",
+let controlStages = ["native-controls-autopilot": "driving.autopilot", "native-controls-safe-stop": "driving.safe-stop",
     "native-controls-brake": "driving.brake-maneuver", "native-controls-tire": "driving.tire-maneuver",
     "native-controls-brake-return": "driving.return-to-road", "native-controls-tire-return": "driving.return-to-road"]
+let campaignStages = ["vdp-v1-safe":"driving.safe-stop", "vdp-v2-safe":"driving.safe-stop", "vdp-v3-safe":"driving.safe-stop",
+    "brake-v1-maneuver":"driving.brake-maneuver", "brake-v2-maneuver":"driving.brake-maneuver", "brake-v3-maneuver":"driving.brake-maneuver",
+    "tire-v1-maneuver":"driving.tire-maneuver", "return-to-road":"driving.return-to-road",
+    "moving-sota-autopilot":"driving.autopilot", "moving-sota-safe-stop":"driving.safe-stop",
+    "campaign-brake-moving-maneuver":"driving.brake-maneuver", "campaign-brake-moving-return":"driving.return-to-road",
+    "campaign-tire-moving-maneuver":"driving.tire-maneuver", "campaign-tire-moving-return":"driving.return-to-road"]
+let liveStages = controlStages.merging(campaignStages) { first, _ in first }
 
 struct PilotFailure: Error { let code: String }
 func requirePilot(_ condition: Bool, _ code: String) throws {
@@ -139,6 +146,9 @@ final class NativeClient: NSObject, NSApplicationDelegate {
         try requirePilot(["candidate", "test", "sessionId"].allSatisfy { binding[$0] == live[$0] as? String }
             && request.pid == pid_t(live["pid"] as? Int ?? 0)
             && request.digest == live["executableSha256"] as? String, "LIVE_PROFILE_MISMATCH")
+        let stages = live["scenario"] as? String == "continuous-campaign" ? campaignStages : controlStages
+        try requirePilot(request.operation == "quit" || stages[binding["stage"] ?? ""] == request.action,
+            "LIVE_SCENARIO_STAGE_INVALID")
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -291,7 +301,9 @@ if root.lastPathComponent.hasPrefix("native-ui-live-") {
         let data = try Data(contentsOf: path)
         try requirePilot(data.count < 4096, "LIVE_PROFILE_INVALID")
         guard let value = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { exit(2) }
-        try requirePilot(Set(value.keys) == ["candidate", "test", "sessionId", "pid", "executableSha256", "executable"], "LIVE_PROFILE_INVALID")
+        let fields: Set<String> = ["candidate", "test", "sessionId", "pid", "executableSha256", "executable"]
+        try requirePilot(Set(value.keys) == fields || Set(value.keys) == fields.union(["scenario"]), "LIVE_PROFILE_INVALID")
+        try requirePilot(value["scenario"] == nil || ["native-controls", "continuous-campaign"].contains(value["scenario"] as? String ?? ""), "LIVE_PROFILE_INVALID")
         let candidate = value["candidate"] as? String ?? ""
         let expected = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
             "AosEdge SDV Packages/versions/" + candidate + "/demo-artifacts/aosedge-sdv-demo/host-runtime/ui/native/Driving Control.app/Contents/MacOS/KeyboardControl")

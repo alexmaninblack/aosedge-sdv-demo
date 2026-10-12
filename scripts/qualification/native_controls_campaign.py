@@ -6,6 +6,7 @@ import argparse
 import contextlib
 import hashlib
 import io
+import inspect
 import json
 import os
 from pathlib import Path
@@ -34,7 +35,7 @@ def source_pin():
     return hashlib.sha256(b''.join((HERE/name).read_bytes() for name in
         ('native_controls_campaign.py','journey.py','journey_plan.py','journey_worker.py',
          'remote_harness.py','campaign.py','ui_pilot.py','ui_m1.py','native_ui_live.py',
-         'ui_native_gate.py','ui_journey.mjs','ui_pilot.mjs'))).hexdigest()
+         'ui_native_gate.py','ui_journey.mjs','ui_pilot.mjs','ui_read_broker.mjs','ui_read_transport.py'))).hexdigest()
 
 
 def code(error):
@@ -42,7 +43,7 @@ def code(error):
     return value if re.fullmatch(r'[A-Z][A-Z0-9_]{1,100}', value) else 'CAMPAIGN_OPERATION_UNAVAILABLE'
 
 
-def configuration(path):
+def configuration(path, scenario='native-controls'):
     path = h.unlinked(path)
     info = path.stat()
     h.require(info.st_uid == os.getuid() and stat.S_IMODE(info.st_mode) == 0o600
@@ -50,7 +51,7 @@ def configuration(path):
     value = h.parse(path.read_bytes())
     h.require(isinstance(value, dict) and set(value) == FIELDS
               and type(value['schemaVersion']) is int and value['schemaVersion'] == 1
-              and value['scenario'] == 'native-controls'
+              and scenario in ('native-controls','continuous-campaign') and value['scenario'] == scenario
               and value['mode'] in ('fresh', 'retained'), 'CAMPAIGN_PLAN_INVALID')
     for key in PATHS:
         raw = value[key]
@@ -98,11 +99,24 @@ def local_inputs(plan, transport, config):
     return media
 
 
-def preflight(transport, config, expected, native_run_id):
+def inspect_preflight_pair(connection, oem, sp, retained):
+    """Read through the existing fresh/same-OEM owner guards; never select/save."""
+    if not retained:
+        return connection.inspect_pair(oem, sp)
+    before = connection._pair_stamp(oem, sp, connect=True)
+    first, second = connection.inspect(oem), connection.inspect(sp)
+    if first['domain'] != second['domain']:
+        raise ValueError('CLOUD_OEM_SP_DOMAIN_MISMATCH')
+    if before != connection._pair_stamp(oem, sp, connect=True):
+        raise ValueError('CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW')
+    return dict(domain=first['domain'], rolesChecked=False)
+
+
+def preflight(transport, config, expected, native_run_id, versions=None):
     """Single bounded M1 read: installed selection, stopped owners, desktop and Cloud."""
     request = dict(config=config, kind='observe', args={}, phase='observe',
                    requestId=str(uuid4()), expectedRun=expected)
-    program = j.WORKER.read_text() + '\nREQUEST=' + repr(request) + '\nNATIVE_RUN_ID='+repr(native_run_id)+'''
+    program = j.WORKER.read_text() + '\n'+inspect.getsource(inspect_preflight_pair)+'\nREQUEST=' + repr(request) + '\nNATIVE_RUN_ID='+repr(native_run_id)+'\nVERSIONS='+repr(versions)+'''
 answer=None;facts={}
 try:
  with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
@@ -132,6 +146,19 @@ try:
    from aosedge_demo_orchestrator.units import UnitService
    from aosedge_demo_orchestrator.vm import VMService
    environment=EnvironmentService(root=worker.state)
+   # A Cloud version alone cannot authorize assignment. Require the normal
+   # same-owner local publication proof before creating any vehicle.
+   if VERSIONS is not None:
+    from aosedge_demo_orchestrator.service_assignment import ServiceAssignment
+    assignment=ServiceAssignment(environment,worker.app.unit_service)
+    publications=[]
+    for reference in worker.config.get('subjectReferences',[]):
+     row=assignment._publication(reference['serviceId'])
+     require(row['team']==reference['team'] and row['serviceProviderId']==reference['serviceProviderId']
+       and row['publishedVersion']==VERSIONS[reference['team']],'BASELINE_PUBLICATION_BINDING_CHANGED')
+     publications.append(dict(team=row['team'],version=row['publishedVersion']))
+    require({r['team'] for r in publications}=={'brake','tire'},'BASELINE_PUBLICATION_RECEIPTS_REQUIRED')
+    facts['publicationReceipts']=publications
    from aosedge_demo_orchestrator.qualification_access import input_password,preflight as vm_access_check
    if worker.config.get('vmPasswordFile'):input_password(Path(worker.config['vmPasswordFile']))
    else:vm_access_check(environment,worker.config['image'])
@@ -141,7 +168,7 @@ try:
    backends=BackendService(environment)
    for team in ('brake','tire'):backends._image(backends._candidate(team)['imageId'])
    connection=CloudConnection(environment)
-   pair=connection.inspect_pair(worker.config['oemCertificate'],worker.config['spCertificate'])
+   pair=inspect_preflight_pair(connection,worker.config['oemCertificate'],worker.config['spCertificate'],state is not None)
    require(pair['domain']==DOMAIN,'STAGING_REQUIRED')
    saved=connection._configuration().get('cloudProfiles',{})
    require(all(saved.get(role,{}).get('credential')==worker.config[key] for role,key in
@@ -281,7 +308,7 @@ print(json.dumps(dict(nativePermission=value['status'],inputDispatched=False,fix
         h.require(source_pin()==self.source,'CAMPAIGN_SOURCE_CHANGED')
         media = local_inputs(self.plan, self.transport, self.config)
         self.media = campaign.Media(self.transport, self.config, media)
-        result = preflight(self.transport, self.config, self.test, self.plan['nativeRunId'])
+        result = preflight(self.transport, self.config, self.test, self.plan['nativeRunId'], self.plan['versions'])
         self.initial = result['facts']
         if result['outcome']=='PASS':result['facts'].update(self.permission_probe())
         return result
@@ -354,7 +381,9 @@ print(json.dumps(dict(nativePermission=value['status'],inputDispatched=False,fix
     def cleanup(self):
         self.permission_close()
         if self.bootstrap: self.stop_baseline()
-        facts = dict(normalOwnersStarted=False,sharedDocker='PRESERVED',previousTestPreserved=True)
+        # Historical startup belongs to phase receipts. Cleanup preserves the
+        # campaign's prepared Test, not a wrapper's separately retired old Test.
+        facts = dict(sharedDocker='PRESERVED',currentPreparedTestPreserved=self.test is not None)
         if self.test and self.runner:
             result = j.Remote(self.transport,self.config)(dict(id='campaign-close-observe',kind='shutdown',timeout=35),
                 'reconcile',dict(runId=self.test),str(uuid4()))

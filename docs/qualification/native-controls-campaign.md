@@ -51,23 +51,33 @@ Preflight verifies candidate selection, exact Test policy, idle owners, console,
 unlocked desktop, shared Docker, VM access, Factory/backend availability and the
 normal read-only Cloud prerequisites. Check shared Test-set occupancy before
 media work. A local instance directory is not an independent Cloud tenant.
+Require normal same-provider publication receipts and their exact baseline
+versions before creating a vehicle; Cloud version availability alone is not
+assignment authority. Preserve authoring history through normal quiescent
+version selection, not by copying/adopting receipts or migrating a Test journal.
 When those checks pass, the same signed Native UI Runner reports its own current
 Accessibility grant and closes without a fixture, target or mouse input. Missing
 permissions are BLOCKED, not automatically granted. The live client checks again
 before actual input.
 
-The current plan preserves the earlier Test. `fresh` therefore stops immediately
-if its shared verification set contains another Unit. This runner does not retire
-Tests, alter set membership, bypass occupancy or migrate retained journals. That
-plan boundary is distinct from the standing authorization for ordinary disposable
-staging replacement; it must not be silently reinterpreted by a script.
+The controls entry itself preserves existing Tests: `fresh` stops immediately
+if the shared verification set contains another Unit. The operator-authorized
+clean replacement wrapper first binds the exact old Test/Unit/Node, journals one
+normal Finish intent and confirms Cloud absence, an empty set and local
+journal/overlay removal. Only then does it invoke this fresh controls entry.
+Neither entry edits set membership directly, bypasses occupancy or migrates a
+retained journal. Reusable packages, certificates, releases and shared Docker
+remain outside retirement.
 
 ## Ordered execution
 
 1. Validate the private plan, small source/build/media receipts and M1 preflight.
 2. Mount the verified signed Setup media. In fresh mode, configure explicit VM
    access, save exact Subject references, create/provision the controller and
-   prepare VDP/Brake/Tire using existing published releases. Confirm each declared
+   prepare VDP/Brake/Tire using existing published releases. The normal workspace
+   owner opens a visible Presenter before controller creation; CARLA and Driving
+   Control join the same layout once the simulator starts. Require fresh native
+   Presenter geometry and ordering, not HTTP-server readiness alone. Confirm each declared
    version through normal owners. There is no new publication, Reset or deletion.
 3. Close API preparation before this profile's deliberate cold UI-startup checks.
    Start the normal visible Presenter, CARLA and Driving Control through actual
@@ -104,3 +114,37 @@ PYTHONPATH=scripts/qualification python3 -B -m unittest \
   scripts/qualification/test_native_controls_campaign.py -v
 node --test scripts/qualification/test_ui_journey.mjs
 ```
+
+## Continuous release and lifecycle campaign
+
+The separate `continuous-campaign` profile retains the compatible Test and
+reuses its assigned Subjects. It composes the release story, installed views,
+moving QM updates and explicit same-Test Stop/Start in one healthy runtime
+sequence. It never creates or retires a Test, reassigns Subjects or deletes
+backend history. UI preparation/publication is serial, with installation
+confirmed before advancing and physical Safe Stop for VDP.
+
+```sh
+python3 -B scripts/qualification/continuous_ui_campaign.py \
+  --plan PRIVATE_CONTINUOUS_CAMPAIGN_JSON \
+  --display-assertion-helper APPROVED_PRIVATE_DISPLAY_HELPER
+```
+
+Use the same exact plan schema above, with `scenario` set to
+`continuous-campaign`, `mode` set to `retained`, the current compatible baseline
+versions and a new `native-ui-live-YYYYMMDD-continuousSUFFIX` run identity.
+The helper is the already approved `native_live_awake.py` in the private
+qualification directory, not an arbitrary program. It temporarily holds the
+unlocked M1 display active and closes its own assertion in the entry's finalizer;
+it neither unlocks the screen nor changes persistent settings.
+
+The signed input client has a separate campaign-stage allowlist and remains
+bound to its original process. No native input follows the explicit restart.
+The scenario independently proves preservation and stationary Manual attachment
+through the normal owners, then confirms final Stop and closes all owned clients,
+runtime and media. An uncertain input/publication is never replayed. Shared
+Docker and persistent Test data remain intact. The report distinguishes Step 3
+PASS from full installer E2E, which remains separate.
+
+The [M1 receipt](continuous-ui-campaign-2026-10-12.md) records the passing 42-stage
+campaign, exact releases, timings and final closure.

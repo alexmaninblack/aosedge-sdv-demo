@@ -41,6 +41,23 @@ def fixed_reason(value):
     return fixed_code(value)
 
 
+@contextlib.contextmanager
+def preparation_writer(environment):
+    """Wait at most five seconds for the normal lock, before any action begins."""
+    deadline = time.monotonic() + 5
+    with contextlib.ExitStack() as stack:
+        while True:
+            try:
+                stack.enter_context(environment._writer())
+                break
+            except ValueError as error:
+                if str(error) != 'CURRENT_RUN_BUSY' or time.monotonic() >= deadline:
+                    raise
+                time.sleep(.1)
+        # Body exceptions are outside the acquisition loop: never replay RPCs.
+        yield
+
+
 def job_projection(job):
     """Bounded product fields only; exclude arbitrary progress/text/logs."""
     return dict(productState=fixed_code(job.get('state')), results=[
@@ -56,6 +73,20 @@ def component_idle_projection(value):
                and all(isinstance(row, dict) for row in rows))
     return dict(idle=current and not any(row.get('pending_component') or
         row.get('pending_component_error') for row in rows), cloudCurrent=current)
+
+
+def visible_presenter_projection(value):
+    """Require current native surfaces, not merely a listening HTTP server."""
+    surfaces = value.get('surfaces') or {}
+    rows = [surfaces.get(name) or {} for name in ('header', 'browser', 'backdrop')]
+    pid = value.get('hostPid')
+    return (type(pid) is int and pid > 0 and value.get('profile') == 'builtin-v1'
+        and (value.get('display') or {}).get('desktopState') == 'UNLOCKED'
+        and (value.get('zOrder') or {}).get('state') == 'VERIFIED'
+        and all(row.get('pid') == pid and isinstance(row.get('actual'), list)
+            and isinstance(row.get('expected'), list) and len(row['actual']) == len(row['expected']) == 4
+            and all(type(a) in (int, float) and type(b) in (int, float) and abs(a-b) <= 3
+                    for a,b in zip(row['actual'], row['expected'])) for row in rows))
 
 
 def demo_stopped_projection(state, snapshot, source, backends, docker):
@@ -567,7 +598,19 @@ class Worker:
         owner = setup_launch.owner(command)
         client = setup_launch.ready_client(command, owner)
         require(client['buildId'] == hashlib.sha256(runtime.entry('web').read_bytes()).hexdigest(), 'UI_BUILD_CHANGED')
-        return result(dict(serverReady=True, nativeWindowsOpened=False))
+        from aosedge_demo_orchestrator.models import OperationRequest
+        if self.request['phase'] == 'execute':
+            # Normal workspace owner, same journaled intent. Missing simulator
+            # windows are expected here; no vehicle lifecycle is performed.
+            self.app.execute(OperationRequest('workspace', 'restore'))
+        deadline = time.monotonic() + 6
+        while True:
+            raw = self.app.execute(OperationRequest('workspace', 'status')).to_dict()
+            if visible_presenter_projection(raw.get('data') or {}): break
+            require(time.monotonic() < deadline, 'PREPARATION_PRESENTER_NOT_VISIBLE')
+            time.sleep(.2)
+        return result(dict(serverReady=True, nativeWindowsOpened=True, presenterVisible=True,
+            simulatorWindowsExpectedLater=True))
 
     def vm_access(self):
         from aosedge_demo_orchestrator.qualification_access import prepare, preflight, input_password
@@ -745,7 +788,7 @@ class Worker:
         if self.request['phase'] == 'prepare':
             self.idle(); driver.ready(state)
             return result(dict(validated=True))
-        with self.app.environment_service._writer(), driver.operation(timeout=25):
+        with preparation_writer(self.app.environment_service), driver.operation(timeout=25):
             source = state['source']
             if self.request['phase'] != 'reconcile':
                 self.attempted = True

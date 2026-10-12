@@ -12,9 +12,17 @@ import remote_harness as h
 
 FIELDS = {'schemaVersion', 'stage', 'action', 'test', 'sessionId', 'state'}
 ACTIONS = {'Safe Stop', 'Brake maneuver', 'Tire maneuver', 'Return to road', 'Autopilot'}
-LIVE_STAGES = {'native-controls-autopilot': 'Autopilot', 'native-controls-safe-stop': 'Safe Stop',
+CONTROL_STAGES = {'native-controls-autopilot': 'Autopilot', 'native-controls-safe-stop': 'Safe Stop',
                'native-controls-brake': 'Brake maneuver', 'native-controls-tire': 'Tire maneuver',
                'native-controls-brake-return': 'Return to road', 'native-controls-tire-return': 'Return to road'}
+CAMPAIGN_STAGES = {'vdp-v1-safe':'Safe Stop','vdp-v2-safe':'Safe Stop','vdp-v3-safe':'Safe Stop',
+    'brake-v1-maneuver':'Brake maneuver','brake-v2-maneuver':'Brake maneuver','brake-v3-maneuver':'Brake maneuver',
+    'tire-v1-maneuver':'Tire maneuver','return-to-road':'Return to road',
+    'moving-sota-autopilot':'Autopilot','moving-sota-safe-stop':'Safe Stop',
+    'campaign-brake-moving-maneuver':'Brake maneuver','campaign-brake-moving-return':'Return to road',
+    'campaign-tire-moving-maneuver':'Tire maneuver','campaign-tire-moving-return':'Return to road'}
+SCENARIO_STAGES = {'native-controls':CONTROL_STAGES,'continuous-campaign':CAMPAIGN_STAGES}
+LIVE_STAGES = {**CONTROL_STAGES, **CAMPAIGN_STAGES}
 ACTION_IDS = {'Safe Stop': 'driving.safe-stop', 'Autopilot': 'driving.autopilot',
               'Brake maneuver': 'driving.brake-maneuver', 'Tire maneuver': 'driving.tire-maneuver',
               'Return to road': 'driving.return-to-road'}

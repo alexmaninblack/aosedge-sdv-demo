@@ -23,9 +23,9 @@ class LiveGuards(unittest.TestCase):
     def client(self, root):
         client=n.Live.__new__(n.Live)
         client.transport={};client.config={'manifestSha256':'a'*64};client.test=ID
-        client.records=Path(root);client.stages=set()
+        client.records=Path(root);client.stages=set();client.scenario='native-controls'
         client.profile=dict(candidate='a'*64,test=ID,sessionId=ID,pid=123,
-            executable='/exact/KeyboardControl',executableSha256='b'*64)
+            executable='/exact/KeyboardControl',executableSha256='b'*64,scenario='native-controls')
         client.launch=Mock();client.request=Mock(return_value=dict(requestId=ID,
             outcome='INPUT_DISPATCHED',inputDispatched=True,code='MOUSE_DOWN_UP_POSTED',
             action='driving.safe-stop',binding=dict(candidate='a'*64,test=ID,sessionId=ID,
@@ -60,6 +60,35 @@ class LiveGuards(unittest.TestCase):
                 with patch.object(n,'target') as target:
                     with self.assertRaises(ValueError):client(gate)
                     target.assert_not_called();client.request.assert_not_called()
+
+    def test_control_profile_cannot_execute_campaign_stage(self):
+        with tempfile.TemporaryDirectory() as root:
+            client=self.client(root)
+            with patch.object(n,'target') as target:
+                with self.assertRaises(ValueError):client(self.gate(stage='vdp-v1-safe'))
+                target.assert_not_called();client.request.assert_not_called()
+
+    def test_campaign_profile_can_only_use_its_explicit_fixed_stages(self):
+        with tempfile.TemporaryDirectory() as root:
+            client=self.client(root);client.scenario='continuous-campaign'
+            client.profile['scenario']='continuous-campaign'
+            receipt=client.request.return_value
+            receipt['binding']['stage']='vdp-v1-safe'
+            with patch.object(n,'target',return_value=client.profile):
+                self.assertEqual(client(self.gate(stage='vdp-v1-safe'))['state'],'INPUT_DISPATCHED_THROUGH_NATIVE_RUNNER')
+            client=self.client(root);client.scenario='continuous-campaign'
+            with patch.object(n,'target') as target:
+                with self.assertRaises(ValueError):client(self.gate())
+                target.assert_not_called();client.request.assert_not_called()
+
+    def test_python_and_swift_fixed_stage_maps_agree(self):
+        import re
+        from ui_native_gate import LIVE_STAGES,ACTION_IDS,SCENARIO_STAGES
+        text=(Path(n.__file__).parent/'native/NativeUIRunner.swift').read_text()
+        block=text.split('let controlStages =',1)[1].split('let liveStages =',1)[0]
+        rows=dict(re.findall(r'"([a-z0-9-]+)"\s*:\s*"(driving\.[a-z-]+)"',block))
+        self.assertEqual(rows,{k:ACTION_IDS[v] for k,v in LIVE_STAGES.items()})
+        self.assertFalse(set(SCENARIO_STAGES['native-controls']) & set(SCENARIO_STAGES['continuous-campaign']))
 
 
 if __name__=='__main__':unittest.main()

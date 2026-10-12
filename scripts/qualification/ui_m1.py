@@ -98,7 +98,7 @@ def prepare(transport,workspace,repository,python):
         ' 2>&1; '+shlex.quote(root+'/node')+' --version',timeout=15)
     h.require('CDHash='+cdhash+'\n' in observed and 'TeamIdentifier=EQHXZ8M8AV\n' in observed
               and observed.rstrip().endswith('v'+NODE_VERSION),'COPIED_UI_TOOLS_CHANGED')
-    for name in ('ui_journey.mjs','ui_pilot.mjs','ui_observer.mjs'):
+    for name in ('ui_journey.mjs','ui_pilot.mjs','ui_observer.mjs','ui_read_broker.mjs'):
         transfer(transport,str(HERE/name),root+'/'+name)
     print('visible-m1-tools: ready; no Docker or product installation changes',flush=True)
     return root,pin
@@ -143,9 +143,16 @@ class Observer:
         return closed
 
 
+def remote_run_directory(root,records):
+    # Basenames such as "ui" recur under many local campaign roots. Keep
+    # deterministic at-most-once ownership, but bind the complete record path.
+    digest=hashlib.sha256(str(records.resolve()).encode()).hexdigest()[:24]
+    return root+'/runs/'+records.name+'-'+digest
+
+
 def execute(transport,root,value,records,observe,query,python,native=None):
     """Read broker over SSH stdin/stdout; UI clicks execute on M1, not the broker."""
-    remote_records=root+'/runs/'+records.name
+    remote_records=remote_run_directory(root,records)
     payload=dict(value,visibleM1=True,records=remote_records,modulePath=root+'/node_modules/@playwright/test/package.json',
         browserExecutable=root+'/Google Chrome.app/Contents/MacOS/Google Chrome',
         profileDirectory=remote_records+'/browser-profile')

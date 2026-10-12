@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import journey as j
 import remote_harness as h
-from ui_native_gate import ACTION_IDS, LIVE_STAGES, native_receipt, validate
+from ui_native_gate import ACTION_IDS, LIVE_STAGES, SCENARIO_STAGES, native_receipt, validate
 
 SIGNER = '0514708CB8DA6BB8C26823D4F01C9F6869908008'
 BUNDLE = 'org.aosedge.sdv.qualification.native-ui-runner'
@@ -60,7 +60,9 @@ print(json.dumps(answer),flush=True)
 
 
 class Live:
-    def __init__(self, transport, config, test, build, records, run_id):
+    def __init__(self, transport, config, test, build, records, run_id, scenario='native-controls'):
+        h.require(scenario in SCENARIO_STAGES,'NATIVE_SCENARIO_INVALID')
+        self.scenario=scenario
         h.require(re.fullmatch(r'native-ui-live-\d{8}(?:-[a-z0-9]+)?',run_id), 'NATIVE_LIVE_ROOT_INVALID')
         self.transport,self.config,self.test,self.records=transport,config,test,records
         self.root='/Users/'+transport['user']+'/SDV-Qualification/'+run_id
@@ -132,11 +134,12 @@ class Live:
 
     def __call__(self, gate):
         validate(gate,gate.get('stage'),gate.get('action'))
-        h.require(gate['test']==self.test and LIVE_STAGES.get(gate['stage'])==gate['action']
+        h.require(gate['test']==self.test and SCENARIO_STAGES[self.scenario].get(gate['stage'])==gate['action']
                   and gate['stage'] not in self.stages, 'NATIVE_LIVE_STAGE_REFUSED')
         self.stages.add(gate['stage'])
         h.require(not (self.records/('native-'+gate['stage']+'.intent.json')).exists(),'NATIVE_INPUT_ALREADY_ATTEMPTED')
         current=target(self.transport,self.config,gate)
+        current['scenario']=self.scenario
         if self.profile is None:self.launch(current)
         h.require(current==self.profile,'NATIVE_LIVE_TARGET_CHANGED')
         return native_receipt(gate,self.request('click',gate['stage'],ACTION_IDS[gate['action']]),self.config['manifestSha256'])
