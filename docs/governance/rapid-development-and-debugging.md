@@ -4,9 +4,9 @@
 # Rapid Development and Debugging Policy
 
 - Status: Accepted operating policy
-- Version: 1.5
+- Version: 1.6
 - Prepared: 2026-08-30
-- Updated: 2026-10-10
+- Updated: 2026-10-12
 - Owner: Demo Solution Team with repository and integration owners
 - Applies to: implementation, integration, debugging, build, qualification,
   Cloud operations and artifact cleanup across the AosEdge SDV demo workspace
@@ -70,6 +70,34 @@ Safe Stop, no-blind-retry and end-of-check shutdown remain mandatory. Tool safet
 controls, new credential/access boundaries and public distribution are not
 overridden. Do not weaken product occupancy or ownership guards; retire the
 authorized old Test through its normal lifecycle before replacing it.
+
+## Scenario execution policy
+
+Accepted by the operator on 12 October 2026: a test campaign is one executable
+scenario, not a series of agent-managed commands. Its entry owns preflight,
+normal preparation, ordered test actions, independently observed effects,
+timings, bounded failure evidence and verified cleanup. The agent launches the
+scenario and investigates an unexpected failure; routine actions require no
+conversational scheduling. Existing authorization boundaries remain in force.
+
+Before costly build/media work or live mutations, check the intended target,
+selected candidate, desktop/access permissions, dependencies and shared Cloud
+occupancy. Freeze whether the scenario retains a compatible Test or prepares a
+fresh one. Do not discover an incompatible preservation/creation plan after
+installation. Local state separation is not account-level isolation.
+
+Reuse verified artifacts and healthy owners where the scenario permits it.
+Keep declared cold startup, Stop/Start, sequential publication and soak gates.
+UI acceptance uses real semantic controls, not API substitution; preparation
+and read-only result observation may use the normal APIs. Persist intent before
+mutation and reconcile unknown effects without repeating input.
+
+On PASS, FAIL, BLOCKED, interruption or uncertainty, produce a compact result
+with timed phases and explicit NOT_RUN gates. Preserve the failure and exact
+target evidence. Close only owned resources through normal owners, independently
+verify exit, and preserve shared Docker. A cleanup failure prevents a completed
+campaign result. Never label source coverage, a mechanical fixture, API
+preparation or a blocked campaign as live UI/full-E2E acceptance.
 
 ## Mandatory End-of-Check Shutdown
 

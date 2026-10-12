@@ -56,6 +56,13 @@ export function completedExercise(after, before, kind) {
     && after.physicalStop === 'CONFIRMED' && after.noOp === false
     && (kind !== 'return_to_road' || after.autopilotStarted === false);
 }
+export function nativeVersions(value, expected) {
+  assert(value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).sort().join(',') === 'brake,tire,vdp'
+    && Object.values(value).every(v => typeof v === 'string' && version.test(v)), 'NATIVE_VERSIONS_INVALID');
+  if (expected !== undefined) assert.deepEqual(value, expected, 'NATIVE_BASELINE_CHANGED');
+  return value;
+}
 export function resetPreserved(before, after, team, commandId) {
   const peer = team === 'brake' ? 'tire' : 'brake';
   return after[team].resetState === 'CLEARED' && after[team].resetId === commandId
@@ -107,6 +114,10 @@ export async function main(inputPath) {
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
   assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   if (input.nativeRunner) assert(input.visibleM1 && input.scenario === 'native-controls', 'NATIVE_RUNNER_SCOPE_INVALID');
+  if (input.nativeVersions !== undefined) {
+    assert(input.nativeRunner && input.scenario === 'native-controls', 'NATIVE_VERSION_SCOPE_INVALID');
+    nativeVersions(input.nativeVersions);
+  }
   if (input.scenario === 'release-continuation')
     assert(version.test(input.continuation?.preparedV2), 'CONTINUATION_RECEIPT_REQUIRED');
   const require = createRequire(input.modulePath ?? path.join(input.repository, 'apps/presenter-ui/package.json'));
@@ -498,6 +509,8 @@ export async function main(inputPath) {
             && !rows[0].error_message && [0,null,undefined].includes(rows[0].error_exit_code),'LIVE_SERVICE_REQUIRED');
           baseline[team] = rows[0].version;
         }
+        if (input.nativeVersions !== undefined)
+          nativeVersions({vdp:baseline.platform,brake:baseline.brake,tire:baseline.tire},input.nativeVersions);
         record({state:'LIVE_INSTALLED_BASELINE',versions:baseline,publication:'NOT_REQUESTED'});
       });
       await stage('native-controls-autopilot', async () => {

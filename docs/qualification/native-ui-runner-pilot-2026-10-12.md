@@ -168,6 +168,39 @@ the unchanged shared Docker Engine. SSD build scratch was cleaned by its normal
 contexts; retain the immutable package, DMG, small executors and compact private
 records. Main, Production and the video repository remain unchanged.
 
+## Autonomous scenario checkpoint
+
+The operator authorized a single-entry native-controls campaign and the general
+scenario-first execution rule on 12 October. The
+[campaign contract](native-controls-campaign.md) records its private input,
+normal-owner preparation, semantic browser/native actions, result checks and
+mandatory finalization. The current rule is also in the shared development
+instructions, repository `AGENTS.md` and operating policy version 1.6.
+
+The first real M1 campaign stopped in 4.883 seconds at desktop readiness. After
+the report was corrected to retain partial observations and collect independent
+Cloud prerequisites in the same read, a new bound campaign stopped in 9.885
+seconds. It freshly reported desktop `LOCKED` and
+`TEST_UNIT_SET_HAS_OTHER_UNITS`; both OEM/SP roles and the other Cloud checks were
+READY. This is a negative preflight proof, not a passing live-control campaign
+or a full-E2E speed benchmark.
+
+Both runs used the installed successor, existing verified media and published
+releases. No media mount/transfer, vehicle preparation, publication, retirement,
+native permission client or live UI input was attempted. The final report marks
+preparation and native UI NOT_RUN, native controls NOT_QUALIFIED and full E2E
+NOT_COMPLETE. The M1 read found zero owned demo processes/listeners and the same
+shared Docker Engine. The retained Test remains unchanged.
+
+Private reports are retained under the `m1-native-controls-campaign-20261012`
+and `m1-native-controls-campaign-20261012-r2` record directories. The earlier
+failed report and plan were preserved; the corrected read-only proof used a new
+campaign identity rather than replaying an uncertain action. Current unit gates
+passed 26 native/campaign tests, 13 Python UI guards and 15 JavaScript scenario
+guards; documentation validation passed with 354 Markdown documents. The
+permission-only client and complete positive live path remain unqualified until
+the real prerequisites permit them to run.
+
 ## Remaining integration gate
 
 Stages 1–4 remain complete and network access is restored. The live gate requires

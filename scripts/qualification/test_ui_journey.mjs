@@ -3,8 +3,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise } from './ui_journey.mjs';
+import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('campaign baseline pins exact versions before native input', () => {
+  const expected={vdp:'158.0.0',brake:'137.0.0',tire:'69.0.0'};
+  assert.deepEqual(nativeVersions(expected,expected),expected);
+  for (const value of [{...expected,vdp:'latest'},{...expected,tire:true},{vdp:'158.0.0'},
+                      {...expected,extra:'1.0.0'},null,[]])
+    assert.throws(()=>nativeVersions(value),/NATIVE_VERSIONS_INVALID/);
+  assert.throws(()=>nativeVersions({...expected,brake:'138.0.0'},expected),/NATIVE_BASELINE_CHANGED/);
+});
 test('live maneuver requires a new completed owner receipt, not background products alone', () => {
   const value={id,kind:'brake',runMatches:true,operationMatches:true,phase:'RELEASED',
     state:'COMPLETED',physicalStop:'CONFIRMED',noOp:false};

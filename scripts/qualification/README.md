@@ -9,6 +9,24 @@ Cloud client or formal qualification dossier. Native Setup and Demo Control
 remain the installation and lifecycle authorities. UI acceptance requires
 actual input and independently observed effects, not an SSH launch receipt.
 
+## Autonomous scenario entry
+
+New campaigns use one complete scenario entry. The agent launches it and
+investigates failures; routine stages and clicks do not wait for conversation.
+The [native controls campaign](../../docs/qualification/native-controls-campaign.md)
+combines preflight, scoped normal preparation, real M1 UI execution, independent
+result checks, timings, bounded failure evidence and verified final cleanup:
+
+```sh
+python3 -B scripts/qualification/native_controls_campaign.py --plan PRIVATE_CAMPAIGN_JSON
+```
+
+Keep the selected candidate, Test policy and authorized target in the private
+plan. No automatic publication, retirement or new permission follows from the
+entry. Individual commands below are building blocks and diagnostic interfaces,
+not routine agent-managed campaign steps. The policy is in
+[rapid development and debugging](../../docs/governance/rapid-development-and-debugging.md#scenario-execution-policy).
+
 ## Native semantic runner pilot
 
 The [approved pilot](../../docs/planning/active/work-packets/native-ui-runner-pilot.md)

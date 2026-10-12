@@ -180,6 +180,22 @@ M1, then close normal demo owners, browser and executor; preserve Test data and
 the shared Docker Engine. This closes only the live five-control boundary, not
 the installer/WKWebView or full-E2E acceptance scope.
 
+## Autonomous campaign entry
+
+On 12 October the operator authorized converting the current check into one
+scripted scenario and recording this execution rule for future tests. The
+[campaign entry](../../../../scripts/qualification/native_controls_campaign.py)
+and [run contract](../../../qualification/native-controls-campaign.md) own
+preflight, normal preparation, unattended visible UI execution and final cleanup.
+The agent no longer schedules normal test stages. No product payload, new
+publication, retirement or permission grant is added by this amendment.
+
+Keep the retained-Test decision above unchanged. Fresh preflight checks shared
+Cloud occupancy before expensive media work and reports its exact fixed blocker.
+Do not use a blocked preflight or source unit tests as live-control acceptance.
+The declared profile includes API baseline preparation and subsequent cold UI
+startup; those costs must not be presented as a warm-only control benchmark.
+
 ## Mechanical acceptance
 
 The first authorized M1 campaign passed 21 stages in 5.075 seconds, including

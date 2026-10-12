@@ -29,6 +29,25 @@ debugging and qualification task in this repository and its worktrees.
 - Send concise factual progress while work is active; do not leave a command or
   investigation without a user-visible heartbeat for more than 60 seconds.
 
+## Scenario-first test execution
+
+The operator required this workflow on 12 October 2026. Run a complete named
+scenario through one script entry, not a conversation-driven sequence of
+individual actions. The scenario owns prerequisite checks, normal preparation,
+ordered actions, independent result checks, bounded failure evidence, timings
+and mandatory final cleanup. The agent launches and observes the campaign and
+investigates failures; routine steps must not wait for agent clicks or prompts.
+
+Check target and account-level compatibility before large builds, media work or
+live mutations. Declare retained-versus-fresh Test policy in the scenario input;
+local directory separation is not Cloud isolation. Reuse compatible artifacts
+and healthy owners inside the declared campaign. Preserve explicit cold-start,
+Stop/Start and soak tests rather than silently treating warm reuse as their proof.
+Use semantic UI controls and independently verify real effects. Journal exact
+intent, never replay unknown mutations, redact diagnostics, and report skipped
+or blocked gates honestly. Existing staging authorization and scope exclusions
+still apply; a script does not create new authority or bypass safety review.
+
 ## Standing staging test authorization
 
 On 30 September 2026 the user explicitly authorized the complete ongoing

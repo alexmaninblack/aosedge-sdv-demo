@@ -349,6 +349,9 @@ def run(args, transport, config):
                     helper=str(Path(__file__).resolve()), config=str(args.config.resolve()),
                     journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario)
                 if native is not None: value['nativeRunner'] = True
+                if getattr(args,'native_versions',None) is not None:
+                    h.require(scenario=='native-controls','NATIVE_VERSION_SCOPE_INVALID')
+                    value['nativeVersions']=args.native_versions
                 if continuation: value['continuation'] = continuation
                 h.atomic(scratch/'browser-input.json', value)
                 with j.Progress('real-browser-pilot', emit=lambda value: print(value, flush=True)):
