@@ -4,7 +4,7 @@
 # Native UI runner pilot
 
 - Date: 12 October 2026
-- Status: Mechanical pilot passed; live adapter/package built; M1 Cloud/network gate blocked
+- Status: Mechanical pilot passed; live package installed; retained Test conflicts with fresh-instance Cloud setup
 - Integration branch: `codex/presenter-human-friendly`
 - Gateway branch: `codex/presenter-human-friendly`
 - Scope: Five Driving Control buttons and a separate signed M1 qualification tool
@@ -139,6 +139,20 @@ refuse a retained vehicle journal. A stopped Test is not permission to migrate
 it. The normal successor therefore uses a separate private M1 instance and Test;
 the earlier instance, VM, Unit and history remain paused and unchanged. This is
 an isolated qualification deployment, not proof of retained-run upgrades.
+
+The network checkpoint was resolved on 12 October. OEM and SP authentication,
+association, architecture, model and delivery permissions now pass. The normal
+Cloud preflight instead reports `TEST_UNIT_SET_HAS_OTHER_UNITS`: the shared Test
+verification set contains the retained Test's Unit. A separate local instance
+does not isolate this account-level set. No new Test or native input was created.
+
+Preserving the retained Test and creating another independent Test with the same
+accounts cannot both satisfy the existing first-use contract. A plan decision is
+pending: retain the previous Test and defer live qualification, or replace it
+through the normal Finish lifecycle before creating the successor. Do not move
+the journal, edit set membership directly, bypass occupancy guards or modify the
+installed immutable payload. Existing package/media and completed preparation
+receipts are reusable; no new heavy build or publication is needed.
 
 The hierarchy is:
 

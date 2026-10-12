@@ -4,7 +4,7 @@
 # Native UI runner mechanical qualification
 
 - Date: 12 October 2026
-- Status: Mechanical pilot PASS; installed-package and live vehicle integration pending
+- Status: Mechanical pilot PASS; normal package installed; live vehicle gate pending Test replacement decision
 - Review branch: `codex/presenter-human-friendly` in both source repositories
 - Gateway source: `e67657033a81a390caf55ee30d5b98ff12cdf39c`
 - Target: Dedicated Apple Silicon M1, macOS 27.0.1, internal storage
@@ -123,7 +123,8 @@ insufficient: require a new same-source completed maneuver receipt as well.
 | Retained-run selection | Refused by existing contract; no migration attempted |
 | Separate private instance selection | PASS |
 | Existing Docker image availability / certificate references | PASS |
-| M1 Cloud access gate | BLOCKED; staging timeout and public-internet DNS failure |
+| Initial M1 Cloud access gate | BLOCKED; staging timeout and public-internet DNS failure |
+| Cloud check after network recovery | OEM/SP and association READY; Test verification set CONFLICT |
 | New vehicle / new releases / live native input | NOT CREATED / NOT PUBLISHED / NOT DISPATCHED |
 
 Installation initially refused an 8,196-byte Finder `.DS_Store` entry in the
@@ -139,6 +140,22 @@ private M1 instance, not a moved/deleted journal or an unqualified upgrade. Clou
 access failed before creating a new Test. Private receipts retain the failed
 attempts, preserving observed facts rather than relabelling them PASS.
 
+After the operator restored internet, a journalled Cloud check completed in
+11.962 seconds and stopped at `CLOUD_PREREQUISITES_NOT_READY`. The signed Setup's
+read-only projection confirmed both roles authenticated and all other checks
+READY. The conflicting verification set is
+`3e2d6c28-7112-421a-912a-06b440470df6`; its sole member is the retained Test's Unit
+`20174976-c230-4e70-a7c5-8133a840f262`. This is the expected account-level occupancy
+guard, not a network, certificate or native-runner defect. The isolated local
+instance plan did not account for that shared Cloud boundary.
+
+The retained Test `b86da97e-f54c-43ed-b97a-dade76dd81a9` and its earlier package
+selection were freshly confirmed unchanged. No new Test was created, no releases
+were published and no live native mouse input was submitted. Final observation
+confirmed zero owned demo processes/listeners and zero running containers, the
+same Docker Engine, detached owned media and a closed temporary display assertion.
+The fixed Cloud/check/cleanup projections remain in the private baseline records.
+
 Current local source gates passed: 10 Gateway native tests, 10 qualification
 native tests, 13 Python UI guards, 14 JavaScript scenario guards, 69 journey
 tests, 13 campaign tests and 5 UI build tests. The new signed executor's pure
@@ -153,10 +170,14 @@ records. Main, Production and the video repository remain unchanged.
 
 ## Remaining integration gate
 
-Stages 1–4 remain complete. Restore M1 internet access, resume the same bounded
-fresh-instance API baseline using published releases, then execute the visible
-`native-controls` scenario. Exact installed-payload/Test/session/action binding
-and independent physical/product postconditions are implemented but not yet
+Stages 1–4 remain complete and network access is restored. The live gate requires
+a decision about replacing the retained Test: the same OEM verification set
+cannot accept the proposed independent first-use instance while that Unit remains
+present. If replacement is selected, use normal Finish, confirm retirement, resume
+the existing fresh-instance API baseline with published releases, then execute
+the visible `native-controls` scenario. Otherwise retain the previous Test and
+defer the live gate. Exact installed-payload/Test/session/action binding and
+independent physical/product postconditions are implemented but not yet
 live-qualified. No CARLA, Unreal or Factory rebuild is needed.
 
 Until that separate M1 gate passes, the existing live scenarios retain their
