@@ -499,3 +499,22 @@ journey/campaign/remote tests, 15 qualification-script tests, 19 Node UI guards
 and 19 documentation tests, plus documentation and whitespace validation.
 These source gates do not promote the separate live experiments into one
 uninterrupted full-E2E pass. Main integration remains explicitly pending.
+
+## Recorded UI timing optimization follow-up
+
+On 12 October the operator requested that the UI timing analysis and agreed
+optimization direction be saved on this branch. The
+[M1 timing analysis and ordered plan](../../../qualification/ui-qualification-timing-2026-10-12.md)
+records measured attempt/stage durations, the hybrid Playwright/CUA execution
+model and the remaining measurement gaps. The six visible attempts consumed
+42:22 of measured runner time, including 10:06 in three early harness failures.
+
+Follow the recorded order: split timing instrumentation, supported native UI
+execution without conversational click scheduling, one healthy continuous
+campaign, asynchronous/bounded read reuse, then comparative M1 acceptance.
+The native execution mechanism and any change to the current CUA witness
+contract must be defined before implementation. Recording the plan does not
+select a framework, grant permissions, change product authority, launch a live
+test or merge main. Preserve serial publication, VDP Safe Stop, fresh independent
+proofs, explicit lifecycle tests, uncertainty/no-replay and final owner closure.
+Implementation and optimized-run results are not yet claimed.

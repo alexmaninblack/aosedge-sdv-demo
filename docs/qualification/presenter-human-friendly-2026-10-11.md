@@ -995,3 +995,12 @@ distribution and main integration remain separate gates. Host sleep/wake and
 external SSD checks are excluded from this M1 internal-storage profile, and
 VDP-TIMEOUT-01 remains deferred. Full E2E is not certified by combining separate
 passing experiments with the interrupted release story.
+
+## UI timing analysis and optimization follow-up
+
+The [12 October timing analysis](ui-qualification-timing-2026-10-12.md) records
+the six successor UI attempt totals, successful-stage breakdowns, API/setup
+context and the ordered optimization plan. It distinguishes timed operations
+from session duration and agent-assisted native waiting from independent
+postcondition checks. This documentation checkpoint adds no live test or
+acceptance result and does not rewrite any failed attempt above.
