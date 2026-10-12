@@ -49,6 +49,13 @@ export function autopilot(value, requireMotion = false) {
     && typeof c.speed === 'number' && Number.isFinite(c.speed) && c.speed >= 0
     && (!requireMotion || c.speed > 3);
 }
+export function completedExercise(after, before, kind) {
+  return uuid.test(after?.id) && after.id !== before?.id && after.kind === kind
+    && after.runMatches === true && after.operationMatches === true
+    && after.phase === 'RELEASED' && after.state === 'COMPLETED'
+    && after.physicalStop === 'CONFIRMED' && after.noOp === false
+    && (kind !== 'return_to_road' || after.autopilotStarted === false);
+}
 export function resetPreserved(before, after, team, commandId) {
   const peer = team === 'brake' ? 'tire' : 'brake';
   return after[team].resetState === 'CLEARED' && after[team].resetId === commandId
@@ -503,15 +510,19 @@ export async function main(inputPath) {
       });
       for (const team of ['brake','tire']) {
         await stage('native-controls-'+team,async () => {
-          const old=query('backend',team);
+          const old=query('backend',team), beforeExercise=query('exercise');
           await native('native-controls-'+team,team==='brake'?'Brake maneuver':'Tire maneuver',()=>{
             const after=query('backend',team);
-            return after.products.some(p=>!old.productIds.includes(p.id) && p.version===baseline[team]);
+            return after.products.some(p=>!old.productIds.includes(p.id) && p.version===baseline[team])
+              && completedExercise(query('exercise'),beforeExercise,team);
           });
+          record({state:'LIVE_MANEUVER_CONFIRMED',team,exercise:query('exercise')});
         });
         await stage('native-controls-'+team+'-return',async () => {
+          const beforeExercise=query('exercise');
           await native('native-controls-'+team+'-return','Return to road',()=>{
-            const c=query('local').controller;return c.fresh && !c.held && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99;
+            const c=query('local').controller;return c.fresh && !c.held && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99
+              && completedExercise(query('exercise'),beforeExercise,'return_to_road');
           });
         });
       }

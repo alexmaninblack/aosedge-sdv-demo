@@ -31,9 +31,10 @@ try:
   with worker.imports():
    state=worker.binding();ops=worker.idle()
    require(ops['sessionId']==SESSION,'NATIVE_SESSION_CHANGED')
-   source=state['source']; view=worker.app.source_service.observe()
+   source=state['source']; view=worker.app.source_service.observe(guest=True)
    require(state.get('currentVehicle')=='test' and view.get('selectedVehicle')=='test'
-    and view.get('state')=='CONNECTED' and source.get('runId')==REQUEST['expectedRun'],'NATIVE_SOURCE_NOT_CONNECTED')
+    and view.get('state')=='CONNECTED' and view.get('controller',{}).get('fresh') is True
+    and not source.get('operation') and not source.get('stopOperation'),'NATIVE_SOURCE_NOT_CONNECTED')
    from aosedge_demo_orchestrator.host_runtime import selected
    runtime=selected(worker.state);exe=runtime.entry('keyboard')
    runner=source.get('runnerCommand') or []

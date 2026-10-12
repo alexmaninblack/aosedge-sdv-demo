@@ -28,7 +28,7 @@ LABELS = {'before', 'running', 'connected', 'cancelled', 'stopped', 'closed'}
 
 def read_query(transport, config, test, query, team=None, release=None):
     """Reuse only the existing read adapter; never call its action adapters."""
-    h.require(query in ('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'),
+    h.require(query in ('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication', 'exercise'),
               'QUERY_NOT_ALLOWED')
     args = dict(query=query)
     h.require((query in ('service','backend')) == (team is not None), 'QUERY_TEAM_REQUIRED')
@@ -424,7 +424,7 @@ def main():
     parser.add_argument('--journey', type=Path, required=True)
     parser.add_argument('--test', required=True)
     parser.add_argument('--observe', choices=sorted(LABELS))
-    parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'))
+    parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication', 'exercise'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
     parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls'), default='installed')

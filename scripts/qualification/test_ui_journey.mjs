@@ -3,8 +3,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot } from './ui_journey.mjs';
+import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('live maneuver requires a new completed owner receipt, not background products alone', () => {
+  const value={id,kind:'brake',runMatches:true,operationMatches:true,phase:'RELEASED',
+    state:'COMPLETED',physicalStop:'CONFIRMED',noOp:false};
+  assert.equal(completedExercise(value,{},'brake'),true);
+  assert.equal(completedExercise(value,{id},'brake'),false);
+  for(const change of [{id:'bad'},{kind:'tire'},{runMatches:false},{operationMatches:false},
+    {phase:'RUNNING'},{state:'ABORTED'},{physicalStop:null},{noOp:true}])
+    assert.equal(Boolean(completedExercise({...value,...change},{},'brake')),false);
+  assert.equal(completedExercise({...value,kind:'return_to_road'},{},'return_to_road'),false);
+  assert.equal(completedExercise({...value,kind:'return_to_road',autopilotStarted:false},{},'return_to_road'),true);
+});
 test('moving SOTA requires actual fresh unheld Autopilot motion, not a mode label alone', () => {
   const value={controller:{fresh:true,held:false,mode:'AUTOPILOT',speed:20}};
   assert.equal(autopilot(value,true),true);

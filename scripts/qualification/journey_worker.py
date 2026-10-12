@@ -22,7 +22,7 @@ OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-t
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
               'stop-demo', 'start-demo'}
 QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform',
-           'snapshot', 'publication', 'demo-stopped'}
+           'snapshot', 'publication', 'demo-stopped', 'exercise'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
 
@@ -494,6 +494,12 @@ class Worker:
         require(query in QUERIES and set(self.args) <= {'query','team','release'}, 'OBSERVATION_NOT_ALLOWED')
         if query == 'installed': return self.installed()
         state = self.binding()
+        if query == 'exercise':
+            source=state.get('source') or {}; exercise=source.get('exercise') or {}; result=exercise.get('result') or {}
+            return dict(id=exercise.get('id'),kind=exercise.get('kind'),phase=exercise.get('phase'),
+                runMatches=exercise.get('runId')==source.get('runId'),state=result.get('state'),
+                operationMatches=result.get('operationId')==exercise.get('id'),
+                physicalStop=result.get('physicalStop'),autopilotStarted=result.get('autopilotStarted'),noOp=result.get('noOp'))
         if query == 'demo-stopped':
             from aosedge_demo_orchestrator.backends import BackendService
             snapshot = exchange('snapshot')

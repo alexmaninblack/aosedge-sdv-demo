@@ -21,7 +21,7 @@ ACTION_IDS = {'Safe Stop': 'driving.safe-stop', 'Autopilot': 'driving.autopilot'
 
 
 def validate(gate, stage, action):
-    h.require(isinstance(gate, dict) and set(gate) == FIELDS and gate['schemaVersion'] == 1
+    h.require(isinstance(gate, dict) and set(gate) == FIELDS and type(gate['schemaVersion']) is int and gate['schemaVersion'] == 1
               and gate['stage'] == stage and gate['action'] == action and action in ACTIONS
               and re.fullmatch('[a-z][a-z0-9-]{0,79}', stage)
               and gate['state'] == 'WAITING_FOR_UI_CLICK', 'NATIVE_GATE_MISMATCH')
@@ -34,6 +34,7 @@ def validate(gate, stage, action):
 def native_receipt(gate, receipt, candidate):
     """Validate input evidence only; physical/backend effects remain separate."""
     validate(gate, gate.get('stage'), gate.get('action'))
+    h.require(re.fullmatch('[a-f0-9]{64}', candidate) is not None, 'NATIVE_CANDIDATE_INVALID')
     h.require(LIVE_STAGES.get(gate['stage']) == gate['action'], 'LIVE_STAGE_NOT_ALLOWED')
     h.require(receipt.get('outcome') == 'INPUT_DISPATCHED' and receipt.get('inputDispatched') is True
               and receipt.get('code') == 'MOUSE_DOWN_UP_POSTED'
