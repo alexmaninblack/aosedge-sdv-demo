@@ -12,6 +12,12 @@ import remote_harness as h
 
 FIELDS = {'schemaVersion', 'stage', 'action', 'test', 'sessionId', 'state'}
 ACTIONS = {'Safe Stop', 'Brake maneuver', 'Tire maneuver', 'Return to road', 'Autopilot'}
+LIVE_STAGES = {'native-controls-autopilot': 'Autopilot', 'native-controls-safe-stop': 'Safe Stop',
+               'native-controls-brake': 'Brake maneuver', 'native-controls-tire': 'Tire maneuver',
+               'native-controls-brake-return': 'Return to road', 'native-controls-tire-return': 'Return to road'}
+ACTION_IDS = {'Safe Stop': 'driving.safe-stop', 'Autopilot': 'driving.autopilot',
+              'Brake maneuver': 'driving.brake-maneuver', 'Tire maneuver': 'driving.tire-maneuver',
+              'Return to road': 'driving.return-to-road'}
 
 
 def validate(gate, stage, action):
@@ -21,8 +27,21 @@ def validate(gate, stage, action):
               and gate['state'] == 'WAITING_FOR_UI_CLICK', 'NATIVE_GATE_MISMATCH')
     for field in ('test', 'sessionId'):
         h.require(str(UUID(gate[field])) == gate[field], 'NATIVE_GATE_ID_INVALID')
-    h.require(action != 'Autopilot' or stage == 'moving-sota-autopilot', 'NATIVE_GATE_MISMATCH')
+    h.require(action != 'Autopilot' or stage in ('moving-sota-autopilot', 'native-controls-autopilot'), 'NATIVE_GATE_MISMATCH')
     return dict(gate, state='CLICKED_THROUGH_CUA')
+
+
+def native_receipt(gate, receipt, candidate):
+    """Validate input evidence only; physical/backend effects remain separate."""
+    validate(gate, gate.get('stage'), gate.get('action'))
+    h.require(LIVE_STAGES.get(gate['stage']) == gate['action'], 'LIVE_STAGE_NOT_ALLOWED')
+    h.require(receipt.get('outcome') == 'INPUT_DISPATCHED' and receipt.get('inputDispatched') is True
+              and receipt.get('code') == 'MOUSE_DOWN_UP_POSTED'
+              and receipt.get('action') == ACTION_IDS[gate['action']]
+              and receipt.get('binding') == dict(candidate=candidate, test=gate['test'],
+                  sessionId=gate['sessionId'], stage=gate['stage']), 'NATIVE_MOUSE_RECEIPT_MISMATCH')
+    h.require(str(UUID(receipt['requestId'])) == receipt['requestId'], 'NATIVE_REQUEST_ID_INVALID')
+    return dict(gate, state='INPUT_DISPATCHED_THROUGH_NATIVE_RUNNER', nativeRequestId=receipt['requestId'])
 
 
 def main():

@@ -5,11 +5,28 @@ from unittest.mock import patch, Mock
 from io import StringIO
 import ui_pilot as p
 from ui_forward_admin import rule
-from ui_native_gate import validate
+from ui_native_gate import validate, native_receipt, LIVE_STAGES, ACTION_IDS
 from ui_m1 import read_request, Observer
 
 
 class PilotGuards(unittest.TestCase):
+    def test_native_mouse_receipt_is_bound_but_does_not_claim_physical_success(self):
+        identifier='01234567-89ab-cdef-0123-456789abcdef'
+        for stage,action in LIVE_STAGES.items():
+            gate=dict(schemaVersion=1,stage=stage,action=action,test=identifier,
+                      sessionId=identifier,state='WAITING_FOR_UI_CLICK')
+            receipt=dict(requestId=identifier,outcome='INPUT_DISPATCHED',inputDispatched=True,
+                code='MOUSE_DOWN_UP_POSTED',action=ACTION_IDS[action],
+                binding=dict(candidate='a'*64,test=identifier,sessionId=identifier,stage=stage))
+            expected=dict(gate,state='INPUT_DISPATCHED_THROUGH_NATIVE_RUNNER',nativeRequestId=identifier)
+            self.assertEqual(native_receipt(gate,receipt,'a'*64),expected)
+            for change in ({'outcome':'PASS'},{'inputDispatched':False},{'code':'AXPRESS'},
+                           {'action':'driving.delete-test'},{'requestId':'bad'}):
+                with self.assertRaises(ValueError):native_receipt(gate,dict(receipt,**change),'a'*64)
+            for change in ({'candidate':'b'*64},{'test':'other'},{'sessionId':'other'},{'stage':'other'}):
+                with self.assertRaises(ValueError):
+                    native_receipt(gate,dict(receipt,binding=dict(receipt['binding'],**change)),'a'*64)
+
     def test_interrupted_tire_binds_settled_releases_without_converting_failure(self):
         report=dict(outcome='FAIL',scenario='release-story',candidate='a'*64,test='bound',ownersClosed=True)
         browser=dict(outcome='FAIL',scenario='release-story',stages=[dict(stage=n,outcome='PASS')

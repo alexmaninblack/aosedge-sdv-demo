@@ -197,6 +197,23 @@ PYTHONPATH=scripts/qualification python3 -B -m unittest scripts/qualification/te
 
 ### Extended installed UI scenarios
 
+The bounded `native-controls` scenario adds an unattended native-input lane:
+use `--display m1 --native-build ABSOLUTE_SIGNED_QUALIFICATION_BUILD` and a new
+`--native-run-id native-ui-live-YYYYMMDD` with the normal pinned candidate,
+Test, media and private-record arguments. It uses the already installed
+releases, freshly observed on the successor package; it does not reuse old
+candidate acceptance, prepare, publish, assign, Reset or delete anything.
+
+Presenter Start/Connect/layout/Stop still use real browser clicks. The separate
+signed `Native UI Runner` clicks Autopilot, Safe Stop, Brake, Tire and Return to
+road through current Accessibility geometry and genuine mouse events. Fixed
+stage/Test/session/PID/digest binding prevents generic native command access.
+Native input receipts are distinct from CUA witnesses and are not PASS by
+themselves: independent owners must confirm physical motion/stops and fresh
+same-version backend products. Reports expose `nativeControls` separately from
+the still-uncompleted full-E2E/native Setup acceptance gates. Cleanup closes the
+runner and normal demo owners, preserving the Test and shared Docker Engine.
+
 The same entry point accepts `--scenario installed` or `--scenario release-story`.
 Use the same candidate/Test/media arguments above and a new private record
 directory for each diagnosed experiment. Never erase a failed attempt or reuse

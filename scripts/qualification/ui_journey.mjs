@@ -98,7 +98,8 @@ export async function nativeBrokerReply(id, fd = 0) {
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  if (input.nativeRunner) assert(input.visibleM1 && input.scenario === 'native-controls', 'NATIVE_RUNNER_SCOPE_INVALID');
   if (input.scenario === 'release-continuation')
     assert(version.test(input.continuation?.preparedV2), 'CONTINUATION_RECEIPT_REQUIRED');
   const require = createRequire(input.modulePath ?? path.join(input.repository, 'apps/presenter-ui/package.json'));
@@ -226,14 +227,20 @@ export async function main(inputPath) {
       const id=++readSequence;
       process.stdout.write(JSON.stringify({uiRead:true,id,kind:'native',args:gate})+'\n');
       const receipt=await nativeBrokerReply(id);
-      assert.deepEqual(receipt,{...gate,state:'CLICKED_THROUGH_CUA'},'NATIVE_UI_WITNESS_MISMATCH');
+      if (input.nativeRunner) {
+        assert(uuid.test(receipt.nativeRequestId), 'NATIVE_REQUEST_ID_INVALID');
+        assert.deepEqual(receipt,{...gate,state:'INPUT_DISPATCHED_THROUGH_NATIVE_RUNNER',nativeRequestId:receipt.nativeRequestId},'NATIVE_UI_WITNESS_MISMATCH');
+        record({stage:label,state:'NATIVE_MOUSE_RECEIPT',nativeRequestId:receipt.nativeRequestId});
+      } else assert.deepEqual(receipt,{...gate,state:'CLICKED_THROUGH_CUA'},'NATIVE_UI_WITNESS_MISMATCH');
       fs.writeFileSync(path.join(input.records,'native-ui-click.json'),JSON.stringify(receipt)+'\n',{mode:0o600});
     }
     await until(async () => {
       const p = path.join(input.records,'native-ui-click.json');
       if (!fs.existsSync(p)) return false;
       const receipt = JSON.parse(fs.readFileSync(p,'utf8'));
-      assert.deepEqual(receipt, { ...gate, state:'CLICKED_THROUGH_CUA' },'NATIVE_UI_WITNESS_MISMATCH');
+      assert.deepEqual(receipt, input.nativeRunner
+        ? {...gate,state:'INPUT_DISPATCHED_THROUGH_NATIVE_RUNNER',nativeRequestId:receipt.nativeRequestId}
+        : {...gate,state:'CLICKED_THROUGH_CUA'},'NATIVE_UI_WITNESS_MISMATCH');
       return true;
     },'NATIVE_UI_GATE_NOT_EXECUTED',120000,500);
     await until(check,'NATIVE_UI_POSTCONDITION_FAILED',120000,2000);
@@ -470,6 +477,49 @@ export async function main(inputPath) {
         });
       });
     }
+    if (input.scenario === 'native-controls') {
+      // Read the installed successor's owners now. Earlier-candidate receipts
+      // cannot qualify this package; no release is prepared/published here.
+      const baseline = {};
+      await stage('native-controls-installed-baseline', async () => {
+        const component = query('component');
+        assert(version.test(component.activeVersion) && installed(component,'platform',component.activeVersion), 'LIVE_VDP_REQUIRED');
+        baseline.platform = component.activeVersion;
+        for (const team of ['brake','tire']) {
+          const rows = query('service',team).instances;
+          assert(rows.length === 1 && version.test(rows[0].version) && rows[0].run_state === 'active'
+            && !rows[0].error_message && [0,null,undefined].includes(rows[0].error_exit_code),'LIVE_SERVICE_REQUIRED');
+          baseline[team] = rows[0].version;
+        }
+        record({state:'LIVE_INSTALLED_BASELINE',versions:baseline,publication:'NOT_REQUESTED'});
+      });
+      await stage('native-controls-autopilot', async () => {
+        await native('native-controls-autopilot','Autopilot',()=>autopilot(query('local'),true));
+      });
+      await stage('native-controls-safe-stop', async () => {
+        await native('native-controls-safe-stop','Safe Stop',()=>{
+          const c=query('local').controller;return c.fresh && !c.held && c.mode==='SAFE_STOP' && c.speed<=.5 && c.brake>=.99;
+        });
+      });
+      for (const team of ['brake','tire']) {
+        await stage('native-controls-'+team,async () => {
+          const old=query('backend',team);
+          await native('native-controls-'+team,team==='brake'?'Brake maneuver':'Tire maneuver',()=>{
+            const after=query('backend',team);
+            return after.products.some(p=>!old.productIds.includes(p.id) && p.version===baseline[team]);
+          });
+        });
+        await stage('native-controls-'+team+'-return',async () => {
+          await native('native-controls-'+team+'-return','Return to road',()=>{
+            const c=query('local').controller;return c.fresh && !c.held && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99;
+          });
+        });
+      }
+      await stage('native-controls-releases-preserved',async () => {
+        assert(installed(query('component'),'platform',baseline.platform),'LIVE_PLATFORM_CHANGED');
+        for(const team of ['brake','tire']) assert(installed(query('service',team),team,baseline[team]),'LIVE_SERVICE_CHANGED');
+      });
+    }
     if (['tire-review','road-return'].includes(input.scenario)) {
       await stage('return-to-road',async () => {
         await native('return-to-road','Return to road',()=>{
@@ -477,7 +527,7 @@ export async function main(inputPath) {
         });
       });
     }
-    if (!['vdp-transition','road-return','moving-sota'].includes(input.scenario)) {
+    if (!['vdp-transition','road-return','moving-sota','native-controls'].includes(input.scenario)) {
     await stage('installed-details',async () => {
       await button('Vehicle').click();
       for (const [name,text] of Object.entries(cards)) {

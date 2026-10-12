@@ -255,7 +255,7 @@ def release_receipts(events):
 
 
 def run(args, transport, config):
-    cards = qualified_cards(config, transport, args.test)
+    cards = {} if args.scenario == 'native-controls' else qualified_cards(config, transport, args.test)
     if args.cards_from_release_records:
         prior = h.unlinked(args.cards_from_release_records)
         h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_RELEASE_RECORD_REQUIRED')
@@ -318,11 +318,16 @@ def run(args, transport, config):
         browser=hashlib.sha256(browser_script.read_bytes()+(HERE/'ui_pilot.mjs').read_bytes()).hexdigest()),
         sort_keys=True).encode()).hexdigest()
     started, tunnel, mount_owned, bootstrap_attempted = time.monotonic(), None, False, False
+    native = None
+    native_closed = True
     outcome, closed, detached = 'FAIL', False, False
     context = dict(runId=args.test)
     with h.Journal(records, pin) as journal:
         runner = j.Runner(journal, j.Remote(transport, config), emit=lambda value: print(value, flush=True))
         try:
+            if scenario == 'native-controls':
+                from native_ui_live import Live
+                native = Live(transport,config,args.test,args.native_build,records,args.native_run_id)
             if changed_media:
                 # A changed consumer identity invalidates the cached digest,
                 # not the product. Verify this existing copy once; no transfer.
@@ -341,6 +346,7 @@ def run(args, transport, config):
                 value = dict(repository=str(HERE.parent.parent), records=str(records), python=sys.executable,
                     helper=str(Path(__file__).resolve()), config=str(args.config.resolve()),
                     journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario)
+                if native is not None: value['nativeRunner'] = True
                 if continuation: value['continuation'] = continuation
                 h.atomic(scratch/'browser-input.json', value)
                 with j.Progress('real-browser-pilot', emit=lambda value: print(value, flush=True)):
@@ -350,7 +356,7 @@ def run(args, transport, config):
                         h.atomic(records/'tools-pin.json',tools_pin)
                         code=ui_m1.execute(transport,m1_tools,value,records,
                             lambda label:observe(transport,config,args.test,label),
-                            lambda name,team,release:read_query(transport,config,args.test,name,team,release),python)
+                            lambda name,team,release:read_query(transport,config,args.test,name,team,release),python,native=native)
                     else:
                         child=subprocess.run([str(args.node),str(browser_script),str(scratch/'browser-input.json')],
                             env=dict(os.environ,TMPDIR=str(scratch)),timeout=700 if scenario=='pilot' else 3600,
@@ -363,6 +369,12 @@ def run(args, transport, config):
             h.atomic(records/'failure.json', dict(code=code))
             print(code, flush=True)
         finally:
+            if native is not None:
+                try: native_closed = native.close()
+                except (OSError,ValueError,subprocess.SubprocessError):
+                    native_closed = False
+                    outcome = 'FAIL'
+                    print('NATIVE_RUNNER_CLEANUP_UNCONFIRMED',flush=True)
             try:
                 stop_tunnel(tunnel)
                 if bootstrap_attempted:
@@ -397,6 +409,10 @@ def run(args, transport, config):
                 browserLocation='M1_VISIBLE' if visible else 'DEVELOPMENT_MAC_HEADLESS',
                 ownersClosed=closed, tunnelClosed=tunnel is None or tunnel.poll() is not None,
                 ownedMediaDetached=detached, dockerPolicy='PRESERVED'))
+            report=h.parse((records/'pilot-report.json').read_bytes())
+            report['nativeRunnerClosed']=native_closed
+            report['nativeControls']='PASS' if scenario=='native-controls' and outcome=='PASS' and native_closed else 'NOT_QUALIFIED'
+            h.atomic(records/'pilot-report.json',report)
     print(json.dumps(h.parse((records/'pilot-report.json').read_bytes())), flush=True)
     return 0 if outcome == 'PASS' else 1
 
@@ -411,7 +427,9 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls'), default='installed')
+    parser.add_argument('--native-build',type=Path,help='Verified separate signed native qualification build')
+    parser.add_argument('--native-run-id',default='native-ui-live-20261012')
     parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')
     parser.add_argument('--cards-from-release-records', type=Path,
                         help='Passed release story or exact native-witness-interrupted continuation records')
@@ -438,6 +456,8 @@ def main():
     if args.observe:
         print(json.dumps(observe(transport, config, args.test, args.observe)))
         return 0
+    h.require((args.scenario=='native-controls')==(args.native_build is not None)
+              and (args.scenario!='native-controls' or args.display=='m1'), 'NATIVE_RUNNER_SCOPE_INVALID')
     h.require(all((args.dmg, args.remote_dmg, args.records, args.workspace))
               and (args.display=='m1' or args.node), 'PILOT_INPUT_REQUIRED')
     return run(args, transport, config)

@@ -125,6 +125,41 @@ Publish the Gateway source first, then the integration references/evidence.
 Do not merge either main automatically. Qualification-only software remains
 separate from the installer/runtime payload.
 
+## Authorized live connection
+
+The operator authorized Stage 5 on 12 October, after the mechanical campaign.
+Use the retained M1 Test and already installed VDP/Brake/Tire releases. Reuse
+CARLA, Factory and the guest disk; publish no new vehicle component or service.
+Reassemble the changed native UI through the normal immutable package and Setup
+selection owners. Do not patch the installed package or reinterpret the earlier
+candidate's receipts as qualification of its successor.
+
+The hierarchy is:
+
+```text
+carla-ego-runtime/tools/KeyboardControl.swift     product controls and semantic IDs
+aosedge-sdv-demo/scripts/qualification/native/    separate signed native executor
+aosedge-sdv-demo/scripts/qualification/           browser/native scenario adapters
+aosedge-sdv-demo/docs/qualification/              accepted, compact evidence
+```
+
+The live adapter binds each request to the current installed candidate, Test,
+Presenter session, fixed scenario stage, native PID and executable digest. Obtain
+the PID from the normal source journal's keyboard command and control directory;
+do not select a similarly named application. Before input, require the same idle
+Presenter session, connected Test and current source owner. The executor permits
+only the five semantic actions, inspection and normal self-closure; fixture
+layout/negative operations are forbidden in live mode.
+
+Use a distinct native mouse-input receipt, never `CLICKED_THROUGH_CUA`. Event
+submission remains `INPUT_DISPATCHED`, not a successful vehicle outcome. The
+scenario separately requires actual Autopilot motion, Safe Stop physics, fresh
+same-version Brake/Tire backend products and stationary Manual return. Retain
+one input intent per stage and do not replay an uncertain click. Run visibly on
+M1, then close normal demo owners, browser and executor; preserve Test data and
+the shared Docker Engine. This closes only the live five-control boundary, not
+the installer/WKWebView or full-E2E acceptance scope.
+
 ## Mechanical acceptance
 
 The first authorized M1 campaign passed 21 stages in 5.075 seconds, including

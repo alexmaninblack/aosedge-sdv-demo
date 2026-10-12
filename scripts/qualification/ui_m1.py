@@ -142,7 +142,7 @@ class Observer:
         return closed
 
 
-def execute(transport,root,value,records,observe,query,python):
+def execute(transport,root,value,records,observe,query,python,native=None):
     """Read broker over SSH stdin/stdout; UI clicks execute on M1, not the broker."""
     remote_records=root+'/runs/'+records.name
     payload=dict(value,visibleM1=True,records=remote_records,modulePath=root+'/node_modules/@playwright/test/package.json',
@@ -172,13 +172,16 @@ def execute(transport,root,value,records,observe,query,python):
                     answer=query(args['name'],args.get('team'),args.get('release'))
                 elif kind=='native':
                     validate(args,args.get('stage'),args.get('action'))
-                    h.atomic(records/'native-ui-gate.json',args)
-                    deadline=time.monotonic()+120
-                    while not (records/'native-ui-click.json').exists():
-                        h.require(time.monotonic()<deadline,'NATIVE_UI_GATE_NOT_EXECUTED');time.sleep(.2)
-                    answer=h.parse((records/'native-ui-click.json').read_bytes())
-                    h.require(answer==dict(args,state='CLICKED_THROUGH_CUA'),'NATIVE_UI_WITNESS_MISMATCH')
-                    (records/'native-ui-click.json').unlink();(records/'native-ui-gate.json').unlink()
+                    if native is not None:
+                        answer=native(args)
+                    else:
+                        h.atomic(records/'native-ui-gate.json',args)
+                        deadline=time.monotonic()+120
+                        while not (records/'native-ui-click.json').exists():
+                            h.require(time.monotonic()<deadline,'NATIVE_UI_GATE_NOT_EXECUTED');time.sleep(.2)
+                        answer=h.parse((records/'native-ui-click.json').read_bytes())
+                        h.require(answer==dict(args,state='CLICKED_THROUGH_CUA'),'NATIVE_UI_WITNESS_MISMATCH')
+                        (records/'native-ui-click.json').unlink();(records/'native-ui-gate.json').unlink()
                 else:
                     raise h.Error('UI_BROKER_KIND_INVALID')
                 response=dict(id=sequence,ok=True,value=answer)
