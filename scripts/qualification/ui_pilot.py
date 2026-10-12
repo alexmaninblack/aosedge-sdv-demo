@@ -314,7 +314,9 @@ def run(args, transport, config):
     pin = hashlib.sha256(json.dumps(dict(candidate=config['manifestSha256'], test=args.test,
         connection=j.identity(config, transport), scenario=scenario,display=args.display,
         runner=hashlib.sha256(b''.join((HERE/name).read_bytes() for name in
-            ('ui_pilot.py','ui_m1.py','ui_native_gate.py'))).hexdigest(),
+            ('ui_pilot.py','ui_m1.py','ui_native_gate.py','native_ui_live.py'))).hexdigest(),
+        ownerReader=j.source_pin(),
+        nativeBuild=h.digest(args.native_build/'build-receipt.json') if args.native_build else None,
         browser=hashlib.sha256(browser_script.read_bytes()+(HERE/'ui_pilot.mjs').read_bytes()).hexdigest()),
         sort_keys=True).encode()).hexdigest()
     started, tunnel, mount_owned, bootstrap_attempted = time.monotonic(), None, False, False

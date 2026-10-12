@@ -73,6 +73,8 @@ class Live:
         h.require(row['app']=='Native UI Runner.app' and row['executable']=='NativeUIRunner'
                   and h.digest(app/'Contents/MacOS/NativeUIRunner')==row['sha256'], 'NATIVE_RUNNER_BUILD_CHANGED')
         self.runner_digest=row['sha256']
+        h.atomic(records/'native-runner-pin.json',dict(bundleId=BUNDLE,signer=SIGNER,
+            executableSha256=self.runner_digest,buildReceiptSha256=h.digest(build/'build-receipt.json')))
         self.remote('import os,pathlib; os.umask(0o077); r=pathlib.Path('+repr(self.root)+'); '
             'assert not r.exists(),"NATIVE_CAMPAIGN_REPLAY_FORBIDDEN"; '
             'r.mkdir(mode=0o700); (r/"requests").mkdir(mode=0o700)')

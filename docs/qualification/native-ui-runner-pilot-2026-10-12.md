@@ -100,15 +100,64 @@ No reusable credentials, raw product responses or browser profiles enter this
 receipt. Permission state is not inferred from an old report: the repeat
 client freshly reported READY before execution.
 
-## Next integration gate
+## Live integration checkpoint
 
-Stages 1–4 of the pilot packet are complete. Stage 5 must adapt the executor
-to the normal product application with exact installed-payload identity and
-current Test/session/action binding, then connect its actual mouse receipt to
-the existing independent physical/product postconditions. The changed native
-payload requires normal immutable package reassembly/signing; do not patch the
-installed package in place. No heavy simulator or Factory rebuild follows
-from a UI-only change.
+The live connection is implemented on the review branch, with the bounded
+`native-controls` scenario, signed executor profile and distinct mouse receipts.
+Production window identity is included in Gateway commit
+`b4c505561f9d2bcdf75ee322f973c85d4b18380d`. The normal product package records
+integration source `3f1fdbe6576a821f0cd045353fde75ff13829fc3`; later qualification
+adapter changes are outside its product payload. Native controls, source journal
+and backend evidence remain separate authorities. A backend product alone is
+insufficient: require a new same-source completed maneuver receipt as well.
+
+| Artifact / gate | Observed result |
+| --- | --- |
+| Normal package SHA-256 | `31f135fae8b547358495d5a046c73840a22dac3fbfebbf4e3ddc8d8b137d462c` |
+| Complete DMG SHA-256 | `5e0dbf77f6b48e9efcaee8a38b85157dd691c0bb11369f316e5919fe5fa6f719` |
+| DMG size | 14,165,529,112 bytes |
+| Driving Control compilation | PASS, 3.037 s |
+| M1 media transfer/consumer verification | PASS, 219.082 s |
+| M1 signed media mount | PASS, 72.451 s |
+| Normal package installation | PASS |
+| Retained-run selection | Refused by existing contract; no migration attempted |
+| Separate private instance selection | PASS |
+| Existing Docker image availability / certificate references | PASS |
+| M1 Cloud access gate | BLOCKED; staging timeout and public-internet DNS failure |
+| New vehicle / new releases / live native input | NOT CREATED / NOT PUBLISHED / NOT DISPATCHED |
+
+Installation initially refused an 8,196-byte Finder `.DS_Store` entry in the
+package-store root. Read-only checks proved no successor installation/staging
+had started. Preserve that metadata outside the store, retain the refusal and
+perform a new journalled normal install. This is qualification housekeeping,
+not a fix or relaxation of the installer's unknown-entry guard. Human-friendly
+Finder-metadata handling remains a separate installer issue.
+
+The earlier Test, VM, Unit and history remain unchanged. Installed initialization
+and selection both forbid retained automotive runs. The successor uses a new
+private M1 instance, not a moved/deleted journal or an unqualified upgrade. Cloud
+access failed before creating a new Test. Private receipts retain the failed
+attempts, preserving observed facts rather than relabelling them PASS.
+
+Current local source gates passed: 10 Gateway native tests, 10 qualification
+native tests, 13 Python UI guards, 14 JavaScript scenario guards, 69 journey
+tests, 13 campaign tests and 5 UI build tests. The new signed executor's pure
+request assertions and normal native/web/Setup builds passed. These do not
+qualify live input on the installed successor.
+
+The owned DMG was detached and temporary display assertion closed. Final M1
+observation found zero owned demo processes/listeners, preserved Test data and
+the unchanged shared Docker Engine. SSD build scratch was cleaned by its normal
+contexts; retain the immutable package, DMG, small executors and compact private
+records. Main, Production and the video repository remain unchanged.
+
+## Remaining integration gate
+
+Stages 1–4 remain complete. Restore M1 internet access, resume the same bounded
+fresh-instance API baseline using published releases, then execute the visible
+`native-controls` scenario. Exact installed-payload/Test/session/action binding
+and independent physical/product postconditions are implemented but not yet
+live-qualified. No CARLA, Unreal or Factory rebuild is needed.
 
 Until that separate M1 gate passes, the existing live scenarios retain their
 CUA-only native witness requirement. Native Setup/WKWebView, first-user input,

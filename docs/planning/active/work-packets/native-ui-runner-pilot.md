@@ -4,7 +4,7 @@
 # Native UI runner pilot
 
 - Date: 12 October 2026
-- Status: Mechanical M1 pilot passed; normal-package/live integration pending
+- Status: Mechanical pilot passed; live adapter/package built; M1 Cloud/network gate blocked
 - Integration branch: `codex/presenter-human-friendly`
 - Gateway branch: `codex/presenter-human-friendly`
 - Scope: Five Driving Control buttons and a separate signed M1 qualification tool
@@ -128,11 +128,17 @@ separate from the installer/runtime payload.
 ## Authorized live connection
 
 The operator authorized Stage 5 on 12 October, after the mechanical campaign.
-Use the retained M1 Test and already installed VDP/Brake/Tire releases. Reuse
-CARLA, Factory and the guest disk; publish no new vehicle component or service.
+Preserve the retained M1 Test and reuse published VDP/Brake/Tire releases. Reuse
+CARLA and Factory; publish no new vehicle component or service.
 Reassemble the changed native UI through the normal immutable package and Setup
 selection owners. Do not patch the installed package or reinterpret the earlier
 candidate's receipts as qualification of its successor.
+
+Observed contract constraint: both instance initialization and version selection
+refuse a retained vehicle journal. A stopped Test is not permission to migrate
+it. The normal successor therefore uses a separate private M1 instance and Test;
+the earlier instance, VM, Unit and history remain paused and unchanged. This is
+an isolated qualification deployment, not proof of retained-run upgrades.
 
 The hierarchy is:
 

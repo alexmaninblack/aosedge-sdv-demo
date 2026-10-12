@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import shlex
 import subprocess
 import select
@@ -185,7 +186,10 @@ def execute(transport,root,value,records,observe,query,python,native=None):
                 else:
                     raise h.Error('UI_BROKER_KIND_INVALID')
                 response=dict(id=sequence,ok=True,value=answer)
-            except (OSError,ValueError,subprocess.SubprocessError):
+            except (OSError,ValueError,subprocess.SubprocessError) as error:
+                code=str(error) if re.fullmatch('[A-Z][A-Z0-9_]{1,100}',str(error)) else 'UI_BROKER_CHECK_FAILED'
+                h.atomic(records/('broker-failure-'+str(sequence)+'.json'),
+                    dict(kind=kind,stage=args.get('stage'),code=code,inputReplayed=False))
                 response=dict(id=sequence,ok=False)
             process.stdin.write(json.dumps(response)+'\n');process.stdin.flush()
         code=process.wait(timeout=15)
