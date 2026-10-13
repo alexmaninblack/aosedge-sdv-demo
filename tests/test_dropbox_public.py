@@ -25,6 +25,8 @@ class DropboxPublicTests(TestCase):
 
     def test_cdn_and_head_only_redirect(self):
         self.assertTrue(cdn_link(CDN))
+        for shape in ('inline','get','get2'):
+            self.assertTrue(cdn_link(CDN.replace('inline2',shape)))
         self.assertFalse(cdn_link(CDN.replace('https:','http:')))
         result=Redirects().redirect_request(Request(URL,method='HEAD'),None,302,'',{},CDN+'#')
         self.assertEqual(result.get_method(),'HEAD');self.assertEqual(result.full_url,CDN)
@@ -59,3 +61,5 @@ class DropboxPublicTests(TestCase):
             self.assertEqual(old.root.name,'1.2.0-rc.1')
             self.assertEqual(current.root.name,'1.2.0-rc.1-dropbox')
             self.assertNotEqual(old.root,current.root)
+            corrected=Owners(dict(selected,delivery=dict(provider='dropbox',downloadURL=URL,attempt=2)))
+            self.assertEqual(corrected.root.name,'1.2.0-rc.1-dropbox-attempt-2')

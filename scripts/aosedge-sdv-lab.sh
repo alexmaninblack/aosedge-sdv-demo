@@ -8,11 +8,11 @@ SDV_LAB_VERSION=1
 lab_spec() {
   case "$1" in
     developer) printf '%s\n' '0577cb8bac914f07648325b6370eb5cefbcad423 9a9b7c8fd95eb1a3e83558ada660260df9a4b4073a7fd8f08d2899f986735560 80942' ;;
-    install) printf '%s\n' '57ee8ed2b6c3ce08719bb0b1bfb28b5ad35f29a8 606ccd103a35a8bedd9d0c5d8b53062653899ff0cb50308d0535cc2ef5271f51 12280' ;;
+    install) printf '%s\n' 'a4ac240d5f5771bfa6332e5c5cd77feab3f866ac 6bd4b3ac5c1e3d4af38e5ed0a22163ee087f335d006bb1212ec90dc6fee74c0e 12280' ;;
     heavy) printf '%s\n' 'c229101d199a24f7e114004d62e27df3255e60b6 20a135894ebf2f808fe22184fb23b7b9aa8c9c6858d7028f545cc2f7f21d4282 7864' ;;
     common) printf '%s\n' '0144502ed774f842be051f857162588d26757c65 a2984f3f8a0161acc796747cdfcdefd06c888d3801954e08721d1128e1507330 5401' ;;
     catalog) printf '%s\n' 'c24f20b49e9473c0cc4ebc11c46ea81b976e38d3 f20d89f34ea3d9b0ed1de3904be326aae5218a0dc2786ec9b97db4e8bec7eeea 1043' ;;
-    drive-parser) printf '%s\n' '48aec863aa0771c09aede2007c31a9c7c461350b c01dab2ea661228c94445523a880a910c1a20f278c28b6888a84af5cd9311471 7625' ;;
+    drive-parser) printf '%s\n' '0eb1575c25c0050567a3843d1962e23cf182da3b bf9dc8b53e694008a17dbddff63eaf9d5fc689abe959eda716a511b0400085a3 7634' ;;
     *) return 1 ;;
   esac
 }

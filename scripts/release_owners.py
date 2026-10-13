@@ -75,6 +75,8 @@ class Owners:
         # A manually published delivery successor must not rebind the completed
         # Drive campaign or manufacture a different product version.
         suffix='-dropbox' if selected['delivery'].get('provider')=='dropbox' else ''
+        attempt=selected['delivery'].get('attempt',1)
+        if suffix and attempt>1:suffix+='-attempt-'+str(attempt)
         self.root = self.workspace / 'build/release-campaign' / (selected['version']+suffix)
 
     @contextmanager
@@ -223,9 +225,14 @@ class Owners:
         if cache.exists():
             require(read(cache)==verified,'ARTIFACT_IDENTITY_CHANGED')
         else:
-            print('    Verifying retained '+media.name+' at release freeze',flush=True)
-            require(sha(media)==receipt['dmgSha256'] and self.identity(media)==identity,
-                    'ARTIFACT_BYTES_CHANGED')
+            previous=self.root.parent/(self.config['version']+'-dropbox')/'artifact-verification.json'
+            if self.config['delivery'].get('provider')=='dropbox' and self.config['delivery'].get('attempt',1)>1 and previous.exists():
+                require(read(previous)==verified,'PREVIOUS_ARTIFACT_IDENTITY_CHANGED')
+                print('    Reusing exact unchanged artifact verification from the preceding delivery attempt',flush=True)
+            else:
+                print('    Verifying retained '+media.name+' at release freeze',flush=True)
+                require(sha(media)==receipt['dmgSha256'] and self.identity(media)==identity,
+                        'ARTIFACT_BYTES_CHANGED')
             atomic(cache,verified)
         return dict(product=product, dmgSha256=receipt['dmgSha256'],
                     manifestSha256=receipt['manifestSha256'], bytes=receipt['dmgBytes'],

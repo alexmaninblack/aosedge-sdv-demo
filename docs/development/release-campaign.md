@@ -39,6 +39,12 @@ Records are private and versioned under the selected workspace's
 `build/release-campaign`. They include stage results, timings and one report.
 For the approved Dropbox delivery successor, records use `<version>-dropbox`;
 the product version is unchanged and the original Drive campaign is preserved.
+A corrected delivery-only selection can explicitly set `attempt` from 2 to 9;
+its records use `<version>-dropbox-attempt-<number>`. Preserve the preceding
+attempt and reconcile any mutations before creating the successor. This is
+not an automatic retry, a product version change or permission to replay a
+consumer handoff. Unchanged artifact verification can be reused only with
+the same complete file identity and expected digest.
 This does not adopt or change the developer workflow's `output` result alias.
 Temporary fixture/build data stays under the workspace's owned `.tmp`; persistent
 artifacts, caches, Test data and shared Docker are not cleanup targets.

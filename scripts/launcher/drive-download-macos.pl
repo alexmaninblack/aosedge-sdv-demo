@@ -30,7 +30,7 @@ sub url {
         stop() unless ($fields{dl}//'') eq '1' && ($fields{rlkey}//'') =~ /\A[A-Za-z0-9_-]{8,200}\z/;
         return (provider=>'dropbox');
     }
-    if ($s =~ m{\Ahttps://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com/cd/0/(?:inline|inline2|attachment)/[A-Za-z0-9_-]{10,2048}/file\?dl=1\z}) {
+    if ($s =~ m{\Ahttps://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com/cd/0/(?:inline|inline2|get|get2|attachment)/[A-Za-z0-9_-]{10,2048}/file\?dl=1\z}) {
         return (provider=>'dropbox');
     }
     stop() unless $s =~ m{\Ahttps://(drive\.google\.com/uc|drive\.usercontent\.google\.com/download)\?([^#\s]+)\z};

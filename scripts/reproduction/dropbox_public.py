@@ -28,7 +28,7 @@ def public_link(url):
 def cdn_link(url):
     return isinstance(url,str) and re.fullmatch(
         r'https://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com/cd/0/'
-        r'(?:inline|inline2|attachment)/[A-Za-z0-9_-]{10,2048}/file\?dl=1',url) is not None
+        r'(?:inline|inline2|get|get2|attachment)/[A-Za-z0-9_-]{10,2048}/file\?dl=1',url) is not None
 
 
 class Redirects(HTTPRedirectHandler):

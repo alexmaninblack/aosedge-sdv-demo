@@ -102,7 +102,10 @@ def configuration(path):
         safe(value['evidence'][key])
     require(isinstance(value['delivery'],dict),'DELIVERY_SELECTION_INVALID')
     if value['delivery'].get('provider')=='dropbox':
-        require(set(value['delivery'])=={'provider','downloadURL'},'DELIVERY_SELECTION_INVALID')
+        require(set(value['delivery']) in ({'provider','downloadURL'},{'provider','downloadURL','attempt'}),
+                'DELIVERY_SELECTION_INVALID')
+        require(type(value['delivery'].get('attempt',1)) is int and
+                1<=value['delivery'].get('attempt',1)<=9,'DELIVERY_ATTEMPT_INVALID')
         from reproduction.dropbox_public import public_link
         try:public_link(value['delivery']['downloadURL'])
         except (TypeError,ValueError):raise CampaignError('DELIVERY_SELECTION_INVALID') from None

@@ -67,6 +67,10 @@ class DropboxParserTests(unittest.TestCase):
         result=self.parse('headers','HTTP/2 302\r\nLocation: '+relative+'\r\n\r\n',CDN)
         self.assertEqual(result.stdout,'redirect\t'+target+'\n')
         self.assertNotEqual(self.parse('headers','HTTP/2 302\r\nLocation: //evil.example/file\r\n\r\n',CDN).returncode,0)
+        for shape in ('get','get2'):
+            target=CDN.replace('/inline/','/'+shape+'/')
+            result=self.parse('headers','HTTP/2 302\r\nLocation: '+target+'\r\n\r\n',CDN)
+            self.assertEqual(result.stdout,'redirect\t'+target+'\n')
 
     def test_observed_json_attachment_requires_exact_approved_length(self):
         header=('HTTP/2 200\r\nContent-Type: application/json\r\n'
