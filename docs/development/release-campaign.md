@@ -37,6 +37,8 @@ directory rather than rebound to different source.
 
 Records are private and versioned under the selected workspace's
 `build/release-campaign`. They include stage results, timings and one report.
+For the approved Dropbox delivery successor, records use `<version>-dropbox`;
+the product version is unchanged and the original Drive campaign is preserved.
 This does not adopt or change the developer workflow's `output` result alias.
 Temporary fixture/build data stays under the workspace's owned `.tmp`; persistent
 artifacts, caches, Test data and shared Docker are not cleanup targets.
@@ -84,6 +86,22 @@ existing installed Test and checks visible Presenter surfaces and final closure.
 This is an engineering consumer-path proof, not native Setup button-input or
 clean-first-user acceptance. Those limitations remain explicit in its report.
 An uncertain graphical handoff is not replayed automatically.
+
+### Existing Dropbox publication
+
+A maintainer selection can specify `delivery` as `{"provider": "dropbox",
+"downloadURL": "https://www.dropbox.com/scl/…?rlkey=…&dl=1"}`. This adopts an
+operator-published DMG; it does not upload, sign in or change sharing rights.
+Anonymous HEAD requests check the approved full byte count and bounded Dropbox
+CDN redirects. Some folder-member CDN responses label the attachment as JSON
+with an unspecified filename. The downloader accepts that observed combination
+only on the reviewed CDN with the exact approved length; a complete consumer
+SHA-256 and signed Setup identity remain mandatory before use. HTML, foreign
+redirects, wrong lengths and cross-provider fallbacks are rejected.
+
+The old Drive selection remains supported for developer inputs and existing
+campaigns. A storage move updates active paths and UUIDs explicitly; it does
+not rewrite frozen build manifests or resume a differently bound campaign.
 
 For a consumer-tool defect before any media bytes were downloaded, an explicit
 `resume --amend-operator-tooling` correction may re-gate a strictly allowlisted

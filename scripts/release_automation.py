@@ -100,10 +100,17 @@ def configuration(path):
             re.fullmatch('[a-f0-9]{64}', value['evidence']['sourcePin']), 'EVIDENCE_INVALID')
     for key in ('campaign', 'closure', 'browser'):
         safe(value['evidence'][key])
-    require(set(value['delivery']) == {'folderId', 'account'} and
-            re.fullmatch(r'[A-Za-z0-9_-]{10,200}', value['delivery']['folderId']) and
-            re.fullmatch(r'[A-Za-z0-9_.+@-]{3,200}', value['delivery']['account']),
-            'DELIVERY_SELECTION_INVALID')
+    require(isinstance(value['delivery'],dict),'DELIVERY_SELECTION_INVALID')
+    if value['delivery'].get('provider')=='dropbox':
+        require(set(value['delivery'])=={'provider','downloadURL'},'DELIVERY_SELECTION_INVALID')
+        from reproduction.dropbox_public import public_link
+        try:public_link(value['delivery']['downloadURL'])
+        except (TypeError,ValueError):raise CampaignError('DELIVERY_SELECTION_INVALID') from None
+    else:
+        require(set(value['delivery']) == {'folderId', 'account'} and
+                re.fullmatch(r'[A-Za-z0-9_-]{10,200}', value['delivery']['folderId']) and
+                re.fullmatch(r'[A-Za-z0-9_.+@-]{3,200}', value['delivery']['account']),
+                'DELIVERY_SELECTION_INVALID')
     return value
 
 
@@ -240,7 +247,7 @@ def main(argv=None):
         parent = safe(Path(selected['workspace']) / 'build/release-campaign')
         owner.storage()
         parent.mkdir(mode=0o700, exist_ok=True)
-        root = parent / selected['version']
+        root = owner.root
         from release_operator_proof import display_guard
         with owner.global_lease(parent), display_guard(owner):
             if args.amend_operator_tooling:

@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-# Bounded anonymous Drive response parser. No network, cookies, login or eval.
+# Bounded anonymous Drive/Dropbox parser. No network, cookies, login or eval.
 use strict;
 use warnings;
 
-sub stop { die "Unsupported public Drive response; no download accepted.\n"; }
+sub stop { die "Unsupported public artifact response; no download accepted.\n"; }
 sub decode {
     my ($s)=@_;
     $s =~ s/&amp;/&/g; $s =~ s/&quot;/"/g; $s =~ s/&#39;/'/g;
@@ -18,6 +18,21 @@ sub encode {
 }
 sub url {
     my ($s)=@_; stop() unless length($s)<=4096;
+    if ($s =~ m{\Ahttps://www\.dropbox\.com/scl/(?:fi/[A-Za-z0-9_-]{8,200}|fo/[A-Za-z0-9_-]{8,200}/[A-Za-z0-9_-]{8,200})/([A-Za-z0-9_.%~-]{1,255}\.dmg)\?([^#\s]+)\z}) {
+        my ($name,$query)=($1,$2); stop() if $name =~ /%(?![A-Fa-f0-9]{2})/;
+        $name =~ s/%([A-Fa-f0-9]{2})/chr(hex($1))/ge;
+        stop() if $name =~ m{[/\\\x00-\x1f\x7f]} || $name =~ /\A\.\.?\z/;
+        my %fields;
+        for my $pair (split /&/,$query) {
+            stop() unless $pair =~ /\A(rlkey|st|dl)=([A-Za-z0-9_-]{1,200})\z/;
+            stop() if exists $fields{$1}; $fields{$1}=$2;
+        }
+        stop() unless ($fields{dl}//'') eq '1' && ($fields{rlkey}//'') =~ /\A[A-Za-z0-9_-]{8,200}\z/;
+        return (provider=>'dropbox');
+    }
+    if ($s =~ m{\Ahttps://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com/cd/0/(?:inline|inline2|attachment)/[A-Za-z0-9_-]{10,2048}/file\?dl=1\z}) {
+        return (provider=>'dropbox');
+    }
     stop() unless $s =~ m{\Ahttps://(drive\.google\.com/uc|drive\.usercontent\.google\.com/download)\?([^#\s]+)\z};
     my %fields;
     for my $pair (split /&/,$2) {
@@ -40,7 +55,8 @@ sub attrs {
     }
     return %result;
 }
-my ($mode,$path,$original)=@ARGV; stop() unless @ARGV==3;
+my ($mode,$path,$original,$approved_size)=@ARGV; stop() unless @ARGV==3 || @ARGV==4;
+stop() if defined($approved_size) && $approved_size !~ /\A[1-9][0-9]{0,18}\z/;
 my %expected=url($original);
 stop() unless -f $path && !-l $path && (-s $path)<=65536;
 open my $file,'<',$path or stop(); local $/; my $raw=<$file>;close $file;
@@ -54,18 +70,44 @@ if ($mode eq 'payload-status') {
     stop() unless $head =~ /\AHTTP\/[0-9.]+ ([0-9]{3})\b/;my $status=$1;
     if ($status =~ /\A30[12378]\z/) {
         my @locations=($head =~ /^location:[ \t]*([^\r\n]+)\r?$/mig);stop() unless @locations==1;
-        my $location=$locations[0];my %fields=url($location);
-        stop() unless $fields{id} eq $expected{id} &&
-          (!exists($expected{resourcekey}) || ($fields{resourcekey}//'') eq $expected{resourcekey});
+        my $location=$locations[0];
+        # Dropbox's CDN redirect ends with an empty fragment; never accept a
+        # meaningful fragment or another provider as an automatic fallback.
+        $location =~ s/#\z// if ($expected{provider}//'') eq 'dropbox';
+        if (($expected{provider}//'') eq 'dropbox' && $location =~ m{\A/(?!/)}) {
+            stop() unless $original =~ m{\A(https://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com)/};
+            $location=$1.$location;
+        }
+        my %fields=url($location);
+        if (($expected{provider}//'') eq 'dropbox') {
+            stop() unless ($fields{provider}//'') eq 'dropbox';
+        } else {
+            stop() if exists $fields{provider};
+            stop() unless $fields{id} eq $expected{id} &&
+              (!exists($expected{resourcekey}) || ($fields{resourcekey}//'') eq $expected{resourcekey});
+        }
         print "redirect\t$location\n";
     } else {
         stop() unless $status==200;
         my @types=($head =~ /^content-type:\s*([^\r\n;]+)/mig);stop() unless @types==1;
         if (lc($types[0]) eq 'text/html') {print "html\t$original\n";}
         elsif (lc($types[0]) =~ /\Aapplication\/(?:octet-stream|x-apple-diskimage|binary)\z/) {print "binary\t$original\n";}
+        elsif (($expected{provider}//'') eq 'dropbox' && lc($types[0]) eq 'application/json') {
+            # Folder-member links currently label the DMG as JSON/unspecified.
+            # Accept only this observed CDN attachment with the independently
+            # approved full byte count. SHA-256 and signature checks still run
+            # before mounting or executing; this is not a content attestation.
+            stop() unless $original =~ m{\Ahttps://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com/};
+            my @sizes=($head =~ /^content-length:[ \t]*([0-9]+)\r?$/mig);
+            my @dispositions=($head =~ /^content-disposition:[ \t]*([^\r\n]+)\r?$/mig);
+            stop() unless defined($approved_size) && @sizes==1 && $sizes[0] eq $approved_size &&
+              @dispositions==1 && $dispositions[0] =~ /\Aattachment;[ \t]*filename=(?:unspecified|"unspecified")\z/i;
+            print "binary\t$original\n";
+        }
         else {stop();}
     }
 } elsif ($mode eq 'form') {
+    stop() if exists $expected{provider};
     my $text=lc(decode($raw));
     $text =~ s/<script\b.*?<\/script\s*>//sg;
     $text =~ s/<style\b.*?<\/style\s*>//sg;

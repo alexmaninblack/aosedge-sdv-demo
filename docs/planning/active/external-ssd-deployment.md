@@ -11,7 +11,74 @@
 - Current candidate: [Complete portable application](../../qualification/portable-application-2026-09-26.md)
 - Retention input: [Post-assembly disk audit](../../research/distribution-stage2-retention-audit-2026-09-27.md)
 
-## Current disposition — 7 October 2026
+## Working SSD configuration on 13 October 2026
+
+The new 4 TB Samsung SSD 990 PRO is prepared for the working Mac with three
+APFS volumes in one shared container. The former empty `Work` volume was
+renamed to `SDV-Dev`; `SDV-Lab` and `SDV-Releases` were added without erasing
+the disk. Existing build media and M1 storage were not changed.
+
+| Volume and mount path | Planning budget | Intended use |
+| --- | ---: | --- |
+| `/Volumes/SDV-Dev` | 2.5 TB | Build workspaces, Unreal/CARLA, caches, warm Factory Builder disks and temporary installer assembly |
+| `/Volumes/SDV-Lab` | 600 GB | Retained diagnostic VM images, checkpoints and reproduction data; not the M1 installation target |
+| `/Volumes/SDV-Releases` | 300 GB | Completed releases, manifests, checksums and qualification reports |
+
+The budgets use decimal units and leave approximately 600 GB of planned
+container-wide headroom. They are **not APFS quotas or guaranteed reserves**:
+each volume can consume the shared free pool. Free space must be counted once
+per container, not added across these mounts. The headroom is an operating
+policy, not a filesystem-enforced limit.
+
+Durable identities for subsequent mount and migration checks:
+
+| Object | UUID |
+| --- | --- |
+| APFS container | `30254FDA-F7B7-4A97-A3FB-471F4D423F2B` |
+| Physical store | `2BDD6231-5066-4713-89C8-613AD29F2C17` |
+| SDV-Dev | `F92AB578-22AA-4DAC-B8DD-7DC0EB831396` |
+| SDV-Lab | `A9523BCA-821F-4A69-B71B-514D4EC85458` |
+| SDV-Releases | `96800629-557C-46E2-9E8E-10A4DED64B55` |
+
+All three volumes are mounted, writable, unencrypted APFS volumes with quota
+and reserve values of zero. Ownership enforcement remains disabled, the
+existing external-volume setting; this preparation made no broad permission
+changes. Before a workload requiring ownership enforcement is migrated,
+configure its ownership explicitly and use a dedicated user-owned project root.
+
+The container capacity is 4,000,577,273,856 bytes; free space immediately after
+preparation was 4,000,089,759,744 bytes. Other container and volume identities,
+names, quotas and reserves were unchanged.
+
+The operator subsequently authorized copying `/Volumes/SDV-Build/sdv` to
+`/Volumes/SDV-Dev/sdv` and switching its active storage bindings. Native macOS
+copying completed with exit code zero in 1,803.195 seconds; directory metadata
+reconciliation completed with exit code zero in 38.485 seconds. The operator
+accepted the copy and stopped the full repeated checksum comparison after
+1,423.922 seconds. That comparison is waived, not passed; the remaining full
+inventory and DMG checksum gates were not run for this storage operation.
+
+The active preparation controls, input/build storage UUIDs and current release
+selection now use `SDV-Dev`. Historical build manifests, completed campaign
+selections and dated logs retain their original paths and identities. Current
+source revisions and packaged bytes were not changed by the storage switch.
+The old `SDV-Build` disk was normally ejected after confirming that no process
+held its files; the new SSD remains mounted. Source data on the old SSD is
+retained for recovery.
+
+The source volume occupied about 188 GB because APFS clones shared blocks. Its
+working tree has about 654 GB of logical file contents, and copying between
+physical disks expanded those shared copies. No superseded artifacts were
+deleted as part of this move.
+
+The separate M1 remains the installation, API, UI and live E2E test host using
+its internal disk. The new SSD is not an M1 dependency. Shared Docker storage
+for unrelated projects remains on the working Mac's internal disk. Existing
+1 TB media are retained for independent builds and selective recovery; this
+configuration does not authorize deleting their contents. The
+three new volumes share one device and are not independent backups.
+
+## Clean host disposition on 7 October 2026
 
 The current clean-host campaign uses a separate M1 and its internal disk.
 External-SSD and host sleep/wake tests are excluded from that campaign.

@@ -4,7 +4,7 @@
 
 # BEGIN VERIFIED DEPENDENCY PINS — maintained by scripts/sync-launcher-pins
 INSTALL_COMMON_SHA256=a2984f3f8a0161acc796747cdfcdefd06c888d3801954e08721d1128e1507330
-INSTALL_DRIVE_SHA256=edb2e1d4fe02fc882a7390fc839beec9640f95c6e2b9738b4200968d725db2d2
+INSTALL_DRIVE_SHA256=c01dab2ea661228c94445523a880a910c1a20f278c28b6888a84af5cd9311471
 # END VERIFIED DEPENDENCY PINS
 
 install_import() {
@@ -35,7 +35,7 @@ install_public_download() {
     round=$((round+1))
     curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 30 \
       --silent --show-error --head --output "$ROUTE_WORK/drive-head" "$url" || return 1
-    /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-head" "$url" > "$ROUTE_WORK/drive-next" || return 1
+    /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-head" "$url" "$size" > "$ROUTE_WORK/drive-next" || return 1
     IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
     case "$mode" in
       redirect) url=$next ;;
@@ -55,13 +55,13 @@ install_public_download() {
             --dump-header "$ROUTE_WORK/drive-get-head" --max-filesize "$size" --silent --show-error --output "$destination.part" "$url" || return 1
         fi
         # GET can return an HTML quota page even when HEAD advertised the DMG.
-        /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-get-head" "$url" > "$ROUTE_WORK/drive-next" || return 1
+        /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-get-head" "$url" "$size" > "$ROUTE_WORK/drive-next" || return 1
         IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
         if [ "$mode" != binary ]; then
           mode=$(/usr/bin/perl "$parser" payload-status "$destination.part" "$url") || return 1
           if [ "$mode" = quota ]; then
-            printf 'STOP: Google Drive blocks this anonymous download (quota exceeded). No installer was opened. Wait for provider availability; no automatic retry.\n' >&2
-          else printf 'STOP: Drive returned an unsupported page instead of the DMG. No installer was opened.\n' >&2; fi
+            printf 'STOP: The artifact provider blocks this anonymous download (quota exceeded). No installer was opened. Wait for provider availability; no automatic retry.\n' >&2
+          else printf 'STOP: The artifact provider returned an unsupported page instead of the DMG. No installer was opened.\n' >&2; fi
           return 2
         fi
         mv "$destination.part" "$destination"; return $? ;;
@@ -160,7 +160,7 @@ install_main() {
     SDV_PARENT=
   else
     # Locator is reviewed catalog data, never an arbitrary user executable URL.
-    case "$url" in https://drive.google.com/*|https://drive.usercontent.google.com/*) ;; *) die 'Unsupported operator download locator.' ;; esac
+    case "$url" in https://drive.google.com/*|https://drive.usercontent.google.com/*|https://www.dropbox.com/scl/*) ;; *) die 'Unsupported operator download locator.' ;; esac
     [ -n "$parent" ] || parent=$(ask 'Existing download workspace parent folder' "$HOME")
     route_storage "$parent"; file="$SDV_ROOT/cache/$name"
   fi

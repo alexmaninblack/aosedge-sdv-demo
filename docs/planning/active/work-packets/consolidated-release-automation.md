@@ -11,7 +11,7 @@
 
 The next delivery combines the reviewed Presenter and Driving Control changes
 with the published A/B/C launcher. One release campaign will coordinate source
-checks, selective assembly, M1 qualification, main integration, Google Drive
+checks, selective assembly, M1 qualification, main integration, public artifact
 delivery and operator catalog promotion. A failed candidate must not replace
 the last successfully checked operator package.
 
@@ -21,6 +21,29 @@ after the exact DMG is published and its anonymous consumer path passes. This
 plan neither changes runtime contracts nor treats an engineering preview as a
 notarized, fully qualified external release. Implementation and external actions
 follow the operator's 13 October approval and their existing authorized boundaries.
+
+## Dropbox delivery amendment on 13 October 2026
+
+The operator copied the unchanged engineering DMG into the approved public
+Dropbox folder and authorized continuing the delivery check from the new
+`SDV-Dev` workspace. Deliver the operator DMG through that reviewed Dropbox
+file link; retain reusable developer inputs on Google Drive. No new product
+version, CARLA/Factory build, upload, account permission or Cloud deployment
+is needed for this transport change.
+
+The maintainer selection may use `delivery` with `provider: "dropbox"` and
+`downloadURL`. The publication stage adopts the already published file through
+anonymous HEAD requests with bounded, HTTPS-only Dropbox CDN redirects and
+the exact approved byte count. This does not claim a provider-reported checksum:
+the actual M1 consumer must still check the complete SHA-256, Setup signature
+and manifest before opening the installer. There is no automatic fallback
+between Dropbox and Drive, nor a maintainer loopback payload download.
+
+Use a separate `<version>-dropbox` campaign record directory. Preserve the
+old Drive campaign, failed consumer receipts and historical storage identities.
+Source gates precede normal main integration; the new operator catalog and
+tag are promoted only after the M1 consumer check and final cleanup pass.
+The existing engineering-preview and first-use limitations remain unchanged.
 
 ## Current checkpoint
 
@@ -174,8 +197,8 @@ alone does not make it the recommended operator package.
 ### 7 Prove option A and promote its catalog
 
 Prepare the new release descriptor and candidate launcher/catalog generation.
-Use one real anonymous M1 consumer download to test large-Drive confirmation
-handling, progress, size/checksum, signature and normal Setup handoff. Complete
+Use one real anonymous M1 consumer download to test the selected provider's
+redirects, progress, size/checksum, signature and normal Setup handoff. Complete
 the required install/open checks under the ordinary owners. Respect Gatekeeper;
 an OS refusal is a real blocker, not a reason to clear protections.
 
@@ -238,7 +261,7 @@ caches or failed-state evidence.
 
 The first consolidated delivery is complete when both source main branches and
 active dependency pins are consistent, the selected DMG has the required M1
-evidence, its public Drive delivery is verified, and a fresh README option A
+evidence, its public DMG delivery is verified, and a fresh README option A
 consumer reaches the accepted installed/open state. Source, catalog/helper
 generation, release tag and artifact provenance must agree. Preview or other
 remaining qualification limitations remain visible.

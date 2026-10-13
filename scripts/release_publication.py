@@ -66,6 +66,15 @@ def descriptor(owner):
 
 
 def publish(owner):
+    if owner.config['delivery'].get('provider')=='dropbox':
+        # The operator has already copied this artifact to the shared folder.
+        # Adopt its exact reviewed link by metadata, never upload it again.
+        from reproduction.dropbox_public import observe
+        expected=descriptor(owner)
+        atomic(owner.root/'delivery-descriptor.json',expected)
+        facts=observe(owner.config['delivery']['downloadURL'],expected['bytes'])
+        return dict(provider='dropbox',downloadURL=facts['publicDownloadURL'],
+                    metadata=facts,descriptorSha256=sha(owner.root/'delivery-descriptor.json'))
     from reproduction.delivery import upload
     expected=descriptor(owner);selected=owner.config['delivery'];c=client(owner)
     c.preflight(selected['folderId'],expected,public=True)
@@ -100,8 +109,14 @@ def verify_saved(owner,name,facts):
         require(all(remote_main(repo)==expected[role] for role,repo in
                     [('gateway',owner.gateway),('integration',ROOT)]),'PUBLISHED_MAIN_CHANGED')
     elif name=='publication':
-        from reproduction.delivery import check_remote
-        check_remote(client(owner).metadata(facts['fileId']),facts['fileId'],facts['folderId'],descriptor(owner),public=True)
+        if facts.get('provider')=='dropbox':
+            from reproduction.dropbox_public import observe
+            require(facts['downloadURL']==owner.config['delivery']['downloadURL'],'DROPBOX_LINK_CHANGED')
+            require(observe(facts['downloadURL'],descriptor(owner)['bytes'])==facts['metadata'],
+                    'DROPBOX_METADATA_CHANGED')
+        else:
+            from reproduction.delivery import check_remote
+            check_remote(client(owner).metadata(facts['fileId']),facts['fileId'],facts['folderId'],descriptor(owner),public=True)
     else:
         from release_operator_proof import verify_saved as verify_operator
         verify_operator(owner,facts)
@@ -115,6 +130,10 @@ def reconcile(owner,name,previous):
         return all(remote_main(repo) in (intent['before'][role],intent['targets'][role]) for role,repo in
                    [('gateway',owner.gateway),('integration',ROOT)])
     if name=='publication':
+        if owner.config['delivery'].get('provider')=='dropbox':
+            from reproduction.dropbox_public import observe
+            observe(owner.config['delivery']['downloadURL'],descriptor(owner)['bytes'])
+            return True  # HEAD only; there was no external publication mutation.
         p=owner.root/'upload-intent.json'
         if not p.exists():return False
         intent=read(p)

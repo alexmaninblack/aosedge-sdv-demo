@@ -19,7 +19,8 @@ from release_publication import descriptor, remote_main
 def project(owner, published):
     """Append-only delivery record; generate only the existing selected graph."""
     expected=descriptor(owner)
-    relative='workspace/releases/'+owner.config['version']+'-presenter-preview-delivery.json'
+    suffix='-dropbox' if published.get('provider')=='dropbox' else ''
+    relative='workspace/releases/'+owner.config['version']+'-presenter-preview'+suffix+'-delivery.json'
     path=ROOT/relative
     raw=(json.dumps(expected,indent=2)+'\n').encode()
     require(not path.exists() or path.read_bytes()==raw,'IMMUTABLE_DESCRIPTOR_COLLISION')
@@ -27,7 +28,11 @@ def project(owner, published):
     catalog['catalogRevision']+=1;catalog['operatorDescriptor']=relative
     for key in ('productVersion','status','file','bytes','sha256','manifestSha256','notarized'):
         catalog['operator'][key]=expected[key]
-    catalog['operator']['downloadURL']='https://drive.google.com/uc?export=download&id='+published['fileId']
+    if published.get('provider')=='dropbox':
+        from reproduction.dropbox_public import public_link
+        catalog['operator']['downloadURL']=public_link(published['downloadURL'])
+    else:
+        catalog['operator']['downloadURL']='https://drive.google.com/uc?export=download&id='+published['fileId']
     return relative,raw,(json.dumps(catalog,indent=2)+'\n').encode()
 
 
@@ -54,7 +59,7 @@ def candidate_source(owner, published):
     result=command([sys.executable,'-B','scripts/docs-check'])
     require(result.returncode==0,'CATALOG_DOCUMENTATION_GATE_FAILED')
     result=command([sys.executable,'-B','-m','unittest','tests.test_unified_launcher',
-                    'tests.test_drive_download_parser'],timeout=300)
+                    'tests.test_drive_download_parser','tests.test_dropbox_download_parser','tests.test_dropbox_public'],timeout=300)
     require(result.returncode==0,'CATALOG_LAUNCHER_GATE_FAILED')
     git(ROOT,'add','--',*paths)
     git(ROOT,'commit','-m','Prepare checked public Presenter preview for option A')
@@ -119,12 +124,10 @@ print(json.dumps(dict(displayAssertion='OWNED_TEMPORARY' if ACTION=='start' else
         if owner.root.exists():atomic(owner.root/'display-closure.json',result)
 
 
-def consumer(owner, intent):
+def consumer_preflight(owner):
+    """Read-only target check, usable before source gates or payload transfer."""
     h,j,transport,config=connection(owner)
-    from campaign import Media
-    from release_automation import CampaignError
-    test=read(owner.root/'qualification.json')['facts']['test']
-    remote=j.Remote(transport,config)
+    test=read(Path(owner.config['evidence']['campaign']))['test']
     # Exact current desktop/read-only owner check before a costly consumer download.
     request=dict(config=config,kind='observe',args={},phase='observe',requestId=str(uuid4()),expectedRun=test)
     program=j.WORKER.read_text()+'\nREQUEST='+repr(request)+'''
@@ -143,7 +146,20 @@ print(json.dumps(dict(ownersClosed=True,desktopState='UNLOCKED',dockerEngineId=e
     def run(program,timeout=60,python=python):
         return h.remote(transport,shlex.quote(python)+" -I -B - <<'SDV_OPERATOR_PROOF'\n"+
                         program+'\nSDV_OPERATOR_PROOF\n',timeout=timeout)
-    h.parse(run(program))
+    return h.parse(run(program))
+
+
+def consumer(owner, intent):
+    h,j,transport,config=connection(owner)
+    from campaign import Media
+    from release_automation import CampaignError
+    test=read(owner.root/'qualification.json')['facts']['test']
+    remote=j.Remote(transport,config)
+    consumer_preflight(owner)
+    python=config['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+    def run(program,timeout=60,python=python):
+        return h.remote(transport,shlex.quote(python)+" -I -B - <<'SDV_OPERATOR_PROOF'\n"+
+                        program+'\nSDV_OPERATOR_PROOF\n',timeout=timeout)
     attempt=intent.get('consumerAttempt',1)
     require(type(attempt) is int and 1<=attempt<=9,'CONSUMER_ATTEMPT_INVALID')
     parent='/Users/'+transport['user']+'/SDV-Qualification/operator-'+owner.config['version']

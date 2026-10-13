@@ -72,7 +72,10 @@ class Owners:
         self.workspace = safe(selected['workspace'])
         self.gateway = safe(selected['gateway'])
         self.candidate = safe(selected['candidate']['directory'])
-        self.root = self.workspace / 'build/release-campaign' / selected['version']
+        # A manually published delivery successor must not rebind the completed
+        # Drive campaign or manufacture a different product version.
+        suffix='-dropbox' if selected['delivery'].get('provider')=='dropbox' else ''
+        self.root = self.workspace / 'build/release-campaign' / (selected['version']+suffix)
 
     @contextmanager
     def global_lease(self, parent):
@@ -168,7 +171,9 @@ class Owners:
                     reuse='PRODUCT_INPUT_EQUIVALENCE_PROVEN')
 
     def freeze(self):
+        from release_operator_proof import consumer_preflight
         return dict(storage=self.storage(), m1=self.remote(), product=self.product(),
+                    consumerPreflight=consumer_preflight(self),
                     source=dict(integration=git(ROOT,'rev-parse','HEAD'),gateway=git(self.gateway,'rev-parse','HEAD')))
 
     def source_gates(self):
@@ -178,7 +183,7 @@ class Owners:
             ('docs',[sys.executable,'-B','scripts/docs-check']),
             ('launcher-pins',[sys.executable,'-B','scripts/sync-launcher-pins','--check']),
             ('regression',[sys.executable,'-B','-m','unittest','tests.test_release_automation','tests.test_release_projection','tests.test_native_source_selection',
-                'tests.test_unified_launcher','tests.test_drive_download_parser','tests.test_release_operator_amendment','tests.test_prepare_macos','tests.test_developer_catalog',
+                'tests.test_unified_launcher','tests.test_drive_download_parser','tests.test_dropbox_download_parser','tests.test_dropbox_public','tests.test_release_operator_amendment','tests.test_prepare_macos','tests.test_developer_catalog',
                 'tests.test_developer_workflow','tests.test_developer_progress','tests.test_reader_routes',
                 'tests.test_reproduction_chain','tests.test_reproduction_recipes','tests.test_reproduction_host',
                 'tests.test_reproduction_delivery']),
