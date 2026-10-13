@@ -227,6 +227,7 @@ def main(argv=None):
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--until', choices=STAGES)
     parser.add_argument('--restart-readonly', action='store_true')
+    parser.add_argument('--amend-operator-tooling', action='store_true')
     args = parser.parse_args(argv)
     try:
         selected = configuration(args.config.absolute())
@@ -236,11 +237,17 @@ def main(argv=None):
             return 0
         from release_owners import Owners
         owner = Owners(selected)
-        binding = owner.binding(allow_readonly_restart=args.restart_readonly)
         parent = safe(Path(selected['workspace']) / 'build/release-campaign')
+        owner.storage()
         parent.mkdir(mode=0o700, exist_ok=True)
         root = parent / selected['version']
-        with owner.global_lease(parent):
+        from release_operator_proof import display_guard
+        with owner.global_lease(parent), display_guard(owner):
+            if args.amend_operator_tooling:
+                require(args.mode=='resume' and not args.restart_readonly,'AMEND_REQUIRES_RESUME')
+                from release_operator_proof import amend
+                amend(owner)
+            binding = owner.binding(allow_readonly_restart=args.restart_readonly)
             if args.restart_readonly:
                 require(args.mode=='run','RESTART_REQUIRES_RUN_MODE')
                 restart_readonly(root,binding)

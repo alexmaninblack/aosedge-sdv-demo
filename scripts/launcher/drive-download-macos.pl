@@ -58,12 +58,15 @@ if ($mode eq 'headers') {
         stop() unless $status==200;
         my @types=($head =~ /^content-type:\s*([^\r\n;]+)/mig);stop() unless @types==1;
         if (lc($types[0]) eq 'text/html') {print "html\t$original\n";}
-        elsif (lc($types[0]) =~ /\Aapplication\/(?:octet-stream|x-apple-diskimage)\z/) {print "binary\t$original\n";}
+        elsif (lc($types[0]) =~ /\Aapplication\/(?:octet-stream|x-apple-diskimage|binary)\z/) {print "binary\t$original\n";}
         else {stop();}
     }
 } elsif ($mode eq 'form') {
     my $text=lc(decode($raw));
-    stop() unless $text =~ /can't scan this file for viruses/ &&
+    $text =~ s/<script\b.*?<\/script\s*>//sg;
+    $text =~ s/<style\b.*?<\/style\s*>//sg;
+    $text =~ s/<[^>]*>/ /sg; $text =~ s/\s+/ /g;
+    stop() unless $text =~ /(?:can't scan this file for viruses|too large for google to scan for viruses)/ &&
       $text !~ /too many users|download quota|malware|abusive|violates|infected/;
     my @forms;
     while ($raw =~ /<form\b([^>]*)>(.*?)<\/form\s*>/sig) {
@@ -75,7 +78,11 @@ if ($mode eq 'headers') {
                   lc($a->{method}//'get') eq 'get';
     my %fields;
     while ($body =~ /<input\b([^>]*)>/sig) {
-        my %a=attrs($1);stop() unless ($a{type}//'') eq 'hidden';
+        my %a=attrs($1);
+        # The unnamed submit control is presentation, not a query parameter.
+        # Never execute its attributes or accept a named/unknown input instead.
+        next if ($a{type}//'') eq 'submit' && !exists($a{name});
+        stop() unless ($a{type}//'') eq 'hidden';
         my ($key,$value)=($a{name},$a{value});
         stop() unless defined($key) && defined($value) && !exists($fields{$key}) &&
           $key =~ /\A(?:id|export|resourcekey|confirm|uuid|at)\z/ &&

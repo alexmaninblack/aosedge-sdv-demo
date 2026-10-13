@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: MIT
 """Anonymous A consumer on M1, ordinary Setup owners, then catalog promotion."""
 import hashlib
+from contextlib import contextmanager
+import fcntl
 import json
+import os
 from pathlib import Path
 import shlex
 import sys
@@ -71,6 +74,51 @@ def connection(owner):
     return h,j,transport,config
 
 
+@contextmanager
+def display_guard(owner):
+    """Temporary assertion only; never unlock a desktop or change OS policy."""
+    h,j,t,c=connection(owner)
+    suffix=git(ROOT,'rev-parse','HEAD')[:12]
+    record='/Users/'+t['user']+'/SDV-Qualification/release-display-'+suffix+'.json'
+    python=c['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+    def action(name):
+        program='ACTION='+repr(name)+'\nRECORD='+repr(record)+'''
+import json,os,pathlib,stat,subprocess,time,signal
+p=pathlib.Path(RECORD)
+assert not any(q.is_symlink() for q in (p,*p.parents)),'DISPLAY_ASSERTION_LINKED'
+def stamp(pid):
+ r=subprocess.run(['/bin/ps','-p',str(pid),'-o','lstart=,command='],capture_output=True,text=True,timeout=5)
+ return r.stdout.strip() if r.returncode==0 else None
+def saved():
+ info=p.lstat()
+ assert stat.S_ISREG(info.st_mode) and info.st_nlink==1 and info.st_uid==os.getuid() and stat.S_IMODE(info.st_mode)==0o600,'DISPLAY_ASSERTION_RECORD_CHANGED'
+ return json.loads(p.read_bytes())
+if ACTION=='start':
+ if p.exists():assert stamp(saved()['pid']) is None,'DISPLAY_ASSERTION_ALREADY_ACTIVE'
+ task=subprocess.Popen(['/usr/bin/caffeinate','-d','-i','-u','-t','7200'],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+ value=dict(pid=task.pid,stamp=stamp(task.pid))
+ assert value['stamp'] and '/usr/bin/caffeinate -d -i -u -t 7200' in value['stamp'],'DISPLAY_ASSERTION_OWNER_UNCONFIRMED'
+ fd=os.open(p,os.O_WRONLY|os.O_CREAT|os.O_NOFOLLOW|os.O_TRUNC,0o600)
+ os.write(fd,json.dumps(value).encode());os.fsync(fd);os.close(fd)
+else:
+ value=saved();current=stamp(value['pid'])
+ if current:
+  assert current==value['stamp'],'DISPLAY_ASSERTION_OWNER_CHANGED'
+  os.kill(value['pid'],signal.SIGTERM)
+  deadline=time.monotonic()+5
+  while stamp(value['pid']) and time.monotonic()<deadline:time.sleep(.1)
+  assert stamp(value['pid']) is None,'DISPLAY_ASSERTION_CLOSE_UNCONFIRMED'
+print(json.dumps(dict(displayAssertion='OWNED_TEMPORARY' if ACTION=='start' else 'CLOSED')))
+'''
+        return h.parse(h.remote(t,shlex.quote(python)+" -I -B - <<'RELEASE_DISPLAY_ASSERTION'\n"+
+                        program+'\nRELEASE_DISPLAY_ASSERTION',timeout=20))
+    action('start')
+    try:yield
+    finally:
+        result=action('close')
+        if owner.root.exists():atomic(owner.root/'display-closure.json',result)
+
+
 def consumer(owner, intent):
     h,j,transport,config=connection(owner)
     from campaign import Media
@@ -96,7 +144,10 @@ print(json.dumps(dict(ownersClosed=True,desktopState='UNLOCKED',dockerEngineId=e
         return h.remote(transport,shlex.quote(python)+" -I -B - <<'SDV_OPERATOR_PROOF'\n"+
                         program+'\nSDV_OPERATOR_PROOF\n',timeout=timeout)
     h.parse(run(program))
+    attempt=intent.get('consumerAttempt',1)
+    require(type(attempt) is int and 1<=attempt<=9,'CONSUMER_ATTEMPT_INVALID')
     parent='/Users/'+transport['user']+'/SDV-Qualification/operator-'+owner.config['version']
+    if attempt>1:parent+='-attempt-'+str(attempt)
     dmg=parent+'/sdv/cache/'+descriptor(owner)['file']
     # A previous verified transfer is expendable, not the installed package or
     # Test. Reclaim only that exact same-byte, unmounted, idle media when needed.
@@ -253,6 +304,87 @@ def verify_saved(owner,facts):
 
 
 def reconcile(owner,previous):
+    amendment=owner.root/'operator-amendment.json'
+    if amendment.exists() and not (owner.root/'consumer-launcher.intent.json').exists():
+        value=read(amendment)
+        prove_no_handoff(owner,value['failedConsumerIntent'])
+        return True
     path=owner.root/'consumer-result.json'
     if not path.exists():return False
     return read(path).get('outcome')=='PASS' and read(path)['facts'].get('cleanupConfirmed') is True
+
+
+AMEND_PATHS=frozenset(('scripts/launcher/drive-download-macos.pl','scripts/launcher/install-macos.sh',
+    'scripts/aosedge-sdv-lab.sh','scripts/launcher/common-macos.sh','scripts/launcher/heavy-macos.sh',
+    'scripts/release_automation.py','scripts/release_owners.py','scripts/release_operator_proof.py',
+    'tests/test_drive_download_parser.py','tests/test_unified_launcher.py',
+    'tests/test_release_automation.py','tests/test_release_operator_amendment.py',
+    'docs/development/release-campaign.md'))
+
+
+def allowed_amendment(paths,projection_paths):
+    require(bool(paths) and set(paths)<=AMEND_PATHS|set(projection_paths),'OPERATOR_AMEND_SCOPE_INVALID')
+
+
+def prove_no_handoff(owner,failed):
+    """Absence of any media bytes + no mounted image/owners is affirmative evidence."""
+    h,j,t,c=connection(owner)
+    path=Path(failed['remoteDmg'])
+    parent=Path('/Users')/t['user']/'SDV-Qualification'
+    require(path.is_relative_to(parent) and path.suffix=='.dmg' and '..' not in path.parts,
+            'FAILED_CONSUMER_SCOPE_INVALID')
+    script='DMG='+repr(str(path))+'''
+import json,pathlib,plistlib,subprocess
+p=pathlib.Path(DMG)
+assert not any(q.is_symlink() for q in (p,*p.parents)),'FAILED_CONSUMER_LINKED'
+assert not p.exists() and not pathlib.Path(DMG+'.part').exists(),'CONSUMER_BYTES_OR_HANDOFF_UNCERTAIN'
+images=plistlib.loads(subprocess.check_output(['/usr/bin/hdiutil','info','-plist']))['images']
+assert not any(i.get('image-path')==DMG for i in images),'CONSUMER_MEDIA_STILL_ATTACHED'
+print(json.dumps(dict(noMediaBytes=True,noMountedImage=True)))
+'''
+    python=c['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+    facts=h.parse(h.remote(t,shlex.quote(python)+" -I -B - <<'NO_HANDOFF_PROOF'\n"+script+'\nNO_HANDOFF_PROOF',timeout=20))
+    now=owner.remote();require(now['demoProcesses']==0 and now['busyPorts']==0,'FAILED_CONSUMER_OWNERS_NOT_CLOSED')
+    return dict(facts,ownersClosed=True)
+
+
+def amend(owner):
+    """Re-gate an operator-only correction; confirmed publication is never repeated."""
+    fd=os.open(owner.root/'.lease',os.O_RDWR|os.O_NOFOLLOW)
+    try:
+        try:fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:raise RuntimeError('RELEASE_ALREADY_ACTIVE') from None
+        require(not (owner.root/'operator-amendment.json').exists(),'OPERATOR_ALREADY_AMENDED')
+        old=read(owner.root/'identity.json')
+        require(all(read(owner.root/(name+'.json'))['outcome']=='PASS' for name in
+                ('freeze','source-gates','artifact','qualification','main-integration','publication')),
+                'AMEND_REQUIRES_CONFIRMED_PUBLICATION')
+        failed=read(owner.root/'consumer-result.json')
+        require(failed['outcome']=='BLOCKED' and failed['facts'].get('cleanupConfirmed') is True,
+                'AMEND_REQUIRES_CLOSED_FAILED_CONSUMER')
+        intent=read(owner.root/'operator-intent.json')
+        require(remote_main(ROOT)==intent['base'],'MAIN_CHANGED_BEFORE_AMENDMENT')
+        current=owner.binding(allow_readonly_restart=True)
+        require(current['configSha256']==old['configSha256'] and
+            current['source']['gateway']==old['source']['gateway'],'AMEND_SELECTION_CHANGED')
+        paths=git(ROOT,'diff','--name-only',old['source']['integration'],current['source']['integration']).splitlines()
+        allowed_amendment(paths,intent['paths'])
+        failed_intent=read(owner.root/'consumer-launcher.intent.json')
+        observed=prove_no_handoff(owner,failed_intent)
+        owner.product();owner.artifact()
+        from release_publication import verify_saved
+        verify_saved(owner,'publication',read(owner.root/'publication.json')['facts'])
+        print('    Re-gating operator-only tooling correction; published media retained',flush=True)
+        gates=owner.source_gates()
+        require(owner.binding(allow_readonly_restart=True)==current,'AMENDED_SOURCE_CHANGED_DURING_GATES')
+        amendment=dict(oldBinding=old,newBinding=current,sourceGates=gates,
+            failedConsumerIntent=failed_intent,noHandoff=observed,
+            previousConsumerResult=failed,previousOperatorStage=read(owner.root/'operator-promotion.json'))
+        intent=dict(intent,target=current['source']['integration'],
+                    launcherSha256=sha(ROOT/'scripts/aosedge-sdv-lab.sh'),consumerAttempt=2)
+        atomic(owner.root/'operator-intent.json',intent)
+        for name in ('consumer-result.json','consumer-launcher.intent.json'):
+            path=owner.root/name;archive=owner.root/(name+'.attempt-1')
+            require(not archive.exists(),'CONSUMER_ARCHIVE_COLLISION');path.rename(archive)
+        atomic(owner.root/'operator-amendment.json',amendment)
+    finally:os.close(fd)

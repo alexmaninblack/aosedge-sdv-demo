@@ -18,7 +18,7 @@ class DriveParserTests(unittest.TestCase):
             return subprocess.run(['/usr/bin/perl',str(PARSER),mode,str(path),url],
                                   capture_output=True,text=True)
     def test_binary_and_html_headers(self):
-        for mime,mode in [('application/octet-stream','binary'),('text/html; charset=utf-8','html')]:
+        for mime,mode in [('application/octet-stream','binary'),('application/binary','binary'),('text/html; charset=utf-8','html')]:
             result=self.parse('headers','HTTP/2 200\r\nContent-Type: '+mime+'\r\n\r\n')
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual(result.stdout,mode+'\t'+URL+'\n')
@@ -39,6 +39,19 @@ class DriveParserTests(unittest.TestCase):
         result=self.parse('form',self.form(),URL+'&resourcekey=0-public')
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertIn('resourcekey=0-public',result.stdout)
+    def test_real_unnamed_submit_control_and_escaped_warning(self):
+        raw=self.form(extra='<input type="submit" class="jfk-button" value="Download anyway">')
+        raw=raw.replace("can't","can&#39;t")
+        result=self.parse('form',raw)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('confirm\thttps://drive.usercontent.google.com/download?',result.stdout)
+        self.assertNotIn('Download',result.stdout)
+    def test_current_large_executable_warning_is_not_a_malware_verdict(self):
+        raw=self.form(extra='<input type="submit" value="Download anyway">').replace(
+            "Google Drive can't scan this file for viruses.",
+            'Google Drive has detected issues with your download. This file is too large for Google to scan for viruses. '
+            'This file is executable and may harm your computer.')
+        self.assertEqual(self.parse('form',raw).returncode,0)
     def test_rejects_foreign_duplicate_quota_and_oversized(self):
         cases=[('headers','HTTP/2 302\r\nLocation: https://evil.example/file\r\n\r\n'),
                ('headers','HTTP/2 200\r\nContent-Type: text/html\r\nContent-Type: application/octet-stream\r\n\r\n'),

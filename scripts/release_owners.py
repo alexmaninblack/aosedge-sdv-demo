@@ -101,6 +101,12 @@ class Owners:
             from release_automation import read
             before=read(marker)
             if current != before:
+                amendment=self.root/'operator-amendment.json'
+                if amendment.exists():
+                    accepted=read(amendment)
+                    require(accepted['oldBinding']==before and accepted['newBinding']==current,
+                            'AMENDED_SOURCE_CHANGED')
+                    return before
                 intent=read(self.root/'operator-intent.json')
                 require(current['configSha256']==before['configSha256'] and
                     current['executorSha256']==before['executorSha256'] and
@@ -172,7 +178,7 @@ class Owners:
             ('docs',[sys.executable,'-B','scripts/docs-check']),
             ('launcher-pins',[sys.executable,'-B','scripts/sync-launcher-pins','--check']),
             ('regression',[sys.executable,'-B','-m','unittest','tests.test_release_automation','tests.test_release_projection','tests.test_native_source_selection',
-                'tests.test_unified_launcher','tests.test_drive_download_parser','tests.test_prepare_macos','tests.test_developer_catalog',
+                'tests.test_unified_launcher','tests.test_drive_download_parser','tests.test_release_operator_amendment','tests.test_prepare_macos','tests.test_developer_catalog',
                 'tests.test_developer_workflow','tests.test_developer_progress','tests.test_reader_routes',
                 'tests.test_reproduction_chain','tests.test_reproduction_recipes','tests.test_reproduction_host',
                 'tests.test_reproduction_delivery']),
@@ -193,7 +199,9 @@ class Owners:
                 start=time.monotonic(); result=command(argv,cwd=cwd,timeout=600,env=env)
                 require(result.returncode == 0, 'SOURCE_GATE_'+name.upper().replace('-','_')+'_FAILED')
                 results.append(dict(gate=name,seconds=round(time.monotonic()-start,3),outcome='PASS'))
-        return dict(gates=results, source=self.binding()['source'])
+        require(not git(ROOT,'status','--porcelain'),'SOURCE_GATES_CHANGED_WORKTREE')
+        return dict(gates=results,source=dict(integration=git(ROOT,'rev-parse','HEAD'),
+                    gateway=git(self.gateway,'rev-parse','HEAD')))
 
     def artifact(self):
         product = self.product()

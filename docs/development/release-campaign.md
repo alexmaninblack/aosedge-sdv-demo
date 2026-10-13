@@ -84,3 +84,11 @@ existing installed Test and checks visible Presenter surfaces and final closure.
 This is an engineering consumer-path proof, not native Setup button-input or
 clean-first-user acceptance. Those limitations remain explicit in its report.
 An uncertain graphical handoff is not replayed automatically.
+
+For a consumer-tool defect before any media bytes were downloaded, an explicit
+`resume --amend-operator-tooling` correction may re-gate a strictly allowlisted
+operator-only source delta. It requires the same selection and Gateway, unchanged
+packaged product and verified publication, preserved prior receipts, confirmed
+closure and affirmative M1 proof of no media/partial file or mounted image.
+Any existing payload or uncertain handoff refuses this path. The new consumer
+attempt uses a fresh named namespace; confirmed publication is not replayed.
