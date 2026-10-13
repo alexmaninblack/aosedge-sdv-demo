@@ -26,14 +26,15 @@ install_docker() {
   case "$observed" in linux/arm64|linux/aarch64) say 'Docker: existing local ARM64 Engine ready.' ;; *) say 'STOP: Docker must run Linux ARM64 containers.'; return 2 ;; esac
 }
 install_public_download() {
-  local url=$1 destination=$2 mode next round=0 parser=${SDV_LAB_DRIVE_PARSER:-}
+  local url=$1 destination=$2 mode next round=0 parser=${SDV_LAB_DRIVE_PARSER:-} size
+  size=$(route_field operator.bytes) || return 1
   safe_path "$parser" && [ -f "$parser" ] &&
     [ "$(shasum -a 256 "$parser" | awk '{print $1}')" = "$INSTALL_DRIVE_SHA256" ] || return 1
   [ ! -e "$destination.part" ] && [ ! -L "$destination.part" ] || return 1
   while [ "$round" -lt 5 ]; do
     round=$((round+1))
     curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 30 \
-      --silent --show-error --head --max-filesize 65536 --output "$ROUTE_WORK/drive-head" "$url" || return 1
+      --silent --show-error --head --output "$ROUTE_WORK/drive-head" "$url" || return 1
     /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-head" "$url" > "$ROUTE_WORK/drive-next" || return 1
     IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
     case "$mode" in
@@ -48,10 +49,10 @@ install_public_download() {
         if [ -t 9 ] && [ "${TERM:-}" != dumb ]; then
           printf '  %s\n' "${destination##*/}" >&9
           curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
-            --progress-bar --show-error --output "$destination.part" "$url" 2>&9 || return 1
+            --max-filesize "$size" --progress-bar --show-error --output "$destination.part" "$url" 2>&9 || return 1
         else
           curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
-            --silent --show-error --output "$destination.part" "$url" || return 1
+            --max-filesize "$size" --silent --show-error --output "$destination.part" "$url" || return 1
         fi
         mv "$destination.part" "$destination"; return $? ;;
       *) return 1 ;;

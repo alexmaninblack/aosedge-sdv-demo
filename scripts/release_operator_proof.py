@@ -354,7 +354,6 @@ def amend(owner):
     try:
         try:fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:raise RuntimeError('RELEASE_ALREADY_ACTIVE') from None
-        require(not (owner.root/'operator-amendment.json').exists(),'OPERATOR_ALREADY_AMENDED')
         old=read(owner.root/'identity.json')
         require(all(read(owner.root/(name+'.json'))['outcome']=='PASS' for name in
                 ('freeze','source-gates','artifact','qualification','main-integration','publication')),
@@ -363,6 +362,8 @@ def amend(owner):
         require(failed['outcome']=='BLOCKED' and failed['facts'].get('cleanupConfirmed') is True,
                 'AMEND_REQUIRES_CLOSED_FAILED_CONSUMER')
         intent=read(owner.root/'operator-intent.json')
+        previous_attempt=intent.get('consumerAttempt',1)
+        require(type(previous_attempt) is int and 1<=previous_attempt<9,'CONSUMER_ATTEMPTS_EXHAUSTED')
         require(remote_main(ROOT)==intent['base'],'MAIN_CHANGED_BEFORE_AMENDMENT')
         current=owner.binding(allow_readonly_restart=True)
         require(current['configSha256']==old['configSha256'] and
@@ -381,10 +382,14 @@ def amend(owner):
             failedConsumerIntent=failed_intent,noHandoff=observed,
             previousConsumerResult=failed,previousOperatorStage=read(owner.root/'operator-promotion.json'))
         intent=dict(intent,target=current['source']['integration'],
-                    launcherSha256=sha(ROOT/'scripts/aosedge-sdv-lab.sh'),consumerAttempt=2)
+                    launcherSha256=sha(ROOT/'scripts/aosedge-sdv-lab.sh'),consumerAttempt=previous_attempt+1)
         atomic(owner.root/'operator-intent.json',intent)
         for name in ('consumer-result.json','consumer-launcher.intent.json'):
-            path=owner.root/name;archive=owner.root/(name+'.attempt-1')
+            path=owner.root/name;archive=owner.root/(name+'.attempt-'+str(previous_attempt))
             require(not archive.exists(),'CONSUMER_ARCHIVE_COLLISION');path.rename(archive)
+        prior_amendment=owner.root/'operator-amendment.json'
+        if prior_amendment.exists():
+            archive=owner.root/('operator-amendment.json.attempt-'+str(previous_attempt))
+            require(not archive.exists(),'AMENDMENT_ARCHIVE_COLLISION');prior_amendment.rename(archive)
         atomic(owner.root/'operator-amendment.json',amendment)
     finally:os.close(fd)

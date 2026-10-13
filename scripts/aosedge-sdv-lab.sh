@@ -8,7 +8,7 @@ SDV_LAB_VERSION=1
 lab_spec() {
   case "$1" in
     developer) printf '%s\n' '0577cb8bac914f07648325b6370eb5cefbcad423 9a9b7c8fd95eb1a3e83558ada660260df9a4b4073a7fd8f08d2899f986735560 80942' ;;
-    install) printf '%s\n' 'f1a2c8231e522a98c588a7b56d6dbe66e434b058 40bae8db0db61e7225740a36e6e8f32b4415ec845bef9b45fefdd79d828c0df4 11279' ;;
+    install) printf '%s\n' 'b1c9ded79775faf01f5c3b6aa9615917cc7d4edd e3919ac425ffd9a770b9a87cc2b8e79b439a1a42f1a434a09aaf9bed82713b61 11358' ;;
     heavy) printf '%s\n' '6e09c6e5ce84540f2af38bde29b9a678fad6b92c 872d4e9b19723749f66feb5c081cb90ce11ef297323825060849e63d7fef4bdb 7864' ;;
     common) printf '%s\n' '6fdf09791023fc81126cc38b8d737deba9698879 ca6dcad8a002c23a90fe3144385ab075f0ed4bda83bb285eef41a7e24931dce0 5401' ;;
     catalog) printf '%s\n' 'a75668936e826b31cbf88a426dfc6fe1dc6494e6 b75212a321d948b4d8526dd2ed42a4d9ba19d2a754444b42b337a29a8b233def 1212' ;;

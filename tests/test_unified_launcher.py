@@ -267,6 +267,13 @@ lab_dispatch''')
             self.assertIn('ARG:/workspace with spaces', result.stdout)
             self.assertIn('ARG:--check', result.stdout)
 
+    def test_drive_head_does_not_apply_html_payload_limit(self):
+        text=INSTALL.read_text()
+        head=text.split('--head',1)[1].split('|| return 1',1)[0]
+        self.assertNotIn('--max-filesize',head)
+        self.assertIn('--max-filesize 65536',text.split('html)',1)[1].split('binary)',1)[0])
+        self.assertIn('--max-filesize "$size"',text.split('binary)',1)[1])
+
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
     def test_mount_tracks_borrowed_and_new_media_separately(self):
         dmg = self.root/'fixture.dmg'; dmg.write_bytes(b'fixture')
