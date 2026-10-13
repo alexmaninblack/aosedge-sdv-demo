@@ -9,6 +9,10 @@ Reports below are dated evidence: their “current”, “next” and “open”
 describes that checkpoint, not today's installation instructions. Historical
 results remain unchanged; newer results do not retroactively qualify old images.
 
+- [Release automation and public delivery — 13 October](release-automation-2026-10-13.md):
+  source main integration and immutable publication passed; anonymous operator
+  delivery stopped at Drive quota, so catalog promotion remains blocked.
+
 - [M1 UI qualification timing and optimization — 12 October](ui-qualification-timing-2026-10-12.md):
   measured visible UI/API/setup durations, hybrid browser/native execution and
   the recorded optimization order; implementation and new acceptance remain pending.

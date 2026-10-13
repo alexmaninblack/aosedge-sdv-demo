@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "catalogRevision": 2,
+  "catalogRevision": 3,
   "product": "aosedge-sdv-lab",
   "operator": {
     "productVersion": "1.2.0-rc.1",
     "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
     "file": "AosEdge-SDV-Lab-1.2.0-rc.1.dmg",
-    "bytes": 14165529112,
-    "sha256": "5e0dbf77f6b48e9efcaee8a38b85157dd691c0bb11369f316e5919fe5fa6f719",
-    "manifestSha256": "31f135fae8b547358495d5a046c73840a22dac3fbfebbf4e3ddc8d8b137d462c",
-    "downloadURL": "https://drive.google.com/uc?export=download&id=1ddy0TgTCQSCqX8_oBVak2V9rJQAQlYOw",
+    "bytes": 14162601112,
+    "sha256": "f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d",
+    "manifestSha256": "d4c35a96b053ea021103a40269cebf119279f4d5236d887914964724302b840a",
+    "downloadURL": "",
     "setupBundle": "AosEdge SDV Lab Setup.app",
     "kitDirectory": "Runtime Kit",
     "setupIdentifier": "org.aosedge.sdvlab.setup.preview",
@@ -29,6 +29,5 @@
       "cmakeMin": "3.27.2",
       "fullSourceReady": false
     }
-  },
-  "operatorDescriptor": "workspace/releases/1.2.0-rc.1-presenter-preview-delivery.json"
+  }
 }
