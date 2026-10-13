@@ -19,7 +19,7 @@ CHECK = ROOT / 'scripts/docs-check'
 class InteractivePreparationSnippetTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('zsh'), 'interactive zsh is required')
     def test_short_preparation_blocks_survive_interactive_history_expansion(self):
-        guide = (ROOT / 'README.md').read_text().split('### B1.')[1].split('### B2.')[0]
+        guide = (ROOT / 'README.md').read_text().split('## Start here')[1].split('## Choose your route')[0]
         blocks = re.findall(r'```sh\n(.*?)```', guide, re.S)
         self.assertEqual(len(blocks), 2)
         # Parse, but never execute downloads, setup or the environment handoff.

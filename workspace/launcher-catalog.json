@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "catalogRevision": 1,
+  "product": "aosedge-sdv-lab",
+  "operator": {
+    "productVersion": "1.2.0-rc.1",
+    "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
+    "file": "AosEdge-SDV-Lab-1.2.0-rc.1.dmg",
+    "bytes": 14162601112,
+    "sha256": "f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d",
+    "manifestSha256": "d4c35a96b053ea021103a40269cebf119279f4d5236d887914964724302b840a",
+    "downloadURL": "",
+    "setupBundle": "AosEdge SDV Lab Setup.app",
+    "kitDirectory": "Runtime Kit",
+    "setupIdentifier": "org.aosedge.sdvlab.setup.preview",
+    "setupTeam": "3NF57VKB3V",
+    "notarized": false
+  },
+  "specialist": {
+    "factory": {
+      "qemuVersion": "11.0.3",
+      "firmwareSha256": "47765fe344818cbc464b1c14ae658fb4b854f5c2ceffa982411731eb4865594d",
+      "builderMemoryGiB": 32,
+      "builderInitialHostFreeGiB": 260,
+      "builderGuestFreeGiB": 180,
+      "fullSourceReady": false
+    },
+    "simulator": {
+      "cmakeMin": "3.27.2",
+      "fullSourceReady": false
+    }
+  }
+}

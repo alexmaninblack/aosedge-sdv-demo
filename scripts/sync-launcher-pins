@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""Mechanical bootstrap-pin projection. --check reads only; --write is explicit."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+
+ROOT = Path(__file__).resolve().parents[1]
+FILES = {
+    'developer': 'scripts/prepare-macos.sh',
+    'catalog': 'workspace/launcher-catalog.json',
+    'common': 'scripts/launcher/common-macos.sh',
+    'install': 'scripts/launcher/install-macos.sh',
+    'heavy': 'scripts/launcher/heavy-macos.sh',
+}
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def blob(raw):
+    return hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+
+
+def substitute(raw, values):
+    text = raw.decode()
+    for name, digest in values.items():
+        text, count = re.subn(r'^' + name + r'=\S+$', name + '=' + digest, text, flags=re.M)
+        if count != 1:
+            raise ValueError('Missing/duplicate dependency pin: ' + name)
+    return text.encode()
+
+
+def projection():
+    expected = {role: (ROOT / path).read_bytes() for role, path in FILES.items()}
+    expected['common'] = substitute(expected['common'], {
+        'ROUTE_HELPER_SHA256': sha(expected['developer']),
+        'ROUTE_CATALOG_SHA256': sha(expected['catalog']),
+    })
+    for role, name in (('install', 'INSTALL_COMMON_SHA256'), ('heavy', 'HEAVY_COMMON_SHA256')):
+        expected[role] = substitute(expected[role], {name: sha(expected['common'])})
+    launcher = ROOT / 'scripts/aosedge-sdv-lab.sh'
+    text = launcher.read_text()
+    for role, raw in expected.items():
+        row = f"    {role}) printf '%s\\n' '{blob(raw)} {sha(raw)} {len(raw)}' ;;"
+        text, count = re.subn(r'^    ' + role + r'\).*$', lambda _: row, text, flags=re.M)
+        if count != 1:
+            raise ValueError('Missing/duplicate module pin: ' + role)
+    return {**{ROOT / FILES[role]: raw for role, raw in expected.items()}, launcher: text.encode()}
+
+
+def authorities():
+    catalog = json.loads((ROOT / FILES['catalog']).read_bytes())
+    delivery = json.loads((ROOT / 'workspace/releases/1.2.0-rc.1-source-factory-delivery.json').read_bytes())
+    for field in ('productVersion', 'status', 'file', 'bytes', 'sha256', 'manifestSha256', 'notarized'):
+        if catalog['operator'][field] != delivery[field]:
+            raise ValueError('Operator projection differs: ' + field)
+    builder = (ROOT / 'scripts/r6-1-builder').read_text()
+    for field, name in (('qemuVersion', 'QEMU_VERSION'), ('firmwareSha256', 'FIRMWARE_SHA256')):
+        if catalog['specialist']['factory'][field] != re.search(r'^' + name + r' = "([^"]+)"$', builder, re.M)[1]:
+            raise ValueError('Builder projection differs: ' + field)
+    for field, name in (('builderMemoryGiB', 'MINIMUM_HOST_MEMORY'),
+                        ('builderInitialHostFreeGiB', 'MINIMUM_INITIAL_HOST_FREE'),
+                        ('builderGuestFreeGiB', 'MINIMUM_GUEST_FREE')):
+        value = re.search(r'^' + name + r' = ([0-9]+) \* 1024\*\*3$', builder, re.M)
+        if not value or catalog['specialist']['factory'][field] != int(value[1]):
+            raise ValueError('Builder capacity projection differs: ' + field)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--check', action='store_true')
+    mode.add_argument('--write', action='store_true')
+    args = parser.parse_args()
+    authorities()
+    changes = {path: raw for path, raw in projection().items() if path.read_bytes() != raw}
+    if args.write:
+        for path, raw in changes.items():
+            path.write_bytes(raw)
+    elif changes:
+        raise SystemExit('Launcher pins differ. Run scripts/sync-launcher-pins --write, then review the diff.')
+    print('Launcher module and authority pins: PASS')
+
+
+if __name__ == '__main__':
+    main()

@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 tooling complete for the agreed developer route; R3 step-by-step revision drafted; joint walkthrough pending; R4 planned
-- Version: 0.31
+- Version: 0.32
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -419,6 +419,17 @@ not guessed by users from internal scripts.
 ## Block R3 Provide the human documentation routes
 
 ### Current result
+
+**October 13 unified launcher amendment:** the operator approved one downloaded
+entry with A install/run, B the existing developer build and C selected
+Factory/simulator host-tool preparation. The
+[implementation packet](unified-macos-launcher.md) defines route isolation,
+verified helper acquisition, normal Setup handoff, preserved developer behavior
+and explicit full-source gaps. README becomes the explanation and one entry;
+manual commands remain diagnostic references. This source implementation uses
+offline fixtures only and does not inherit new first-use/full-E2E acceptance.
+No heavy build, binary publication, runtime or Cloud authority change follows
+from the amendment.
 
 **October 10 one-run workflow amendment:** the owner approved replacing manual
 B1–B4 handoffs with one downloaded launcher. Default execution prepares the host,

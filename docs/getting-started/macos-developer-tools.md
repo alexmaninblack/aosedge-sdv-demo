@@ -3,17 +3,19 @@
 
 # macOS developer preparation reference
 
-The normal route is now the single developer build launcher in
-[README B1](../../README.md#b1-prepare-tools-storage-and-access).
-Download it, review it and run it. It passes its environment and continues
+The normal route is choice **2 / B** in the
+[single README launcher](../../README.md#start-here).
+Download it, review it and run it. It delegates to the existing developer
+script, which passes its environment and continues
 through checkout, verified inputs and the developer DMG build automatically.
 No Git checkout, Python or Homebrew is required to start the wizard.
 This page is a reference, not another six-block copy/paste prerequisite.
 
-The wizard is implemented in [prepare-macos.sh](../../scripts/prepare-macos.sh).
-Its offline fixtures cover control flow and failures; the owner's actual
-first-use walkthrough remains pending. No live installation or build was run
-to publish this implementation.
+The developer executor remains [prepare-macos.sh](../../scripts/prepare-macos.sh).
+Its earlier [build-only campaign](../../workspace/checkpoints/developer-launcher-e2e-20261010.json)
+completed through a signed DMG; that receipt is not acceptance of the newly
+added menu or a live installer. The new launcher has separate offline fixtures
+and an outstanding real M1 first-use walkthrough.
 
 The default route needs no Google account or Google CLI. The owner-authorized
 public test inputs and pinned catalog are available through the current launcher

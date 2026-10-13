@@ -21,7 +21,7 @@ Unreal Editor or local compilation is required.
 
 ## Before opening Setup
 
-Complete [README A1–A3](../../README.md#a1-check-the-mac) first: host checks,
+Start with [README route A](../../README.md#install-and-run): host checks,
 Docker's separate first-run setup, exact private DMG acquisition, size/checksum
 comparison and opening the verified file. No source clone is needed for this
 route. Then follow the numbered actions below in order and wait for each result.

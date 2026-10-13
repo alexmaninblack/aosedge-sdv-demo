@@ -26,8 +26,24 @@ jobs:
         run: |
           python3 -B scripts/docs-check --reader-routes
           python3 -B -m unittest discover -s tests -p 'test_reader_routes.py' -v
+      - name: Verify launcher pins and portable offline selection guards
+        run: |
+          python3 -B scripts/sync-launcher-pins --check
+          bash -n scripts/aosedge-sdv-lab.sh scripts/launcher/common-macos.sh scripts/launcher/install-macos.sh scripts/launcher/heavy-macos.sh
+          python3 -B -m unittest discover -s tests -p 'test_unified_launcher.py' -v
       - name: Verify acquisition and owner adapters with offline fixtures
         env:
           TMPDIR: ${{ runner.temp }}
           PYTHONDONTWRITEBYTECODE: '1'
         run: python3 -B -m unittest discover -s tests -p 'test_reproduction*.py' -v
+  launcher-macos-fixtures:
+    name: macOS launcher fixtures only (no installation or native qualification)
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - name: Check pins and mocked host routes
+        run: |
+          python3 -B scripts/sync-launcher-pins --check
+          /bin/bash -n scripts/aosedge-sdv-lab.sh scripts/launcher/common-macos.sh scripts/launcher/install-macos.sh scripts/launcher/heavy-macos.sh
+          python3 -B -m unittest discover -s tests -p 'test_unified_launcher.py' -v

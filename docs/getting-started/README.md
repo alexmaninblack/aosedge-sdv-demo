@@ -13,11 +13,13 @@ old kit numbers or sibling repositories to choose a route.
 3. **Rebuild heavy dependencies:** [Full source](full-source-build.md).
    This separate route lists its unresolved prerequisites and is not yet qualified.
 
-All routes start from [release selection and access](release-status.md).
-For copy/paste entry steps use the [root README](../../README.md). Developers
-first complete [macOS tool and access preparation](macos-developer-tools.md),
-then clone the single entry repository. The revised instructions are waiting
-for a joint step-by-step walkthrough; no build/test run is implied by the edit.
+All routes start with the [single launcher in README](../../README.md#start-here)
+and its menu. [Release selection and access](release-status.md) explains the
+matching inputs. Developers do not clone manually first: route B prepares tools,
+checks capacity, selects sources and builds automatically. The
+[launcher reference](unified-macos-launcher.md) explains handoff, repeats and the
+explicit partial specialist route. Local fixture coverage is not the new M1
+first-use walkthrough.
 For the system overview, use the [product map](../architecture/product-map.md).
 For changes, use [Contributing](../../CONTRIBUTING.md).
 

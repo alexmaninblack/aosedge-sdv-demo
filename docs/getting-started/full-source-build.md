@@ -12,6 +12,12 @@ use a [prebuilt DMG](installed-preview-cloud-first-use.md).
 resolver describes the scope, but does not provide a completed end-to-end
 full-source build for a new user.
 
+Choice **3 / C** in the [README launcher](../../README.md#start-here) now prepares
+host tools for either Factory or CARLA/Unreal. It does not run the compilation
+commands below or acquire the remaining source/assets/Builder inputs. Its final
+partial result is not full-source readiness. See the
+[launcher reference](unified-macos-launcher.md) for repeats and tooling scope.
+
 ## Inspect the declared scope
 
 From the reviewed root checkout, run this read-only command:
@@ -49,6 +55,12 @@ The Factory guard requires 40 GiB additional host headroom plus a 90 GiB
 reserve, with a 60 GiB guest guard. These are admission checks, not measured
 cold peaks. Full-source time and capacity remain unmeasured. An M1 runtime
 test does not establish suitability as an Unreal/Yocto builder.
+
+The fresh Builder bootstrap has separate, stronger admission checks: 32 GiB
+host RAM, 260 GiB initial host free space and 180 GiB guest free space in the
+canonical `scripts/r6-1-builder`. These are distinct from the retained Factory
+adapter guards above and from host-tool preparation. The launcher reports
+them without claiming a new Builder or measured cold-build peak.
 
 ## Simulation and licensed inputs
 
