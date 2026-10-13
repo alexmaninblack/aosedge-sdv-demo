@@ -30,7 +30,8 @@ release. One global lease serializes release work; per-candidate records also
 reject concurrent writers and changed bindings.
 
 Records are private and versioned under the selected workspace's
-`output/release-campaign`. They include stage results, timings and one report.
+`build/release-campaign`. They include stage results, timings and one report.
+This does not adopt or change the developer workflow's `output` result alias.
 Temporary fixture/build data stays under the workspace's owned `.tmp`; persistent
 artifacts, caches, Test data and shared Docker are not cleanup targets.
 

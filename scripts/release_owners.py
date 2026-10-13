@@ -72,7 +72,7 @@ class Owners:
         self.workspace = safe(selected['workspace'])
         self.gateway = safe(selected['gateway'])
         self.candidate = safe(selected['candidate']['directory'])
-        self.root = self.workspace / 'output/release-campaign' / selected['version']
+        self.root = self.workspace / 'build/release-campaign' / selected['version']
 
     @contextmanager
     def global_lease(self, parent):

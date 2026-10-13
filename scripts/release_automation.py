@@ -216,7 +216,7 @@ def main(argv=None):
         from release_owners import Owners
         owner = Owners(selected)
         binding = owner.binding()
-        parent = safe(Path(selected['workspace']) / 'output/release-campaign')
+        parent = safe(Path(selected['workspace']) / 'build/release-campaign')
         parent.mkdir(mode=0o700, exist_ok=True)
         root = parent / selected['version']
         with owner.global_lease(parent):
