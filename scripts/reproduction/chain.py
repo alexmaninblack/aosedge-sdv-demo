@@ -25,14 +25,18 @@ DEPENDENCIES = {
 
 def read_plan(release, path=None):
     value = read_json(path or ROOT/PLAN)
-    developer = isinstance(value, dict) and value.get('schemaVersion') == 2
+    developer = isinstance(value, dict) and value.get('schemaVersion') in (2,3)
+    native = isinstance(value,dict) and value.get('schemaVersion') == 3
     require(isinstance(value, dict) and set(value) == {'schemaVersion', 'productVersion',
-        'baseDefinitionSha256', 'repository', 'producers', 'steps'} | ({'resultPolicy'} if developer else set())
-        and type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2)
+        'baseDefinitionSha256', 'repository', 'producers', 'steps'} | ({'resultPolicy'} if developer else set()) | ({'nativeSources'} if native else set())
+        and type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2, 3)
         and (not developer or value['resultPolicy'] == 'seal-developer-results-v1')
         and value['productVersion'] == '1.2.0-rc.1' and value['baseDefinitionSha256'] == release.key,
         'Build chain differs from selected definition')
     require(value['repository'] == release.sources['integration']['repository'], 'Producer repository differs')
+    if native:
+        from .native_sources import validate
+        validate(value['nativeSources'],release)
     require(isinstance(value['producers'], dict) and value['producers'] and
         all(isinstance(k, str) and re.fullmatch('[a-z][a-z0-9-]{0,39}', k) and
             isinstance(v, str) and re.fullmatch('[a-f0-9]{40}', v) for k, v in value['producers'].items()),
@@ -200,6 +204,8 @@ def execute(storage, state, args, progress):
     plan = read_plan(storage.release, args.build_plan)
     verify_sources(storage, state)
     config = preflight(storage, args)
+    if 'nativeSources' in plan:
+        config['native_sources']=plan['nativeSources']
     if plan.get('resultPolicy') == 'seal-developer-results-v1':
         require(not any(name in config for name in ('input_checkpoint', 'release_checkpoint')),
                 'Developer chain cannot select reviewed output checkpoints')

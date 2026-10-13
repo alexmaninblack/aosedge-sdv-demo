@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""One scoped maintainer release campaign; never an operator installer."""
+from release_automation import main
+raise SystemExit(main())

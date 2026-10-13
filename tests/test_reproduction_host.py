@@ -61,9 +61,23 @@ class HostTests(StorageFixture, unittest.TestCase):
         self.patch('reproduction.gateway.sdk_input', return_value={'sha256': 'b'*64})
         self.patch('reproduction.host.selected', side_effect=lambda storage, state, target:
                    (target, self.base/target))
+        self.state['sources']={role:{k:self.release.sources[role][k] for k in ('repository','revision')}
+                               for role in ('integration','vehicle-gateway')}
+        self.state['builds']['presenter']={'inputs':{'sources':dict(self.state['sources'])}}
         self.state['builds']['gateway'] = {'inputs': {'sdk': {'sha256': 'b'*64}}}
         self.command = self.patch('reproduction.host.run_command', side_effect=self.owner)
         self.patch('reproduction.host.probe_native', return_value=[])
+
+    def test_host_uses_exact_successor_ui_source_trees(self):
+        self.fixture()
+        chosen={role:{**row,'revision':'f'*40} for role,row in self.state['sources'].items()}
+        self.state['builds']['presenter']['inputs']['sources']=chosen
+        trees={'integration':self.base/'current-ui','vehicle-gateway':self.base/'current-control'}
+        with patch('reproduction.native_sources.verified',return_value=trees) as observed:
+            self.build()
+        observed.assert_called_once_with(self.storage,chosen)
+        args=self.command.call_args.args[0]
+        self.assertIn(trees['integration'],args);self.assertIn(trees['vehicle-gateway'],args)
 
     def owner(self, args, **kwargs):
         output = Path(args[-1])

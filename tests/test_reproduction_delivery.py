@@ -60,6 +60,30 @@ class DeliveryTests(unittest.TestCase):
         self.client.request.assert_not_called()
         self.client.json.assert_not_called()
 
+    def test_public_preview_requires_explicit_mode(self):
+        public={**self.meta,'shared':True}
+        with self.assertRaises(LabError):d.check_remote(public,self.file_id,self.folder,self.expected)
+        d.check_remote(public,self.file_id,self.folder,self.expected,public=True)
+        with self.assertRaises(LabError):d.check_remote(self.meta,self.file_id,self.folder,self.expected,public=True)
+
+    def test_public_upload_reuses_only_the_same_checked_object(self):
+        self.client.metadata.return_value={**self.meta,'shared':True}
+        self.client.request.side_effect=[Response(200,{'Location':d.ORIGIN+'/upload/drive/v3/files'}),Response(200)]
+        d.upload(self.client,self.source,self.expected,self.folder,self.intent,public=True)
+        self.client.reset_mock()
+        d.upload(self.client,self.source,self.expected,self.folder,self.intent,public=True)
+        self.client.request.assert_not_called()
+
+    def test_public_folder_permission_is_observed_not_created(self):
+        c=d.Client('not-invoked','fixture@example.invalid')
+        about={'user':{'emailAddress':c.account},'storageQuota':{},'maxUploadSize':'100'}
+        folder={'id':self.folder,'mimeType':'application/vnd.google-apps.folder','trashed':False,
+                'shared':True,'capabilities':{'canAddChildren':True},'permissions':[{'type':'anyone','role':'reader'}]}
+        with patch.object(c,'json',side_effect=[about,folder]):c.preflight(self.folder,self.expected,public=True)
+        for permissions in ([],[{'type':'anyone','role':'writer'}]):
+            with patch.object(c,'json',side_effect=[about,{**folder,'permissions':permissions}]):
+                with self.assertRaises(LabError):c.preflight(self.folder,self.expected,public=True)
+
     def test_dependency_upload_sets_archive_mime_without_changing_dmg_descriptor(self):
         self.client.request.side_effect = [Response(200, {'Location': d.ORIGIN + '/upload/drive/v3/files'}), Response(200)]
         d.upload(self.client, self.source, self.expected, self.folder, self.intent, mime_type='application/gzip')

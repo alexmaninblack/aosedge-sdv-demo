@@ -251,6 +251,7 @@ release duration from the historical 20-minute UI segment alone.
 
 ## Related controls and evidence
 
+- [Release campaign operating contract](../../../development/release-campaign.md)
 - [Human friendly reproduction](human-friendly-reproduction.md)
 - [Unified launcher packet](unified-macos-launcher.md)
 - [Launcher behavior and maintenance](../../../getting-started/unified-macos-launcher.md)

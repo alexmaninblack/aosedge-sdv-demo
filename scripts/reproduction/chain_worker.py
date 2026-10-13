@@ -20,7 +20,8 @@ def dispatch(storage, state, target, profile, options, progress):
     owner = importlib.import_module('reproduction.'+modules[target])
     python = options['python']
     if target == 'presenter':
-        return owner.presenter(storage, state, options['node'], options['npm'], options['prepare_dependencies'], progress)
+        extra={'native_sources':options['native_sources']} if options.get('native_sources') else {}
+        return owner.presenter(storage, state, options['node'], options['npm'], options['prepare_dependencies'], progress,**extra)
     if target == 'cloud-sdk':
         return owner.assemble(storage, state, options['kit_inputs'], python, options['prepare_dependencies'], progress)
     if target in ('brake-backend', 'tire-backend'):

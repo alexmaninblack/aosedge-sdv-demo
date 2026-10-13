@@ -94,6 +94,12 @@ def assemble(storage, state, kit, sdk, python, progress):
     sdk = Path(sdk) if sdk is not None else None
     sdk_pin = gateway.sdk_input(storage, sdk)
     ui_key, ui = selected(storage, state, 'presenter')
+    from .native_sources import verified
+    ui_sources=state['builds'][ui_key]['inputs']['sources']
+    if ui_sources == {role:state['sources'][role] for role in ('integration','vehicle-gateway')}:
+        native_trees={role:storage.path('sources/'+role) for role in ('integration','vehicle-gateway')}
+    else:
+        native_trees=verified(storage,ui_sources)
     gateway_key, native = selected(storage, state, 'gateway')
     require(state['builds'][gateway_key]['inputs']['sdk'] == sdk_pin, 'Gateway SDK selection differs')
     inputs = {'producerTrees': trees, 'hostManifest': pin, 'sdk': sdk_pin,
@@ -118,8 +124,8 @@ def assemble(storage, state, kit, sdk, python, progress):
         policy.write_text('(version 1)\n(allow default)\n(deny network*)\n')
         progress('BUILD_STARTED', 'host-runtime')
         result = run_command(['/usr/bin/sandbox-exec', '-f', policy, python, '-I', '-B',
-            ROOT/'scripts/reproduction/host_worker.py', ROOT, storage.path('sources/integration'),
-            storage.path('sources/vehicle-gateway'), source, sdk, ui, native, output],
+            ROOT/'scripts/reproduction/host_worker.py', ROOT, native_trees['integration'],
+            native_trees['vehicle-gateway'], source, sdk, ui, native, output],
             env=storage.environment(), cwd=storage.root, timeout=900)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
         require(result.returncode == 0, 'Host owner failed; inspect retained workspace log')

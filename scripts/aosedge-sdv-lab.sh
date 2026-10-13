@@ -8,10 +8,11 @@ SDV_LAB_VERSION=1
 lab_spec() {
   case "$1" in
     developer) printf '%s\n' '0577cb8bac914f07648325b6370eb5cefbcad423 9a9b7c8fd95eb1a3e83558ada660260df9a4b4073a7fd8f08d2899f986735560 80942' ;;
-    install) printf '%s\n' 'e806923889216bda9eb8f35c681d1d9eba514635 7d3320d5e85b55af588fca9f679df80cca01ebd0eb3f33f2377eac19cf855f06 9301' ;;
+    install) printf '%s\n' 'a8ad575e89457651bbc31a1079f9ba2e683786b1 6a12c9e2d342de89f87f38eeb655dc9dc26ea17c9ca75999388ec826ae257b87 11279' ;;
     heavy) printf '%s\n' '3bbac8fd4939dc0c129e1e3affe5c2d199918912 d028e2ce7c476b76951be97a126508e357880b6729623b77bb09b6daf8797de9 7864' ;;
     common) printf '%s\n' '9b5c35aa3b9c1f3f7d849368601d862ca4674fd6 a9b3f24c4f8acaa7f86b777e149980ad8138fef976598165fa336aca03986f89 5401' ;;
     catalog) printf '%s\n' 'd1fe4c42894eb0e30575fcdec9e27c0eeb3e12e3 40947e86c4e2a9210fa79bdff3ffe1a5804fae12dc997a27d0d4c88ceed41447 1043' ;;
+    drive-parser) printf '%s\n' 'adf78cc74e1f13230c96c057a71d82f9d8af34b8 3377608f34350c2f2bfd40ab99653eace743f1a0972ee8aa62860a86ae7eba62 4269' ;;
     *) return 1 ;;
   esac
 }
@@ -184,6 +185,7 @@ lab_dispatch() {
     lab_fetch catalog || return $?; export SDV_LAB_CATALOG=$LAB_FETCHED
     lab_fetch common || return $?; export SDV_LAB_COMMON=$LAB_FETCHED
     if [ "$LAB_ROUTE" = A ]; then
+      lab_fetch drive-parser || return $?; export SDV_LAB_DRIVE_PARSER=$LAB_FETCHED
       lab_fetch install || return $?; module=$LAB_FETCHED
       [ -z "$LAB_DMG" ] || extra+=(--dmg "$LAB_DMG")
     else

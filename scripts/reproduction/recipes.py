@@ -120,8 +120,10 @@ def paths(root, tracked, target):
     chosen.add('workspace/releases/release.schema.json')
     if target in ('host-runtime', 'backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
         chosen.add('scripts/reproduction/host.py')
+        chosen.add('scripts/reproduction/native_sources.py')
     if target == 'host-runtime':
         chosen.update(('scripts/reproduction/build.py', 'scripts/reproduction/gateway.py',
+                       'scripts/reproduction/native_sources.py',
                        'workspace/gateway-build-sdk.lock.json'))
     if target in ('backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
         chosen.add('scripts/reproduction/build_results.py')

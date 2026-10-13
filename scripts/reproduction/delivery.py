@@ -118,7 +118,7 @@ class Client:
                 'Duplicate release file names require explicit reconciliation')
         return result['files']
 
-    def preflight(self, folder, expected):
+    def preflight(self, folder, expected, *, public=False):
         about = self.json('GET', API + 'about?fields=user(emailAddress),storageQuota,maxUploadSize')
         require(about['user']['emailAddress'] == self.account, 'Google account differs from explicit selection')
         quota = about['storageQuota']
@@ -126,17 +126,20 @@ class Client:
         if 'limit' in quota:
             require(int(quota['limit']) - int(quota['usage']) >= expected['bytes'], 'Insufficient Drive capacity')
         metadata = self.json('GET', API + 'files/' + identifier(folder)
-                             + '?fields=id,mimeType,trashed,shared,capabilities(canAddChildren)')
+                             + '?fields=id,mimeType,trashed,shared,capabilities(canAddChildren),permissions(type,role)')
         require(metadata and metadata.get('mimeType') == 'application/vnd.google-apps.folder'
-                and metadata.get('trashed') is False and metadata.get('shared') is False
+                and metadata.get('trashed') is False and metadata.get('shared') is public
                 and metadata.get('capabilities', {}).get('canAddChildren') is True,
-                'Expected a private writable release folder; sharing is never changed automatically')
+                'Expected the explicitly selected writable release folder; sharing is never changed automatically')
+        if public:
+            require(any(p.get('type') == 'anyone' and p.get('role') == 'reader'
+                        for p in metadata.get('permissions', [])), 'Public reader permission missing')
 
 
-def check_remote(meta, file_id, folder, expected):
+def check_remote(meta, file_id, folder, expected, *, public=False):
     require(meta and meta.get('id') == file_id and meta.get('name') == expected['file']
             and meta.get('parents') == [folder] and meta.get('trashed') is False
-            and meta.get('shared') is False and meta.get('capabilities', {}).get('canDownload') is True
+            and meta.get('shared') is public and meta.get('capabilities', {}).get('canDownload') is True
             and meta.get('sha256Checksum') == expected['sha256']
             and str(meta.get('size')) == str(expected['bytes']) and meta.get('version'),
             'Remote file differs from reviewed candidate; no overwrite or duplicate permitted')
@@ -153,7 +156,7 @@ def acknowledged(response, total):
 
 
 def upload(client, source, expected, folder, state_path, check=lambda: None, progress=lambda *x: None,
-           mime_type='application/x-apple-diskimage'):
+           mime_type='application/x-apple-diskimage', *, public=False):
     """Persist only a non-secret ID/intent. Session capabilities remain in memory."""
     require(mime_type in ('application/x-apple-diskimage', 'application/gzip'), 'Unsupported upload MIME type')
     before = artifacts.identity(source)
@@ -166,7 +169,7 @@ def upload(client, source, expected, folder, state_path, check=lambda: None, pro
         file_id = identifier(intent['fileId'])
         meta = client.metadata(file_id)
         if meta:
-            check_remote(meta, file_id, folder, expected)
+            check_remote(meta, file_id, folder, expected, public=public)
             progress('UPLOAD_REUSED', expected['bytes'])
             return meta
     else:
@@ -174,7 +177,7 @@ def upload(client, source, expected, folder, state_path, check=lambda: None, pro
         if existing:
             meta = existing[0]
             file_id = identifier(meta['id'])
-            check_remote(meta, file_id, folder, expected)
+            check_remote(meta, file_id, folder, expected, public=public)
             atomic_json(state_path, {**binding, 'fileId': file_id})
             progress('UPLOAD_REUSED', expected['bytes'])
             return meta
@@ -225,7 +228,7 @@ def upload(client, source, expected, folder, state_path, check=lambda: None, pro
             progress('UPLOAD_BYTES', offset)
     require(artifacts.identity(source) == before, 'Source changed during upload')
     meta = client.metadata(file_id)
-    check_remote(meta, file_id, folder, expected)
+    check_remote(meta, file_id, folder, expected, public=public)
     return meta
 
 

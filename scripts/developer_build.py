@@ -23,6 +23,27 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r4.json'
 
 
+def selected_plan(source):
+    """Source-owned successor selection; historical plans remain immutable."""
+    selector=source/'workspace/current-developer-build.json'
+    if not selector.exists():
+        return source/PLAN
+    value=read(selector)
+    require(isinstance(value,dict) and set(value)=={'schemaVersion','path','sha256'}
+            and type(value['schemaVersion']) is int and value['schemaVersion']==1,
+            'Invalid active developer plan selection.')
+    relative=Path(value['path'])
+    require(not relative.is_absolute() and '..' not in relative.parts and
+            relative.parent==Path('workspace/releases') and relative.suffix=='.json'
+            and re.fullmatch('[a-f0-9]{64}',value['sha256']), 'Invalid active developer plan identity.')
+    path=safe(source/relative)
+    import hashlib
+    require(path.is_file() and path.stat().st_size <= 2**20 and
+            hashlib.sha256(path.read_bytes()).hexdigest()==value['sha256'],
+            'Active developer plan differs from source pin.')
+    return path
+
+
 class OwnerOutput(io.TextIOBase):
     """Retain owner diagnostics, show only bounded progress, remember last result."""
     def __init__(self, log, screen, display=None):
@@ -153,6 +174,7 @@ def execute(config, owner, resolve=resolve_dmg, expose=expose_result):
     require(selected['volumeUUID'] == config['SDV_WORKFLOW_VOLUME'], 'Selected volume differs from source preparation.')
     validate_checkout(source, selected['revision'])
     source_check(config['SDV_PREPARED_SOURCE'], source)
+    active_plan=selected_plan(source)
     build = root/'build'
     inputs = root/'inputs'
     progress = dict(schemaVersion=1, rootRevision=selected['revision'], status='RUNNING', stage='plan')
@@ -165,13 +187,13 @@ def execute(config, owner, resolve=resolve_dmg, expose=expose_result):
         return owner(label, args)
 
     try:
-        plan = step('[1/5] Checking the selected build plan', ['plan', '--profile', 'developer', '--build-plan', source/PLAN])
+        plan = step('[1/5] Checking the selected build plan', ['plan', '--profile', 'developer', '--build-plan', active_plan])
         require(plan.get('profile') == 'developer' and plan.get('orderedDeveloperChain'), 'Missing developer build plan.')
         package_plan = owner('Input size plan', ['inputs', 'plan'])
         print('  Binary inputs: %.2f GB to download if uncached; %.2f GB unpacked.' %
               (package_plan['archiveBytes']/1e9, package_plan['unpackedBytes']/1e9), flush=True)
         # Space is checked before Git acquisition and again before archive transfer.
-        space_args = ['space', '--storage', build, '--build-plan', source/PLAN, '--docker', config['SDV_DOCKER']]
+        space_args = ['space', '--storage', build, '--build-plan', active_plan, '--docker', config['SDV_DOCKER']]
         owner('Storage and producer compatibility', space_args)
         step('[2/5] Preparing pinned component sources', ['prepare', '--profile', 'developer', '--storage', build, '--sources-only'])
         owner('Verify pinned sources', ['verify', '--storage', build, '--sources-only'])
@@ -191,7 +213,7 @@ def execute(config, owner, resolve=resolve_dmg, expose=expose_result):
         # no duplicate complete archive read is needed here.
         save(control/'input-paths.json', prepared)
         owner('Storage before compilation', space_args)
-        args = ['build', '--target', 'all', '--storage', build, '--build-plan', source/PLAN,
+        args = ['build', '--target', 'all', '--storage', build, '--build-plan', active_plan,
                 '--kit-inputs', prepared['kitInputs'], '--gateway-sdk', prepared['gatewaySdk'],
                 '--factory-inputs', prepared['factoryInputs'], '--test-tmp-parent', config['SDV_TMP'],
                 '--ui-python', '/usr/bin/python3', '--prepare-dependencies']

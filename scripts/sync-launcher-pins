@@ -15,6 +15,7 @@ FILES = {
     'common': 'scripts/launcher/common-macos.sh',
     'install': 'scripts/launcher/install-macos.sh',
     'heavy': 'scripts/launcher/heavy-macos.sh',
+    'drive-parser': 'scripts/launcher/drive-download-macos.pl',
 }
 
 
@@ -43,6 +44,7 @@ def projection():
     })
     for role, name in (('install', 'INSTALL_COMMON_SHA256'), ('heavy', 'HEAVY_COMMON_SHA256')):
         expected[role] = substitute(expected[role], {name: sha(expected['common'])})
+    expected['install']=substitute(expected['install'],{'INSTALL_DRIVE_SHA256':sha(expected['drive-parser'])})
     launcher = ROOT / 'scripts/aosedge-sdv-lab.sh'
     text = launcher.read_text()
     for role, raw in expected.items():
@@ -55,7 +57,11 @@ def projection():
 
 def authorities():
     catalog = json.loads((ROOT / FILES['catalog']).read_bytes())
-    delivery = json.loads((ROOT / 'workspace/releases/1.2.0-rc.1-source-factory-delivery.json').read_bytes())
+    selected=catalog.get('operatorDescriptor','workspace/releases/1.2.0-rc.1-source-factory-delivery.json')
+    path=Path(selected)
+    if path.parent!=Path('workspace/releases') or path.suffix!='.json' or '..' in path.parts:
+        raise ValueError('Invalid operator descriptor selection')
+    delivery = json.loads((ROOT / path).read_bytes())
     for field in ('productVersion', 'status', 'file', 'bytes', 'sha256', 'manifestSha256', 'notarized'):
         if catalog['operator'][field] != delivery[field]:
             raise ValueError('Operator projection differs: ' + field)

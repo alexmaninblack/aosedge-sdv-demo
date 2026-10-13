@@ -254,7 +254,7 @@ heavy_install_qemu''', script=HEAVY, ok=False)
         self.assertIn('does not match the pinned', result.stderr)
 
     def test_dispatch_fetches_only_the_selected_graph_and_preserves_arguments(self):
-        for route, component, roles in (('A', '', ['developer', 'catalog', 'common', 'install']),
+        for route, component, roles in (('A', '', ['developer', 'catalog', 'common', 'drive-parser', 'install']),
                                         ('B', '', ['developer']),
                                         ('C', 'factory', ['developer', 'catalog', 'common', 'heavy'])):
             result = self.shell(f'''LAB_ROUTE={route}; LAB_COMPONENT={component}; LAB_MODE=check

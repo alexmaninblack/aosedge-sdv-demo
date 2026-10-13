@@ -32,7 +32,7 @@ def verify_output(output):
     require(names == actual, 'Build output inventory differs')
     return receipt
 
-def presenter(storage, state, node, npm, prepare_dependencies, progress):
+def presenter(storage, state, node, npm, prepare_dependencies, progress, *, native_sources=None):
     require(storage.profile != 'operator', 'Operator profile does not build')
     verify_sources(storage, state)
     storage.check(additional=2*GIB, reserve=90*GIB)
@@ -41,6 +41,12 @@ def presenter(storage, state, node, npm, prepare_dependencies, progress):
     env['PATH'] = str(node.parent) + ':' + env.get('PATH', '')
     integration = storage.path('sources/integration')
     gateway = storage.path('sources/vehicle-gateway')
+    source_rows = {n: state['sources'][n] for n in ('integration', 'vehicle-gateway')}
+    if native_sources is not None:
+        from .native_sources import prepare
+        trees=prepare(storage,native_sources,prepare_dependencies,progress)
+        integration,gateway=trees['integration'],trees['vehicle-gateway']
+        source_rows=native_sources
     web = integration / 'apps/presenter-ui'
     engines = read_json(web / 'package.json')['engines']
     require(command([node, '--version'], env, web) == 'v' + engines['node'], 'Node differs from source pin')
@@ -49,7 +55,6 @@ def presenter(storage, state, node, npm, prepare_dependencies, progress):
                  'swift': command(['/usr/bin/xcrun', 'swiftc', '--version'], env, web),
                  'sdk': command(['/usr/bin/xcrun', '--sdk', 'macosx', '--show-sdk-version'], env, web),
                  'python': sys.version.split()[0]}
-    source_rows = {n: state['sources'][n] for n in ('integration', 'vehicle-gateway')}
     owner = integration / 'scripts/distribution/ui_build.py'
     inputs = {'sources': source_rows, 'toolchain': toolchain, 'recipeSha256': sha256(owner),
               'packageLockSha256': sha256(web / 'package-lock.json')}
@@ -70,7 +75,7 @@ def presenter(storage, state, node, npm, prepare_dependencies, progress):
         progress('PREPARE_NPM_INPUTS', 'presenter')
         command([npm, 'ci', '--ignore-scripts', '--no-audit', '--no-fund', '--cache', env['npm_config_cache']],
                 env, web, timeout=180)
-        check_source(integration, storage.release.sources['integration'], env)
+        check_source(integration, source_rows['integration'], env)
         output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         atomic_json(output.parent / (key + '.inputs.json'), inputs)
         storage.check(additional=128*2**20, reserve=90*GIB)

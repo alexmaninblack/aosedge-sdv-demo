@@ -4,6 +4,7 @@
 
 # BEGIN VERIFIED DEPENDENCY PINS — maintained by scripts/sync-launcher-pins
 INSTALL_COMMON_SHA256=a9b3f24c4f8acaa7f86b777e149980ad8138fef976598165fa336aca03986f89
+INSTALL_DRIVE_SHA256=3377608f34350c2f2bfd40ab99653eace743f1a0972ee8aa62860a86ae7eba62
 # END VERIFIED DEPENDENCY PINS
 
 install_import() {
@@ -23,6 +24,40 @@ install_docker() {
   case "$endpoint" in unix:///*) ;; *) say 'STOP: A local Docker Engine is required; no remote context was used.'; return 2 ;; esac
   observed=$(/usr/bin/perl -e 'alarm 20; exec @ARGV' "$docker" --context desktop-linux info --format '{{.OSType}}/{{.Architecture}}' 2>/dev/null) || { say 'ACTION: Start the existing Docker Engine; do not restart a running one.'; return 2; }
   case "$observed" in linux/arm64|linux/aarch64) say 'Docker: existing local ARM64 Engine ready.' ;; *) say 'STOP: Docker must run Linux ARM64 containers.'; return 2 ;; esac
+}
+install_public_download() {
+  local url=$1 destination=$2 mode next round=0 parser=${SDV_LAB_DRIVE_PARSER:-}
+  safe_path "$parser" && [ -f "$parser" ] &&
+    [ "$(shasum -a 256 "$parser" | awk '{print $1}')" = "$INSTALL_DRIVE_SHA256" ] || return 1
+  [ ! -e "$destination.part" ] && [ ! -L "$destination.part" ] || return 1
+  while [ "$round" -lt 5 ]; do
+    round=$((round+1))
+    curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 30 \
+      --silent --show-error --head --max-filesize 65536 --output "$ROUTE_WORK/drive-head" "$url" || return 1
+    /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-head" "$url" > "$ROUTE_WORK/drive-next" || return 1
+    IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
+    case "$mode" in
+      redirect) url=$next ;;
+      html)
+        curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 30 \
+          --silent --show-error --max-filesize 65536 --output "$ROUTE_WORK/drive-form" "$url" || return 1
+        /usr/bin/perl "$parser" form "$ROUTE_WORK/drive-form" "$url" > "$ROUTE_WORK/drive-next" || return 1
+        IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
+        [ "$mode" = confirm ] || return 1; url=$next ;;
+      binary)
+        if [ -t 9 ] && [ "${TERM:-}" != dumb ]; then
+          printf '  %s\n' "${destination##*/}" >&9
+          curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
+            --progress-bar --show-error --output "$destination.part" "$url" 2>&9 || return 1
+        else
+          curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
+            --silent --show-error --output "$destination.part" "$url" || return 1
+        fi
+        mv "$destination.part" "$destination"; return $? ;;
+      *) return 1 ;;
+    esac
+  done
+  return 1
 }
 install_verify_dmg() {
   local file=$1 size=$2 expected=$3 before after
@@ -128,7 +163,7 @@ install_main() {
   mv "$ROUTE_WORK/selected-dmg" "$STATE/selected-dmg" || die 'Cannot save DMG selection.'
   if [ ! -f "$file" ]; then
     [ ! -e "$file" ] && [ ! -L "$file" ] || die 'Existing download destination preserved.'
-    run_install "Downloading $name" download "$url" "$file"
+    run_install "Downloading $name" install_public_download "$url" "$file"
   fi
   install_verify_dmg "$file" "$size" "$digest"; install_mount "$file"; install_setup
 }
