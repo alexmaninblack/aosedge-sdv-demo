@@ -98,6 +98,35 @@ print(json.dumps(dict(ownersClosed=True,desktopState='UNLOCKED',dockerEngineId=e
     h.parse(run(program))
     parent='/Users/'+transport['user']+'/SDV-Qualification/operator-'+owner.config['version']
     dmg=parent+'/sdv/cache/'+descriptor(owner)['file']
+    # A previous verified transfer is expendable, not the installed package or
+    # Test. Reclaim only that exact same-byte, unmounted, idle media when needed.
+    prior=read(Path(owner.config['operatorJourney']).parent/'campaign-plan.json')
+    from campaign import media_input
+    previous=media_input(next(owner.candidate.glob('*.dmg')),config,prior['remoteDmg'],transport['user'])
+    capacity='OLD='+repr(previous)+'\nNEW='+repr(dmg)+'''
+import hashlib,json,os,pathlib,plistlib,shutil,stat,subprocess
+reserve=90*2**30+OLD['bytes']+2**30
+deleted=False
+if shutil.disk_usage(pathlib.Path.home()).free < reserve:
+ path=pathlib.Path(OLD['remotePath'])
+ assert str(path)!=NEW and path.suffix=='.dmg' and path.exists(),'OPERATOR_TARGET_CAPACITY_REQUIRED'
+ assert not any(p.is_symlink() for p in (path,*path.parents)),'OLD_MEDIA_LINKED'
+ before=path.stat()
+ assert stat.S_ISREG(before.st_mode) and before.st_uid==os.getuid() and before.st_nlink==1 and before.st_size==OLD['bytes'],'OLD_MEDIA_IDENTITY_CHANGED'
+ images=plistlib.loads(subprocess.check_output(['/usr/bin/hdiutil','info','-plist']))['images']
+ assert not any(image.get('image-path')==str(path) for image in images),'OLD_MEDIA_STILL_MOUNTED'
+ handles=subprocess.run(['/usr/sbin/lsof','-t','--',str(path)],capture_output=True,text=True,timeout=10)
+ assert handles.returncode==1 and not handles.stdout and not handles.stderr,'OLD_MEDIA_HANDLES_UNCONFIRMED'
+ digest=hashlib.sha256()
+ with path.open('rb') as stream:
+  for chunk in iter(lambda:stream.read(2**20),b''):digest.update(chunk)
+ assert digest.hexdigest()==OLD['sha256'] and path.stat()==before,'OLD_MEDIA_BYTES_CHANGED'
+ subprocess.run(['/bin/rm','--',str(path)],check=True,timeout=10)
+ deleted=True
+assert shutil.disk_usage(pathlib.Path.home()).free>=reserve,'OPERATOR_TARGET_CAPACITY_REQUIRED'
+print(json.dumps(dict(oldTransferRemoved=deleted,bytesReclaimed=OLD['bytes'] if deleted else 0)))
+'''
+    reclaimed=h.parse(run(capacity,timeout=180))
     marker=owner.root/'consumer-launcher.intent.json'
     if marker.exists():
         # Never repeat an uncertain graphical handoff. Read its persisted output,
@@ -147,6 +176,7 @@ print(json.dumps(value))
             installed=True,installedReused=installed.get('reused'),presenterObserved=True,
             testPreserved=test,nativeSetupClicks='NOT_RUN',cleanFirstUse='NOT_RUN',
             fullE2E='NOT_COMPLETE',enginePolicy='PRESERVED',launcherSha256=intent['launcherSha256'])
+        facts['mediaCleanup']=reclaimed
     except BaseException as error:failure=error
     finally:
         try:

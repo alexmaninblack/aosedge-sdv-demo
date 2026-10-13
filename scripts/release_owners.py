@@ -185,7 +185,8 @@ class Owners:
         results = []
         with directory(self.workspace) as scratch:
             env = dict(os.environ, TMPDIR=str(scratch), PYTHONDONTWRITEBYTECODE='1',
-                       PYTHONPATH=str(ROOT/'tests')+os.pathsep+str(ROOT/'scripts'))
+                       PYTHONPATH=os.pathsep.join(map(str,(ROOT/'tests',ROOT/'scripts',
+                            ROOT/'apps/demo-orchestrator/src'))))
             for name, argv in gates:
                 print('    Checking '+name,flush=True)
                 cwd = ROOT/'apps/presenter-ui' if name.startswith('web-') else ROOT
