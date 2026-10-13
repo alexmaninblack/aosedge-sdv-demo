@@ -45,7 +45,7 @@ Source gates precede normal main integration; the new operator catalog and
 tag are promoted only after the M1 consumer check and final cleanup pass.
 The existing engineering-preview and first-use limitations remain unchanged.
 
-## Current checkpoint
+## Checkpoint at plan acceptance
 
 The following heads were remotely verified on 13 October. Reconcile them before
 execution rather than treating these dated values as moving release authority.
@@ -61,6 +61,14 @@ execution rather than treating these dated values as moving release authority.
 The UI campaigns took 20:10 and 20:20 including cleanup. These are not total
 release durations or proof of an overall speed improvement. The launcher has
 offline fixture acceptance; its real public option A first-use remains open.
+
+On 13 October the authorized Dropbox continuation completed source/delivery
+gates, anonymous M1 download, installed/open reconciliation, verified closure
+and catalog/tag promotion. The published engineering source checkpoint is
+`sdv-lab-v1.2.0-rc.1`; [release results](../../../qualification/release-automation-2026-10-13.md)
+record exact identities, recovery and timings. Native Setup button-input and
+clean-first-user acceptance remain open; this does not turn the preview into a
+fully qualified external release.
 
 ## Release rules
 

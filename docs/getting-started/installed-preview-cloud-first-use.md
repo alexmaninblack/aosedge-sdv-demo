@@ -4,17 +4,20 @@
 # Install the demo and connect Cloud access
 
 - Status: current engineering-preview instructions; complete native acceptance open
-- Version: 3.0
+- Version: 3.1
 - Prepared: 2026-10-11
+- Updated: 2026-10-13
 - Owner: Demo Solution Team
-- Implementation: Kit028 / Setup042 / Factory .41
+- Implementation: integrated Setup; exact media identity follows the launcher catalog
 
 First [select the exact release and obtain access](release-status.md), then
-use its complete approved DMG. The new source-Factory `1.2.0-rc.1` candidate
-awaits fresh installation/live qualification; earlier Kit028 / Setup042 results
-remain in the [qualification baseline](../qualification/current-baseline.md).
-The integrated Setup source follows the [authorized scenario](../planning/active/work-packets/integrated-setup-scenario.md).
-Its new candidate must pass the recorded native gates before release acceptance.
+use its complete approved DMG. The selected integrated Setup follows the
+[authorized scenario](../planning/active/work-packets/integrated-setup-scenario.md).
+Anonymous delivery and installed-package reuse/open passed the
+[engineering consumer check](../qualification/release-automation-2026-10-13.md);
+native Setup button-input and clean-first-user acceptance remain open.
+Earlier Kit028 / Setup042 results remain in the
+[qualification baseline](../qualification/current-baseline.md).
 For older Setup042 media use its original guide rather than expecting the new UI.
 No source checkout,
 Unreal Editor or local compilation is required.
@@ -22,7 +25,7 @@ Unreal Editor or local compilation is required.
 ## Before opening Setup
 
 Start with [README route A](../../README.md#install-and-run): host checks,
-Docker's separate first-run setup, exact private DMG acquisition, size/checksum
+Docker's separate first-run setup, approved DMG download, size/checksum
 comparison and opening the verified file. No source clone is needed for this
 route. Then follow the numbered actions below in order and wait for each result.
 This revised walkthrough awaits joint execution; documentation review alone

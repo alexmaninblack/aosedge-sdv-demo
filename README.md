@@ -71,10 +71,11 @@ identities belong to release records, not manually copied README constants.
 An engineering candidate is not a qualified public release.
 
 The developer route has owner-authorized public input downloads and needs no
-Google login. The approved **complete operator DMG is still privately supplied**;
-route A lets you select that file and checks its exact approved identity. It
-does not ask you for a release-index JSON path. Public build inputs do not grant
-Aos Cloud access or permission to redistribute restricted content.
+Google login. Route A downloads the selected engineering DMG from its reviewed
+public link, or reuses an approved local copy, and checks its exact identity.
+It needs no Dropbox or Google login and does not ask for a release-index JSON
+path. Public downloads do not grant Aos Cloud access or permission to
+redistribute restricted content.
 
 <a id="install-and-run"></a>
 <a id="supported-route"></a>

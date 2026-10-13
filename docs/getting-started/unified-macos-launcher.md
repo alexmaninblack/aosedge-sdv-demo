@@ -18,8 +18,8 @@ matching helpers are obtained automatically, not manually selected.
 
 A validates against the operator entry in the source-owned
 [launcher catalog](../../workspace/launcher-catalog.json), projected from the
-existing delivery descriptor. Currently that DMG has no public locator: the
-normal file picker selects the owner's approved complete download. An arbitrary
+selected immutable delivery descriptor. It downloads the reviewed public
+locator or reuses an approved local file. An arbitrary
 same-named or developer-built DMG is not accepted automatically. The matching
 Setup/kit must stay together; signed Setup remains the installation and
 Cloud-access owner. Respect OS security warnings. Setup handoff deliberately
@@ -28,11 +28,11 @@ On pre-handoff failure only a newly attached image is detached; an already
 mounted image is not owned by the launcher.
 
 An operator download locator must be separately published and source-reviewed
-before anonymous delivery is enabled. An HTML warning/sign-in page cannot pass
-the DMG size/checksum gate; no credentials or private-download fallback are
-invented. Anonymous large-Drive confirmation delivery requires its own consumer
-proof before enabling such a locator. The current path is the approved file,
-not an advertised automatic public DMG download.
+before anonymous delivery is enabled. The selected Dropbox link passed the real
+M1 consumer check. Provider redirects are bounded and HTTPS-only; HTML warning
+or sign-in pages cannot pass the DMG size/checksum gate. No credentials,
+cross-provider fallback or private-download workaround is added. Google Drive
+remains available for developer inputs and explicitly selected older deliveries.
 
 B delegates to the unchanged standalone developer script. It retains the
 [preparation reference](macos-developer-tools.md), fixed root revision on repeat,
