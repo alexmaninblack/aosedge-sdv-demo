@@ -163,6 +163,7 @@ def consumer(owner, intent):
     attempt=intent.get('consumerAttempt',1)
     require(type(attempt) is int and 1<=attempt<=9,'CONSUMER_ATTEMPT_INVALID')
     parent='/Users/'+transport['user']+'/SDV-Qualification/operator-'+owner.config['version']
+    if owner.config['delivery'].get('provider')=='dropbox':parent+='-dropbox'
     if attempt>1:parent+='-attempt-'+str(attempt)
     dmg=parent+'/sdv/cache/'+descriptor(owner)['file']
     # A previous verified transfer is expendable, not the installed package or
