@@ -9,6 +9,10 @@ assignment, VM restart, or provisioned-Unit change.
 
 ## Current implementation and remaining work
 
+- [Consolidated demo integration and release automation](active/work-packets/consolidated-release-automation.md):
+  accepted implementation packet covering Presenter and Driving Control fan-in, one release
+  campaign, M1 acceptance, public DMG delivery and option A promotion. Source
+  main integration and recommendation of a binary are separate gates.
 - [Installable distribution and reproducibility](active/installable-distribution-and-reproducibility.md):
   accepted Stage 0–7 plan for a portable Apple Silicon runtime, operator/developer
   documentation and clean-system acceptance; Kit028 installed scripted sequence passed; complete native first-use,
