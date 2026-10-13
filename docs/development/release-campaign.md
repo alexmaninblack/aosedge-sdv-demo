@@ -29,6 +29,12 @@ stops at an explicit diagnostic boundary and reports PARTIAL, never a completed
 release. One global lease serializes release work; per-candidate records also
 reject concurrent writers and changed bindings.
 
+After a source-only campaign-tool correction, `run --restart-readonly` may
+archive a BLOCKED attempt and restart all gates with the same configuration.
+It refuses any attempt that reached a mutation intent; those must be reconciled
+and resumed, not restarted. Existing evidence is retained in a numbered attempt
+directory rather than rebound to different source.
+
 Records are private and versioned under the selected workspace's
 `build/release-campaign`. They include stage results, timings and one report.
 This does not adopt or change the developer workflow's `output` result alias.

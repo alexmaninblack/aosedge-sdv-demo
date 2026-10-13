@@ -87,7 +87,7 @@ class Owners:
         finally:
             os.close(fd)
 
-    def binding(self):
+    def binding(self, *, allow_readonly_restart=False):
         self.storage()
         require(not git(ROOT, 'status', '--porcelain') and
                 not git(self.gateway, 'status', '--porcelain'), 'DIRTY_CANDIDATE_SOURCE')
@@ -97,7 +97,7 @@ class Owners:
                 ('release-campaign','release_automation.py','release_owners.py',
                  'release_publication.py','release_operator_proof.py')}))
         marker=self.root/'identity.json'
-        if marker.exists():
+        if marker.exists() and not allow_readonly_restart:
             from release_automation import read
             before=read(marker)
             if current != before:
@@ -144,7 +144,7 @@ class Owners:
         app = metadata(self.candidate/'Runtime Kit/application-manifest.json')
         seal = app['packagingCheckpoint']
         require(seal['kind'] == 'developer-build-results', 'CANDIDATE_PROVENANCE_UNSUPPORTED')
-        checkpoint = DeveloperInputs.load(self.workspace/'build/builds/developer-seals'/
+        checkpoint = DeveloperInputs.load(self.candidate/'builds/developer-seals'/
             (seal['sha256']+'.json'), seal['sha256'])
         exported = export_plan(ROOT, checkpoint)
         rows = app['applicationFiles']

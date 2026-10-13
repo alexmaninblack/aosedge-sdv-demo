@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from release_automation import (CampaignError, STAGES, atomic, configuration,
-                                execute, lease, read, safe)
+                                execute, lease, read, safe, restart_readonly)
 
 
 class Owner:
@@ -118,6 +118,17 @@ class CampaignTests(unittest.TestCase):
     def test_invalid_stop_stage_rejected_before_writes(self):
         with self.assertRaises(CampaignError):self.run_campaign(Owner(),until='arbitrary-command')
         self.assertFalse(self.root.exists())
+    def test_corrected_readonly_attempt_is_preserved_not_rebound(self):
+        self.binding={'schemaVersion':1,'configSha256':'same','source':'old'}
+        self.run_campaign(Owner('freeze'))
+        restart_readonly(self.root,dict(self.binding,source='new'))
+        self.assertFalse(self.root.exists())
+        self.assertEqual(read(self.parent/'candidate-attempt-1'/'identity.json'),self.binding)
+    def test_mutation_attempt_cannot_restart(self):
+        self.binding={'schemaVersion':1,'configSha256':'same','source':'old'}
+        self.run_campaign(Owner('publication'))
+        with self.assertRaisesRegex(CampaignError,'MUTATED'):
+            restart_readonly(self.root,dict(self.binding,source='new'))
 
 
 if __name__=='__main__':unittest.main()

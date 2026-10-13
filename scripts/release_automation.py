@@ -138,6 +138,26 @@ def code(error):
     return text if re.fullmatch('[A-Z][A-Z0-9_]{1,100}', text) else 'CAMPAIGN_OPERATION_FAILED'
 
 
+def restart_readonly(root, binding):
+    """Archive a failed read-only attempt after a tooling correction, never a mutation."""
+    root=safe(root)
+    if not root.exists():return
+    old=read(root/'identity.json')
+    require(old['configSha256']==binding['configSha256'],'RESTART_SELECTION_CHANGED')
+    report=read(root/'report.json')
+    require(report.get('outcome')=='BLOCKED' and
+            not any((root/(name+'.json')).exists() for name in MUTATIONS),
+            'MUTATED_CAMPAIGN_CANNOT_RESTART')
+    fd=os.open(root/'.lease',os.O_RDWR|os.O_NOFOLLOW)
+    try:
+        try:fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:raise CampaignError('RELEASE_ALREADY_ACTIVE') from None
+        number=1
+        while (root.parent/(root.name+'-attempt-'+str(number))).exists():number+=1
+        root.rename(root.parent/(root.name+'-attempt-'+str(number)))
+    finally:os.close(fd)
+
+
 def execute(root, binding, owner, *, resume=False, until=None, clock=time.monotonic, emit=print):
     """The owner exposes only fixed named stages; config cannot supply commands."""
     require(until is None or until in STAGES, 'INVALID_STOP_STAGE')
@@ -206,6 +226,7 @@ def main(argv=None):
     parser.add_argument('mode', choices=('plan', 'run', 'resume'))
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--until', choices=STAGES)
+    parser.add_argument('--restart-readonly', action='store_true')
     args = parser.parse_args(argv)
     try:
         selected = configuration(args.config.absolute())
@@ -215,11 +236,14 @@ def main(argv=None):
             return 0
         from release_owners import Owners
         owner = Owners(selected)
-        binding = owner.binding()
+        binding = owner.binding(allow_readonly_restart=args.restart_readonly)
         parent = safe(Path(selected['workspace']) / 'build/release-campaign')
         parent.mkdir(mode=0o700, exist_ok=True)
         root = parent / selected['version']
         with owner.global_lease(parent):
+            if args.restart_readonly:
+                require(args.mode=='run','RESTART_REQUIRES_RUN_MODE')
+                restart_readonly(root,binding)
             result = execute(root, binding, owner, resume=args.mode == 'resume', until=args.until)
         return 0 if result['outcome'] in ('PASS', 'PARTIAL') else 2
     except (Exception, KeyboardInterrupt) as error:
