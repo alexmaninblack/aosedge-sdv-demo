@@ -50,43 +50,43 @@ async function confirm(page: Page, action: string) {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 }
 
-test("service UI: prepare, cancel, publish, first Deploy, higher release without Deploy; peer preserved", async ({ page }) => {
+test("service UI: one-click prepare, cancel publication, first assignment, higher release without assignment; peer preserved", async ({ page }) => {
   const state = await serviceScenario(page);
   await page.goto("/");
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
+  await page.getByRole("button", { name: "v1 Braking windows", exact: true }).click();
   await page.getByRole("button", { name: "Prepare v1", exact: true }).click();
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  expect(state.mutations).toEqual([]);
-  await page.getByRole("button", { name: "Prepare v1", exact: true }).click();
-  await confirm(page, "Prepare service");
   await expect(page.getByText("Selected candidate · v1 · 12.0.0")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("configured Service Provider");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(state.mutations.map(row => row.action)).toEqual(["service-prepare"]);
+  await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Service Provider");
   await confirm(page, "Sign & publish service");
-  await expect(page.getByRole("button", { name: "Deploy to Test" })).toBeEnabled();
-  await page.getByRole("button", { name: "Deploy to Test" }).click();
+  await expect(page.getByRole("button", { name: "Assign to Test" })).toBeEnabled();
+  await page.getByRole("button", { name: "Assign to Test" }).click();
+  await page.getByText("Technical details and execution checks").click();
   await expect(page.getByRole("dialog")).toContainText("No version or instance count is sent");
-  await confirm(page, "Deploy service to Test");
-  await expect(page.getByRole("button", { name: "Deploy to Test" })).toHaveCount(0);
+  await confirm(page, "Assign service to Test");
+  await expect(page.getByRole("button", { name: "Assign to Test" })).toHaveCount(0);
   await expect(page.getByText("Installed 12.0.0", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tire Team", exact: true }).click();
   await page.getByRole("button", { name: "Prepare v1", exact: true }).click();
-  await confirm(page, "Prepare service");
   await expect(page.getByText("Selected candidate · v1 · 13.0.0")).toBeVisible();
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
   await confirm(page, "Sign & publish service");
-  await page.getByRole("button", { name: "Deploy to Test" }).click();
-  await confirm(page, "Deploy service to Test");
+  await page.getByRole("button", { name: "Assign to Test" }).click();
+  await confirm(page, "Assign service to Test");
   await expect(page.getByText("Installed 13.0.0", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v2 Condition assessment" }).click();
   await page.getByRole("button", { name: "Prepare v2", exact: true }).click();
-  await confirm(page, "Prepare service");
   await expect(page.getByText("Selected candidate · v2 · 14.0.0")).toBeVisible();
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
   await confirm(page, "Sign & publish service");
   await expect(page.getByText("Installed 14.0.0", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Deploy to Test" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Assign to Test" })).toHaveCount(0);
   expect([...state.assignments]).toEqual([ids.brake, ids.tire]);
   expect(state.mutations.filter(row => row.action === "service-assign")).toHaveLength(2);
   expect(state.mutations.every(row => !row.target && !row.numInstances && !row.serviceVersion)).toBe(true);
@@ -94,7 +94,7 @@ test("service UI: prepare, cancel, publish, first Deploy, higher release without
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v2 Condition assessment" }).click();
   await expect(page.getByText("Selected candidate · v2 · 14.0.0")).toBeVisible();
-  await expect(page.locator(".studio-release-stages .complete")).toHaveCount(3);
+  await expect(page.locator(".studio-release-stages .complete")).toHaveCount(4);
 });
 
 for (const viewport of [{ width: 1280, height: 720 }, { width: 1512, height: 982 }, { width: 1118, height: 1124 }]) {
@@ -109,8 +109,8 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1512, height: 982
       expect(fits.width, name).toBe(true);
       if (name === "Vehicle" && !fits.height) {
         expect(await page.locator(".studio-body").evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
-        await page.getByLabel("Factory image").scrollIntoViewIfNeeded();
-        await expect(page.getByLabel("Factory image")).toBeInViewport();
+        await page.locator(".studio-factory").scrollIntoViewIfNeeded();
+        await expect(page.locator(".studio-factory")).toBeInViewport();
       } else expect(fits.height, name).toBe(true);
     }
     await page.screenshot({ path: `test-results/studio-${viewport.width}.png` });

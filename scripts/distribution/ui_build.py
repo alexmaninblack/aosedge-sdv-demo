@@ -13,6 +13,7 @@ import time
 
 from native_bundle import BundleError, sha256
 from ui_helpers import PACKAGE, regular, tracked
+from build_scratch import directory
 
 
 def controller_metadata(data):
@@ -45,13 +46,14 @@ def build(integration, gateway, node, output):
     if not all((web / p).is_file() for p in ('node_modules/typescript/bin/tsc', 'node_modules/vite/bin/vite.js')):
         raise BundleError('Prepared offline web build dependencies required')
     output.mkdir(mode=0o700)
-    (output / 'swift-cache').mkdir()
     app = output / 'native/Driving Control.app'
     (app / 'Contents/MacOS').mkdir(parents=True)
     # Runtime requires macOS 26 in this first engineering candidate. Do not
     # retain an older plist minimum that contradicts the actual deployment target.
     (app / 'Contents/Info.plist').write_bytes(controller_metadata(info.read_bytes()))
-    policy = output / 'build-offline.sb'
+    context = directory(output.parent)
+    scratch = context.__enter__()
+    policy = scratch / 'build-offline.sb'
     policy.write_text('(version 1)\n(allow default)\n(deny network*)\n')
     steps = []
     result = {'status': 'BUILDING', 'inputHashes': hashes, 'steps': steps,
@@ -73,7 +75,7 @@ def build(integration, gateway, node, output):
         result['swift'] = run('swift-version', ['/usr/bin/xcrun', 'swiftc', '--version']).strip()
         result['node'] = actual
         common = ['/usr/bin/xcrun', 'swiftc', '-O', '-target', 'arm64-apple-macos26.0',
-                  '-module-cache-path', output / 'swift-cache']
+                  '-module-cache-path', scratch / 'swift-cache']
         run('presenter-build', [*common, presenter, '-o', output / 'native/Demo Presenter',
                                 '-framework', 'AppKit', '-framework', 'WebKit'])
         run('controller-build', [*common, keyboard, '-o', app / 'Contents/MacOS/KeyboardControl',
@@ -97,6 +99,7 @@ def build(integration, gateway, node, output):
         result['status'] = 'FAILED_BUILD'
         raise
     finally:
+        context.__exit__(None, None, None)
         (output / 'build-receipt.json').write_text(json.dumps(result, indent=2))
     return result
 

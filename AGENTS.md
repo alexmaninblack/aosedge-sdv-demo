@@ -29,6 +29,25 @@ debugging and qualification task in this repository and its worktrees.
 - Send concise factual progress while work is active; do not leave a command or
   investigation without a user-visible heartbeat for more than 60 seconds.
 
+## Scenario-first test execution
+
+The operator required this workflow on 12 October 2026. Run a complete named
+scenario through one script entry, not a conversation-driven sequence of
+individual actions. The scenario owns prerequisite checks, normal preparation,
+ordered actions, independent result checks, bounded failure evidence, timings
+and mandatory final cleanup. The agent launches and observes the campaign and
+investigates failures; routine steps must not wait for agent clicks or prompts.
+
+Check target and account-level compatibility before large builds, media work or
+live mutations. Declare retained-versus-fresh Test policy in the scenario input;
+local directory separation is not Cloud isolation. Reuse compatible artifacts
+and healthy owners inside the declared campaign. Preserve explicit cold-start,
+Stop/Start and soak tests rather than silently treating warm reuse as their proof.
+Use semantic UI controls and independently verify real effects. Journal exact
+intent, never replay unknown mutations, redact diagnostics, and report skipped
+or blocked gates honestly. Existing staging authorization and scope exclusions
+still apply; a script does not create new authority or bypass safety review.
+
 ## Standing staging test authorization
 
 On 30 September 2026 the user explicitly authorized the complete ongoing
@@ -48,6 +67,11 @@ boundary outside this scope or when a mandatory tool control requires it.
 
 ## Finish checks and follow the accepted delivery stages
 
+- The operator restricted qualification on 11 October 2026: run only unit
+  tests on the development Mac. Installation, package recovery, browser/UI,
+  simulator and live end-to-end checks must execute on the dedicated M1 using
+  its internal storage. Development-side scripts may orchestrate/read those
+  M1 checks, but a local experiment is not an alternative acceptance target.
 - At the end of a check or a paused test session, gracefully close all windows,
   servers, helpers, simulators, VMs and containers started for that check and no
   longer needed by the active sequence. Do not leave them running for convenience.

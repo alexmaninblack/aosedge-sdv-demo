@@ -32,6 +32,17 @@
 
 ## UI-STUDIO-026 — current Test Studio contract
 
+### Presenter operator experience October amendment
+
+The operator authorized the [Presenter operator experience packet](../../planning/active/work-packets/presenter-human-friendly.md)
+on 11 October 2026 for implementation and testing on a separate branch.
+For that branch, its ordinary controls, contextual next-step guidance, compact
+confirmations, explicit non-destructive stop/start and clearly named Test
+deletion supersede conflicting earlier Studio presentation rules below.
+Existing operation ownership, Safe Stop, serial delivery, uncertain-response
+reconciliation and Production exclusion remain unchanged. Branch test results
+do not establish acceptance or integration on main.
+
 Accepted scope reconciliation: 9 September 2026. This section is the current
 interaction contract for the Test-only Studio B flow. It incorporates the
 [accepted questionnaire and subsequent amendments](../../planning/active/demo-studio-delivery-plan.md).
@@ -225,6 +236,12 @@ boundaries in the earlier sections remain applicable. This amendment is not a
 waiver of platform requirements outside the bounded demo.
 
 ### State and action contract
+
+Release-profile selection is operator input, not an observation of controller
+readiness. A temporary unavailable local read must not reset that selection;
+mutations still require current owner facts. Reset authoring selections only
+after a confirmed different run or a confirmed empty-controller state, not
+because an unavailable read omits the run identity.
 
 1. **Create** composes creation of a disposable working copy from the catalog's
    immutable factory image, boot with role/DNS initialized, and preparation of

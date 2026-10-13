@@ -13,6 +13,16 @@ assignment, VM restart, or provisioned-Unit change.
   accepted implementation packet covering Presenter and Driving Control fan-in, one release
   campaign, M1 acceptance, public DMG delivery and option A promotion. Source
   main integration and recommendation of a binary are separate gates.
+- [Native UI runner pilot](active/work-packets/native-ui-runner-pilot.md):
+  semantic Accessibility identifiers and a signed local M1 executor;
+  21 mechanical stages passed in 5.075 seconds. Normal-package/live integration
+  remains a separate gate.
+- [Presenter operator experience](active/work-packets/presenter-human-friendly.md):
+  isolated review branch, implemented usability changes and separate M1
+  acceptance records; main integration is pending. The linked
+  [UI timing analysis and optimization plan](../qualification/ui-qualification-timing-2026-10-12.md)
+  preserves the original timing baseline and links the separate mechanical
+  pilot; an optimized live campaign is not yet qualified.
 - [Installable distribution and reproducibility](active/installable-distribution-and-reproducibility.md):
   accepted Stage 0–7 plan for a portable Apple Silicon runtime, operator/developer
   documentation and clean-system acceptance; Kit028 installed scripted sequence passed; complete native first-use,

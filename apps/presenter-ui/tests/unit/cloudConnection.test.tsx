@@ -52,7 +52,7 @@ it("a failed preview cannot enable selection; native chooser receives no path fr
   const port = setup(true);
   await screen.findByRole("alert");
   expect(screen.getByRole("button", { name: "Use this Cloud" })).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Choose certificate…" }));
+  fireEvent.click(screen.getByRole("button", { name: "Choose OEM certificate…" }));
   await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(2));
   expect(port.submit.mock.calls[1]?.[0]).toEqual({ action: "cloud-choose" });
 });

@@ -11,6 +11,7 @@ for (const viewport of [{width:1280,height:720},{width:1512,height:982},{width:1
  });
  await page.goto(viewport.width === 1118 ? '/#native-browser' : '/');await page.getByRole('button',{name:'Brake backend Open dashboard',exact:true}).click();
  await page.getByRole('button',{name:'Records',exact:true}).click();
+ await page.getByText('Engineering history',{exact:true}).click();
  await page.getByRole('button',{name:'Show mock history'}).click();
  await page.getByRole('button',{name:'Records',exact:true}).click();await expect(page.getByRole('button',{name:/RECORD_0 /})).toBeVisible();
  await expect(page.getByRole('button',{name:/RECORD_19/})).toHaveCount(0);

@@ -11,6 +11,7 @@ CONTINUOUS_GROUPS = (
     ('reset-tire-before', 'reset-tire-independent'),
     ('offline-off', 'cloud-online'),
     ('ignition-before', 'ignition-preserved'),
+    ('demo-stop-before', 'demo-restart-tire-product'),
 )
 
 
@@ -86,6 +87,10 @@ def evaluate(check, context):
         row = args['actual']['controller']
         return (row['fresh'] and not row['held'] and row['mode'] == 'SAFE_STOP'
                 and row['speed'] <= .5 and row['brake'] >= .99)
+    if name == 'demo-stopped':
+        row = args['actual']
+        return (row.get('stopped') is True and row.get('identity') == args['before']['local']['identity']
+                and bool(args['engineId']) and row.get('dockerEngineId') == args['engineId'])
     if name == 'autopilot-moving':
         row = args['actual']['controller']
         return (row.get('fresh') is True and row.get('held') is False and row.get('mode') == 'AUTOPILOT'
@@ -115,11 +120,16 @@ def evaluate(check, context):
             not after['local']['teams'][t]['queuedIds'] and
             set(before['local']['teams'][t]['queuedAssessmentIds']) <= set(after[t]['productIds'])
             for t in ('brake', 'tire')))
-    if name == 'ignition':
+    if name in ('ignition', 'demo-restart'):
         before, after = args['before'], args['after']
+        controller = after['local']['controller']
+        stationary = (evaluate(dict(test='safe-stop', actual=after['local']), {})
+            if name == 'ignition' else
+            controller['fresh'] and not controller['held'] and controller['mode'] == 'MANUAL'
+            and controller['speed'] <= .5 and controller['brake'] >= .99)
         return (before['local']['bootId'] != after['local']['bootId']
             and before['local']['identity'] == after['local']['identity']
-            and evaluate(dict(test='safe-stop', actual=after['local']), {})
+            and stationary
             and all(before['local']['teams'][t]['model'] == after['local']['teams'][t]['model']
                     and set(before[t]['productIds']) <= set(after[t]['productIds']) for t in ('brake', 'tire')))
     raise ValueError('UNKNOWN_POSTCONDITION')
@@ -148,6 +158,11 @@ def plan(config):
             # Let that already-issued update settle before publishing a new one.
             read(key+'-prior-update-settled', 'component-idle',
                  dict(test='equals', actual='$sample.idle', expected=True))
+            # Provision already establishes the initial stationary-Manual
+            # connection. Test-set membership can immediately offer an older
+            # component. Stop physically and settle that update before the
+            # redundant connection confirmation probes the deployed provider.
+            op('connect', 'connect-test')
         op(key+'-prepare', 'prepare', profile=profile)
         op(key+'-publish', 'publish', version='$'+key+'-prepare.version')
         read(key+'-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$'+key+'-prepare.version'))
@@ -173,6 +188,7 @@ def plan(config):
     add('installed', 'observe', args=dict(query='installed'))
     add('docker', 'dependency', timeout=120)
     add('backend-images', 'setup', args=dict(action='prepare-backends'), timeout=180)
+    add('installed-launcher', 'setup', args=dict(action='install-launcher'), timeout=150)
     add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
     add('cloud-ready', 'setup', args=dict(action='cloud-check'), timeout=150)
     add('vm-access', 'vm-access', timeout=30)
@@ -186,7 +202,6 @@ def plan(config):
     # deadlock first onboarding against an active FOTA transaction.
     op('simulation', 'start-simulation')
     op('provision', 'provision')
-    op('connect', 'connect-test')
     vdp('v1'); service('brake', 'v1', first=True)
     vdp('v2'); service('brake', 'v2')
     vdp('v3'); service('brake', 'v3'); service('tire', 'v1', first=True)
@@ -227,6 +242,27 @@ def plan(config):
         maneuver('ignition-'+team+'-maneuver', team)
         read('ignition-'+team+'-product', 'backend', dict(test='new-product', actual='$sample',
             before='$ignition-before.'+team, version='$'+key+'-prepare.version'), team=team)
+    # Exercise the new ordinary Stop/Start compositions against the same Test.
+    # This is separate from guest ignition recovery and from destructive retirement.
+    add('demo-stop-safe', 'mode', args=dict(mode='safe_stop'), timeout=30)
+    read('demo-stop-safe-observed', 'local', dict(test='safe-stop', actual='$sample'))
+    sample('demo-stop-before')
+    op('demo-stop', 'stop-demo')
+    read('demo-stopped', 'demo-stopped', dict(test='demo-stopped', actual='$sample',
+        before='$demo-stop-before', engineId='$docker.engineId'))
+    op('demo-start', 'start-demo')
+    op('demo-simulation', 'start-simulation')
+    op('demo-connect', 'connect-test')
+    read('demo-restart-vdp-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$vdp-v3-prepare.version'))
+    sample('demo-restart-after')
+    add('demo-restart-preserved', 'assert', check=dict(test='demo-restart', before='$demo-stop-before', after='$demo-restart-after'))
+    for team in ('brake', 'tire'):
+        key = 'brake-v3' if team == 'brake' else 'tire-v1'
+        read('demo-restart-'+team+'-inputs', 'backend', dict(test='restarted-inputs', actual='$sample',
+            before='$demo-stop-before.'+team, version='$'+key+'-prepare.version'), team=team)
+        maneuver('demo-restart-'+team+'-maneuver', team)
+        read('demo-restart-'+team+'-product', 'backend', dict(test='new-product', actual='$sample',
+            before='$demo-stop-before.'+team, version='$'+key+'-prepare.version'), team=team)
     # Finish is deliberately a separately scoped endpoint, never default cleanup.
     add('shutdown', 'shutdown', timeout=120)
     return steps

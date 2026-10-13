@@ -98,6 +98,19 @@ def operation_plan(payload):
         plan = [dict(domain="component", action=step, component_version=version) for step in ("sign", "upload")]
     elif action in ("start-vms", "stop-vms"):
         plan = [dict(domain="vm", action="start" if action == "start-vms" else "stop", target="test")]
+    elif action == "stop-demo":
+        # Normal ownership-checked shutdown, never retirement or Docker quit.
+        # Each owner confirms its stop before the next step may run.
+        plan = [dict(domain="simulation", action="stop", target="test"),
+                dict(domain="vm", action="stop", target="test"),
+                dict(domain="backend", action="stop", team="tire"),
+                dict(domain="backend", action="stop", team="brake")]
+    elif action == "start-demo":
+        # Resume the existing controller and retained backends; source startup
+        # and connection stay explicit. No Create, provisioning or publication.
+        plan = [dict(domain="vm", action="start", target="test"),
+                dict(domain="backend", action="start", team="brake"),
+                dict(domain="backend", action="start", team="tire")]
     elif action == "provision":
         plan = [dict(domain="unit", action="provision", target="test")]
     elif action == "workspace-restore":

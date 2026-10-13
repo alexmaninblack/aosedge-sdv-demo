@@ -112,6 +112,10 @@ are evidence, not current setup instructions. Maintainers track delivery in the
 
 ## Research
 
+- [Native UI runner pilot](planning/active/work-packets/native-ui-runner-pilot.md)
+  — semantic Accessibility design and framework comparison;
+  [M1 mechanical qualification](qualification/native-ui-runner-pilot-2026-10-12.md)
+  passed two 21-stage campaigns in about five seconds each, separate from live E2E.
 - [Native Setup permission continuity — 29 September](qualification/native-setup-signing-2026-09-29.md)
   — explicit stable signing, preserved travel state and remaining native checks.
 - [Installed first-use reconciliation — 28 September](qualification/installed-first-use-2026-09-28.md)

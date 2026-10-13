@@ -42,7 +42,7 @@ test.each(["create", "prepare-demo"])("terminal %s failure remains visible befor
   controls.session.jobs = [{ id: "failed", action, runId: null, state: "BLOCKED", startedAt: new Date().toISOString(), progress: [], results: [{ operation: "demo.create", state: "BLOCKED", message: "BACKEND_DOCKER_REQUIRED", facts: {} }] }];
   render(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
   expect(screen.getByText("BACKEND_DOCKER_REQUIRED")).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: /Trace · 1/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Activity · 1/ }));
   expect(screen.getByRole("dialog")).toHaveTextContent("BACKEND_DOCKER_REQUIRED");
   expect(screen.getByRole("dialog")).not.toHaveTextContent("No operations recorded");
 });
@@ -55,7 +55,7 @@ test("pre-run failures do not leak across an allocated run or its Finish", () =>
   expect(screen.queryByText("old failure")).not.toBeInTheDocument();
   view.rerender(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
   expect(screen.queryByText("old failure")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Trace · 0/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Activity · 0/ }));
   expect(screen.getByRole("dialog")).not.toHaveTextContent("old failure");
 });
 
@@ -69,12 +69,38 @@ test("new run resets authoring profile without changing it within the same run",
   expect(screen.getByRole("button", { name: /v1\s*Braking telemetry/ })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("unavailable local read preserves VDP selection without enabling preparation", () => {
+  state.enter.mockReturnValue(leave);
+  const view = render(<StudioWorkspace snapshot={snapshot("run")} perspective="platform" navigate={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: /v2\s*Brake analysis/ }));
+  view.rerender(<StudioWorkspace snapshot={composeLocalSnapshot(undefined, "Read unavailable")} perspective="platform" navigate={() => {}} />);
+  expect(screen.getByRole("button", { name: /v2\s*Brake analysis/ })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Prepare v2" })).toBeDisabled();
+  expect(controls.request).not.toHaveBeenCalled();
+  view.rerender(<StudioWorkspace snapshot={snapshot("run")} perspective="platform" navigate={() => {}} />);
+  expect(screen.getByRole("button", { name: /v2\s*Brake analysis/ })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Prepare v2" }));
+  expect(controls.request).toHaveBeenCalledExactlyOnceWith({ action: "prepare", profile: "v2" });
+});
+
+test("unknown read cannot reset service selection but confirmed empty state can", () => {
+  state.enter.mockReturnValue(leave);
+  const view = render(<StudioWorkspace snapshot={snapshot("run")} perspective="brake" navigate={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: /v3\s*Driver advisory/ }));
+  view.rerender(<StudioWorkspace snapshot={composeLocalSnapshot(undefined, "Read unavailable")} perspective="brake" navigate={() => {}} />);
+  expect(screen.getByRole("button", { name: /v3\s*Driver advisory/ })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Prepare v3" })).toBeDisabled();
+  view.rerender(<StudioWorkspace snapshot={snapshot()} perspective="brake" navigate={() => {}} />);
+  expect(screen.getByRole("button", { name: /v1\s*Braking windows/ })).toHaveAttribute("aria-pressed", "true");
+  expect(controls.request).not.toHaveBeenCalled();
+});
+
 test("open Trace acknowledges Finish after retirement removes the run ID", () => {
   state.enter.mockReturnValue(leave);
   controls.session.jobs = [{ id: "finish", action: "reset", runId: "retired", state: "COMPLETED", startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), progress: [], results: [{ operation: "demo.retire", state: "COMPLETED", message: "Owned Test removed", facts: {} }] }];
   render(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
-  fireEvent.click(screen.getByRole("button", { name: /Trace/ }));
-  expect(screen.getByRole("dialog")).toHaveTextContent("Demo finished");
+  fireEvent.click(screen.getByRole("button", { name: /Activity/ }));
+  expect(screen.getByRole("dialog")).toHaveTextContent("Test deleted");
   expect(screen.getByRole("dialog")).not.toHaveTextContent("No operations recorded");
 });
 

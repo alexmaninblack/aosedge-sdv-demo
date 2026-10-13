@@ -22,8 +22,8 @@ export function useResetScenario(team: Team, model: BackendModel, binding?: Back
   const compatible = !!binding?.current && (team === "brake" ? binding.profile === "v3" : binding.profile === "v1");
   const reason = pending ? currentIntent?.phase === "UNKNOWN" && !job ? "Reset submission response lost · reconciling the original request. Do not repeat it."
     : currentIntent?.phase === "SUBMITTING" && !job ? "Resetting driver advisory… · submitting the current request" : "Resetting driver advisory… · waiting for Gateway CLEAR confirmation"
-    : uncertain ? `Reset ${readable(reset?.command?.state).toLowerCase()} · outcome unconfirmed; partial application is possible. History retained.${!reset?.connected ? ` Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : " Inspect Trace; do not repeat blindly."}`
-    : retiring ? "Reset unavailable during Finish."
+    : uncertain ? `Reset ${readable(reset?.command?.state).toLowerCase()} · outcome unconfirmed; partial application is possible. History retained.${!reset?.connected ? ` Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : " Inspect Activity; do not repeat blindly."}`
+    : retiring ? "Reset unavailable during Test deletion."
     : unavailableReason ? unavailableReason
     : model.error ? "Reset unavailable until backend contact is restored."
     : summary.resetState === "CLEARED" ? `Driver advisory reset · Gateway confirmed CLEAR. This is not a telemetry-readiness report. Last reset confirmed for release ${readable(reset?.command?.serviceVersion)} · ${stamp(recordObject(recordObject(reset?.command?.result).gatewayStatus).gatewayObservedAt as string)}${!reset?.connected ? `. Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : ""}`

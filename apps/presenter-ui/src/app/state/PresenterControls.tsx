@@ -10,14 +10,30 @@ export const actionLabels: Record<DemoCommand["action"], string> = {
   "cloud-check": "Check Cloud setup", "cloud-prepare": "Prepare Test Cloud",
   "backend-reset": "Reset Driver Advisory",
   publish: "Sign & publish VDP", "service-prepare": "Prepare service", "service-publish": "Sign & publish service",
-  "service-observe": "Refresh service publication", "service-assign": "Deploy service to Test",
+  "service-observe": "Refresh service publication", "service-assign": "Assign service to Test",
   "prepare-demo": "Prepare demo",
-  create: "Create controller", "start-vms": "Start Test controller", "stop-vms": "Stop Test controller", provision: "Provision Test Vehicle",
-  "start-simulation": "Start simulator", "stop-simulation": "Stop simulator", "connect-test": "Connect in Manual", "reconnect-test": "Reconnect Test Vehicle", park: "Park demo", resume: "Resume demo", reset: "Finish demo",
+  create: "Create controller", "start-demo": "Start controller", "stop-demo": "Stop demo and keep data", "start-vms": "Start Test controller", "stop-vms": "Stop Test controller", provision: "Provision Test Vehicle",
+  "start-simulation": "Start simulator", "stop-simulation": "Stop simulator", "connect-test": "Connect in Manual", "reconnect-test": "Reconnect Test Vehicle", park: "Park demo", resume: "Resume demo", reset: "Delete Test & start over",
   prepare: "Prepare VDP", unpack: "Unpack VDP", sign: "Sign VDP", upload: "Publish VDP to Aos Cloud", approve: "Authorize Test VDP deployment",
   inspect: "Inspect VDP", verify: "Verify VDP signature", "cloud-status": "Read Cloud release state", "observe-test": "Read Test VDP state", "test-logs": "Read Test VDP logs", "cloud-access": "Check OEM and Service Provider access",
 };
 const reads = new Set<DemoCommand["action"]>(["inspect", "verify", "cloud-status", "observe-test", "test-logs", "cloud-access", "service-observe", "cloud-inspect", "cloud-choose", "cloud-check"]);
+const routine = new Set<DemoCommand["action"]>(["create", "prepare", "service-prepare", "start-simulation", "start-demo", "workspace-restore", "backend-reset"]);
+export function operationEffect(action: DemoCommand["action"]) {
+  if (action === "reset") return "Permanently delete the current Test's Cloud Unit, working VM and run data. Factory images, published releases and Production are preserved. There is no undo.";
+  if (action === "stop-demo") return "Stop the current Test simulator, controller and its two backends. Keep its Cloud identity, disk, models and history. Docker Engine and Production stay unchanged. Presenter remains open to show the result.";
+  if (action === "publish" || action === "upload") return "Publish this VDP release to the selected Cloud. Eligible vehicles may receive it immediately; application still requires native Safe Stop.";
+  if (action === "service-publish") return "Publish this service release. Already assigned vehicles may receive the update immediately, without another assignment or Safe Stop.";
+  if (action === "service-assign") return "Assign this service to the current Test for the first time. Cloud delivers its eligible published release. The other service is unchanged; Safe Stop is not required.";
+  if (action === "provision") return "Register the current controller in Test Vehicles and connect the existing simulator in stationary Manual. No new simulator or Autopilot is started.";
+  if (action === "prepare-demo") return "Create or continue this Test, start the simulator, prepare and publish VDP V1, then register and connect in Manual. Use native Safe Stop afterward to allow installation.";
+  if (action === "cloud-select") return "Select the Cloud described by this OEM certificate. Service Provider access must match. A provisioned Test cannot be switched to another Cloud.";
+  if (action === "cloud-prepare") return "Check the selected OEM/SP and prepare only missing demo model and Test-set prerequisites. No Unit is created and no release is published.";
+  return "Execute this operation once on the current owned Test. No automatic retry or additional provisioning is implied.";
+}
+export function operationStateLabel(state: string) {
+  return ({ COMPLETED: "Completed", OBSERVED: "Checked", RUNNING: "In progress", ACCEPTED: "Starting", BLOCKED: "Needs attention", FAILED: "Failed", PARTIAL: "Incomplete", UNCERTAIN: "Outcome not confirmed" } as Record<string, string>)[state] ?? state;
+}
 export function preparationRecovery(job?: DemoJob | null) {
   if (!job || !["prepare", "service-prepare"].includes(job.action) || !["BLOCKED", "FAILED"].includes(job.state)) return null;
   const reason = [job.reason, ...job.results.map(result => result.message)].join(" ");
@@ -85,8 +101,8 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
     : session.sourceRecoveryBusy ? "Restoring the controller connection after startup. The vehicle stays in Safe Stop; Autopilot will not resume automatically."
     : recoveryUncertain ? "Controller connection recovery is incomplete. Reconcile the existing attempt before changing the environment. Read-only observations remain available."
     : session.workspaceBusy ? "Restoring the desktop window layout; the demo continues running."
-    : session.active || busy ? "An operation is in progress; open Trace for its current step."
-    : session.uncertain || unresolved.current ? "An operation outcome is unknown. Finish cannot safely overlap it; inspect Trace and reconcile the original operation before continuing. Read-only observations remain available." : null;
+    : session.active || busy ? "An operation is in progress; open Activity for its current step."
+    : session.uncertain || unresolved.current ? "An operation outcome is unknown. Stop or deletion cannot safely overlap it; inspect Activity and reconcile the original operation before continuing. Read-only observations remain available." : null;
   useEffect(() => {
     document.documentElement.dataset.submissionPending = String(busy || Boolean(unresolved.current) || Boolean(session?.uncertain));
     return () => { delete document.documentElement.dataset.submissionPending; };
@@ -116,7 +132,7 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
   }, [port, session, blocked, readBlocked]);
   const request = (command: DemoCommand, resetScope?: string) => {
     if (reads.has(command.action) ? readBlocked : blocked) return;
-    if (reads.has(command.action) || command.action === "backend-reset") void submit(command, resetScope); else setConfirmation(command);
+    if (reads.has(command.action) || routine.has(command.action)) void submit(command, resetScope); else setConfirmation(command);
   };
   const close = useCallback(() => setConfirmation(null), []);
   const bundleRead = confirmation?.version ? [...(session?.jobs ?? [])].reverse().find((job) => job.cloudDomain === session?.cloudDomain && job.version === confirmation.version && job.results.some((result) => typeof result.facts.sha256 === "string")) : undefined;
@@ -127,9 +143,11 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
     && job.state === "COMPLETED" && job.results.some(result => typeof result.facts.serviceProviderId === "string")) : undefined;
   const providerId = providerReceipt?.results.find(result => typeof result.facts.serviceProviderId === "string")?.facts.serviceProviderId;
   return <Context.Provider value={{ session, blocked, readBlocked, blockReason, error, resetSubmissions, request }}>{children}
-    {confirmation && createPortal(<Modal title={actionLabels[confirmation.action]} subtitle="Protected operation · explicit confirmation required" onClose={close}
+    {confirmation && createPortal(<Modal title={actionLabels[confirmation.action]} subtitle="Review this action" onClose={close}
       footer={<><button className="button" onClick={close}>Cancel</button><button className="button button-primary" disabled={blocked} onClick={() => void submit(confirmation)}>{actionLabels[confirmation.action]}</button></>}>
-      <dl className="detail-grid"><dt>Actor</dt><dd>{confirmation.action === "service-assign" ? "OEM · dedicated service Subject" : confirmation.action.startsWith("service-") ? `${confirmation.team ?? confirmation.release?.split("/")[0] ?? "Service"} Team · configured Service Provider` : ["prepare", "unpack", "sign", "upload", "publish"].includes(confirmation.action) ? "Platform Team · selected session OEM" : "Demo operator · current owned environment"}</dd>
+      <p className="operation-effect">{operationEffect(confirmation.action)}</p>
+      {publishing && <dl className="detail-grid"><dt>Cloud</dt><dd>{session?.cloudDomain ?? "Not confirmed"}</dd><dt>Release</dt><dd>{confirmation.release ?? confirmation.version}</dd><dt>Signed by</dt><dd>{confirmation.action === "service-publish" ? "Service Provider" : "OEM"}</dd></dl>}
+      <details><summary>Technical details and execution checks</summary><dl className="detail-grid"><dt>Actor</dt><dd>{confirmation.action === "service-assign" ? "OEM · dedicated service Subject" : confirmation.action.startsWith("service-") ? `${confirmation.team ?? confirmation.release?.split("/")[0] ?? "Service"} Team · configured Service Provider` : ["prepare", "unpack", "sign", "upload", "publish"].includes(confirmation.action) ? "Platform Team · selected session OEM" : "Demo operator · current owned environment"}</dd>
         <dt>Target</dt><dd>{confirmation.action === "workspace-restore" ? "Owned demo windows on this Mac's built-in display. No vehicle or Cloud changes." : ["upload", "publish", "service-publish"].includes(confirmation.action) ? "Configured Cloud publication context. Cloud distributes to eligible recipients; no Production membership or assignment is changed." : "Current Test Vehicle only. Production remains unchanged."}</dd>
         {publishing && <><dt>Selected Cloud</dt><dd>{session?.cloudDomain ?? "Not observed — execution must verify the configured destination"}</dd>
           <dt>Signing authority</dt><dd>{confirmation.action === "service-publish" ? "Selected session Service Provider certificate" : "Selected session OEM certificate"}</dd>
@@ -148,7 +166,7 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
         {confirmation.version && <><dt>Cloud release</dt><dd>{confirmation.version}{confirmation.profile ? ` · content ${confirmation.profile}` : ""}</dd></>}
         {confirmation.version && <><dt>Last observed bundle SHA</dt><dd>{bundleDigest ? String(bundleDigest) : "Not yet observed — inspect/sign the selected release to see its digest"}</dd></>}
         <dt>Checks</dt><dd>Demo Control checks current ownership, exact target, required access and prerequisites when executing. UI state is not permission to bypass them.</dd>
-        <dt>Effect</dt><dd>{confirmation.action === "workspace-restore" ? "Restore and verify window positions. If locked, defer until unlock; retry window readiness at most three times. No lifecycle action is retried." : confirmation.action === "reset" ? "Retire the owned Test run through Demo Control: detach and stop, clear its Subject bindings, deprovision/delete the Unit, remove its local working files and scoped backend data. Permanent, no backup. Factory originals, published releases and release continuity remain. Production is untouched." : ["upload", "publish"].includes(confirmation.action) ? "Sign if needed and publish this exact bundle to Aos Cloud. An eligible verification-set Unit can receive it immediately; no batch-approval step is required. Installed and Running remain separate observations." : confirmation.action === "service-publish" ? "Sign and publish this prepared service through its configured Service Provider. Already assigned recipients can receive a higher release without another Deploy and without Safe Stop. Publication alone does not create a first assignment." : "Execute the named existing Demo Control operation once. No automatic retry or additional provisioning is implied."}</dd></dl>
+        <dt>Effect</dt><dd>{operationEffect(confirmation.action)}</dd></dl></details>
       {["create", "start-vms", "prepare-demo"].includes(confirmation.action) && <p>VM access opens a macOS password dialog if it is not in Keychain. Choose Use once or Save in Keychain. Cancel stops preparation; no password enters this page.</p>}
     </Modal>, document.querySelector(".browser-workspace") ?? document.body)}
   </Context.Provider>;
@@ -165,7 +183,7 @@ export function OperationProgress({ job: selectedJob }: { job?: DemoJob | null }
   if (!job && !error) return null;
   return <section className="operation-progress" aria-live="polite" role="status">
     {error && <p className="operation-error">{error}</p>}
-    {job && <><strong>{actionLabels[job.action]} · {job.state}{Number.isFinite(elapsed) ? ` · ${elapsed}s` : ""}</strong>{active && <p>{job.progress.at(-1)}</p>}
+    {job && <><strong>{actionLabels[job.action]} · {operationStateLabel(job.state)}{Number.isFinite(elapsed) ? ` · ${elapsed}s` : ""}</strong>{active && <p>{job.progress.at(-1)}</p>}
       {job.reason && <p>{job.reason}</p>}
       {recovery && <p className="operation-recovery">{recovery}</p>}
       {job.results.at(-1) && <p>{job.results.at(-1)!.message}</p>}

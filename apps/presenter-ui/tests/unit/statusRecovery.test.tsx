@@ -28,9 +28,9 @@ test("uncertain mutation leaves diagnostics available without enabling Finish or
   await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
   expect(port.submit.mock.calls[0][0]).toEqual({ action: "cloud-inspect" });
   expect(screen.getByRole("button", { name: "Finish demo" })).toBeDisabled();
-  expect(screen.getByText(/Finish cannot safely overlap/)).toBeVisible();
-  await waitFor(() => expect(screen.getByRole("button", { name: "Read configured certificate" })).toBeEnabled());
-  fireEvent.click(screen.getByRole("button", { name: "Read configured certificate" }));
+  expect(screen.getByText(/Stop or deletion cannot safely overlap/)).toBeVisible();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Refresh OEM certificate details" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Refresh OEM certificate details" }));
   await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(2));
   expect(port.submit.mock.calls.every(([command]) => command.action === "cloud-inspect")).toBe(true);
 });
@@ -42,7 +42,8 @@ test("current session configuration outranks an earlier successful Cloud selecti
   render(<PresenterControls port={port}><CloudConnectionPanel /></PresenterControls>);
   await waitFor(() => expect(screen.getAllByText("new.test")).toHaveLength(2));
   expect(screen.queryByText("old.test")).toBeNull();
-  expect(screen.getByText(/does not verify Cloud API or Service Provider/)).toBeVisible();
+  expect(screen.getByText(/does not verify Cloud API access/)).toBeVisible();
+  expect(screen.getByText(/Configure the associated Service Provider in Setup/)).toBeVisible();
 });
 
 test("explicit empty activity scope never displays a previous run job", async () => {

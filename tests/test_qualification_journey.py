@@ -23,14 +23,82 @@ class Clock:
 
 
 class JourneyTests(unittest.TestCase):
+    def test_installation_includes_pinned_launcher_before_cloud_and_runtime(self):
+        steps = p.plan({'image': 'factory'})
+        ids = [step['id'] for step in steps]
+        self.assertEqual(next(s for s in steps if s['id'] == 'installed-launcher')['args'],
+                         dict(action='install-launcher'))
+        self.assertLess(ids.index('backend-images'), ids.index('installed-launcher'))
+        self.assertLess(ids.index('installed-launcher'), ids.index('cloud-pair'))
+        self.assertLess(ids.index('installed-launcher'), ids.index('presenter'))
+
+    def test_stop_start_uses_existing_test_without_new_publication_or_provision(self):
+        steps = p.plan({'image':'factory'})
+        ids = [row['id'] for row in steps]
+        tail = steps[ids.index('demo-stop-before'):ids.index('shutdown')]
+        actions = [row['args']['action'] for row in tail if row['kind'] == 'presenter']
+        self.assertEqual(actions, ['stop-demo', 'start-demo', 'start-simulation', 'connect-test'])
+        self.assertTrue({'stop-demo', 'start-demo'} <= w.OPERATIONS)
+        self.assertIn(('demo-stop-before', 'demo-restart-tire-product'), p.CONTINUOUS_GROUPS)
+        self.assertLess(ids.index('ignition-tire-product'), ids.index('demo-stop-before'))
+        self.assertLess(ids.index('demo-stop-safe-observed'), ids.index('demo-stop-before'))
+        self.assertEqual(next(s for s in steps if s['id']=='demo-restart-preserved')['check']['test'], 'demo-restart')
+
+    def test_demo_restart_requires_stationary_manual_and_preserves_the_ignition_contract(self):
+        before = dict(local=dict(bootId='old',identity={'unitId':'unit'},
+            teams={t:dict(model='model-'+t) for t in ('brake','tire')}),
+            **{t:dict(productIds=['product-'+t]) for t in ('brake','tire')})
+        after = copy.deepcopy(before)
+        after['local']['bootId'] = 'new'
+        after['local']['controller'] = dict(fresh=True,held=False,mode='MANUAL',speed=0,brake=1)
+        check = dict(test='demo-restart',before=before,after=after)
+        self.assertTrue(p.evaluate(check,{}))
+        self.assertFalse(p.evaluate(dict(check,test='ignition'),{}))
+        safe = copy.deepcopy(check);safe['after']['local']['controller']['mode']='SAFE_STOP'
+        self.assertTrue(p.evaluate(dict(safe,test='ignition'),{}))
+        self.assertFalse(p.evaluate(safe,{}))
+        for key,bad in [('fresh',False),('held',True),('mode','AUTOPILOT'),('speed',1),('brake',0)]:
+            changed=copy.deepcopy(check);changed['after']['local']['controller'][key]=bad
+            self.assertFalse(p.evaluate(changed,{}),key)
+        for key,bad in [('bootId','old'),('identity',{'unitId':'other'})]:
+            changed=copy.deepcopy(check);changed['after']['local'][key]=bad
+            self.assertFalse(p.evaluate(changed,{}),key)
+        for team in ('brake','tire'):
+            changed=copy.deepcopy(check);changed['after']['local']['teams'][team]['model']='changed'
+            self.assertFalse(p.evaluate(changed,{}),team)
+            changed=copy.deepcopy(check);changed['after'][team]['productIds']=[]
+            self.assertFalse(p.evaluate(changed,{}),team)
+
+    def test_demo_stopped_requires_fresh_owner_results_exact_identity_and_live_docker(self):
+        state = dict(vehicles={'test':dict(localVmId='test',unitId='unit',nodeId='node',systemUid='system')}, currentVehicle=None)
+        snapshot = dict(vehicles={'test':dict(state='CURRENT',process='STOPPED')})
+        source = dict(state='STOPPED',selectedVehicle=None)
+        backends = dict(teams={t:dict(state='STOPPED') for t in ('brake','tire')})
+        docker = dict(engineId='engine')
+        actual = w.demo_stopped_projection(state,snapshot,source,backends,docker)
+        check = dict(test='demo-stopped',actual=actual,before={'local':{'identity':actual['identity']}},engineId='engine')
+        self.assertTrue(p.evaluate(check,{}))
+        for index, field, bad in [(1,'state','STALE'),(1,'process','UNKNOWN'),(2,'state','NOT_RUNNING'),
+                                  (2,'selectedVehicle','test'),(0,'currentVehicle','test')]:
+            values = copy.deepcopy([state,snapshot,source,backends,docker])
+            target = values[index]['vehicles']['test'] if index==1 else values[index]
+            target[field] = bad
+            self.assertFalse(w.demo_stopped_projection(*values)['stopped'])
+        for team in ('brake','tire'):
+            bad = copy.deepcopy(backends);bad['teams'][team]['state']='UNKNOWN'
+            self.assertFalse(w.demo_stopped_projection(state,snapshot,source,bad,docker)['stopped'])
+        for field,bad in [('identity',{}),('dockerEngineId',None),('dockerEngineId','other')]:
+            changed=copy.deepcopy(check);changed['actual'][field]=bad
+            self.assertFalse(p.evaluate(changed,{}))
+
     def test_simulator_precedes_provisioning_and_automatic_fota_membership(self):
         ids = [step['id'] for step in p.plan({'image': 'factory'})]
         self.assertLess(ids.index('controller-create'), ids.index('simulation'))
         self.assertLess(ids.index('simulation'), ids.index('provision'))
-        self.assertLess(ids.index('provision'), ids.index('connect'))
-        self.assertLess(ids.index('connect'), ids.index('vdp-v1-safe'))
+        self.assertLess(ids.index('provision'), ids.index('vdp-v1-safe'))
         self.assertLess(ids.index('vdp-v1-safe-observed'), ids.index('vdp-v1-prior-update-settled'))
-        self.assertLess(ids.index('vdp-v1-prior-update-settled'), ids.index('vdp-v1-prepare'))
+        self.assertLess(ids.index('vdp-v1-prior-update-settled'), ids.index('connect'))
+        self.assertLess(ids.index('connect'), ids.index('vdp-v1-prepare'))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -209,6 +277,16 @@ class JourneyTests(unittest.TestCase):
             self.assertEqual(report['support'][-1]['code'],'EXPERIMENT_INTERRUPTED_REBASE_REQUIRED')
             self.assertEqual(report['engineering'][1]['outcome'],'NOT_RUN')
 
+    def test_interrupted_demo_stop_start_is_not_spliced_across_shutdown(self):
+        steps=[dict(id='demo-stop-before',kind='observe'),dict(id='demo-restart-tire-product',kind='observe')]
+        with h.Journal(self.root,'x') as journal:
+            runner=self.runner(journal);runner.run(steps,'demo-stop-before')
+            runner.run_step(dict(id='shutdown',kind='shutdown'),{})
+            self.calls.clear();report=runner.run(steps)
+            self.assertEqual(self.calls,[])
+            self.assertEqual(report['support'][-1]['code'],'EXPERIMENT_INTERRUPTED_REBASE_REQUIRED')
+            self.assertEqual(report['engineering'][1]['outcome'],'NOT_RUN')
+
     def test_resume_restores_only_previously_reached_runtime_owners(self):
         steps=[dict(id='controller-create',kind='presenter'),dict(id='controller-start',kind='presenter'),
                dict(id='next',kind='observe')]
@@ -286,6 +364,40 @@ class JourneyTests(unittest.TestCase):
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_launcher_install_requires_fresh_status_and_reconcile_never_replays(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            app = Path(tmp) / 'Setup.app'
+            executable = app / 'Contents/MacOS/SDVLabSetup'
+            release = app / 'Contents/Resources/tooling/scripts/distribution/setup_release.json'
+            executable.parent.mkdir(parents=True); executable.write_bytes(b'fixture')
+            release.parent.mkdir(parents=True); release.write_text(json.dumps(dict(manifestSha256='a'*64)))
+            worker = object.__new__(w.Worker)
+            worker.config = dict(setupApp=str(app), setupSha256=hashlib.sha256(b'fixture').hexdigest())
+            worker.pin = 'a'*64; worker.args = dict(action='install-launcher')
+            worker.request = dict(phase='execute'); worker.attempted = False
+            installed = dict(status='SETUP_LAUNCHER_INSTALLED')
+            observed = dict(status='SETUP_INSTALLED_OBSERVED', localInstalled=True,
+                backendsObserved=True, launcherObserved=True, oemPath='private-path', spPath='private-path')
+            with patch.object(w.subprocess, 'run'):
+                worker.setup_call = Mock(side_effect=[installed, observed])
+                value = worker.setup()
+                self.assertEqual(value['outcome'], 'PASS')
+                self.assertTrue(worker.attempted)
+                self.assertEqual([call.args[0] for call in worker.setup_call.call_args_list],
+                                 ['install-launcher', 'setup-status'])
+                self.assertNotIn('private-path', json.dumps(value))
+                worker.request['phase'] = 'reconcile'; worker.attempted = False
+                worker.setup_call = Mock(return_value=observed)
+                self.assertTrue(worker.setup()['facts']['reconciliationOnly'])
+                worker.setup_call.assert_called_once_with('setup-status')
+                self.assertFalse(worker.attempted)
+                for field in ('localInstalled', 'backendsObserved', 'launcherObserved'):
+                    for bad in (False, None, 1, 'true'):
+                        worker.setup_call = Mock(return_value=dict(observed, **{field: bad}))
+                        with self.assertRaisesRegex(ValueError, 'SETUP_LAUNCHER_NOT_OBSERVED'):
+                            worker.setup()
+                        worker.setup_call.assert_called_once_with('setup-status')
+
     def test_prior_component_update_must_settle_before_new_publication(self):
         def sample(state='CURRENT', rows=None):
             return w.component_idle_projection(dict(components=dict(state=state, value=rows)))
@@ -609,6 +721,45 @@ class DockerPolicyTests(unittest.TestCase):
         modules={'aosedge_demo_orchestrator.presenter_operations':N(operation_plan=lambda v:None)}
         with patch.dict(sys.modules,modules),patch.object(worker,'binding',return_value={}):
             with self.assertRaisesRegex(ValueError,'ASSIGNMENT_ABSENCE_UNCONFIRMED'):worker.presenter()
+
+    def test_confirmed_assignment_reconciles_after_session_exit_without_cloud_mutation(self):
+        from types import SimpleNamespace as N
+        test=dict(unitId='unit',systemUid='system',unitSetId='set')
+        operation=dict(state='UNCERTAIN',reason='CLOUD_HTTP_503',serviceId='sid',test=test,
+            publishedVersion='131.0.0',steps={s:dict(stage='CONFIRMED') for s in ('bind','assign')})
+        state=dict(vehicles={'test':test},serviceOperations={'sid':operation})
+        worker=self.worker();worker.args={'action':'service-assign','serviceId':'sid'}
+        worker.request.update(phase='reconcile')
+        cloud=Mock(return_value={})
+        worker.app=N(environment_service='environment',unit_service=N(_cloud=cloud))
+        resolution=dict(state='ASSIGNED',noOp=True,test=test,observation=dict(
+            unitBound=True,serviceBound=True,package=dict(version='131.0.0')))
+        def owner(environment, units):
+            self.assertEqual(environment,'environment')
+            def assign(sid):
+                self.assertEqual(sid,'sid')
+                units._cloud('service-assignment-observe',serviceId=sid)
+                with self.assertRaisesRegex(ValueError,'ASSIGNMENT_MUTATION_FORBIDDEN'):
+                    units._cloud('service-assignment-step',serviceId=sid)
+                return resolution
+            return N(assign=assign)
+        modules={'aosedge_demo_orchestrator.presenter_operations':N(operation_plan=lambda v:None),
+                 'aosedge_demo_orchestrator.service_assignment':N(ServiceAssignment=owner)}
+        with patch.dict(sys.modules,modules),patch.object(worker,'binding',return_value=state), \
+             patch.object(w,'exchange',side_effect=AssertionError('expired Presenter not needed')):
+            self.assertTrue(worker.presenter()['facts']['reconciliationOnly'])
+            self.assertFalse(worker.attempted)
+            for key,bad in [('test',dict(test,unitId='another')),('steps',{}),('serviceId','another')]:
+                changed=copy.deepcopy(state);changed['serviceOperations']['sid'][key]=bad
+                with patch.object(worker,'binding',return_value=changed), \
+                     self.assertRaisesRegex(ValueError,'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED'):
+                    worker.presenter()
+            for key,bad in [('noOp',False),('state','UNCERTAIN'),('test',{}),('observation',{})]:
+                saved=resolution[key];resolution[key]=bad
+                with self.assertRaisesRegex(ValueError,'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED'):
+                    worker.presenter()
+                resolution[key]=saved
+        self.assertTrue(all(call.args == ('service-assignment-observe',) for call in cloud.call_args_list))
 
     def test_publication_read_projects_only_fixed_fields(self):
         from types import SimpleNamespace as N

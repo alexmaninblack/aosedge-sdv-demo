@@ -6,14 +6,380 @@
 This development-side tool records bounded checks and transfers one pinned
 engineering kit to the dedicated M1. It is not an installer, runtime owner,
 Cloud client or formal qualification dossier. Native Setup and Demo Control
-remain the installation and lifecycle authorities. UI acceptance is performed
-through Screen Sharing, not inferred from SSH output.
+remain the installation and lifecycle authorities. UI acceptance requires
+actual input and independently observed effects, not an SSH launch receipt.
+
+## Autonomous scenario entry
+
+New campaigns use one complete scenario entry. The agent launches it and
+investigates failures; routine stages and clicks do not wait for conversation.
+The [native controls campaign](../../docs/qualification/native-controls-campaign.md)
+combines preflight, scoped normal preparation, real M1 UI execution, independent
+result checks, timings, bounded failure evidence and verified final cleanup:
+
+```sh
+python3 -B scripts/qualification/native_controls_campaign.py --plan PRIVATE_CAMPAIGN_JSON
+```
+
+Keep the selected candidate, Test policy and authorized target in the private
+plan. No automatic publication, retirement or new permission follows from the
+entry. Individual commands below are building blocks and diagnostic interfaces,
+not routine agent-managed campaign steps. The policy is in
+[rapid development and debugging](../../docs/governance/rapid-development-and-debugging.md#scenario-execution-policy).
+
+## Native semantic runner pilot
+
+The [approved pilot](../../docs/planning/active/work-packets/native-ui-runner-pilot.md)
+uses stable Accessibility IDs and fresh screen frames rather than stored click
+coordinates. A separate signed GUI-session client on M1 posts genuine mouse
+down/up events to five buttons in the exact production Driving Control view.
+A test fixture records whether the normal mouse handler actually received each
+action. This is a mechanical fixture gate, not a connected vehicle or installed
+package E2E test. The existing Presenter Playwright scenarios remain unchanged.
+
+Build only the two small native apps on the development Mac, using SSD scratch:
+
+```sh
+python3 -B scripts/qualification/native_ui_build.py \
+  --workspace EXISTING_BUILD_WORKSPACE --gateway GATEWAY_CHECKOUT \
+  --output NEW_CANDIDATE_DIRECTORY
+```
+
+Transfer, verify signatures/digests and launch the fixed client on M1:
+
+```sh
+python3 -B scripts/qualification/native_ui_pilot.py prepare \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --build VERIFIED_NATIVE_CANDIDATE --run-id native-ui-pilot-YYYYMMDD
+```
+
+The first use requires a one-time, explicitly authorized Accessibility grant to
+**Native UI Runner**, not SSH. `ACCESSIBILITY_PERMISSION_REQUIRED` is not a
+passed input test. Once `runner-status.json` reports `READY`, execute one fixed
+local campaign on M1:
+
+```sh
+python3 -B scripts/qualification/native_ui_pilot.py run \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --build VERIFIED_NATIVE_CANDIDATE --run-id native-ui-pilot-YYYYMMDD
+```
+
+The campaign checks all five actions, movement/resize, disabled/missing/duplicate
+and obstructed targets, a minimized window, invalid action, wrong binary/process
+and persistent-request non-reexecution. Each request has an exclusive intent
+and correlated receipt. No direct Gateway RPC, shell action, OCR fallback or
+silent replay can satisfy the gate. Failures retain evidence and close both
+owned apps; the installed Test, VM, credentials and shared Docker remain intact.
+After an uncertain transport response, inspect the same report instead of
+rerunning the campaign. Use a new run ID only after a diagnosed failure and
+verified normal cleanup.
+
+Local unit gates never launch a GUI:
+
+```sh
+python3 -B -m unittest discover -s scripts/qualification -p 'test_native_ui_*.py' -v
+```
 
 Native `Open demo` must be invoked in the signed Setup GUI. Launching its
 Python helper through SSH can attribute Accessibility to `sshd-keygen-wrapper`,
 not Setup. Do not grant SSH Accessibility to make this check pass. The journey
 adapter blocks `setup/launch`; reconciliation of an earlier attempt only
 verifies normal cleanup and records failed acceptance without replaying launch.
+
+## Real browser UI pilot
+
+### Visible M1 mode (default)
+
+The default is now `--scenario installed --display m1`: the browser driver runs
+on M1, visibly, against its installed Presenter server. CARLA and Driving Control
+are started by their ordinary product owners. The browser window occupies the
+canonical right-hand Presenter rectangle and is brought to the front for each
+step so the operator sees dialogs and navigation, not a hidden second client.
+Before business checks, and again before each subsequent stage/action, the
+driver requires the native owner's settled window placement and verified
+ordering, and checks that its own visible browser remains in its normal,
+canonical rectangle. A missing/locked native placement receipt or a
+minimized/displaced browser stops the check instead of switching to headless
+execution. Human readability/visual review remains
+separate from the native owner's geometry receipt. Startup naturally precedes
+the point where all three windows exist; confirmed Stop deliberately removes
+them.
+This is the real Presenter web build in a signed Chrome app-mode window, **not**
+the native WKWebView shell. Native-shell acceptance remains a separate gate.
+
+```sh
+python3 -B scripts/qualification/ui_pilot.py \
+  --scenario installed --display m1 \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --test RETAINED_TEST_UUID --dmg VERIFIED_LOCAL_DMG \
+  --remote-dmg VERIFIED_M1_DMG --records NEW_PRIVATE_RECORD_DIRECTORY \
+  --workspace EXISTING_SCRATCH_WORKSPACE
+```
+
+The explicit qualification tools live outside the installed product, under the
+M1 test user's `SDV-Qualification/ui-tools/`. The first run copies the development
+Mac's Google-signed Chrome and existing Playwright packages, and downloads a
+vendor-digest-pinned ARM64 Node runtime into the selected build workspace. Strict
+signature verification of the copied browser precedes execution. Framework
+symlinks are retained, but Finder/resource-fork attributes are not copied; the
+original Chrome application is unchanged. Later runs reuse the same tools.
+No package manager, additional SSH port, SSH Accessibility, credential transfer,
+Docker restart, product install or DMG rebuild is involved. The browser sandbox
+is enabled. Private read requests return only the existing fixed owner
+projections. They cannot publish, control the car or replace UI clicks.
+
+At completion the owned visible browser closes, its temporary profile is removed
+only after process exit is observed, and ordinary demo shutdown closes the other
+owners. Reusable test tools and compact evidence remain; Docker and Test data
+are preserved. Use `--scenario release-story` for the additional serial releases
+and witnessed native maneuvers below. The following development-side mode is
+retained explicitly for diagnostics.
+
+### Development-side background pilot (explicit opt-in)
+
+`ui_pilot.py` automates one short browser journey on a retained, already
+qualified M1 Test. Playwright runs on the development Mac; M1 needs no Node,
+browser-testing package or development checkout. One pinned SSH forward exposes
+M1's installed Presenter at the same loopback port, without weakening product
+Host/Origin checks. The normal harness continues to disable forwarding.
+
+The one-time SSH exception needs explicit approval before it is configured.
+Both the existing key and the server restrict the destination to
+`127.0.0.1:18080`; the server allows local forwarding only and rejects reverse
+listeners. Source-host and other key restrictions remain in place. The
+administrative helper is not part of Setup or the runtime. When using a bundled
+immutable Python interpreter, invoke it with **`-I -B`**, preferably from a
+verified shell wrapper: never let an administrative launch write bytecode
+caches into the installed package. Do not give SSH Accessibility or broaden
+forwarding to make the pilot pass.
+
+```sh
+python3 -B scripts/qualification/ui_pilot.py \
+  --scenario pilot --display background \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --test RETAINED_TEST_UUID --dmg VERIFIED_LOCAL_DMG \
+  --remote-dmg VERIFIED_M1_DMG --records NEW_PRIVATE_RECORD_DIRECTORY \
+  --workspace EXISTING_SCRATCH_WORKSPACE --node DEVELOPMENT_NODE_EXECUTABLE
+```
+
+The private journey record binds the exact installed candidate and retained
+Test. Expected card versions come from that Test's qualified VDP V3, Brake V3
+and Tire V1 observations, not a guessed latest Cloud release. Matching signed
+Setup media supplies the existing bootstrap/shutdown helper. A changed consumer
+file identity requires one digest re-verification; unchanged media is not
+retransferred or repeatedly hashed. No installation or DMG build is performed.
+The optional `--media-records PRIVATE_PREVIOUS_RECORD_DIRECTORY` reuses an
+earlier successful consumer verification only when its digest, byte count and
+current remote file identity match. A receipt alone is not proof that a changed
+consumer copy remains intact.
+
+The script clicks Start controller, Start simulator and Connect in Manual,
+opens the three installed-detail cards, cancels Stop, then confirms Stop. All
+four scenario actions originate from actual buttons. A request guard permits
+only those actions in that order, with the current session and unique request
+IDs. Intent is flushed before forwarding, with no header/payload rewriting or
+mock responses. Cancellation must send no mutation. Terminal failure stops the
+scenario; an unknown outcome is observed, never blindly replayed.
+Observe the actual submission acknowledgement before polling a job: HTTP
+400/403/409 stops immediately as rejected; a lost or mismatched acknowledgement
+is uncertain and prohibits replay. Wait at most 30 seconds for the complete
+owner idle gate, including window-placement retries and source recovery, before
+clicking. Do not confuse a recorded dispatch intent with an accepted operation.
+
+Keep one-time host authorization outside the measured scenario. Stage timings
+include real controller/backend or simulator startup when the pilot deliberately
+starts those owners. A fast UI check on an already running environment is a
+different scenario; do not skip Start/Stop acceptance while reporting it passed.
+
+Independent read-only owner checks corroborate controller/backends, exact
+Test/Unit/Node/system identity, stationary Manual attachment, preserved journal
+and unchanged Docker Engine. Stage timings, bounded codes and screenshots with
+input fields masked go into private records. Raw network traces, credentials,
+product responses and exception text are not retained. Temporary browser
+profiles use the selected workspace's owned `.tmp` and are removed on exit.
+
+Final ordinary shutdown closes demo-owned applications and listeners. The
+browser and tunnel close; only media mounted for the pilot is normally detached.
+Docker remains running; Test disks, history, credentials and packages remain.
+The report distinguishes browser-pilot acceptance from native Setup/WKWebView,
+layout and full E2E acceptance. A browser pass does not close those native gates.
+The browser runs headlessly on the development Mac, not in an M1 browser
+window. This does not establish native window visibility or placement on M1.
+
+Local guard tests do not start M1 or the demo:
+
+```sh
+node --test scripts/qualification/test_ui_pilot.mjs
+PYTHONPATH=scripts/qualification python3 -B -m unittest scripts/qualification/test_ui_pilot.py
+```
+
+### Extended installed UI scenarios
+
+The bounded `native-controls` scenario adds an unattended native-input lane:
+use `--display m1 --native-build ABSOLUTE_SIGNED_QUALIFICATION_BUILD` and a new
+`--native-run-id native-ui-live-YYYYMMDD` with the normal pinned candidate,
+Test, media and private-record arguments. It uses the already installed
+releases, freshly observed on the successor package; it does not reuse old
+candidate acceptance, prepare, publish, assign, Reset or delete anything.
+
+Presenter Start/Connect/layout/Stop still use real browser clicks. The separate
+signed `Native UI Runner` clicks Autopilot, Safe Stop, Brake, Tire and Return to
+road through current Accessibility geometry and genuine mouse events. Fixed
+stage/Test/session/PID/digest binding prevents generic native command access.
+Native input receipts are distinct from CUA witnesses and are not PASS by
+themselves: independent owners must confirm physical motion/stops and fresh
+same-version backend products. Reports expose `nativeControls` separately from
+the still-uncompleted full-E2E/native Setup acceptance gates. Cleanup closes the
+runner and normal demo owners, preserving the Test and shared Docker Engine.
+
+The same entry point accepts `--scenario installed` or `--scenario release-story`.
+Use the same candidate/Test/media arguments above and a new private record
+directory for each diagnosed experiment. Never erase a failed attempt or reuse
+its request IDs. The script does not change the DMG. Background mode requires no
+M1 testing tools; visible mode uses the separate tools described above.
+
+`installed` exercises Start controller, Start simulator, Connect in Manual,
+all installed-detail cards, Platform/Brake/Tire perspectives, Cloud software and
+resource views, both backend views, independent Brake/Tire Reset with correlated
+CLEAR and preserved peer model/history, Activity, Stop cancellation and confirmed
+Stop. Publication is not part of this scenario. Every mutation comes from an
+actual browser click and must match the exact currently armed command. Unknown
+responses stop the sequence; no direct mutation adapter or blind retry exists.
+
+In visible M1 mode, the driver explicitly opens Demo controls / Advanced
+settings and clicks Restore window layout after attachment. It arms the tab's
+single read-only Cloud inspection separately from the layout request. If the
+existing layout owner initially returns PARTIAL while its bounded recovery is
+pending, observe that same request until exact placement, verified ordering and
+owner quiescence settle; never replay it or rewrite the receipt as COMPLETED.
+The agent then checks the actual visible composition. Focus Driving Control
+through its title before clicking a native action: an inactive window may
+consume the first click for activation without executing the action.
+
+`release-story` additionally prepares and publishes VDP V1/V2/V3 and Brake
+V1/V2/V3 serially, then Tire V1, on the retained Test. Release values are obtained
+from preparation receipts. Each matching installation must be observed before
+the next publication. Existing Subjects remain assigned; the scenario does not
+create, provision, retire or reassign. It is a retained-Test release story, not
+a clean first-user installation.
+
+Native Safe Stop and maneuvers are not HTML buttons. This scenario writes a
+bounded `native-ui-gate.json` and waits for supported CUA control of the named
+visible Driving Control button. After the click, record its exact witness:
+
+```sh
+python3 -B scripts/qualification/ui_native_gate.py \
+  --records PRIVATE_UI_RECORD_DIRECTORY --stage EXACT_WAITING_STAGE \
+  --action 'EXACT_VISIBLE_NATIVE_ACTION' --witness-cua-click
+```
+
+The witness helper does not click, invoke driver RPC or prove the postcondition.
+The browser runner independently confirms physical Safe Stop or a new matching
+backend product after the click. Do not acknowledge a gate before a supported
+CUA click. Wrong stages/actions/identities and repeated acknowledgements fail
+closed. This is agent-assisted native UI execution, not a fully unattended
+native test. An unexecuted gate times out, fails the scenario and triggers
+ordinary shutdown. Native gates retain their failed evidence.
+
+For the exact `release-story` interruption at the Tire native witness after
+all six serial VDP/Brake stages pass, `--scenario tire-review` can use
+`--cards-from-release-records` for that closed attempt. Its strict binding
+requires completed current-version preparations and Tire publication, plus the
+reached Tire gate. It freshly confirms all three installations, performs a
+new witnessed Tire maneuver and Return to road, and runs the ordinary installed
+UI checks. It publishes nothing and never rewrites the original FAIL. The
+same settled release binding may feed moving SOTA, whose current installation
+and motion checks remain independent. Other failures cannot use this exception.
+
+The initial desktop check requires an unlocked M1 before owners start. A lock
+observed during placement stops instead of waiting minutes for a nonexistent
+operation. Control evidence uses the native `MANUAL` mode and a brake fraction
+of at least `0.99`, not display wording or a percentage. Input freshness,
+ownership, stationary speed and at-most-once safeguards remain unchanged.
+
+```sh
+node --test scripts/qualification/test_ui_pilot.mjs scripts/qualification/test_ui_journey.mjs
+PYTHONPATH=scripts/qualification python3 -B -m unittest scripts/qualification/test_ui_pilot.py
+```
+
+Reports distinguish these scenarios from native Setup/WKWebView/layout,
+first assignment, moving SOTA, offline/ignition and clean installation/repair.
+Those separate gates cannot be inferred from a browser pass; `fullE2E` remains
+`NOT_COMPLETE`. Actual M1 outcomes are recorded in the
+[branch qualification receipt](../../docs/qualification/presenter-human-friendly-2026-10-11.md).
+
+### Targeted VDP profile transition diagnosis
+
+`--scenario vdp-transition --display m1` starts the retained Test and its visible
+native surfaces, connects in stationary Manual and requires a current same-Test
+Cloud binding for installed VDP V1 with no pending component update. It selects
+V2 and clicks Prepare once, guarded against any other request, then confirms
+ordinary Stop. It does not sign, publish, install, assign, Reset or delete.
+Historical installed-card expectations are not used to establish its baseline.
+
+### Continue the prepared V2 and check recovery
+
+`--scenario release-continuation --continue-from ABSOLUTE_PREPARATION_RECORDS`
+requires a completed `vdp-transition` receipt from the same candidate and Test,
+with exactly one unpublished V2 preparation. It freshly confirms current V1,
+then requires the on-screen selected V2 candidate to match that receipt before
+publication. It does not prepare V2 again or repeat completed V1 publications.
+The remaining sequence is VDP V2, Brake V2, VDP V3, Brake V3 and Tire V1,
+followed by the installed details, backend records, independent resets and Stop.
+
+While a native click is pending, the browser executor waits asynchronously so
+Playwright routing and the installed UI's ordinary polling remain responsive.
+The witness still requires a real CUA click and independent postcondition.
+Use the absolute private records path when recording the witness, regardless
+of the terminal's current directory. A terminal scenario cannot be acknowledged
+after its deadline; retain the failed attempt instead.
+
+If every release stage passed but the Return to road witness expired, do not
+publish those versions again. `--scenario installed
+--cards-from-release-records ABSOLUTE_INTERRUPTED_RECORDS` requires that exact
+failure boundary, completed same-candidate release receipts and verified owner
+closure. It rechecks the installed cards and remaining views, resets and Stop
+against those versions. The interrupted release story remains FAIL; the new
+installed-browser result is separate. After it passes, supply
+`--installed-records COMPLETED_INSTALLED_RECORDS` to `recovery_tail.py` as well
+as the original `--ui-records`. Recovery requires both evidence sets and fresh
+current inputs; it does not convert the failed native witness into a pass.
+
+`--scenario road-return --cards-from-release-records ABSOLUTE_INTERRUPTED_RECORDS`
+is the bounded native-button recheck: restore the same visible owners, confirm
+all three current installed versions against those receipts, witness a real
+CUA Return to road click and stationary Manual postcondition, then Stop. It
+performs no preparation, publication, assignment or Reset. Its result remains
+separate from the interrupted story and from engineering recovery.
+
+After that UI chain passes, `recovery_tail.py` runs a fresh engineering experiment
+against its exact completed release receipts. It restores the retained owners,
+checks current inputs, exercises the actual 300-second offline interval and
+delivery recovery, ignition, same-Test Stop/Start, new products and ordinary
+shutdown. It does not create, provision, publish, assign, Reset or delete.
+Presenter remains visible in a read-only browser alongside the native owners;
+this viewer performs no action and cannot establish UI acceptance of the
+engineering recovery operations.
+
+```sh
+python3 -B scripts/qualification/recovery_tail.py \
+  --config PRIVATE_TRANSPORT_JSON --journey PRIVATE_JOURNEY_JSON \
+  --ui-records COMPLETED_UI_CONTINUATION_RECORDS \
+  --records NEW_PRIVATE_RECOVERY_RECORDS --test RETAINED_TEST_UUID \
+  --dmg VERIFIED_LOCAL_DMG --remote-dmg VERIFIED_M1_DMG \
+  --media-records VERIFIED_CONSUMER_RECORDS --workspace EXISTING_SCRATCH_WORKSPACE
+```
+
+Both experiments preserve candidate/Test bindings, Docker and data, retain
+failed attempts, and close owned runtime, browser/profile and mounted media.
+Neither closes the separate moving-SOTA, native-shell, credential-entry or
+installation interruption/repair gates. The deferred VDP timeout is unchanged.
+
+Snapshot request records contain only status, elapsed time and matching/missing
+run classification. Rejected requests retain only the fixed guard code,
+supported expected/actual profiles and session equality. Missing observations
+and failed submissions remain terminal. This diagnostic cannot establish a
+complete V1-to-V2 deployment, a new candidate's acceptance or full E2E.
 
 ## Record and acceptance rules
 
@@ -169,9 +535,20 @@ connection before assigning Test-set membership, which may immediately offer
 an existing Cloud component. Provisioning first can start FOTA before its
 Gateway credentials exist. Never bypass the active-transaction credential guard
 to compensate for a reversed test sequence.
-After the first physical Safe Stop, observe that any already-offered component
-update has settled in Cloud before preparing/publishing VDP V1. This is a bounded
-read of the existing update, not another deployment or a relaxed release gate.
+Provision already connects the first Test in stationary Manual. After the first
+physical Safe Stop, observe that any already-offered component update has
+settled in Cloud before the redundant `connect-test` confirmation and before
+preparing/publishing VDP V1. Confirming the empty Factory connection first can
+race that update; stopping after a failed confirmation can leave its incoming
+transaction waiting for Safe Stop. This is a bounded read of the existing update,
+not another deployment or a relaxed release gate.
+
+Raw ignition recovery must remain in Safe Stop. The deliberate Stop/Start
+sequence instead starts the simulator and invokes `connect-test`, whose contract
+is stationary Manual. Its preservation check requires fresh, unheld Manual
+telemetry, speed at most 0.5 km/h and at least 99% brake, alongside a new boot and
+unchanged identity, models and history. Do not reuse the raw-ignition mode
+expectation or weaken that expectation to accommodate an explicit Manual action.
 
 Brake V3 advisory correlation also accepts its documented first-activation
 decision from the exact pinned V2 release, when that assessment is still present
@@ -259,7 +636,7 @@ Completed publications, assignments and resets are not replayed. Before an
 ordinary continuation, current installation and infrastructure are re-observed;
 previously reached runtime owners are restored through their normal paths when
 they are confirmed stopped. Historical `PASS` is not current runtime readiness.
-If a shutdown interrupted a Reset, offline or ignition comparison, the runner
+If shutdown interrupted a Reset, offline, ignition or same-Test Stop/Start comparison, the runner
 blocks that experiment with `EXPERIMENT_INTERRUPTED_REBASE_REQUIRED`. It never
 combines readings from incompatible boots or sessions. Diagnose and establish a
 new scoped experimental baseline; do not silently replay the interrupted reset.
@@ -272,10 +649,32 @@ republication. The offline soak samples through the end of its actual 300-second
 interval. Backend checks use the observed bounded product history; they do not
 claim an exhaustive database integrity audit.
 
+The fixed journey also exercises the Presenter `stop-demo` and `start-demo`
+plans after ignition. Fresh observations must confirm the Test VM, source and
+both owned backends stopped, unchanged Unit/Node identity and the same running
+Docker Engine. Restart explicitly starts the simulator and attaches the same
+Test; it must preserve models and product history, confirm fresh stationary
+Manual after that explicit connection, and produce new Brake/Tire results from
+fresh post-restart inputs. Raw ignition remains subject to its separate Safe Stop
+requirement. It does not create,
+provision, publish or assign again. This is live engineering coverage of normal
+product plans, not native-button acceptance or destructive retirement.
+
+The installation phase includes the canonical signed Setup `install-launcher`
+action after backend image preparation and before Cloud/runtime use. Fresh
+`setup-status` must confirm the selected local payload, backend images and
+persistent launcher. Runtime installation alone cannot close first-use
+installation: an old signed launcher can correctly reject a different selected
+payload. If a launcher result is lost, reconcile through `setup-status` only;
+do not repeat the installation action. This adds one step to new plans (118);
+retain historical 117-step records without rewriting their definitions.
+Native repeat-open with the DMG absent remains a distinct CUA acceptance check.
+
 Native operator flow, secure token entry, service update while moving, and
 installation interruption/repair retain separate acceptance gates. Finish is
-not part of automatic cleanup. The current implementation has no automatic
-Finish wrapper or moving-SOTA adapter. Full E2E stays `NOT_COMPLETE` regardless
+not part of automatic cleanup. The API journey has no automatic Finish wrapper;
+moving-SOTA uses the separately scoped visible UI scenario described above.
+Full E2E stays `NOT_COMPLETE` regardless
 of successful scripted steps until the separate acceptance evidence is closed.
 See the [runner qualification record](../../docs/qualification/scripted-journey-2026-10-02.md)
 for actual unit and M1 execution results.

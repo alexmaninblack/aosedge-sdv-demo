@@ -19,8 +19,10 @@ from uuid import UUID
 DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
 BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
-              'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset'}
-QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform', 'snapshot', 'publication'}
+              'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
+              'stop-demo', 'start-demo'}
+QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform',
+           'snapshot', 'publication', 'demo-stopped', 'exercise'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
 
@@ -39,6 +41,23 @@ def fixed_reason(value):
     return fixed_code(value)
 
 
+@contextlib.contextmanager
+def preparation_writer(environment):
+    """Wait at most five seconds for the normal lock, before any action begins."""
+    deadline = time.monotonic() + 5
+    with contextlib.ExitStack() as stack:
+        while True:
+            try:
+                stack.enter_context(environment._writer())
+                break
+            except ValueError as error:
+                if str(error) != 'CURRENT_RUN_BUSY' or time.monotonic() >= deadline:
+                    raise
+                time.sleep(.1)
+        # Body exceptions are outside the acquisition loop: never replay RPCs.
+        yield
+
+
 def job_projection(job):
     """Bounded product fields only; exclude arbitrary progress/text/logs."""
     return dict(productState=fixed_code(job.get('state')), results=[
@@ -54,6 +73,33 @@ def component_idle_projection(value):
                and all(isinstance(row, dict) for row in rows))
     return dict(idle=current and not any(row.get('pending_component') or
         row.get('pending_component_error') for row in rows), cloudCurrent=current)
+
+
+def visible_presenter_projection(value):
+    """Require current native surfaces, not merely a listening HTTP server."""
+    surfaces = value.get('surfaces') or {}
+    rows = [surfaces.get(name) or {} for name in ('header', 'browser', 'backdrop')]
+    pid = value.get('hostPid')
+    return (type(pid) is int and pid > 0 and value.get('profile') == 'builtin-v1'
+        and (value.get('display') or {}).get('desktopState') == 'UNLOCKED'
+        and (value.get('zOrder') or {}).get('state') == 'VERIFIED'
+        and all(row.get('pid') == pid and isinstance(row.get('actual'), list)
+            and isinstance(row.get('expected'), list) and len(row['actual']) == len(row['expected']) == 4
+            and all(type(a) in (int, float) and type(b) in (int, float) and abs(a-b) <= 3
+                    for a,b in zip(row['actual'], row['expected'])) for row in rows))
+
+
+def demo_stopped_projection(state, snapshot, source, backends, docker):
+    """Fresh normal-owner observations, not an inference from a retained stop receipt."""
+    vehicle = state['vehicles']['test']
+    observed = (snapshot.get('vehicles') or {}).get('test') or {}
+    teams = backends.get('teams') or {}
+    return dict(stopped=observed.get('state') == 'CURRENT' and observed.get('process') == 'STOPPED'
+        and source.get('state') == 'STOPPED' and source.get('selectedVehicle') is None
+        and state.get('currentVehicle') is None and set(teams) == {'brake', 'tire'}
+        and all(row.get('state') == 'STOPPED' for row in teams.values()),
+        identity={key:vehicle.get(key) for key in ('localVmId', 'unitId', 'nodeId', 'systemUid')},
+        dockerEngineId=(docker or {}).get('engineId'))
 
 
 def wait_for_exit(timeout=10):
@@ -319,7 +365,7 @@ class Worker:
 
     def setup(self):
         action = self.args['action']
-        require(set(self.args) == {'action'} and action in ('prepare-backends', 'cloud-pair', 'cloud-check', 'cloud-subjects', 'launch'), 'SETUP_ACTION_INVALID')
+        require(set(self.args) == {'action'} and action in ('prepare-backends', 'install-launcher', 'cloud-pair', 'cloud-check', 'cloud-subjects', 'launch'), 'SETUP_ACTION_INVALID')
         app = Path(self.config['setupApp'])
         subprocess.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', str(app)], check=True,
                        capture_output=True, timeout=30)
@@ -345,6 +391,23 @@ class Worker:
             value = self.setup_call(action)
             require(value['status'] == 'BACKEND_IMAGES_AVAILABLE' and value['imagesVerified'] == 2, 'BACKEND_IMAGES_NOT_READY')
             return result({k:value[k] for k in ('status', 'imagesVerified', 'importAttempted')})
+        if action == 'install-launcher':
+            # The low-level package installer does not install the persistent
+            # signed application. Complete that existing Setup phase explicitly;
+            # an installed runtime alone must not pass first-use installation.
+            if self.request['phase'] != 'reconcile':
+                self.attempted = True
+                value = self.setup_call(action)
+                require(value['status'] == 'SETUP_LAUNCHER_INSTALLED', 'SETUP_LAUNCHER_NOT_CONFIRMED')
+            observed = self.setup_call('setup-status')
+            require(observed.get('status') == 'SETUP_INSTALLED_OBSERVED'
+                and all(observed.get(key) is True for key in
+                    ('localInstalled', 'backendsObserved', 'launcherObserved')),
+                'SETUP_LAUNCHER_NOT_OBSERVED')
+            # Status also contains credential paths. Persist fixed facts only.
+            return result(dict(status='SETUP_LAUNCHER_INSTALLED', launcherObserved=True,
+                localInstalled=True, backendsObserved=True,
+                reconciliationOnly=self.request['phase'] == 'reconcile'))
         pair = dict(oem=self.config['oemCertificate'], sp=self.config['spCertificate'])
         observed = self.setup_call('cloud-inspect', **pair)
         require(observed['domain'] == DOMAIN, 'STAGING_REQUIRED')
@@ -461,7 +524,19 @@ class Worker:
         query = self.args['query']
         require(query in QUERIES and set(self.args) <= {'query','team','release'}, 'OBSERVATION_NOT_ALLOWED')
         if query == 'installed': return self.installed()
-        self.binding()
+        state = self.binding()
+        if query == 'exercise':
+            source=state.get('source') or {}; exercise=source.get('exercise') or {}; result=exercise.get('result') or {}
+            return dict(id=exercise.get('id'),kind=exercise.get('kind'),phase=exercise.get('phase'),
+                runMatches=exercise.get('runId')==source.get('runId'),state=result.get('state'),
+                operationMatches=result.get('operationId')==exercise.get('id'),
+                physicalStop=result.get('physicalStop'),autopilotStarted=result.get('autopilotStarted'),noOp=result.get('noOp'))
+        if query == 'demo-stopped':
+            from aosedge_demo_orchestrator.backends import BackendService
+            snapshot = exchange('snapshot')
+            require(snapshot.get('runId') == self.request['expectedRun'], 'TEST_IDENTITY_CHANGED')
+            return demo_stopped_projection(state, snapshot, self.app.source_service.observe(),
+                BackendService(self.app.environment_service).observe_stack(), docker_info())
         if query == 'component-idle':
             return component_idle_projection(self.app.unit_service.observe('cloud-status', 'test'))
         if query == 'publication':
@@ -523,7 +598,19 @@ class Worker:
         owner = setup_launch.owner(command)
         client = setup_launch.ready_client(command, owner)
         require(client['buildId'] == hashlib.sha256(runtime.entry('web').read_bytes()).hexdigest(), 'UI_BUILD_CHANGED')
-        return result(dict(serverReady=True, nativeWindowsOpened=False))
+        from aosedge_demo_orchestrator.models import OperationRequest
+        if self.request['phase'] == 'execute':
+            # Normal workspace owner, same journaled intent. Missing simulator
+            # windows are expected here; no vehicle lifecycle is performed.
+            self.app.execute(OperationRequest('workspace', 'restore'))
+        deadline = time.monotonic() + 6
+        while True:
+            raw = self.app.execute(OperationRequest('workspace', 'status')).to_dict()
+            if visible_presenter_projection(raw.get('data') or {}): break
+            require(time.monotonic() < deadline, 'PREPARATION_PRESENTER_NOT_VISIBLE')
+            time.sleep(.2)
+        return result(dict(serverReady=True, nativeWindowsOpened=True, presenterVisible=True,
+            simulatorWindowsExpectedLater=True))
 
     def vm_access(self):
         from aosedge_demo_orchestrator.qualification_access import prepare, preflight, input_password
@@ -598,6 +685,32 @@ class Worker:
                         'ASSIGNMENT_ABSENCE_UNCONFIRMED')
                 return result(dict(assignmentNotSubmitted=True, cloudMutation=False), outcome='FAIL',
                               code='ASSIGNMENT_NOT_SUBMITTED')
+            # A final Cloud GET can fail after every assignment step was
+            # confirmed. Reconcile through the ordinary owner, with a read-only
+            # Cloud adapter; an expired Presenter session cannot authorize POST.
+            if (operation.get('state') == 'ASSIGNED' or operation.get('state') == 'UNCERTAIN'
+                    and operation.get('reason') == 'CLOUD_HTTP_503'):
+                test = {key:state['vehicles']['test'].get(key)
+                        for key in ('unitId','systemUid','unitSetId')}
+                require(operation.get('serviceId') == self.args['serviceId']
+                        and operation.get('test') == test
+                        and all(operation.get('steps',{}).get(step,{}).get('stage') == 'CONFIRMED'
+                                for step in ('bind','assign')), 'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED')
+                from aosedge_demo_orchestrator.service_assignment import ServiceAssignment
+                units = self.app.unit_service
+                class ReadOnlyUnits:
+                    def _cloud(self, action, **fields):
+                        require(action == 'service-assignment-observe', 'ASSIGNMENT_MUTATION_FORBIDDEN')
+                        return units._cloud(action, **fields)
+                resolved = ServiceAssignment(self.app.environment_service, ReadOnlyUnits()).assign(self.args['serviceId'])
+                observation = resolved.get('observation') or {}
+                require(resolved.get('state') == 'ASSIGNED' and resolved.get('noOp') is True
+                        and resolved.get('test') == test and observation.get('unitBound') is True
+                        and observation.get('serviceBound') is True
+                        and (observation.get('package') or {}).get('version') == operation.get('publishedVersion'),
+                        'ASSIGNMENT_TERMINAL_BINDING_UNCONFIRMED')
+                return result(dict(serviceId=self.args['serviceId'], cloudMutation=False,
+                                   reconciliationOnly=True, runtimeQualified=False))
         operations = exchange('operations')
         require(operations['sessionId'] == prepared['sessionId'], 'SESSION_CHANGED_RECONCILE_REQUIRED')
         if self.request['phase'] == 'execute':
@@ -675,7 +788,7 @@ class Worker:
         if self.request['phase'] == 'prepare':
             self.idle(); driver.ready(state)
             return result(dict(validated=True))
-        with self.app.environment_service._writer(), driver.operation(timeout=25):
+        with preparation_writer(self.app.environment_service), driver.operation(timeout=25):
             source = state['source']
             if self.request['phase'] != 'reconcile':
                 self.attempted = True

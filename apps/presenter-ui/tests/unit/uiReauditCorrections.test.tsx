@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({ observation: null as any, loading: false, refr
 const controls = vi.hoisted(() => ({ blocked: false, readBlocked: true, blockReason: null, request() {},
   session: { cloudDomain: "selected-stage.example", jobs: [] as any[] } }));
 vi.mock("../../src/app/state/PresenterReadModelProvider", () => ({ usePlatformObservation: () => state }));
-vi.mock("../../src/app/state/PresenterControls", () => ({ usePresenterControls: () => controls }));
+vi.mock("../../src/app/state/PresenterControls", async original => ({ ...await original<any>(), usePresenterControls: () => controls }));
 afterEach(() => { cleanup(); vi.useRealTimers(); state.observation = null; controls.session.jobs = []; });
 
 test.each(["brake", "tire"] as const)("U5 first %s installation pending guides observation, not republishing", team => {
@@ -31,7 +31,8 @@ test.each(["brake", "tire"] as const)("U5 first %s installation pending guides o
   expect(screen.getByRole("button", { name: "Sign & publish" })).toBeDisabled();
   const guide = container.querySelector(".studio-guide");
   expect(guide).toHaveTextContent("Service update pending");
-  expect(guide).toHaveTextContent("Refresh Cloud state");
+  expect(screen.getAllByRole("button", { name: "Refresh Cloud state" })).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "Refresh Cloud state" })).toBeEnabled();
   expect(guide).not.toHaveTextContent("Prepare and publish");
   expect(guide).toHaveTextContent("Safe Stop is not required");
 });

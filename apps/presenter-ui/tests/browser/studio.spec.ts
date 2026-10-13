@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function retainedRun(page: Page, retiring = false, online = "ONLINE",
   phase = "deprovision-test", reason = "UNIT_WAIT_TIMEOUT:CLOUD_OFFLINE", registrationStarted = false,
-  options: { confirmedProfile?: boolean; registrationComplete?: boolean } = {}) {
-  const { confirmedProfile = true, registrationComplete = false } = options;
+  options: { confirmedProfile?: boolean; registrationComplete?: boolean; quickPreparation?: boolean } = {}) {
+  const { confirmedProfile = true, registrationComplete = false, quickPreparation = false } = options;
   const requests: { path: string; method: string }[] = [];
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -13,7 +13,7 @@ async function retainedRun(page: Page, retiring = false, online = "ONLINE",
       registrationComplete,
       registrationStarted,
       lifecycle: retiring ? { action: "retire", state: "PARTIAL", phase, reason } : undefined,
-      preparation: { image: "32/arm64", phase: "PROVISIONING" },
+      preparation: quickPreparation ? { image: "32/arm64", phase: "PROVISIONING" } : undefined,
       candidates: [{ version: "19.0.0", contentProfile: "v1", signed: true, submitted: true },
         { version: "20.0.0", contentProfile: "v2", signed: true, submitted: true }],
       images: [31, 32].map((n) => ({ selector: `${n}/arm64`, version: `Factory .${n}`, architecture: "arm64", state: "METADATA_AVAILABLE", problems: [] })), access: {},
@@ -49,12 +49,12 @@ for (const online of ["ONLINE", "OFFLINE"]) test(`partial retirement ${online} n
   await page.goto("/");
   await expect(page.getByText("Retirement paused", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start simulator", exact: true })).toHaveCount(0);
-  if (online === "OFFLINE") await expect(page.getByRole("button", { name: "Continue Finish", exact: true })).toBeEnabled();
-  else await expect(page.getByRole("button", { name: "Continue Finish", exact: true })).toHaveCount(0);
+  if (online === "OFFLINE") await expect(page.getByRole("button", { name: "Continue Test deletion", exact: true })).toBeEnabled();
+  else await expect(page.getByRole("button", { name: "Continue Test deletion", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: /Platform Team/ }).click();
-  await expect(page.getByRole("button", { name: "Prepare v1", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^Prepare v[123]$/, exact: true })).toBeDisabled();
   await page.getByRole("button", { name: /Brake Team/ }).click();
-  await expect(page.getByRole("button", { name: "Prepare v1", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^Prepare v[123]$/, exact: true })).toBeDisabled();
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
@@ -65,9 +65,9 @@ for (const [phase, reason, online] of [
 ]) test(`Finish can continue ${phase} without an unrelated Offline requirement`, async ({ page }) => {
   const requests = await retainedRun(page, true, online, phase, reason);
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Continue Finish", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Continue Test deletion", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Start simulator", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Continue Finish", exact: true }).click();
+  await page.getByRole("button", { name: "Continue Test deletion", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
@@ -83,13 +83,16 @@ test(`stopped historical ${action}/${state} offers only confirmed Finish, not re
     source: { state: "STOPPED", currentVehicle: null },
   } }));
   await page.goto("/");
-  await expect(page.getByText("Demo interrupted", { exact: true })).toBeVisible();
+  await expect(page.getByText(action === "resume" && state === "COMPLETED" ? "Controller switched off" : "Legacy run interrupted", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /^(Park|Resume|Continue Resume|Start simulator|Connect in Manual)$/ })).toHaveCount(0);
-  await page.getByRole("button", { name: "Finish demo", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.keyboard.press("Escape");
+  if (action === "resume" && state === "COMPLETED") await expect(page.getByRole("button", { name: "Start controller", exact: true })).toBeEnabled();
+  else {
+    await page.getByRole("button", { name: "Delete Test & start over", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Prepare v1", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^Prepare v[123]$/, exact: true })).toBeDisabled();
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
@@ -113,6 +116,29 @@ for (const sourceState of ["STOPPED", "NOT_PREPARED", "UNKNOWN"]) test(`new cont
     await expect(page.getByRole("button", { name: "Start simulator", exact: true })).toBeVisible();
     await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
   }
+  expect(requests.every(row => row.method === "GET")).toBe(true);
+});
+
+for (const sourceState of ["STOPPED", "NOT_PREPARED", "UNKNOWN", "RUNNING_UNASSIGNED"])
+test(`ordinary Stop with ${sourceState} source distinguishes closed windows from layout failure`, async ({ page }) => {
+  const requests = await retainedRun(page);
+  await page.route("**/api/presenter/operations", route => route.fulfill({ json: {
+    sessionId: "native", active: null, uncertain: false, jobs: [],
+    workspace: { state: "INCOMPLETE", zOrder: { state: "UNAVAILABLE" } },
+  } }));
+  await page.route("**/api/presenter/snapshot", route => route.fulfill({ json: {
+    mode: "LOCAL_READ_ONLY", runId: "current-test", observedAt: new Date().toISOString(),
+    registrationComplete: true, images: [], access: {},
+    vehicles: { test: { state: "CURRENT", process: "STOPPED", overlayExists: true },
+      production: { state: "CURRENT", process: "STOPPED", overlayExists: true } },
+    source: { state: sourceState, currentVehicle: null },
+  } }));
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Start controller", exact: true })).toBeEnabled();
+  if (["STOPPED", "NOT_PREPARED"].includes(sourceState)) {
+    await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
+    await expect(page.getByText(/could not be verified|Window order is not currently verified/)).toHaveCount(0);
+  } else await expect(page.getByLabel("Desktop window layout")).toContainText("Window layout could not be verified");
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
@@ -145,8 +171,10 @@ test("external CLI retirement returns the open Studio to Create without reloadin
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(page.getByRole("button", { name: "Create controller", exact: true })).toBeEnabled();
   await expect(page.getByText("Retirement paused", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Factory image")).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform Factory slot · no Cloud report" })).toBeVisible();
+  await expect(page.getByLabel("Factory image")).toHaveCount(0);
+  await expect(page.locator(".studio-factory")).toContainText("Factory .33");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Manage VDP releases" })).toBeEnabled();
   await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
   expect(snapshotReads).toBeGreaterThan(1);
   expect(requests.every(row => row.method === "GET")).toBe(true);
@@ -168,15 +196,14 @@ test("partial SDK registration can continue without a Cloud binding or ready pub
 });
 
 test("Reload retains exact profile publication, ignores previous-run jobs and can finish registration", async ({ page }) => {
-  const requests = await retainedRun(page);
+  const requests = await retainedRun(page, false, "ONLINE", "", "", false, { quickPreparation: true });
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Continue registration" })).toBeEnabled();
-  await expect(page.getByLabel("Factory image")).toHaveValue("32/arm64");
-  await expect(page.getByLabel("Factory image")).toBeDisabled();
-  await page.getByLabel("Preparation", { exact: true }).selectOption("quick");
-  await expect(page.getByLabel("Factory image")).toHaveValue("32/arm64");
+  await expect(page.getByLabel("Preparation", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Factory image")).toHaveCount(0);
+  await expect(page.locator(".studio-factory")).toContainText("Factory .32");
   await expect(page.getByRole("button", { name: "Continue preparation" })).toBeEnabled();
   await page.getByRole("button", { name: /Platform Team/ }).click();
+  await page.getByRole("button", { name: "v1 Braking telemetry" }).click();
   await expect(page.getByText("Selected candidate · v1 · 19.0.0")).toBeVisible();
   await expect(page.locator(".studio-release-stages .complete")).toHaveCount(2);
   await page.getByRole("button", { name: "v2 Brake analysis" }).click();
@@ -189,8 +216,8 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
 test("installed profile never falls back to a matching local prepared candidate", async ({ page }) => {
   const requests = await retainedRun(page, false, "ONLINE", "", "", false, { confirmedProfile: false, registrationComplete: true });
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform Release · 20.0.0", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform v2 · 20.0.0", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).toContainText("Release · 20.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).not.toContainText("v2 · 20.0.0");
   await expect(page.getByText("Installed profile not confirmed", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open Platform v1", exact: true })).toHaveCount(0);
   expect(requests.every(row => row.method === "GET")).toBe(true);
@@ -202,6 +229,7 @@ test("Team backend is visibly synthetic, drillable and separate from Cloud runti
   await page.getByRole("button", {name:/Brake backend Open dashboard/}).click();
   await expect(page.getByText("Configured data path · service → backend")).toBeVisible();
   await page.getByRole("button", { name: "Records", exact: true }).click();
+  await page.getByText("Engineering history", { exact: true }).click();
   await page.getByRole("button", { name: "Show mock history" }).click();
   await expect(page.getByText("MOCK DATA · Explicit synthetic test records")).toBeVisible();
   await page.getByRole("button", {name:"Records", exact:true}).click();
@@ -259,18 +287,19 @@ test("Studio uses protected Test actions, automatic releases and actual receipts
   await page.goto("/");
   await expect(page.getByTestId("studio-workspace")).toBeVisible();
   expect(mutations).toEqual([]);
-  await expect(page.getByText("Production · Deferred")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Production Vehicle", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: /Platform Team/ }).click();
   await expect(page.getByRole("button", { name: "Prepare v1" })).toBeEnabled();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "Prepare v1" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Prepare VDP", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByText("Selected candidate · v1 · 19.0.0")).toBeVisible();
   expect(mutations[0]).toMatchObject({ action: "prepare", profile: "v1", sessionId: "test-native" });
   expect(mutations[0]).not.toHaveProperty("version");
   expect(mutations[0]).not.toHaveProperty("target");
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("no batch-approval step is required");
+  await expect(page.getByRole("dialog")).toContainText("Eligible vehicles may receive it immediately");
+  await expect(page.getByRole("dialog")).toContainText("native Safe Stop");
   await page.getByRole("dialog").getByRole("button", { name: "Sign & publish VDP" }).click();
   await expect(page.getByRole("button", { name: "Sign & publish", exact: true })).toBeDisabled();
   expect(mutations.map((row) => row.action)).toEqual(["prepare", "publish"]);

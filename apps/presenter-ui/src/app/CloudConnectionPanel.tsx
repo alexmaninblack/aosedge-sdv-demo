@@ -35,12 +35,12 @@ export function CloudConnectionPanel({ section = "all" }: { section?: "connectio
     {preview?.reason && <p role="alert">{preview.reason}</p>}
     {selection?.state === "BLOCKED" && <p role="alert">{selection.reason ?? selection.results.at(-1)?.message}</p>}
     <div className="studio-cloud-actions">
-      <button disabled={controls.readBlocked} onClick={() => controls.request({ action: "cloud-choose" })}>Choose certificate…</button>
-      <button disabled={controls.readBlocked} onClick={() => controls.request({ action: "cloud-inspect" })}>Read configured certificate</button>
+      <button disabled={controls.readBlocked} onClick={() => controls.request({ action: "cloud-choose" })}>Choose OEM certificate…</button>
+      <button disabled={controls.readBlocked} onClick={() => controls.request({ action: "cloud-inspect" })}>Refresh OEM certificate details</button>
       <button className="button button-primary" disabled={controls.blocked || !ready}
         onClick={() => controls.request({ action: "cloud-select", selectionId: preview!.id })}>Use this Cloud</button>
     </div>
-    <p>Reading the OEM certificate does not verify Cloud API or Service Provider access.</p></>}
+    <p>This selector changes OEM access only. Configure the associated Service Provider in Setup. Reading a certificate does not verify Cloud API access.</p></>}
     {section !== "connection" && <section aria-label="Test Cloud setup">
       <h3>Test Cloud setup</h3>
       <p>Check this OEM and Service Provider before provisioning. Preparation preserves existing campaigns and Production.</p>

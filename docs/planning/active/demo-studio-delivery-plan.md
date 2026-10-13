@@ -9,6 +9,17 @@ retains earlier Studio execution chronology and accepted amendments. Dated
 “current work” headings below are historical, not instructions to repeat .39
 qualification or restore removed images.
 
+## Isolated operator-experience branch — 11 October 2026
+
+The operator approved [Presenter usability changes](work-packets/presenter-human-friendly.md)
+on `codex/presenter-human-friendly`, with review and testing before any main
+integration. This packet adds one controls entry, contextual release guidance,
+short effect-specific confirmations and distinct preservation stop/start versus
+Test deletion, using existing operation owners. The accepted installed kit and
+main baseline remain unchanged. The linked packet records local evidence and
+the remaining native/live acceptance boundary; historical execution headings
+below do not supersede it or authorize an automatic merge.
+
 ## Current work — 24 September, v1.1 documentation alignment
 
 The current scope is **demo-v1.1 / Factory .39**. See the

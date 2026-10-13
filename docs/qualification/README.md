@@ -9,6 +9,14 @@ Reports below are dated evidence: their “current”, “next” and “open”
 describes that checkpoint, not today's installation instructions. Historical
 results remain unchanged; newer results do not retroactively qualify old images.
 
+- [M1 UI qualification timing and optimization — 12 October](ui-qualification-timing-2026-10-12.md):
+  measured visible UI/API/setup durations, hybrid browser/native execution and
+  the recorded optimization order; implementation and new acceptance remain pending.
+
+- [Presenter review branch DMG and M1 checks — 11–12 October](presenter-human-friendly-2026-10-11.md):
+  exact successor evidence, separate API/browser/native passes and retained
+  interruptions; not one uninterrupted full-E2E pass or main integration.
+
 - [M1 source build installation and E2E — 10 October](m1-source-build-e2e-2026-10-10.md):
   new `1.2.0-rc.1` DMG installation and Cloud preconditions passed; controller
   preparation stopped at native password input, with a separate Keychain save

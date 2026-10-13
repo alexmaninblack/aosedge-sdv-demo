@@ -1,0 +1,182 @@
+// SPDX-FileCopyrightText: 2026 maninblack
+// SPDX-License-Identifier: MIT
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { spawn } from 'node:child_process';
+import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,continuousActions } from './ui_journey.mjs';
+const id='01234567-89ab-cdef-0123-456789abcdef';
+test('continuous campaign keeps the accepted section order',()=>{
+  assert.deepEqual(continuousSections,['release-story','installed-views','moving-sota','stop-start']);
+});
+test('continuous actions prove serial publication and no extra healthy startup between sections',()=>{
+  const startup=['start-demo','start-simulation','connect-test'];
+  const publications=['publish','service-publish','publish','service-publish','publish','service-publish','service-publish','service-publish','service-publish'];
+  const valid=[...startup,...publications,'backend-reset','backend-reset','stop-demo',...startup,'stop-demo'].map(action=>({action}));
+  assert.equal(continuousActions(valid),true);
+  for(const value of [valid.slice(1),[...valid,{action:'retire'}],valid.filter(a=>a.action!=='backend-reset'),
+    valid.toSpliced(5,0,{action:'stop-demo'},{action:'start-demo'},{action:'start-simulation'},{action:'connect-test'})])
+    assert.throws(()=>continuousActions(value));
+});
+test('same-Test Stop/Start requires a new boot, stationary Manual, preserved models/history and healthy services',()=>{
+  const before={local:{bootId:id,identity:{unitId:id},teams:{brake:{model:['a']},tire:{model:['b']}}},
+    brake:{productIds:['a']},tire:{productIds:['b']}};
+  const after=structuredClone(before);
+  after.local.bootId='11234567-89ab-cdef-0123-456789abcdef';
+  after.local.controller={fresh:true,held:false,mode:'MANUAL',speed:0,brake:1};
+  after.local.services=Object.fromEntries(['iam','cm','sm','vdp'].map(s=>[s,{ActiveState:'active',Result:'success',NRestarts:'0'}]));
+  assert.equal(lifecyclePreserved(before,after),true);
+  for(const change of [v=>v.local.bootId=id,v=>v.local.identity.unitId='other',v=>v.local.controller.fresh=false,
+    v=>v.local.controller.mode='AUTOPILOT',v=>v.local.controller.speed=1,v=>v.local.teams.brake.model=['changed'],
+    v=>v.tire.productIds=[],v=>v.local.services.cm.NRestarts='1',v=>delete v.local.services.vdp]) {
+    const value=structuredClone(after);change(value);assert.equal(Boolean(lifecyclePreserved(before,value)),false);
+  }
+});
+test('campaign baseline pins exact versions before native input', () => {
+  const expected={vdp:'158.0.0',brake:'137.0.0',tire:'69.0.0'};
+  assert.deepEqual(nativeVersions(expected,expected),expected);
+  for (const value of [{...expected,vdp:'latest'},{...expected,tire:true},{vdp:'158.0.0'},
+                      {...expected,extra:'1.0.0'},null,[]])
+    assert.throws(()=>nativeVersions(value),/NATIVE_VERSIONS_INVALID/);
+  assert.throws(()=>nativeVersions({...expected,brake:'138.0.0'},expected),/NATIVE_BASELINE_CHANGED/);
+});
+test('live maneuver requires a new completed owner receipt, not background products alone', () => {
+  const value={id,kind:'brake',runMatches:true,operationMatches:true,phase:'RELEASED',
+    state:'COMPLETED',physicalStop:'CONFIRMED',noOp:false};
+  assert.equal(completedExercise(value,{},'brake'),true);
+  assert.equal(completedExercise(value,{id},'brake'),false);
+  for(const change of [{id:'bad'},{kind:'tire'},{runMatches:false},{operationMatches:false},
+    {phase:'RUNNING'},{state:'ABORTED'},{physicalStop:null},{noOp:true}])
+    assert.equal(Boolean(completedExercise({...value,...change},{},'brake')),false);
+  assert.equal(completedExercise({...value,kind:'return_to_road'},{},'return_to_road'),false);
+  assert.equal(completedExercise({...value,kind:'return_to_road',autopilotStarted:false},{},'return_to_road'),true);
+});
+test('moving SOTA requires actual fresh unheld Autopilot motion, not a mode label alone', () => {
+  const value={controller:{fresh:true,held:false,mode:'AUTOPILOT',speed:20}};
+  assert.equal(autopilot(value,true),true);
+  assert.equal(autopilot({...value,controller:{...value.controller,speed:0}}),true);
+  assert.equal(autopilot({...value,controller:{...value.controller,speed:0}},true),false);
+  for(const change of [{fresh:false},{held:true},{mode:'SAFE_STOP'},{mode:'MANUAL'},{speed:null},{speed:NaN},{speed:-1}])
+    assert.equal(autopilot({...value,controller:{...value.controller,...change}},true),false);
+});
+test('native witness wait leaves browser routing and polling responsive', async () => {
+  const url = new URL('./ui_journey.mjs', import.meta.url).href;
+  const child = spawn(process.execPath, ['--input-type=module', '-e',
+    `import {nativeBrokerReply} from ${JSON.stringify(url)};
+     setTimeout(()=>process.stdout.write('POLLING_ALIVE\\n'),10);
+     try { const value=await nativeBrokerReply(1);process.stdout.write(value.state+'\\n'); }
+     catch { process.stdout.write('FAIL_CLOSED\\n'); }`], {stdio:['pipe','pipe','pipe']});
+  let output=''; child.stdout.on('data', data => {
+    output+=data;
+    if (output === 'POLLING_ALIVE\n') child.stdin.end(JSON.stringify({id:1,ok:true,value:{state:'CLICKED_THROUGH_CUA'}})+'\n');
+  });
+  const timer=setTimeout(()=>child.kill(),3000);
+  const code=await new Promise(resolve=>child.on('exit',resolve));clearTimeout(timer);
+  assert.equal(code,0);assert.equal(output,'POLLING_ALIVE\nCLICKED_THROUGH_CUA\n');
+});
+test('native witness wait rejects a failed or mismatched broker reply', async () => {
+  const url = new URL('./ui_journey.mjs', import.meta.url).href;
+  for (const reply of [{id:2,ok:true,value:{}},{id:1,ok:false}]) {
+    const child=spawn(process.execPath,['--input-type=module','-e',
+      `import {nativeBrokerReply} from ${JSON.stringify(url)};
+       try {await nativeBrokerReply(1);process.exitCode=1;} catch {process.stdout.write('FAIL_CLOSED\\n');}`],
+      {stdio:['pipe','pipe','pipe']});
+    let output='';child.stdout.on('data',data=>output+=data);
+    child.stdin.end(JSON.stringify(reply)+'\n');
+    const code=await new Promise(resolve=>child.on('exit',resolve));
+    assert.equal(code,0);assert.equal(output,'FAIL_CLOSED\n');
+  }
+});
+test('transition diagnosis requires current same-Test V1 installation, not a historical card', () => {
+  const v = { state: 'CURRENT', bindingKey: id + ':unit', value: { target: 'test', installedVersion: '150.0.0', pendingVersion: null,
+    installedProfile: { state: 'CURRENT', profile: 'v1', releaseVersion: '150.0.0' } } };
+  assert.equal(transitionBaseline(v, id), true);
+  for (const other of [null, { ...v, state: 'UNAVAILABLE' }, { ...v, bindingKey: 'other:unit' },
+    { ...v, value: { ...v.value, pendingVersion: '151.0.0' } },
+    { ...v, value: { ...v.value, installedProfile: { ...v.value.installedProfile, profile: 'v2' } } },
+    { ...v, value: { ...v.value, installedProfile: { ...v.value.installedProfile, releaseVersion: '149.0.0' } } }])
+    assert.equal(Boolean(transitionBaseline(other, id)), false);
+});
+test('visible M1 business checks require settled native window composition',()=>{
+  const value={sessionId:id,uncertain:false,active:null,workspaceBusy:false,
+    workspace:{state:'PLACED_AWAITING_VISUAL_REVIEW',retryPending:false,zOrder:{state:'VERIFIED'}}};
+  assert.doesNotThrow(()=>visibleWorkspace(value,id));
+  for(const state of ['WAITING_FOR_UNLOCK','INCOMPLETE','CLOSED','NOT_PREPARED'])
+    assert.throws(()=>visibleWorkspace({...value,workspace:{...value.workspace,state}},id));
+  assert.throws(()=>visibleWorkspace({...value,workspaceBusy:true},id));
+  assert.throws(()=>visibleWorkspace({...value,workspace:{...value.workspace,zOrder:{state:'UNAVAILABLE'}}},id));
+  assert.throws(()=>visibleWorkspace(value,'other'));
+});
+test('partial layout waits only for existing recovery and requires exact settled ordering',()=>{
+  const expected={action:'workspace-restore'}, job={state:'PARTIAL'};
+  const base={sessionId:id,uncertain:false,active:null,workspaceBusy:false,sourceRecoveryBusy:false};
+  const pending={...base,workspace:{state:'WAITING_FOR_WINDOWS',retryPending:true}};
+  assert.equal(layoutSettlement(expected,job,pending,id),'PENDING');
+  const settled={...base,workspace:{state:'PLACED_AWAITING_VISUAL_REVIEW',retryPending:false,zOrder:{state:'VERIFIED'}}};
+  assert.equal(layoutSettlement(expected,job,settled,id),'CONFIRMED');
+  assert.equal(layoutSettlement(expected,job,{...settled,workspaceBusy:true},id),'PENDING');
+  assert.equal(job.state,'PARTIAL');
+  assert.equal(layoutSettlement({action:'service-publish'},job,pending,id),null);
+  assert.equal(layoutSettlement(expected,{state:'FAILED'},settled,id),null);
+  for(const v of [{...pending,sessionId:'other'},{...pending,uncertain:true},
+    {...pending,workspace:{state:'WAITING_FOR_WINDOWS',retryPending:false}},
+    {...pending,workspace:{state:'WAITING_FOR_UNLOCK',retryPending:true}},
+    {...settled,workspace:{...settled.workspace,zOrder:{state:'UNAVAILABLE'}}},
+    {...settled,workspace:{state:'INCOMPLETE',retryPending:false}}])
+    assert.throws(()=>layoutSettlement(expected,job,v,id));
+});
+test('mutation must match the exact currently armed UI command',()=>{
+  const expected={action:'service-prepare',team:'brake',profile:'v1'};
+  const body={...expected,requestId:id,sessionId:id};
+  assert.deepEqual(command(body,expected,id,[]),body);
+  for(const wrong of [null,{...expected,profile:'v2'},{...expected,team:'tire'}])
+    assert.throws(()=>command(body,wrong,id,[]));
+  for(const key of ['force','target','certificate']) assert.throws(()=>command({...body,[key]:true},expected,id,[]));
+  assert.throws(()=>command(body,expected,id,[id]));
+  assert.throws(()=>command({...body,sessionId:'other'},expected,id,[]));
+});
+test('layout restoration permits only one exactly armed ordinary UI command',()=>{
+  const expected={action:'workspace-restore'};
+  const body={...expected,requestId:id,sessionId:id};
+  assert.deepEqual(command(body,expected,id,[]),body);
+  for(const extra of [{force:true},{target:'production'},{profile:'v1'}])
+    assert.throws(()=>command({...body,...extra},expected,id,[]));
+  assert.throws(()=>command(body,null,id,[]));
+  assert.throws(()=>command(body,expected,id,[id]));
+  assert.throws(()=>command({...body,sessionId:'other'},expected,id,[]));
+});
+test('Advanced settings inspection is exact and does not authorize credential selection',()=>{
+  const expected={action:'cloud-inspect'};
+  const body={...expected,requestId:id,sessionId:id};
+  assert.deepEqual(command(body,expected,id,[]),body);
+  for(const change of [{action:'cloud-choose'},{action:'cloud-select'},{certificate:'other'},{pin:'unexpected'}])
+    assert.throws(()=>command({...body,...change},expected,id,[]));
+  assert.throws(()=>command(body,null,id,[]));
+  assert.throws(()=>command(body,expected,id,[id]));
+});
+test('release values come only from validated product receipts',()=>{
+  assert.deepEqual(facts({version:null,release:null,serviceId:null,results:[{facts:{}}]}),{});
+  assert.deepEqual(facts({results:[{facts:{version:'150.0.0',releaseHandle:'brake/150.0.0',serviceId:id}}]}),
+    {version:'150.0.0',releaseHandle:'brake/150.0.0',serviceId:id});
+  assert.equal(facts({results:[{facts:{command:{commandId:id}}}]}).commandId,id);
+  for(const v of ['latest','../value','']) assert.throws(()=>facts({results:[{facts:{version:v}}]}));
+});
+test('VDP readiness keeps its full process and current release contract',()=>{
+  const v={activeVersion:'150.0.0',vdpData:'REPORTED_READY',vdpRestarts:'0',processSlotMatches:true};
+  assert.equal(installed(v,'platform','150.0.0'),true);
+  for(const key of Object.keys(v)) assert.equal(installed({...v,[key]:null},'platform','150.0.0'),false);
+  assert.equal(installed(v,'platform','151.0.0'),false);
+});
+test('service install checks real active instance and error status',()=>{
+  const v={instances:[{version:'64.0.0',run_state:'active',error_message:false,error_exit_code:0}]};
+  assert.equal(installed(v,'tire','64.0.0'),true);
+  for(const [key,val] of [['version','63.0.0'],['run_state','failed'],['error_message',true],['error_exit_code',1]])
+    assert.equal(installed({instances:[{...v.instances[0],[key]:val}]},'tire','64.0.0'),false);
+});
+test('reset confirmation binds command, peer model and retained history',()=>{
+  const old={local:{teams:{brake:{model:'a'},tire:{model:'b'}}},brake:{productIds:['a']},tire:{productIds:['b']}};
+  const after=structuredClone(old);after.brake={...after.brake,resetState:'CLEARED',resetId:id};
+  assert.equal(resetPreserved(old,after,'brake',id),true);
+  assert.equal(resetPreserved(old,after,'brake','other'),false);
+  after.local.teams.tire.model='changed';assert.equal(resetPreserved(old,after,'brake',id),false);
+  after.local.teams.tire.model='b';after.tire.productIds=[];assert.equal(resetPreserved(old,after,'brake',id),false);
+});
