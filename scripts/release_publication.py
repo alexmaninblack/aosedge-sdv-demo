@@ -78,7 +78,8 @@ def publish(owner):
         else:print('    '+stage,flush=True)
     source=next(owner.candidate.glob('*.dmg'))
     meta=upload(c,source,expected,selected['folderId'],owner.root/'upload-intent.json',
-                check=owner.storage,progress=progress,public=True)
+                check=owner.storage,progress=progress,public=True,
+                verified_source=read(owner.root/'artifact-verification.json'))
     return dict(fileId=meta['id'],folderId=selected['folderId'],sha256=meta['sha256Checksum'],
         bytes=int(meta['size']),providerVersion=meta['version'],descriptorSha256=sha(owner.root/'delivery-descriptor.json'))
 

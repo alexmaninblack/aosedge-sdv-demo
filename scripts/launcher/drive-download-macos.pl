@@ -44,7 +44,11 @@ my ($mode,$path,$original)=@ARGV; stop() unless @ARGV==3;
 my %expected=url($original);
 stop() unless -f $path && !-l $path && (-s $path)<=65536;
 open my $file,'<',$path or stop(); local $/; my $raw=<$file>;close $file;
-if ($mode eq 'headers') {
+if ($mode eq 'payload-status') {
+    my $text=lc(decode($raw));
+    $text =~ s/<[^>]*>/ /sg; $text =~ s/\s+/ /g;
+    print $text =~ /quota exceeded|too many users.*downloaded|can't view or download this file/ ? "quota\n" : "unsupported\n";
+} elsif ($mode eq 'headers') {
     my @blocks=grep {/\AHTTP\//} split /\r?\n\r?\n/,$raw;
     stop() unless @blocks;my $head=$blocks[-1];
     stop() unless $head =~ /\AHTTP\/[0-9.]+ ([0-9]{3})\b/;my $status=$1;

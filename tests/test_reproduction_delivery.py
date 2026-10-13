@@ -59,6 +59,18 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(self.upload(), self.meta)
         self.client.request.assert_not_called()
         self.client.json.assert_not_called()
+    def test_owned_verification_receipt_avoids_a_second_full_read(self):
+        self.client.request.side_effect=[Response(200,{'Location':d.ORIGIN+'/upload/drive/v3/files'}),Response(200)]
+        verified={'sha256':self.expected['sha256'],'identity':d.artifacts.identity(self.source)}
+        with patch.object(d.artifacts,'sha256',side_effect=AssertionError('redundant full read')):
+            self.assertEqual(d.upload(self.client,self.source,self.expected,self.folder,self.intent,
+                                     verified_source=verified),self.meta)
+    def test_changed_verification_identity_is_not_trusted(self):
+        verified={'sha256':self.expected['sha256'],'identity':d.artifacts.identity(self.source)}
+        self.source.write_bytes(b'changed!')
+        with self.assertRaisesRegex(LabError,'Verified source identity'):
+            d.upload(self.client,self.source,self.expected,self.folder,self.intent,verified_source=verified)
+        self.client.request.assert_not_called()
 
     def test_public_preview_requires_explicit_mode(self):
         public={**self.meta,'shared':True}

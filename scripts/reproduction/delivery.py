@@ -156,7 +156,7 @@ def acknowledged(response, total):
 
 
 def upload(client, source, expected, folder, state_path, check=lambda: None, progress=lambda *x: None,
-           mime_type='application/x-apple-diskimage', *, public=False):
+           mime_type='application/x-apple-diskimage', *, public=False, verified_source=None):
     """Persist only a non-secret ID/intent. Session capabilities remain in memory."""
     require(mime_type in ('application/x-apple-diskimage', 'application/gzip'), 'Unsupported upload MIME type')
     before = artifacts.identity(source)
@@ -183,7 +183,12 @@ def upload(client, source, expected, folder, state_path, check=lambda: None, pro
             return meta
         file_id = identifier(client.json('GET', API + 'files/generateIds?count=1&space=drive&type=files')['ids'][0])
         atomic_json(state_path, {**binding, 'fileId': file_id})
-    require(artifacts.sha256(source, check) == expected['sha256'], 'Source digest differs from reviewed descriptor')
+    if verified_source is None:
+        require(artifacts.sha256(source, check) == expected['sha256'], 'Source digest differs from reviewed descriptor')
+    else:
+        require(verified_source == {'sha256': expected['sha256'], 'identity': before},
+                'Verified source identity differs from reviewed descriptor')
+        check()
     progress('SOURCE_VERIFIED', expected['bytes'])
     url = ORIGIN + '/upload/drive/v3/files?uploadType=resumable&fields=' + FIELDS
     body = json.dumps({'id': file_id, 'name': expected['file'], 'parents': [folder],

@@ -4,7 +4,7 @@
 
 # BEGIN VERIFIED DEPENDENCY PINS — maintained by scripts/sync-launcher-pins
 INSTALL_COMMON_SHA256=ca6dcad8a002c23a90fe3144385ab075f0ed4bda83bb285eef41a7e24931dce0
-INSTALL_DRIVE_SHA256=a126b373432eae30a02821bc7a1a5faacc3820be4c95ee2435555193ff515ea6
+INSTALL_DRIVE_SHA256=edb2e1d4fe02fc882a7390fc839beec9640f95c6e2b9738b4200968d725db2d2
 # END VERIFIED DEPENDENCY PINS
 
 install_import() {
@@ -49,10 +49,20 @@ install_public_download() {
         if [ -t 9 ] && [ "${TERM:-}" != dumb ]; then
           printf '  %s\n' "${destination##*/}" >&9
           curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
-            --max-filesize "$size" --progress-bar --show-error --output "$destination.part" "$url" 2>&9 || return 1
+            --dump-header "$ROUTE_WORK/drive-get-head" --max-filesize "$size" --progress-bar --show-error --output "$destination.part" "$url" 2>&9 || return 1
         else
           curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
-            --max-filesize "$size" --silent --show-error --output "$destination.part" "$url" || return 1
+            --dump-header "$ROUTE_WORK/drive-get-head" --max-filesize "$size" --silent --show-error --output "$destination.part" "$url" || return 1
+        fi
+        # GET can return an HTML quota page even when HEAD advertised the DMG.
+        /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-get-head" "$url" > "$ROUTE_WORK/drive-next" || return 1
+        IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
+        if [ "$mode" != binary ]; then
+          mode=$(/usr/bin/perl "$parser" payload-status "$destination.part" "$url") || return 1
+          if [ "$mode" = quota ]; then
+            printf 'STOP: Google Drive blocks this anonymous download (quota exceeded). No installer was opened. Wait for provider availability; no automatic retry.\n' >&2
+          else printf 'STOP: Drive returned an unsupported page instead of the DMG. No installer was opened.\n' >&2; fi
+          return 2
         fi
         mv "$destination.part" "$destination"; return $? ;;
       *) return 1 ;;

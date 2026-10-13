@@ -52,6 +52,10 @@ class DriveParserTests(unittest.TestCase):
             'Google Drive has detected issues with your download. This file is too large for Google to scan for viruses. '
             'This file is executable and may harm your computer.')
         self.assertEqual(self.parse('form',raw).returncode,0)
+    def test_http_200_quota_page_is_not_a_binary_download(self):
+        result=self.parse('payload-status','<title>Google Drive - Quota exceeded</title>Sorry, you can\'t view or download this file at this time.')
+        self.assertEqual(result.stdout,'quota\n')
+        self.assertEqual(self.parse('payload-status','<title>Unknown page</title>').stdout,'unsupported\n')
     def test_rejects_foreign_duplicate_quota_and_oversized(self):
         cases=[('headers','HTTP/2 302\r\nLocation: https://evil.example/file\r\n\r\n'),
                ('headers','HTTP/2 200\r\nContent-Type: text/html\r\nContent-Type: application/octet-stream\r\n\r\n'),
