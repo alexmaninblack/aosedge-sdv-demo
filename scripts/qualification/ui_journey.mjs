@@ -23,9 +23,20 @@ export function releaseViewSpec(team, profile, release) {
   assert(['platform','brake','tire'].includes(team) && version.test(release)
     && (team==='tire'?profile==='v1':['v1','v2','v3'].includes(profile)), 'RELEASE_VIEW_INPUT_INVALID');
   return {teamTab:team==='platform'?'Platform Team':team==='brake'?'Brake Team':'Tire Team',
+    profileButton:`${profile} ${profiles[team][Number(profile[1])-1]}`,
     stages:team==='platform'?['Published','Installed']:['Published','Assigned','Running'],
     card:team==='platform'?'Vehicle Data Platform installed details':team==='brake'?'Brake service details':'Tire service details',
     cardText:`${profile} · ${release}`,profile,release};
+}
+
+export async function selectReleaseView(page, expect, spec) {
+  await page.getByRole('button',{name:spec.teamTab,exact:true}).click();
+  // Team navigation suggests the next profile. Select the observed release
+  // explicitly before checking its candidate; selection never publishes it.
+  const profile=page.getByRole('group',{name:'Capability profile',exact:true})
+    .getByRole('button',{name:spec.profileButton,exact:true});
+  await profile.click();
+  await expect(profile).toHaveAttribute('aria-pressed','true');
 }
 
 export function browserFailure(error) {
@@ -203,10 +214,10 @@ export async function main(inputPath) {
   assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check','status-observation'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   const continuous=input.scenario==='continuous-campaign';
   const restartCheck=input.scenario==='restart-check';
-  if (input.nativeRunner) assert(input.visibleM1 && ['native-controls','continuous-campaign'].includes(input.scenario), 'NATIVE_RUNNER_SCOPE_INVALID');
+  if (input.nativeRunner) assert(input.visibleM1 && ['native-controls','continuous-campaign','moving-sota'].includes(input.scenario), 'NATIVE_RUNNER_SCOPE_INVALID');
   if(continuous) assert(input.nativeRunner,'CONTINUOUS_NATIVE_RUNNER_REQUIRED');
   if (input.nativeVersions !== undefined) {
-    assert(input.nativeRunner && ['native-controls','continuous-campaign'].includes(input.scenario), 'NATIVE_VERSION_SCOPE_INVALID');
+    assert(input.nativeRunner && ['native-controls','continuous-campaign','moving-sota'].includes(input.scenario), 'NATIVE_VERSION_SCOPE_INVALID');
     nativeVersions(input.nativeVersions);
   }
   if (input.scenario === 'release-continuation')
@@ -324,7 +335,7 @@ export async function main(inputPath) {
   }
   async function releaseViews(team,profile,release) {
     const spec=releaseViewSpec(team,profile,release);
-    await button(spec.teamTab).click();
+    await selectReleaseView(page,expect,spec);
     await expect(page.getByText(`Selected candidate · ${profile} · ${release}`,{exact:true})).toBeVisible();
     for(const name of spec.stages) await expect(page.locator('.studio-release-stages')
       .getByText(name,{exact:true}).locator('..')).toHaveClass(/\bcomplete\b/,{timeout:65000});
@@ -594,6 +605,8 @@ export async function main(inputPath) {
     }
     if (['tire-review', 'road-return', 'moving-sota'].includes(input.scenario)) {
       await stage('current-installed-releases',async () => {
+        if(input.nativeVersions) nativeVersions({vdp:cards['Vehicle Data Platform installed details'].split(' · ')[1],
+          brake:cards['Brake service details'].split(' · ')[1],tire:cards['Tire service details'].split(' · ')[1]},input.nativeVersions);
         for (const [team,name] of [['platform','Vehicle Data Platform installed details'],
           ['brake','Brake service details'],['tire','Tire service details']]) {
           const release = cards[name].split(' · ')[1];

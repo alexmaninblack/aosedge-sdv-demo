@@ -5,11 +5,27 @@ from unittest.mock import patch, Mock
 from io import StringIO
 import ui_pilot as p
 from ui_forward_admin import rule
-from ui_native_gate import validate, native_receipt, LIVE_STAGES, ACTION_IDS
+from ui_native_gate import validate, native_receipt, LIVE_STAGES, ACTION_IDS, SCENARIO_STAGES
 from ui_m1 import read_request, Observer
 
 
 class PilotGuards(unittest.TestCase):
+    def test_focused_moving_runner_has_only_its_two_existing_native_inputs(self):
+        self.assertEqual(SCENARIO_STAGES['moving-sota'],
+            {'moving-sota-autopilot':'Autopilot','moving-sota-safe-stop':'Safe Stop'})
+        self.assertTrue(set(SCENARIO_STAGES['moving-sota']) <= set(SCENARIO_STAGES['continuous-campaign']))
+
+    def test_read_refusal_preserves_only_the_fixed_owner_code_and_never_replays(self):
+        for code,expected in [('PLATFORM_NOT_CURRENT','PLATFORM_NOT_CURRENT'),
+                             ('SIMULATION_NOT_READY','SIMULATION_NOT_READY'),
+                             ('private details','UI_OWNER_READ_UNAVAILABLE'),
+                             (None,'UI_OWNER_READ_UNAVAILABLE')]:
+            with patch.object(p.j,'Remote') as remote:
+                remote.return_value.return_value=dict(outcome='BLOCKED',code=code,facts={})
+                with self.assertRaisesRegex(ValueError,'^'+expected+'$'):
+                    p.read_query({}, {}, 'test', 'local')
+                self.assertEqual(remote.return_value.call_count,1)
+
     def test_native_mouse_receipt_is_bound_but_does_not_claim_physical_success(self):
         identifier='01234567-89ab-cdef-0123-456789abcdef'
         for stage,action in LIVE_STAGES.items():

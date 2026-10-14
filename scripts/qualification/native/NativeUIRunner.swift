@@ -19,6 +19,19 @@ let campaignStages = ["vdp-v1-safe":"driving.safe-stop", "vdp-v2-safe":"driving.
     "campaign-brake-moving-maneuver":"driving.brake-maneuver", "campaign-brake-moving-return":"driving.return-to-road",
     "campaign-tire-moving-maneuver":"driving.tire-maneuver", "campaign-tire-moving-return":"driving.return-to-road"]
 let liveStages = controlStages.merging(campaignStages) { first, _ in first }
+func scenarioStages(_ name: String?) -> [String: String]? {
+    switch name {
+    case nil, "native-controls": return controlStages
+    case "continuous-campaign": return campaignStages
+    case "moving-sota": return ["moving-sota-autopilot":"driving.autopilot", "moving-sota-safe-stop":"driving.safe-stop"]
+    default: return nil
+    }
+}
+func validScenario(_ value: Any?) -> Bool {
+    guard let value = value else { return true }
+    guard let name = value as? String else { return false }
+    return scenarioStages(name) != nil
+}
 
 struct PilotFailure: Error { let code: String }
 func requirePilot(_ condition: Bool, _ code: String) throws {
@@ -146,7 +159,7 @@ final class NativeClient: NSObject, NSApplicationDelegate {
         try requirePilot(["candidate", "test", "sessionId"].allSatisfy { binding[$0] == live[$0] as? String }
             && request.pid == pid_t(live["pid"] as? Int ?? 0)
             && request.digest == live["executableSha256"] as? String, "LIVE_PROFILE_MISMATCH")
-        let stages = live["scenario"] as? String == "continuous-campaign" ? campaignStages : controlStages
+        guard let stages = scenarioStages(live["scenario"] as? String) else { throw PilotFailure(code: "LIVE_PROFILE_INVALID") }
         try requirePilot(request.operation == "quit" || stages[binding["stage"] ?? ""] == request.action,
             "LIVE_SCENARIO_STAGE_INVALID")
     }
@@ -270,6 +283,10 @@ if CommandLine.arguments.contains("--self-test") {
     let valid: [String: Any] = ["schemaVersion": 1, "requestId": id, "operation": "click", "pid": 12345,
         "executableSha256": String(repeating: "a", count: 64), "action": "driving.safe-stop"]
     do {
+        try requirePilot(scenarioStages("moving-sota") == ["moving-sota-autopilot":"driving.autopilot", "moving-sota-safe-stop":"driving.safe-stop"], "MOVING_SCOPE_INVALID")
+        try requirePilot(scenarioStages("moving-sota")?["brake-v1-maneuver"] == nil && scenarioStages("unknown") == nil, "MOVING_SCOPE_INVALID")
+        try requirePilot(validScenario(nil) && validScenario("moving-sota")
+            && !validScenario(1) && !validScenario(false) && !validScenario("unknown"), "SCENARIO_TYPE_INVALID")
         _ = try PilotRequest(valid, filename: id + ".json")
         for change in [["action": "driving.delete-test"], ["operation": "shell"], ["requestId": "bad"], ["pid": 1], ["pid": true], ["schemaVersion": true], ["unexpected": true]] as [[String: Any]] {
             var broken = valid; for (key, value) in change { broken[key] = value }
@@ -303,7 +320,7 @@ if root.lastPathComponent.hasPrefix("native-ui-live-") {
         guard let value = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { exit(2) }
         let fields: Set<String> = ["candidate", "test", "sessionId", "pid", "executableSha256", "executable"]
         try requirePilot(Set(value.keys) == fields || Set(value.keys) == fields.union(["scenario"]), "LIVE_PROFILE_INVALID")
-        try requirePilot(value["scenario"] == nil || ["native-controls", "continuous-campaign"].contains(value["scenario"] as? String ?? ""), "LIVE_PROFILE_INVALID")
+        try requirePilot(validScenario(value["scenario"]), "LIVE_PROFILE_INVALID")
         let candidate = value["candidate"] as? String ?? ""
         let expected = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
             "AosEdge SDV Packages/versions/" + candidate + "/demo-artifacts/aosedge-sdv-demo/host-runtime/ui/native/Driving Control.app/Contents/MacOS/KeyboardControl")

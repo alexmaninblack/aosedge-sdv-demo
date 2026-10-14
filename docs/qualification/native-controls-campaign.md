@@ -154,7 +154,11 @@ campaign, exact releases, timings and final closure.
 The 14 October visibility amendment checks the Team view and its completed
 publication/installation stages, then the Vehicle card and detail dialog for
 each exact profile/version before the next release. Moving updates retain
-independent platform-version and motion checks. Fixed Cloud response, source
+independent platform-version and motion checks. Opening a Team can suggest the
+next capability profile. The runner must explicitly select the exact published
+profile by its semantic name and confirm `aria-pressed` before checking that
+candidate's stages. This is view selection only, not another preparation or
+publication. Fixed Cloud response, source
 timestamp, binding and local-process diagnostics accompany the visible run;
 they do not override status or product-quality gates. The separate
 `ui_pilot.py --scenario status-observation --display m1` scenario starts the
@@ -183,3 +187,19 @@ profile, a new fully delivered invalid V1 window plus a completed independent
 exercise result fails with `MANEUVER_INCOMPLETE_SOURCE_GAP` or the corresponding
 fixed abort reason. No click, publication or maneuver is automatically retried,
 and the existing quality criteria and deadline remain intact.
+
+The existing focused `moving-sota` profile can use the signed native runner
+with its own two-stage allowlist: Autopilot and Safe Stop. Both the Swift client
+and Python adapter reject other campaign stages in that profile. It pins current
+same-Test installed versions, publishes the two QM releases serially and checks
+actual motion, unchanged VDP and visible release views. It does not repeat the
+earlier VDP/Brake capability story or qualify a previously failed continuous run.
+A following `restart-check` is independently reported, not merged into an
+uninterrupted PASS.
+
+Current API observation receipts used for a retained follow-up require a genuine
+installed-Test binding observation as well as the three ready-version gates.
+Do not synthesize a Create receipt or copy a run identity from another candidate.
+When an owner read refuses a request, retain its fixed diagnostic code and query
+kind; do not collapse it into a generic SSH error. No raw exception, credential,
+automatic input replay or weaker freshness rule is introduced.

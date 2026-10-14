@@ -3,16 +3,41 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec } from './ui_journey.mjs';
+import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
 test('each published release checks its exact team stages, installed card and capability',()=>{
   assert.deepEqual(releaseViewSpec('platform','v2','172.0.0'),{
-    teamTab:'Platform Team',stages:['Published','Installed'],card:'Vehicle Data Platform installed details',
+    teamTab:'Platform Team',profileButton:'v2 Brake analysis',stages:['Published','Installed'],card:'Vehicle Data Platform installed details',
     cardText:'v2 · 172.0.0',profile:'v2',release:'172.0.0'});
   assert.deepEqual(releaseViewSpec('brake','v3','155.0.0').stages,['Published','Assigned','Running']);
   assert.equal(releaseViewSpec('tire','v1','76.0.0').card,'Tire service details');
   for(const args of [['unknown','v1','171.0.0'],['platform','v4','171.0.0'],['tire','v2','76.0.0'],['brake','v1','latest']])
     assert.throws(()=>releaseViewSpec(...args),/RELEASE_VIEW_INPUT_INVALID/);
+});
+test('release verification selects the published profile after team navigation suggests the next one',async()=>{
+  for(const [team,profile] of [['platform','v1'],['platform','v2'],['brake','v1'],['brake','v3'],['tire','v1']]) {
+    const spec=releaseViewSpec(team,profile,'172.0.0'),clicks=[];
+    let selected=null;
+    const profileButton={click:async()=>{clicks.push(spec.profileButton);selected=profile;}};
+    const page={getByRole:(role,options)=>{
+      assert.equal(options.exact,true);
+      if(role==='button') {
+        assert.equal(options.name,spec.teamTab);
+        return {click:async()=>{clicks.push(spec.teamTab);selected='next-profile';}};
+      }
+      assert.equal(role,'group');assert.equal(options.name,'Capability profile');
+      return {getByRole:(child,options)=>{
+        assert.equal(child,'button');assert.deepEqual(options,{name:spec.profileButton,exact:true});
+        return profileButton;
+      }};
+    }};
+    const expect=element=>({toHaveAttribute:async(name,value)=>{
+      assert.equal(element,profileButton);assert.equal(name,'aria-pressed');assert.equal(value,'true');
+      assert.equal(selected,profile);
+    }});
+    await selectReleaseView(page,expect,spec);
+    assert.deepEqual(clicks,[spec.teamTab,spec.profileButton]);
+  }
 });
 test('browser failure diagnostics expose fixed categories rather than raw error text',()=>{
   assert.equal(browserFailure(new Error('apiRequestContext.get: read ECONNRESET private details')),'UI_READ_CONNECTION_RESET');

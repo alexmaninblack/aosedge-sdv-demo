@@ -21,7 +21,8 @@ CAMPAIGN_STAGES = {'vdp-v1-safe':'Safe Stop','vdp-v2-safe':'Safe Stop','vdp-v3-s
     'moving-sota-autopilot':'Autopilot','moving-sota-safe-stop':'Safe Stop',
     'campaign-brake-moving-maneuver':'Brake maneuver','campaign-brake-moving-return':'Return to road',
     'campaign-tire-moving-maneuver':'Tire maneuver','campaign-tire-moving-return':'Return to road'}
-SCENARIO_STAGES = {'native-controls':CONTROL_STAGES,'continuous-campaign':CAMPAIGN_STAGES}
+MOVING_STAGES = {key:CAMPAIGN_STAGES[key] for key in ('moving-sota-autopilot','moving-sota-safe-stop')}
+SCENARIO_STAGES = {'native-controls':CONTROL_STAGES,'continuous-campaign':CAMPAIGN_STAGES,'moving-sota':MOVING_STAGES}
 LIVE_STAGES = {**CONTROL_STAGES, **CAMPAIGN_STAGES}
 ACTION_IDS = {'Safe Stop': 'driving.safe-stop', 'Autopilot': 'driving.autopilot',
               'Brake maneuver': 'driving.brake-maneuver', 'Tire maneuver': 'driving.tire-maneuver',

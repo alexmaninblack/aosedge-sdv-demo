@@ -53,7 +53,11 @@ def read_query(transport, config, test, query, team=None, release=None, channel=
             script+'\nSDV_FRESH_OWNER_READ\n',timeout=65))
         h.require(isinstance(result,dict) and set(result)=={'outcome','code','facts'}
             and isinstance(result['facts'],dict) and len(json.dumps(result))<=512*1024,'WORKER_RESPONSE_INVALID')
-    h.require(result['outcome'] == 'PASS', 'UI_OWNER_READ_UNAVAILABLE')
+    # The read worker already projects bounded non-secret codes. Preserve the
+    # actual owner refusal rather than disguising it as a transport failure.
+    code=result.get('code')
+    h.require(result['outcome'] == 'PASS', code if isinstance(code,str)
+        and re.fullmatch(r'[A-Z][A-Z0-9_]{1,100}',code) else 'UI_OWNER_READ_UNAVAILABLE')
     return result['facts']
 
 
@@ -338,7 +342,7 @@ def run(args, transport, config):
     with h.Journal(records, pin) as journal:
         runner = j.Runner(journal, j.Remote(transport, config), emit=lambda value: print(value, flush=True))
         try:
-            if scenario in ('native-controls','continuous-campaign'):
+            if scenario in ('native-controls','continuous-campaign','moving-sota'):
                 from native_ui_live import Live
                 native = Live(transport,config,args.test,args.native_build,records,args.native_run_id,scenario=scenario)
             if changed_media:
@@ -361,7 +365,7 @@ def run(args, transport, config):
                     journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario)
                 if native is not None: value['nativeRunner'] = True
                 if getattr(args,'native_versions',None) is not None:
-                    h.require(scenario in ('native-controls','continuous-campaign'),'NATIVE_VERSION_SCOPE_INVALID')
+                    h.require(scenario in ('native-controls','continuous-campaign','moving-sota'),'NATIVE_VERSION_SCOPE_INVALID')
                     value['nativeVersions']=args.native_versions
                 if continuation: value['continuation'] = continuation
                 h.atomic(scratch/'browser-input.json', value)
@@ -470,7 +474,9 @@ def main():
     h.require((args.scenario == 'release-continuation') == (args.continue_from is not None),
               'CONTINUATION_RECORD_BOUNDARY')
     h.require(not args.cards_from_release_records or args.scenario in ('installed','tire-review','road-return','moving-sota'), 'INSTALLED_CARD_RECORD_BOUNDARY')
-    h.require(args.scenario not in ('tire-review','road-return','moving-sota') or args.cards_from_release_records is not None,
+    # Focused moving SOTA can instead consume qualified_cards' exact current
+    # API ready-version receipts with a genuine same-Test installed binding.
+    h.require(args.scenario not in ('tire-review','road-return') or args.cards_from_release_records is not None,
               'ROAD_RETURN_RELEASE_RECORD_REQUIRED')
     if args.query:
         print(json.dumps(read_query(transport, config, args.test, args.query, args.team, args.release)))
@@ -478,7 +484,7 @@ def main():
     if args.observe:
         print(json.dumps(observe(transport, config, args.test, args.observe)))
         return 0
-    h.require((args.scenario in ('native-controls','continuous-campaign'))==(args.native_build is not None)
+    h.require((args.scenario in ('native-controls','continuous-campaign','moving-sota'))==(args.native_build is not None)
               and (not args.native_build or args.display=='m1'), 'NATIVE_RUNNER_SCOPE_INVALID')
     h.require(all((args.dmg, args.remote_dmg, args.records, args.workspace))
               and (args.display=='m1' or args.node), 'PILOT_INPUT_REQUIRED')

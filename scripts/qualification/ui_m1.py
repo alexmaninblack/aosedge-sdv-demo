@@ -196,7 +196,9 @@ def execute(transport,root,value,records,observe,query,python,native=None):
             except (OSError,ValueError,subprocess.SubprocessError) as error:
                 code=str(error) if re.fullmatch('[A-Z][A-Z0-9_]{1,100}',str(error)) else 'UI_BROKER_CHECK_FAILED'
                 h.atomic(records/('broker-failure-'+str(sequence)+'.json'),
-                    dict(kind=kind,stage=args.get('stage'),code=code,inputReplayed=False))
+                    dict(kind=kind,stage=args.get('stage'),code=code,inputReplayed=False,
+                         query=args.get('name') if kind=='query' and args.get('name') in
+                         ('component','component-idle','service','backend','combined','local','platform','publication','exercise') else None))
                 response=dict(id=sequence,ok=False)
             process.stdin.write(json.dumps(response)+'\n');process.stdin.flush()
         code=process.wait(timeout=15)
