@@ -12,7 +12,9 @@ results remain unchanged; newer results do not retroactively qualify old images.
 - [Presenter status and release visibility — 14 October](presenter-status-and-release-views-2026-10-14.md):
   delayed VDP profile reproduced and corrected in source; bounded visible status
   observation passed, while intermittent Offline remains unclassified. Per-release
-  visible assertions are added; new-package acceptance is recorded separately.
+  all nine serial release views passed on the installed successor; full E2E
+  remains incomplete at the post-SOTA Brake result gate. Final closure and
+  preserved evidence are recorded separately.
 
 - [M1 cleanup and installed demo testing — 14 October](m1-clean-install-e2e-2026-10-14.md):
   fresh installation and 118 API steps passed; the continuous UI restart check

@@ -40,7 +40,7 @@ def evaluate(check, context):
         return (row.get('activeVersion') == args['version'] and row.get('vdpData') == 'REPORTED_READY'
                 and str(row.get('vdpRestarts')) == '0' and row.get('processSlotMatches') is True)
     if name == 'ready-service':
-        return any(row.get('version') == args['version'] and row.get('run_state') == 'active'
+        return args['actual'].get('observationState') == 'CURRENT' and any(row.get('version') == args['version'] and row.get('run_state') == 'active'
                    and not row.get('error_message') and row.get('error_exit_code') in (0, None)
                    for row in args['actual'].get('instances', []))
     if name == 'published-service':

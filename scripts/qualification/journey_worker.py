@@ -231,12 +231,22 @@ def backend_projection(value):
 
 
 def service_projection(value, team):
-    require(value.get('state') == 'CURRENT', 'PLATFORM_NOT_CURRENT')
+    observation = value.get('state')
+    require(observation in ('CURRENT','STALE','UNAVAILABLE'), 'PLATFORM_OBSERVATION_INVALID')
+    if observation != 'CURRENT':
+        return dict(observationState=observation, reason='PLATFORM_NOT_CURRENT', instances=[])
     inventory = (value.get('value') or {}).get('inventory') or {}
+    if (inventory.get('services') or {}).get('state') != 'CURRENT':
+        return dict(observationState='INCOMPLETE', reason='CLOUD_SERVICE_DETAILS_NOT_CURRENT', instances=[])
     sid = inventory.get('teamServiceIds', {}).get(team)
     if sid is None:
-        return dict(instances=[])
-    rows = inventory.get('serviceDetails', {}).get(sid, {}).get('value') or []
+        return dict(observationState='CURRENT', reason=None, instances=[])
+    detail = inventory.get('serviceDetails', {}).get(sid, {})
+    if detail.get('state') != 'CURRENT' or not isinstance(detail.get('value'),list):
+        return dict(observationState='INCOMPLETE', reason='CLOUD_SERVICE_DETAILS_NOT_CURRENT', instances=[])
+    rows = detail['value']
+    if any((row.get('instances') or {}).get('state') != 'CURRENT' for row in rows):
+        return dict(observationState='INCOMPLETE', reason='CLOUD_SERVICE_INSTANCES_NOT_CURRENT', instances=[])
     instances = []
     for row in rows:
         installed = (row.get('service_versions') or {}).get('installed_service_version') or {}
@@ -244,7 +254,7 @@ def service_projection(value, team):
             instances.append(dict(version=item.get('version') if item.get('version') == installed.get('version') else None,
                 run_state=item.get('run_state'), error_message=bool(item.get('error_message')),
                 error_exit_code=item.get('error_exit_code')))
-    return dict(instances=instances)
+    return dict(observationState='CURRENT', reason=None, instances=instances)
 
 
 def control_projection(value):

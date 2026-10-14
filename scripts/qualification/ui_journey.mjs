@@ -43,7 +43,7 @@ export function browserFailure(error) {
   const text=String(error?.message??'');
   for(const [pattern,code] of [[/ECONNRESET|socket hang up/,'UI_READ_CONNECTION_RESET'],
     [/ECONNREFUSED/,'UI_READ_CONNECTION_REFUSED'],[/strict mode violation/,'UI_LOCATOR_AMBIGUOUS'],
-    [/Target.*closed|has been closed/,'UI_TARGET_CLOSED'],[/Timeout.*exceeded|timed out/,'UI_WAIT_TIMED_OUT']])
+    [/Target.*closed|has been closed/,'UI_TARGET_CLOSED'],[/Timeout.*exceeded|timed out/i,'UI_WAIT_TIMED_OUT']])
     if(pattern.test(text))return code;
   return /^[A-Z][A-Z0-9_]{1,100}$/.test(text.split('\n')[0])?text.split('\n')[0]:'UI_JOURNEY_CHECK_FAILED';
 }
@@ -131,7 +131,7 @@ export function facts(job) {
 export function installed(value, team, release) {
   if (team === 'platform') return value.activeVersion === release && value.vdpData === 'REPORTED_READY'
     && String(value.vdpRestarts) === '0' && value.processSlotMatches === true;
-  return value.instances.some(row => row.version === release && row.run_state === 'active'
+  return value.observationState === 'CURRENT' && value.instances.some(row => row.version === release && row.run_state === 'active'
     && !row.error_message && [0, null, undefined].includes(row.error_exit_code));
 }
 export function failedWindow(before, after, release) {
@@ -339,13 +339,13 @@ export async function main(inputPath) {
     await expect(page.getByText(`Selected candidate · ${profile} · ${release}`,{exact:true})).toBeVisible();
     for(const name of spec.stages) await expect(page.locator('.studio-release-stages')
       .getByText(name,{exact:true}).locator('..')).toHaveClass(/\bcomplete\b/,{timeout:65000});
-    if(team==='platform') await expect(page.getByText(`Cloud installed · ${release}`,{exact:true})).toBeVisible();
-    else await expect(page.getByText(`Installed ${release}`,{exact:true})).toBeVisible();
+    if(team==='platform') await expect(page.getByText(`Cloud installed · ${release}`,{exact:true})).toBeVisible({timeout:65000});
+    else await expect(page.getByText(`Installed ${release}`,{exact:true})).toBeVisible({timeout:65000});
     await shot(`${team}-${release}-team-confirmed`);
     await button('Vehicle').click();await expect(button(spec.card)).toContainText(spec.cardText,{timeout:65000});
     await button(spec.card).click();await expect(dialog()).toBeVisible();
     await expect(dialog()).toContainText(release);
-    if(team==='platform') await expect(dialog().getByText(profile.toUpperCase(),{exact:true})).toBeVisible();
+    if(team==='platform') await expect(dialog().getByText(profile.toUpperCase(),{exact:true})).toBeVisible({timeout:65000});
     await shot(`${team}-${release}-installed-details`);await close();
     record({state:'RELEASE_VISIBLE_IN_PRESENTER',team,profile,version:release,
       teamViewConfirmed:true,vehicleCardConfirmed:true,detailsConfirmed:true});

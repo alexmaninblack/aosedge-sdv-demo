@@ -32,6 +32,10 @@ func validScenario(_ value: Any?) -> Bool {
     guard let name = value as? String else { return false }
     return scenarioStages(name) != nil
 }
+func exactProcess<T>(_ pid: pid_t, direct: T?, listed: () -> [T], identifier: (T) -> pid_t) -> T? {
+    if let direct = direct { return identifier(direct) == pid ? direct : nil }
+    return listed().first { identifier($0) == pid }
+}
 
 struct PilotFailure: Error { let code: String }
 func requirePilot(_ condition: Bool, _ code: String) throws {
@@ -147,6 +151,7 @@ final class NativeClient: NSObject, NSApplicationDelegate {
     var timer: Timer?
     var lastTrust: Bool?
     let live: [String: Any]?
+    var targetLookup: [String: Any] = [:]
 
     init(root: URL, live: [String: Any]? = nil) {
         self.root = root; self.requests = root.appendingPathComponent("requests"); self.live = live
@@ -179,7 +184,15 @@ final class NativeClient: NSObject, NSApplicationDelegate {
         let expected = live.map { URL(fileURLWithPath: $0["executable"] as! String) }
             ?? root.appendingPathComponent("DrivingControlPilot.app/Contents/MacOS/ControlFixture")
         let bundle = live == nil ? fixtureBundle : "org.carla-ego-runtime.keyboard-control"
-        guard let app = NSRunningApplication(processIdentifier: request.pid) else { throw PilotFailure(code: "TARGET_PROCESS_MISSING") }
+        let direct = NSRunningApplication(processIdentifier: request.pid)
+        var listed: [NSRunningApplication]? = nil
+        let resolved = exactProcess(request.pid, direct: direct, listed: {
+            let apps = NSWorkspace.shared.runningApplications; listed = apps; return apps
+        }, identifier: { $0.processIdentifier })
+        targetLookup = ["initializerResolved": direct != nil, "workspaceLookupAttempted": listed != nil,
+            "exactWorkspaceResolved": listed?.contains { $0.processIdentifier == request.pid } ?? false,
+            "kernelProcessPresent": Darwin.kill(request.pid, 0) == 0]
+        guard let app = resolved else { throw PilotFailure(code: "TARGET_PROCESS_MISSING") }
         try requirePilot(!app.isTerminated && app.bundleIdentifier == bundle
             && app.executableURL?.standardizedFileURL == expected.standardizedFileURL, "TARGET_PROCESS_MISMATCH")
         let digest = SHA256.hash(data: try Data(contentsOf: expected)).map { String(format: "%02x", $0) }.joined()
@@ -201,6 +214,7 @@ final class NativeClient: NSObject, NSApplicationDelegate {
             let began = ProcessInfo.processInfo.systemUptime
             var sent = false, layoutAttempted = false, id = path.deletingPathExtension().lastPathComponent
             var output: [String: Any] = [:]
+            targetLookup = [:]
             do {
                 try privateEntry(path, directory: false)
                 let data = try Data(contentsOf: path)
@@ -271,6 +285,7 @@ final class NativeClient: NSObject, NSApplicationDelegate {
                 output = ["outcome": sent || layoutAttempted ? "UNCERTAIN" : "BLOCKED", "code": "PILOT_REQUEST_UNAVAILABLE"]
             }
             output["requestId"] = id; output["inputDispatched"] = sent
+            if !targetLookup.isEmpty { output["targetLookup"] = targetLookup }
             output["runnerSeconds"] = ProcessInfo.processInfo.systemUptime - began
             try? exclusive(receipt, output)
         }
@@ -287,6 +302,15 @@ if CommandLine.arguments.contains("--self-test") {
         try requirePilot(scenarioStages("moving-sota")?["brake-v1-maneuver"] == nil && scenarioStages("unknown") == nil, "MOVING_SCOPE_INVALID")
         try requirePilot(validScenario(nil) && validScenario("moving-sota")
             && !validScenario(1) && !validScenario(false) && !validScenario("unknown"), "SCENARIO_TYPE_INVALID")
+        var listedCalls = 0
+        let listing = { () -> [Int32] in listedCalls += 1; return [99, 42] }
+        try requirePilot(exactProcess(42, direct: nil, listed: listing, identifier: { $0 }) == 42
+            && listedCalls == 1, "EXACT_PROCESS_LOOKUP_INVALID")
+        try requirePilot(exactProcess(42, direct: Int32(42), listed: listing, identifier: { $0 }) == 42
+            && listedCalls == 1, "EXACT_PROCESS_LOOKUP_INVALID")
+        try requirePilot(exactProcess(42, direct: Int32(99), listed: listing, identifier: { $0 }) == nil
+            && listedCalls == 1 && exactProcess(43, direct: nil, listed: listing, identifier: { $0 }) == nil,
+            "EXACT_PROCESS_LOOKUP_INVALID")
         _ = try PilotRequest(valid, filename: id + ".json")
         for change in [["action": "driving.delete-test"], ["operation": "shell"], ["requestId": "bad"], ["pid": 1], ["pid": true], ["schemaVersion": true], ["unexpected": true]] as [[String: Any]] {
             var broken = valid; for (key, value) in change { broken[key] = value }

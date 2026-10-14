@@ -203,3 +203,17 @@ Do not synthesize a Create receipt or copy a run identity from another candidate
 When an owner read refuses a request, retain its fixed diagnostic code and query
 kind; do not collapse it into a generic SSH error. No raw exception, credential,
 automatic input replay or weaker freshness rule is introduced.
+
+Service installation observations explicitly distinguish CURRENT from STALE,
+UNAVAILABLE and INCOMPLETE. A non-current response withholds instances; it is
+not confirmed absence or an installed/running success. The existing bounded
+read-only installation wait may continue observing, without resubmitting the
+publication or extending its deadline. Success additionally requires current
+service inventory, Subject details and instance observations. A malformed
+observation remains an error.
+
+All asynchronous release-view assertions use the existing 65-second UI
+settlement budget, including exact installed Cloud version and current VDP
+profile in its detail dialog. A `last known` suffix must not satisfy those
+exact-current assertions. Installation/source deadlines and freshness are not
+changed by this UI wait; no publication or input is repeated while observing.

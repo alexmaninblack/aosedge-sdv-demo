@@ -3,11 +3,13 @@
 
 # Presenter status and release visibility on M1
 
-The retained M1 Test reproduces delayed VDP capability metadata. A short visible
-status scenario passed, but did not reproduce a brief Offline report after the
-controller was connected. The source correction preserves Cloud installation
-authority and adds visible checks after every serial publication. Updated DMG
-and release-campaign acceptance are recorded separately below.
+The successor DMG is installed and selected on M1. VDP capability metadata and
+all nine serial release-view checks passed, including both moving QM updates.
+The latest uninterrupted campaign passed 30 stages but failed to confirm a new
+Brake product after its post-SOTA maneuver: full E2E remains NOT_COMPLETE.
+After connection, all 96 Cloud responses in that campaign were Online with
+CURRENT profile evidence; the reported Offline fluctuation was not reproduced.
+Original FAIL receipts, bounded diagnostics and final closure are retained below.
 
 ## VDP capability metadata
 
@@ -87,8 +89,9 @@ server unit tests and 23 JavaScript scenario guard tests. The 16 focused
 profile/performance cases are included in the server count. Development-side
 checks are unit-only; all live and visible checks execute on M1.
 
-The updated installed-package and per-publication UI gates remain pending at
-this source checkpoint. The existing full-E2E failures, including the incomplete
+At the initial source-only checkpoint, updated installed-package and
+per-publication UI gates were pending. Later sections record their actual M1
+results. The existing full-E2E failures, including the incomplete
 Brake input window, remain in the [earlier M1 report](m1-clean-install-e2e-2026-10-14.md).
 VDP-TIMEOUT-01 is deferred and unchanged. No public catalog/tag or historical
 immutable artifact is moved by this correction.
@@ -252,3 +255,160 @@ A control uninterrupted campaign now uses the same installed DMG and preserved
 `175.0.0` / `158.0.0` / `78.0.0` baseline, with the current signed test runner and
 fixed read diagnostics. Its result is recorded separately after completion;
 no public release promotion is inferred from these focused passes.
+
+## Native target lookup control
+
+The following uninterrupted control passed 11 stages and failed before VDP V3
+preparation/publication. Its VDP V1/V2 were `176.0.0` / `177.0.0` and Brake
+V1/V2 were `159.0.0` / `160.0.0`. The native receipt, not a guessed network
+cause, established `BLOCKED`, `TARGET_PROCESS_MISSING` for pinned Driving
+Control PID `78757`, with `inputDispatched: false`. No Safe Stop click or VDP
+V3 publication was replayed. This 548.348-second control remains FAIL.
+
+No matching KeyboardControl crash report was found. The retained source journal
+recorded ready at 12:12:13.613 UTC and normal UI closure at 12:17:26.674 UTC,
+after the 12:17:07 UTC failure; its source timeline recorded exit code 0 during
+cleanup. These are logged observations, not proof that the process was alive
+at the failing lookup or proof of a particular macOS root cause. The initial
+registration/cache hypothesis remains an inference. Shutdown's first uncertain
+response was reconciled to stopped without sending another Stop; all owners,
+media and the display assertion closed.
+
+The test-only native resolver now tries the existing macOS running-applications
+list only when the direct application lookup is absent, and selects only that
+same pinned PID. Wrong PID, bundle ID, executable path, digest, window, button,
+foreground and hit-test checks still refuse input. It neither discovers a new
+target process nor follows an implicit restart. Pure same-PID selection tests
+reject mismatches and prove that an available primary result does not trigger
+the second lookup. Native receipts also retain fixed lookup/kernel-presence
+booleans for a recurrence. No product package, timeout, privilege or freshness
+criterion changed.
+
+The separately bound registration control starts from the exact preserved
+`177.0.0` / `160.0.0` / `78.0.0` baseline. Its final result remains distinct from
+the preceding controls; future passes do not identify their original causes.
+
+## Exact service-read failure and pending-observation correction
+
+The registration control passed the earlier native VDP V3 boundary and then
+failed at moving Brake again. Its 874.336-second result remains FAIL, with all
+owners closed. This time the retained read diagnostic identified the exact
+cause: a `service` query returned `PLATFORM_NOT_CURRENT` immediately after
+publication. The published moving Brake was `164.0.0`; VDP `180.0.0` and Tire
+`79.0.0` remained its current confirmed baseline. This identifies the later
+failure, not every earlier failure retrospectively.
+
+The read-only service projection had thrown on a known temporary non-current
+Cloud response. The caller already had a bounded installation wait, but the
+exception closed its read broker before that wait could obtain a current
+response. The corrected test projection explicitly reports STALE, UNAVAILABLE
+or INCOMPLETE and withholds instances. Both API and UI installation predicates
+require CURRENT; current service inventory, exact Subject detail and instance
+observations are mandatory. Retained last-known instances cannot pass.
+
+No observation is manufactured, no missing service is inferred, and no input,
+publication or failed command is retried. The original installation deadline,
+active-instance/version/error checks, physical motion and unchanged-VDP checks
+remain. A malformed platform observation still fails. Eighty-seven Python
+journey/pilot/campaign/build tests and all 24 JavaScript guards passed, including
+non-current and incomplete-slice regressions.
+
+A new uninterrupted observation control uses the same immutable installed DMG
+and preserved Test from `180.0.0` / `164.0.0` / `79.0.0`. Its final outcome is
+recorded separately below; no repeated media transfer or product rebuild is
+needed for these test-harness corrections.
+
+## Current-view settlement, not last-known acceptance
+
+The observation control passed 11 stages before its VDP V3 detail assertion
+failed; its 587.621-second result remains FAIL. VDP `183.0.0` had been published
+once and independently installed. The browser recorded CURRENT V3 immediately
+before a failed Cloud read, and its retained screenshot then showed
+`V3 · last known` in the dialog. The exact `V3` assertion correctly refused to
+accept that stale value, but used Playwright's implicit 5-second wait instead
+of the surrounding release views' explicit 65-second UI budget. Neither a
+failed installation nor an Offline controller follows from that screenshot.
+
+The harness now uses that same explicit 65-second UI settlement budget for
+exact Cloud-installed text and the VDP detail profile. It still requires the
+unannotated current value, not the last-known suffix. Installation budgets,
+source freshness and overall campaign deadline are unchanged. The fixed
+timeout classifier now also recognizes Playwright's capitalized `Timed out`.
+
+A separate view-only M1 proof confirmed the existing V3/`183.0.0` candidate,
+Published/Installed stages, current Cloud version, Vehicle card and exact V3
+detail in 30.245 seconds. It started no VM, published nothing and closed all
+owners/media. The following source gates passed: 122 Python qualification
+tests and 31 JavaScript scenario/broker guards. Three local Unix-socket unit
+fixtures initially hit the development sandbox and passed with only that
+fixture access; no development-side live demo was run.
+
+The next uninterrupted settlement control uses the same immutable candidate
+and preserved Test, bound to `183.0.0` / `166.0.0` / `79.0.0`. Its actual outcome
+is recorded below, without changing any earlier FAIL receipt or public release.
+
+## Latest uninterrupted result and preserved functional evidence
+
+The settlement control passed **30 visible stages** in one runtime sequence,
+then failed `campaign-brake-moving-maneuver` with
+`NATIVE_UI_POSTCONDITION_FAILED`. Total campaign time including closure was
+1155.491 seconds (19 min 15 s). Full E2E remains NOT_COMPLETE. Later Tire
+post-update maneuver and Stop/Start business stages were not run in that
+campaign; the earlier independent moving/restart passes remain separate.
+
+All nine exact Team/Vehicle/details gates passed before the next publication:
+
+| Profile or update | Confirmed release |
+| --- | --- |
+| VDP V1 / V2 / V3 | `184.0.0` / `185.0.0` / `186.0.0` |
+| Brake V1 / V2 / V3 | `167.0.0` / `168.0.0` / `169.0.0` |
+| Tire V1 | `80.0.0` |
+| Brake moving QM update | `170.0.0` |
+| Tire moving QM update | `81.0.0` |
+
+The capability-story maneuvers, independent advisory resets/history, backend
+and resource views, actual Autopilot motion, unchanged VDP across both QM
+updates and subsequent Safe Stop passed. Moving Tire took 132.575 seconds;
+no installation or freshness limit was raised. All 96 Cloud responses after
+Manual connection were Online with CURRENT profile evidence. The reported
+brief Offline fluctuation remains unclassified, not declared fixed.
+
+The failing Brake input had a signed real mouse receipt. Its normal owner
+recorded new exercise `708a8aea-edeb-4483-b8bf-b07f34ee5fe9`, RELEASED/COMPLETED,
+matching run/operation, physical Stop confirmed and noOp false. Numeric motion
+metrics show maximum speed 30.564 km/h, 31 braking frames above 10 km/h and
+13.35 seconds duration. This was not a missing click or no-op.
+
+Two short backend-only diagnostics (40.455 and 41.742 seconds) read preserved
+data without starting VM/CARLA, another maneuver, publication or Reset. They
+found valid assessment `5a6b8653-e369-55b4-8b9a-55de6ed0b187` for `170.0.0`,
+with quality VALID_DEMO_SYNTHETIC and INSPECTION_RECOMMENDED. Its assessedAt is
+13:33:28.357 UTC, with source window 13:33:19.920–13:33:28.033 UTC. The tested
+post-update maneuver began at 13:33:29.955 UTC, and its mouse receipt was logged
+at 13:33:38.870 UTC. Therefore that existing assessment cannot qualify the
+required new result for this maneuver. No later qualifying result was confirmed
+through the scenario's deadline. Model, input-window, delivery and observation
+coverage causes remain open; no algorithm or VDP defect is inferred from this
+bounded evidence.
+
+A VM-only historical quality diagnostic first stopped at a local script
+generation error before dispatch. After correcting generation it did not retain
+usable quality evidence: its shutdown confirmation failed
+`QUALITY_VM_STOP_UNCONFIRMED`. The exact emulator later exited. Normal
+alreadyStopped reconciliation finalized the journal without a new guest signal
+or forced termination; a follow-up read confirmed absent PID, STOPPED journal,
+zero owned demo processes/listeners and the numeric motion metrics above. The
+diagnostic failure is retained and is not a passing quality investigation.
+
+Final state: current Test, VM disk, models, history, credentials and installed
+`186.0.0` / `170.0.0` / `81.0.0` are preserved; all test-owned UI, servers,
+simulator, VM, native/browser helpers, media and display assertions are closed.
+Shared Docker is preserved. VDP-TIMEOUT-01, source-quality thresholds, service
+algorithms, Factory, CARLA, Gateway and public delivery/tag are unchanged.
+
+The next functional investigation must use one bounded post-SOTA Brake
+scenario on this preserved baseline, retain before/after product IDs and
+source/window/model/delivery correlation before cleanup, and require an actual
+new same-version assessment. Do not replay the whole release story to diagnose
+that boundary or weaken product quality to obtain PASS. The original three
+visibility concerns are tracked separately from this remaining functional gate.

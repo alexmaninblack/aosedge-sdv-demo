@@ -493,10 +493,25 @@ class ProjectionTests(unittest.TestCase):
             self.assertFalse(p.evaluate(dict(test='ready-vdp',actual=dict(row,**{key:value}),version='1.0.0'),{}))
 
     def test_service_requires_installed_and_running_same_version(self):
-        value={'state':'CURRENT','value':{'inventory':{'teamServiceIds':{'brake':'id'},'serviceDetails':{'id':{'value':[
-            {'service_versions':{'installed_service_version':{'version':'2.0.0'}},'instances':{'value':[
+        value={'state':'CURRENT','value':{'inventory':{'services':{'state':'CURRENT'},'teamServiceIds':{'brake':'id'},'serviceDetails':{'id':{'state':'CURRENT','value':[
+            {'service_versions':{'installed_service_version':{'version':'2.0.0'}},'instances':{'state':'CURRENT','value':[
               {'version':'1.0.0','run_state':'active','error_message':'','error_exit_code':0}]}}]}}}}}
         self.assertFalse(p.evaluate(dict(test='ready-service',actual=w.service_projection(value,'brake'),version='2.0.0'),{}))
+        value['value']['inventory']['serviceDetails']['id']['value'][0]['instances']['value'][0]['version']='2.0.0'
+        self.assertTrue(p.evaluate(dict(test='ready-service',actual=w.service_projection(value,'brake'),version='2.0.0'),{}))
+        for state in ('STALE','UNAVAILABLE'):
+            projected=w.service_projection(dict(value,state=state),'brake')
+            self.assertEqual(projected['observationState'],state)
+            self.assertEqual(projected['reason'],'PLATFORM_NOT_CURRENT')
+            self.assertFalse(p.evaluate(dict(test='ready-service',actual=projected,version='2.0.0'),{}))
+        for section in ('services','detail','instances'):
+            changed=copy.deepcopy(value)
+            inventory=changed['value']['inventory']
+            row=inventory['services'] if section=='services' else inventory['serviceDetails']['id'] if section=='detail' else inventory['serviceDetails']['id']['value'][0]['instances']
+            row['state']='STALE'
+            projected=w.service_projection(changed,'brake')
+            self.assertEqual(projected['observationState'],'INCOMPLETE')
+            self.assertFalse(p.evaluate(dict(test='ready-service',actual=projected,version='2.0.0'),{}))
 
     def test_new_product_rejects_old_id_and_wrong_version(self):
         for identifier,version,expected in [('old','2.0.0',False),('new','1.0.0',False),('new','2.0.0',True)]:

@@ -42,6 +42,7 @@ test('release verification selects the published profile after team navigation s
 test('browser failure diagnostics expose fixed categories rather than raw error text',()=>{
   assert.equal(browserFailure(new Error('apiRequestContext.get: read ECONNRESET private details')),'UI_READ_CONNECTION_RESET');
   assert.equal(browserFailure(new Error('strict mode violation: private HTML')),'UI_LOCATOR_AMBIGUOUS');
+  assert.equal(browserFailure(new Error('Timed out 5000ms waiting for expect(locator).toBeVisible() private HTML')),'UI_WAIT_TIMED_OUT');
   assert.equal(browserFailure(new Error('private details')),'UI_JOURNEY_CHECK_FAILED');
 });
 test('status trace retains fixed source timestamps and real Offline, never raw credentials',()=>{
@@ -240,10 +241,12 @@ test('VDP readiness keeps its full process and current release contract',()=>{
   assert.equal(installed(v,'platform','151.0.0'),false);
 });
 test('service install checks real active instance and error status',()=>{
-  const v={instances:[{version:'64.0.0',run_state:'active',error_message:false,error_exit_code:0}]};
+  const v={observationState:'CURRENT',instances:[{version:'64.0.0',run_state:'active',error_message:false,error_exit_code:0}]};
   assert.equal(installed(v,'tire','64.0.0'),true);
   for(const [key,val] of [['version','63.0.0'],['run_state','failed'],['error_message',true],['error_exit_code',1]])
-    assert.equal(installed({instances:[{...v.instances[0],[key]:val}]},'tire','64.0.0'),false);
+    assert.equal(installed({...v,instances:[{...v.instances[0],[key]:val}]},'tire','64.0.0'),false);
+  for(const observationState of ['STALE','UNAVAILABLE','INCOMPLETE',undefined])
+    assert.equal(installed({...v,observationState},'tire','64.0.0'),false);
 });
 test('reset confirmation binds command, peer model and retained history',()=>{
   const old={local:{teams:{brake:{model:'a'},tire:{model:'b'}}},brake:{productIds:['a']},tire:{productIds:['b']}};
