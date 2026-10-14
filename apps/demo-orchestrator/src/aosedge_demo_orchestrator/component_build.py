@@ -59,16 +59,24 @@ PREVIOUS_HEARTBEAT_RUNTIME_PIN = {
     },
 }
 # Keep installed/retained releases inspectable against their own source and
-# contract. Only new preparations receive the transition-publication fix.
-ADVISORY_RUNTIME_HISTORY = (PREVIOUS_ADVISORY_RUNTIME_PIN, PREVIOUS_CLOCK_STRICT_RUNTIME_PIN,
-                            PREVIOUS_HEARTBEAT_RUNTIME_PIN)
-ADVISORY_RUNTIME_PIN = {
+# contract. New preparations alone receive the current publication correction.
+PREVIOUS_TRANSITION_RUNTIME_PIN = {
     "revision": "1fe5649f860f62573b313e1f38e5ec0f4ca1b519",
     "tree": "cfc2e0c790c179ddc10f734f0def0361535154c0",
     "modules": {
         **PREVIOUS_HEARTBEAT_RUNTIME_PIN["modules"],
         "bridge.py": "96fab65b4f15d3c0b6891cf5241a098361a3162a69be685956b02be14a18c634",
         "advisory_transport.py": "759106afe1f1b70b176264b2f7adf1395037088af6f5eb35108e63fe18dbbe9c",
+    },
+}
+ADVISORY_RUNTIME_HISTORY = (PREVIOUS_ADVISORY_RUNTIME_PIN, PREVIOUS_CLOCK_STRICT_RUNTIME_PIN,
+                            PREVIOUS_HEARTBEAT_RUNTIME_PIN, PREVIOUS_TRANSITION_RUNTIME_PIN)
+ADVISORY_RUNTIME_PIN = {
+    "revision": "fade0de2412efa71d739cf6e5d7e41308838f0b8",
+    "tree": "e95fd20cdd3583aa3916392c6793294fcef1db4f",
+    "modules": {
+        **PREVIOUS_TRANSITION_RUNTIME_PIN["modules"],
+        "runtime.py": "5ce713fbead1df01837969756e1ca6d39a75d9b2bb50e97b2a3a6625dc4e9999",
     },
 }
 # Source release gate, not a runtime fallback or an operator/UI flag. On
@@ -94,6 +102,7 @@ ADVISORY_RUNTIME_CONTRACT_HISTORY = {
     } for pin in ADVISORY_RUNTIME_HISTORY
 }
 ADVISORY_RUNTIME_CONTRACT_HISTORY[PREVIOUS_HEARTBEAT_RUNTIME_PIN["revision"]] = dict(ADVISORY_CONTRACT)
+ADVISORY_RUNTIME_CONTRACT_HISTORY[PREVIOUS_TRANSITION_RUNTIME_PIN["revision"]] = dict(ADVISORY_CONTRACT)
 
 # V1/V2 retain their frozen feature profiles, not their historical transport
 # implementation. Use the same reviewed source as V3, without advisory code.

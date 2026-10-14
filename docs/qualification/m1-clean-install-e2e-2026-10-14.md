@@ -334,3 +334,40 @@ their temporary crypto inputs; SourceDriver's read-only asset assertion uses
 a mock packaged-runtime boundary. Product runtime verification was not relaxed.
 The corrected affected modules and the documentation quality gate passed before
 preparing the package-only successor. These unit counts are not live acceptance.
+
+### Readiness successor: complete API pass, visible-UI input-quality failure
+
+The immutable successor from integration `36e8b99` has manifest
+`ae7a6454f3aeab159499361cdfe3e1633af8bc77a134790412eeab604c182c5c`.
+Fresh installation and native production enrollment completed on M1 Test
+`6a1fae4b-1a53-4d8f-9d39-ac0c30abc94a`. The complete API journey passed
+118/118 checks in 1701.537 seconds, including serial VDP/Brake versions,
+Tire, real model products/advisories, independent reset/history, five-minute
+offline/recovery, ignition off/on, persistence and Stop/Start. Production's
+existing Unit was excluded; staging was not touched.
+
+The separate visible UI journey passed startup/layout, VDP V1/V2/V3 and Brake
+V1/V2. Brake V3 installed as 42.0.0, but its real native-input maneuver produced
+no new assessment. The signed click receipt and persisted exercise confirm
+actual input and motion: 267 frames, maximum 30.579 km/h and 31 braking frames
+above 10 km/h. It was not a missed UI click. Previous-boot bounded quality logs
+show FUTURE_TIMESTAMP rejections with 1–20 ms clock lead and an incomplete
+source-gap capture. Exact original raw samples were not retained, so individual
+sample-to-abort causality is not overstated. Later UI gates were NOT_RUN.
+The campaign is NOT_COMPLETE, not a full-E2E pass. Normal shutdown confirmed
+zero owned processes/listeners and closed the runner, tunnel and mounted media.
+
+A production-equivalent isolated clock proof reproduced the old publisher's
+future exposure and proved source-preserving publication ordering. Platform
+`fade0de2412efa71d739cf6e5d7e41308838f0b8` waits for the original source time
+inside the existing two-second publication budget, including connection and
+Set. It adds no timestamp rewrite, queue, future tolerance or freshness change.
+Large lead/nonadvancing clock fails closed; unavailability is immediate. Seven
+new regressions plus 55 provider/profile/order/provenance tests and the Platform
+quality gate passed. All three new VDP profiles use that reviewed common runtime;
+retained releases remain inspectable against their original pin. Brake, model
+arithmetic, consumer future guards, Factory and CARLA bytes are unchanged.
+The new immutable artifact requires its own live API/UI qualification.
+
+Private API/UI receipts, quality logs, clock proof, timing and cleanup evidence:
+`.local/remote-qualification/m1-production-readiness-full-20261014`.

@@ -72,7 +72,7 @@
   ],
   "vdpPreparationSource": {
     "profileSource": "0a2c8249ec780e822bff90f29f9d3d5ba5dd7feb",
-    "commonAndAdvisoryRuntime": "1fe5649f860f62573b313e1f38e5ec0f4ca1b519",
+    "commonAndAdvisoryRuntime": "fade0de2412efa71d739cf6e5d7e41308838f0b8",
     "moduleDigestAuthority": "apps/demo-orchestrator/src/aosedge_demo_orchestrator/component_build.py"
   },
   "serviceExports": [
