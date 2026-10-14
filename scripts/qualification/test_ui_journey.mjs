@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,continuousActions } from './ui_journey.mjs';
+import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
 test('continuous campaign keeps the accepted section order',()=>{
   assert.deepEqual(continuousSections,['release-story','installed-views','moving-sota','stop-start']);
@@ -25,11 +25,32 @@ test('same-Test Stop/Start requires a new boot, stationary Manual, preserved mod
   after.local.controller={fresh:true,held:false,mode:'MANUAL',speed:0,brake:1};
   after.local.services=Object.fromEntries(['iam','cm','sm','vdp'].map(s=>[s,{ActiveState:'active',Result:'success',NRestarts:'0'}]));
   assert.equal(lifecyclePreserved(before,after),true);
+  assert(Object.values(lifecycleChecks(before,after)).every(v=>v===true));
   for(const change of [v=>v.local.bootId=id,v=>v.local.identity.unitId='other',v=>v.local.controller.fresh=false,
     v=>v.local.controller.mode='AUTOPILOT',v=>v.local.controller.speed=1,v=>v.local.teams.brake.model=['changed'],
     v=>v.tire.productIds=[],v=>v.local.services.cm.NRestarts='1',v=>delete v.local.services.vdp]) {
     const value=structuredClone(after);change(value);assert.equal(Boolean(lifecyclePreserved(before,value)),false);
+    assert(Object.values(lifecycleChecks(before,value)).some(v=>v===false));
   }
+  const changed=structuredClone(after);changed.local.teams.brake.model=['changed'];
+  assert.deepEqual(Object.entries(lifecycleChecks(before,changed)).filter(([,v])=>v===false),[['brakeModelPreserved',false]]);
+  assert(Object.values(lifecycleChecks(null,null)).every(v=>v===false));
+});
+test('restart-only tail cannot publish, reset, assign, retire or replay a lifecycle action',()=>{
+  const actions=['start-demo','start-simulation','connect-test','cloud-inspect','workspace-restore','stop-demo',
+    'start-demo','start-simulation','connect-test','cloud-inspect','workspace-restore','stop-demo'].map(action=>({action}));
+  assert.equal(restartActions(actions),true);
+  for(const action of ['prepare','publish','service-publish','backend-reset','retire','service-assign','create','start-demo'])
+    assert.throws(()=>restartActions([...actions,{action}]));
+  assert.throws(()=>restartActions(actions.slice(1)));
+});
+test('new durably delivered invalid Brake window explains failure without being accepted as a product',()=>{
+  const row={id,version:'153.0.0',terminalState:'INCOMPLETE_SOURCE_GAP',deliveryState:'DURABLY_RECEIVED',receivedChunkCount:7,expectedChunkCount:7};
+  assert.equal(failedWindow({windows:[]},{windows:[row]},'153.0.0'),'INCOMPLETE_SOURCE_GAP');
+  assert.equal(failedWindow({windows:[row]},{windows:[row]},'153.0.0'),null);
+  for(const change of [{version:'152.0.0'},{terminalState:'COMPLETE'},{terminalState:'UNKNOWN'},
+    {deliveryState:'PENDING'},{receivedChunkCount:6},{expectedChunkCount:0}])
+    assert.equal(failedWindow({windows:[]},{windows:[{...row,...change}]},'153.0.0'),null);
 });
 test('campaign baseline pins exact versions before native input', () => {
   const expected={vdp:'158.0.0',brake:'137.0.0',tire:'69.0.0'};

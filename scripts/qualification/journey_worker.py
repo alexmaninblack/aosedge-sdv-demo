@@ -182,6 +182,7 @@ def backend_projection(value):
     require(value.get('state') == 'OBSERVED', 'BACKEND_NOT_OBSERVED')
     observations = value['observations']
     rows = []
+    windows = []
     for resource in ('assessments', 'productData'):
         envelope = observations.get(resource, {})
         for item in (envelope.get('data') or {}).get('items', []):
@@ -191,6 +192,11 @@ def backend_projection(value):
                 continue
             # Brake V1 is complete only when every chunk is durably received.
             if resource == 'productData' and item.get('terminalState') is not None:
+                windows.append(dict(id=identifier, version=item['serviceVersion'],
+                    terminalState=fixed_code(item.get('terminalState')),
+                    deliveryState=fixed_code(item.get('deliveryState')),
+                    receivedChunkCount=item.get('receivedChunkCount') if type(item.get('receivedChunkCount')) is int else None,
+                    expectedChunkCount=item.get('expectedChunkCount') if type(item.get('expectedChunkCount')) is int else None))
                 if not (item['terminalState'] == 'COMPLETE' and item.get('deliveryState') == 'DURABLY_RECEIVED'
                         and item.get('receivedChunkCount') == item.get('expectedChunkCount')):
                     continue
@@ -219,7 +225,7 @@ def backend_projection(value):
                 and envelope.get('authority') == 'FUNCTION_TEAM_REPORTED_OBSERVATION'),
             connection=content.get('connection'),
             input=(content.get('input') or {}).get('state'), inputReason=(content.get('input') or {}).get('reason')))
-    return dict(products=rows, productIds=sorted(set(r['id'] for r in rows)),
+    return dict(products=rows, productIds=sorted(set(r['id'] for r in rows)), windows=windows,
                 resetId=command.get('commandId'), resetState=command.get('state'), advisories=advisory,
                 functions=functions)
 

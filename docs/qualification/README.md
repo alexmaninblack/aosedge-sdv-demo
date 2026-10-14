@@ -9,6 +9,12 @@ Reports below are dated evidence: their “current”, “next” and “open”
 describes that checkpoint, not today's installation instructions. Historical
 results remain unchanged; newer results do not retroactively qualify old images.
 
+- [M1 cleanup and installed demo testing — 14 October](m1-clean-install-e2e-2026-10-14.md):
+  fresh installation and 118 API steps passed; the continuous UI restart check
+  failed, followed by separate passing diagnostic and visible UI restart checks.
+  A full repeat stopped at an incomplete Brake input window. Full uninterrupted
+  E2E remains open.
+
 - [Release automation and public delivery — 13 October](release-automation-2026-10-13.md):
   source main integration and immutable publication passed; anonymous operator
   delivery stopped at Drive quota, so catalog promotion remains blocked.

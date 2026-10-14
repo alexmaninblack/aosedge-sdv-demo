@@ -31,16 +31,34 @@ export function continuousActions(actions) {
   assert(!actions.some(a=>['create','service-assign','backend-reset-data','retire'].includes(a.action)),'CONTINUOUS_SCOPE_INVALID');
   return true;
 }
+export function restartActions(actions) {
+  const lifecycle=actions.filter(a=>['start-demo','start-simulation','connect-test','stop-demo'].includes(a.action)).map(a=>a.action);
+  assert.deepEqual(lifecycle,['start-demo','start-simulation','connect-test','stop-demo','start-demo','start-simulation','connect-test','stop-demo'],
+    'RESTART_LIFECYCLE_ORDER_INVALID');
+  assert(actions.every(a=>['start-demo','start-simulation','connect-test','stop-demo','cloud-inspect','workspace-restore'].includes(a.action)),
+    'RESTART_SCOPE_INVALID');
+  return true;
+}
 
-export function lifecyclePreserved(before, after) {
+export function lifecycleChecks(before, after) {
   const a=before?.local,b=after?.local,c=b?.controller;
-  return uuid.test(a?.bootId??'') && uuid.test(b?.bootId??'') && a.bootId!==b.bootId
-    && JSON.stringify(a.identity)===JSON.stringify(b.identity) && c?.fresh===true && c.held===false
-    && c.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99
-    && ['brake','tire'].every(t=>JSON.stringify(a.teams?.[t]?.model)===JSON.stringify(b.teams?.[t]?.model)
-      && a.teams?.[t] && b.teams?.[t] && before[t].productIds.every(id=>after[t].productIds.includes(id)))
-    && Object.values(b.services??{}).length>=4 && Object.values(b.services).every(s=>
-      s.ActiveState==='active' && s.Result==='success' && s.NRestarts==='0');
+  const checks={
+    bootChanged:uuid.test(a?.bootId??'') && uuid.test(b?.bootId??'') && a.bootId!==b.bootId,
+    identityPreserved:Boolean(a?.identity && b?.identity && JSON.stringify(a.identity)===JSON.stringify(b.identity)),
+    controllerFresh:c?.fresh===true && c.held===false,
+    stationaryManual:c?.mode==='MANUAL' && c.speed<=.5 && c.brake>=.99,
+    servicesHealthy:Object.values(b?.services??{}).length>=4 && Object.values(b.services).every(s=>
+      s.ActiveState==='active' && s.Result==='success' && s.NRestarts==='0')};
+  for(const t of ['brake','tire']) {
+    checks[t+'ModelPreserved']=Boolean(a?.teams?.[t] && b?.teams?.[t]
+      && JSON.stringify(a.teams[t].model)===JSON.stringify(b.teams[t].model));
+    checks[t+'HistoryPreserved']=Boolean(Array.isArray(before?.[t]?.productIds) && Array.isArray(after?.[t]?.productIds)
+      && before[t].productIds.every(id=>after[t].productIds.includes(id)));
+  }
+  return checks;
+}
+export function lifecyclePreserved(before, after) {
+  return Object.values(lifecycleChecks(before,after)).every(value=>value===true);
 }
 
 export function command(body, expected, session, seen) {
@@ -70,6 +88,14 @@ export function installed(value, team, release) {
     && String(value.vdpRestarts) === '0' && value.processSlotMatches === true;
   return value.instances.some(row => row.version === release && row.run_state === 'active'
     && !row.error_message && [0, null, undefined].includes(row.error_exit_code));
+}
+export function failedWindow(before, after, release) {
+  const prior=new Set((before.windows??[]).map(row=>row.id));
+  const row=(after.windows??[]).find(row=>!prior.has(row.id) && row.version===release
+    && ['INCOMPLETE_SOURCE_GAP','ABORTED_SERVICE_STOP','ABORTED_RESTART'].includes(row.terminalState)
+    && row.deliveryState==='DURABLY_RECEIVED' && Number.isInteger(row.expectedChunkCount)
+    && row.expectedChunkCount>0 && row.receivedChunkCount===row.expectedChunkCount);
+  return row?.terminalState??null;
 }
 export function autopilot(value, requireMotion = false) {
   const c = value?.controller;
@@ -140,8 +166,9 @@ export async function nativeBrokerReply(id, fd = 0) {
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   const continuous=input.scenario==='continuous-campaign';
+  const restartCheck=input.scenario==='restart-check';
   if (input.nativeRunner) assert(input.visibleM1 && ['native-controls','continuous-campaign'].includes(input.scenario), 'NATIVE_RUNNER_SCOPE_INVALID');
   if(continuous) assert(input.nativeRunner,'CONTINUOUS_NATIVE_RUNNER_REQUIRED');
   if (input.nativeVersions !== undefined) {
@@ -397,6 +424,17 @@ export async function main(inputPath) {
       nativeVersions(baseline,input.nativeVersions);
       record({state:'CONTINUOUS_SECTION_STARTED',section:continuousSections[0],baseline});
     });
+    if(restartCheck) await stage('restart-installed-baseline',async()=>{
+      const component=await query('component');
+      assert(version.test(component.activeVersion) && installed(component,'platform',component.activeVersion),'LIVE_VDP_REQUIRED');
+      cards['Vehicle Data Platform installed details']='installed · '+component.activeVersion;
+      for(const [team,label] of [['brake','Brake service details'],['tire','Tire service details']]) {
+        const value=await query('service',team),rows=value.instances;
+        assert(rows.length===1 && version.test(rows[0].version) && installed(value,team,rows[0].version),'LIVE_SERVICE_REQUIRED');
+        cards[label]='installed · '+rows[0].version;
+      }
+      record({state:'RESTART_BASELINE_BOUND',publication:'NOT_REQUESTED',reset:'NOT_REQUESTED'});
+    });
     if (input.scenario === 'vdp-transition') {
       await stage('vdp-v1-current-baseline', async () => {
         await until(async () => transitionBaseline(await read('platform'), input.test), 'CURRENT_VDP_V1_REQUIRED', 65000);
@@ -457,7 +495,15 @@ export async function main(inputPath) {
           cards[team==='brake'?'Brake service details':'Tire service details']=`${profile} · ${prepared.version}`;
           const old=(await query('backend',team)),priorExercise=continuous?(await query('exercise')):null;
           await native(team+'-'+profile+'-maneuver',team==='brake'?'Brake maneuver':'Tire maneuver',async()=>{
-            const after=(await query('backend',team)); return after.products.some(p=>!old.productIds.includes(p.id) && p.version===prepared.version)
+            const after=await query('backend',team);
+            if(continuous && team==='brake' && profile==='v1') {
+              const reason=failedWindow(old,after,prepared.version);
+              if(reason && completedExercise(await query('exercise'),priorExercise,team)) {
+                record({state:'MANEUVER_INVALID_WINDOW',team,version:prepared.version,reason,physicalExerciseCompleted:true});
+                throw new Error('MANEUVER_'+reason);
+              }
+            }
+            return after.products.some(p=>!old.productIds.includes(p.id) && p.version===prepared.version)
               && (!continuous || completedExercise((await query('exercise')),priorExercise,team));
           });
         });
@@ -608,7 +654,7 @@ export async function main(inputPath) {
         });
       });
     }
-    if (!['vdp-transition','road-return','moving-sota','native-controls'].includes(input.scenario)) {
+    if (!['vdp-transition','road-return','moving-sota','native-controls','restart-check'].includes(input.scenario)) {
     if(continuous) record({state:'CONTINUOUS_SECTION_STARTED',section:continuousSections[1]});
     await stage('installed-details',async () => {
       await button('Vehicle').click();
@@ -670,8 +716,8 @@ export async function main(inputPath) {
       assert.equal(sent.length,count,'CANCEL_DISPATCHED_MUTATION'); owners((await observed('cancelled')),before,'RUNNING',true);
     });
     }
-    if(continuous) {
-      await movingUpdates();
+    if(continuous || restartCheck) {
+      if(continuous) await movingUpdates();
       await stage('continuous-final-releases',async()=>{
         for(const [team,name] of [['platform','Vehicle Data Platform installed details'],['brake','Brake service details'],['tire','Tire service details']])
           assert(installed((await query(team==='platform'?'component':'service',team==='platform'?undefined:team)),team,cards[name].split(' · ')[1]),'CONTINUOUS_RELEASE_CHANGED');
@@ -701,7 +747,14 @@ export async function main(inputPath) {
         await close();workspaceRequired=true;await visible();
       });
       await stage('continuous-restart-preserved',async()=>{
-        await until(async()=>lifecyclePreserved(prior,(await query('combined'))),'CONTINUOUS_RESTART_STATE_CHANGED',120000);
+        let last=null;
+        await until(async()=>{
+          const checks=lifecycleChecks(prior,await query('combined')),encoded=JSON.stringify(checks);
+          // Fixed booleans only: no credentials, raw models or telemetry. Keep
+          // the exact predicates and deadline; diagnostics are not a waiver.
+          if(encoded!==last) {record({state:'RESTART_POSTCONDITIONS',checks});last=encoded;}
+          return Object.values(checks).every(value=>value===true);
+        },'CONTINUOUS_RESTART_STATE_CHANGED',120000);
         for(const [team,name] of [['platform','Vehicle Data Platform installed details'],['brake','Brake service details'],['tire','Tire service details']])
           await until(async()=>installed((await query(team==='platform'?'component':'service',team==='platform'?undefined:team)),team,cards[name].split(' · ')[1]),'CONTINUOUS_RESTART_RELEASE_CHANGED',120000);
         record({state:'CONTINUOUS_STOP_START_CONFIRMED',identityPreserved:true,bootChanged:true,modelsAndHistoryPreserved:true});
@@ -713,6 +766,7 @@ export async function main(inputPath) {
       owners((await observed('stopped')),before,'STOPPED'); await expect(button('Start controller')).toBeEnabled(); await shot('stopped');
     });
     if(continuous) continuousActions(sent);
+    if(restartCheck) restartActions(sent);
     assert.equal(refused,false); assert.equal(armed,null);
   } catch(error) {
     failed=true;const code=String(error.message).split('\n')[0];

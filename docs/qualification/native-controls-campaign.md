@@ -148,3 +148,26 @@ PASS from full installer E2E, which remains separate.
 
 The [M1 receipt](continuous-ui-campaign-2026-10-12.md) records the passing 42-stage
 campaign, exact releases, timings and final closure.
+
+## Focused restart diagnostic
+
+The `ui_pilot.py --scenario restart-check --display m1` profile starts the
+preserved installed Test, binds its live VDP and service versions, performs one
+explicit Stop and Start, checks identity, models, backend history, stationary
+Manual control and platform service health, and confirms final Stop. It uses
+the same private connection, journey, media, new records and workspace inputs
+as the other visible UI profiles. It does not require native maneuver input,
+publish releases, reset models, reassign Subjects, provision or retire a Test.
+
+Both this profile and the continuous campaign record fixed Boolean restart
+predicates when their values change. The existing predicates and 120-second
+deadline are unchanged. A separate restart pass does not turn an earlier
+failed continuous campaign into PASS; see the
+[14 October results](m1-clean-install-e2e-2026-10-14.md).
+
+The release-story section also records bounded Brake window terminal and chunk
+fields without treating invalid windows as complete products. In the continuous
+profile, a new fully delivered invalid V1 window plus a completed independent
+exercise result fails with `MANEUVER_INCOMPLETE_SOURCE_GAP` or the corresponding
+fixed abort reason. No click, publication or maneuver is automatically retried,
+and the existing quality criteria and deadline remain intact.

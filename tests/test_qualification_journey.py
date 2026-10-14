@@ -511,6 +511,12 @@ class ProjectionTests(unittest.TestCase):
         row['receivedChunkCount']=8
         projected=w.backend_projection(raw)
         self.assertEqual(projected['productIds'],['event']);self.assertNotIn('SECRET',json.dumps(projected))
+        row.update(terminalState='INCOMPLETE_SOURCE_GAP')
+        projected=w.backend_projection(raw)
+        self.assertFalse(projected['products'])
+        self.assertEqual(projected['windows'],[dict(id='event',version='1.0.0',terminalState='INCOMPLETE_SOURCE_GAP',
+            deliveryState='DURABLY_RECEIVED',receivedChunkCount=8,expectedChunkCount=8)])
+        self.assertNotIn('SECRET',json.dumps(projected))
 
     def test_reset_correlates_command_and_preserves_other_model_and_history(self):
         before=dict(local={'teams':{'brake':{'model':'b'},'tire':{'model':'t'}}},brake={'productIds':['b']},tire={'productIds':['t']})
