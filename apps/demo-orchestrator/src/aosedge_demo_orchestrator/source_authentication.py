@@ -154,11 +154,20 @@ def connection(driver, state, role, wait=False):
             and current["assignmentGeneration"] == state["source"]["assignmentGeneration"])
         if baseline:
             probe = driver.guest(state, role, "trust-probe")
-            return dict(serverTls=probe.get("serverTls") is True and probe.get("mutualTls") is True
+            result = dict(serverTls=probe.get("serverTls") is True and probe.get("mutualTls") is True
                     and probe.get("advancingVissFrames") is True,
                 mutualTls=probe.get("mutualTls") is True, gateway=current, guest=guest,
                 advancingVissFrames=probe.get("advancingVissFrames") is True,
                 factoryBaseline=True, evidence="GUEST_UPDATE_IDENTITY_MUTUAL_TLS_READ_NOT_VDP_PROCESS")
+            if result["serverTls"] or time.monotonic() >= deadline:
+                if not result["serverTls"]:
+                    result["reason"] = probe.get("reason", "SOURCE_BASELINE_MUTUAL_TLS_NOT_READY")
+                return result
+            # The same bounded read-only readiness window applies before the
+            # first VDP installation. Do not turn a single startup/slow-frame
+            # sample into a failed Provision, or rotate/replay any credentials.
+            time.sleep(.25)
+            continue
         if good or time.monotonic() >= deadline:
             return dict(serverTls=good, mutualTls=good, gateway=current, guest=guest,
                 evidence="GATEWAY_AUTHENTICATED_ROLE_AND_PROVIDER_REPORTED_READY")

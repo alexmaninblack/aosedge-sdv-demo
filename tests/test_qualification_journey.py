@@ -98,7 +98,8 @@ class JourneyTests(unittest.TestCase):
         self.assertLess(ids.index('provision'), ids.index('vdp-v1-safe'))
         self.assertLess(ids.index('vdp-v1-safe-observed'), ids.index('vdp-v1-prior-update-settled'))
         self.assertLess(ids.index('vdp-v1-prior-update-settled'), ids.index('connect'))
-        self.assertLess(ids.index('connect'), ids.index('vdp-v1-prepare'))
+        self.assertLess(ids.index('vdp-v1-ready'), ids.index('connect'))
+        self.assertLess(ids.index('connect'), ids.index('brake-v1-prepare'))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

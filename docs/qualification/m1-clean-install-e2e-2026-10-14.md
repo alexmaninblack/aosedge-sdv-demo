@@ -184,3 +184,153 @@ bounded maneuver scenario rather than replaying all releases. The first restart
 failure also remains open: its separate passing repeats did not identify the
 original failing predicate. Native Setup input and clean-first-user acceptance
 remain separate gates.
+
+## Subsequent production investigation — separate from staging acceptance
+
+The later production campaign used `aoscloud.io`, the dedicated M1 and
+integration branch `codex/production-demo-migration`. Its installed application
+manifest was `a751faa5922d0f14a4af6f19048e788250d7d29a7870247318090576ffcbfe7a`,
+built from integration commit `79857d07ec95f278fa3c5ea073ab3fe9d3a42ad4`.
+It did not qualify the failed staging scenarios above or the complete
+production API/UI journey.
+
+Production initially assigned an older VDP `56.0.0`. Preserved provider logs
+show repeated successful VISS connections and DATA_READY transitions followed
+by `VISS source frame is not monotonic` and reconnects. Consequently, the
+subsequent `VISS_MTLS_UNAVAILABLE` status is not proof of an invalid certificate:
+the original failure is inside the installed provider's frame-order handling.
+The old diagnostic does not distinguish identical repeats, changed values at
+the same timestamp and actual time regression; original raw frames were not
+retained, so the exact historical packet subtype remains unproved.
+
+A pure synthetic fixture executed against the actual installed VDP 56 bridge
+and the already prepared VDP `57.0.0` payload reproduced a concrete difference:
+56 rejected an identical periodic snapshot and published unavailability; 57
+ignored it without creating a new measurement. The 57 payload still expired
+stale data and rejected changed values at an unchanged timestamp. All
+39 focused frame-order and VDP-family unit tests passed. No installed provider
+bytes, credentials, timeout or freshness rule were changed for this proof.
+The repeated-frame correction is already present in 57; it does not require a
+new Factory, CARLA build or another publication merely to obtain the fix.
+
+The later FOTA/boot refusals have a separate, demonstrated preparation chain:
+
+1. Normal failed-run cleanup detached and stopped the source.
+2. The retained recovery scenario restarted the simulator but did not select
+   the Test before publishing 57. Its Source restore check accepted
+   RUNNING_UNASSIGNED as owner availability, not connection readiness.
+3. Replacement requires Safe Stop through the selected, authenticated Update
+   Runtime path. With that path absent, the durable removal of 56 remained in
+   `waiting-for-safe-stop` while CM retained the desired 57 request.
+4. Normal VM boot then returned `SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE`.
+   SSH was available and CM/SM/VDP processes were active: this was a refused
+   preparation step, not proof of a VM crash or missing Cloud authority.
+
+One bounded recovery proof left the normal 480-second wait unchanged. A new
+waiting removal transaction was observed after that interval; the Test did not
+become quiescent within the diagnostic deadline. The scenario did not bypass
+the active-transaction guard, re-enroll, reprovision or publish another release.
+Its final cleanup and exact timing are retained in the private scenario result;
+no live VDP 57 installation or complete UI acceptance is claimed here.
+That recovery diagnostic took 769.208 seconds, including the unchanged wait
+and graceful shutdown. The first Stop observation exceeded its budget; later
+actual QEMU exit was independently confirmed and the normal journal was
+reconciled without another guest shutdown signal. Final owned process and
+listener counts were both zero. The retained Test and its disks were not deleted.
+
+The next fresh campaign must preserve the initial authenticated Test assignment
+established by Provision, request physical Safe Stop and install the current
+V1 before redundantly confirming full provider-data connection readiness.
+A retained-source recovery must independently confirm its actual assignment
+before publication; a running but unassigned simulator is insufficient.
+Do not detach the source in the middle of the update and then infer that a
+timeout or certificate reset will restore the prerequisites. An incompatible
+pending retained Test must be classified explicitly rather than fed another
+publication.
+
+Compact private evidence is under
+`.local/remote-qualification/m1-production-fota-cause-20261014` and
+`.local/remote-qualification/m1-production-retained-recovery-20261014`.
+The earlier failure receipts are preserved. Existing Production-role resources,
+shared Docker, Factory inputs and public release pointers were not changed by
+this investigation.
+
+### Overnight campaign readiness and execution boundary
+
+The follow-up full API/visible-UI campaign was prepared to reuse the already
+verified installed candidate, M1-local production credentials and cached DMG.
+It declares a fresh Test policy and normal retirement of the classified failed
+Test; it does not attempt another publication into the pending retained Test.
+The execution safety review refused dispatch because exact production Test
+retirement was not yet explicitly confirmed. No deletion, replacement Test,
+release publication or live API/UI step was dispatched by that campaign.
+An exact-target confirmation was requested; the refusal was not bypassed.
+
+The unaffected checks completed: 191 offline qualification/UI/Cloud-scope,
+source-assignment and Safe Stop contract tests passed. A subsequent read-only
+M1/Cloud preflight authenticated the pinned production owners and both existing
+subject references. It confirmed the selected installed candidate, an unlocked
+M1 desktop, the preserved failed Test and Production Unit, no running demo
+processes/listeners or containers, and the unchanged shared Docker Engine.
+The occupied Cloud setup remained BLOCKED, not READY or qualified.
+
+The retained Test is `554b4905-dd7d-4e62-94ea-3fbdfcd7b01c`, Cloud Unit
+`989e8027-3e3f-4648-a73d-d2a494f73294`. Any authorized fresh replacement must
+continue to exclude Production Unit `d87ba9cb-b21f-45db-8773-553e52d0353e`.
+The read-only result is retained privately as
+`m1-production-fota-cause-20261014/overnight-preflight.json` below the existing
+qualification evidence root. Unit checks and campaign preparation are not
+reported as a completed production end-to-end test.
+
+### Authorized fresh replacement and baseline readiness correction
+
+The operator subsequently explicitly authorized deletion of the historical
+Test data and a fresh production campaign. Normal retirement removed Test
+`554b4905-dd7d-4e62-94ea-3fbdfcd7b01c`, its overlay, journal, backend run data
+and Cloud Unit `989e8027-3e3f-4648-a73d-d2a494f73294`. Independent absence
+checks preserved Production Unit `d87ba9cb-b21f-45db-8773-553e52d0353e`.
+A wrapper incorrectly called BackendService after retirement had already
+removed its required journal; authoritative reconciliation confirmed APPLIED
+without repeating retirement. A changed DMG ctime was reconciled by one
+consumer checksum, not a new copy or a content-corruption claim.
+
+Fresh Test `b30d3a8f-4dae-430c-a480-9f5402811637` / Cloud Unit
+`d37edb31-6386-4e19-aa42-003373fcec0d` completed native SDK provisioning and
+Cloud Online, but its initial local connection returned
+`SOURCE_SELECTED_DATA_NOT_READY:UNKNOWN`. Its fixed-role assignment and
+certificates existed; there was no installed VDP, pending slot transaction,
+Test-set membership or new release publication. The blanket cleanup could
+not finish the still-incomplete source handoff; this was not a completed E2E.
+
+An exact-owner reversible proof used the normal Test gate and enrolled
+update-runtime identity. It obtained server-verified mTLS and advancing VISS
+frames with unchanged credentials, then restored the blocked gate. Inspection
+also showed that connection(wait=True) returned immediately on a failed
+Factory-baseline sample, unlike its installed-provider branch. The original
+failing sample's cause was discarded as UNKNOWN; its exact transport/frame
+subtype is not claimed as proven.
+
+The correction applies the existing 12-second read-only observation window to
+that baseline branch and preserves the last refusal reason. It changes no
+deadline, freshness requirement, certificate, assignment authority or FOTA
+guard. Regression tests cover transient refusal followed by valid frames,
+deadline failure, no mutation replay and unchanged non-waiting behavior.
+A transient in-process adapter then completed the same Test's local first
+connection in 8.748 seconds, with real mTLS/advancing frames and unchanged
+Unit identity. The original adapter was restored, installed package bytes
+were unchanged, and normal shutdown independently confirmed zero owned demo
+processes/listeners. This proof is not acceptance of a corrected immutable
+installer; the corrected package still requires a new full API/UI campaign.
+
+Private follow-up evidence is in
+`.local/remote-qualification/m1-production-overnight-20261014`.
+
+The source gate passed 189 affected orchestrator/crypto/provisioning/boot tests
+using the existing Cloud SDK Python, and 191 qualification/semantic-UI/contract
+tests. An initial broader developer run used system Python and found missing
+SDK dependencies plus crypto fixtures inadvertently consuming the developer
+workspace's obsolete host-runtime catalog. The fixtures now explicitly isolate
+their temporary crypto inputs; SourceDriver's read-only asset assertion uses
+a mock packaged-runtime boundary. Product runtime verification was not relaxed.
+The corrected affected modules and the documentation quality gate passed before
+preparing the package-only successor. These unit counts are not live acceptance.

@@ -14,6 +14,16 @@ class CloudScopeTests(unittest.TestCase):
     def test_staging_default_is_unchanged(self):
         self.assertEqual(worker.cloud_scope({}),(worker.DOMAIN,None))
 
+    def test_installation_projection_never_claims_provider_readiness(self):
+        row=dict(type='aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider',
+                 installed_component=dict(version='57.0.0'),pending_component=None,pending_component_error=None)
+        value=dict(components=dict(state='CURRENT',value=[row]))
+        self.assertEqual(worker.component_install_projection(value),
+            dict(activeVersion='57.0.0',installed=True,providerDataReady='NOT_EVALUATED'))
+        with self.assertRaises(ValueError):worker.component_install_projection(dict(components=dict(state='STALE',value=[row])))
+        with self.assertRaises(ValueError):worker.component_install_projection(dict(components=dict(state='CURRENT',value=[row,row])))
+        with self.assertRaises(ValueError):worker.component_install_projection(dict(components=dict(state='CURRENT',value=[])))
+
     def test_production_pair_authenticates_instead_of_erasing_established_owner_pins(self):
         pair=dict(oem='/oem.p12',sp='/sp.p12',selectionToken='a'*64)
         self.assertEqual(worker.pair_selection_request(worker.DOMAIN,pair),('cloud-save',pair))

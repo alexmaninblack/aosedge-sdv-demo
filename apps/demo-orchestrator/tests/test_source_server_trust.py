@@ -25,6 +25,14 @@ REPO = paths.CODE_ROOT
 
 class GatewayServerTrustTests(unittest.TestCase):
     def setUp(self):
+        original = crypto.openssl
+        def developer_crypto(*args, **kwargs):
+            # Isolate real crypto fixtures without changing asset-selection
+            # behavior in the SourceDriver assertions below.
+            with patch('aosedge_demo_orchestrator.host_runtime.selected', return_value=None):
+                return original(*args, **kwargs)
+        crypto_fixture = patch.object(crypto, 'openssl', side_effect=developer_crypto)
+        crypto_fixture.start(); self.addCleanup(crypto_fixture.stop)
         temp = tempfile.TemporaryDirectory(prefix='gst.', dir='/private/tmp')
         self.addCleanup(temp.cleanup)
         self.base = Path(temp.name)
@@ -91,7 +99,8 @@ class GatewayServerTrustTests(unittest.TestCase):
                 patch.object(service,'_detach',return_value={'test':{'gate':'BLOCKED'}}):
             self.assertEqual('RUNNING', service.simulation('start',target='test')['state'])
         before=self.contents()
-        self.assertEqual(self.directory, SourceDriver(vm).assets()['tls'])
+        with patch('aosedge_demo_orchestrator.host_runtime.selected', return_value=Mock(source_assets=lambda: {})):
+            self.assertEqual(self.directory, SourceDriver(vm).assets()['tls'])
         self.assertTrue(before == self.contents(), 'Read-only assets changed trust')
         (self.directory/'server-key.pem').unlink(); driver.start.reset_mock()
         with patch('aosedge_demo_orchestrator.source.read_json',return_value=state):
@@ -160,6 +169,7 @@ class GatewayServerTrustTests(unittest.TestCase):
         self.prepare(); before=self.contents()
         code='''import sys, importlib.util
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0, sys.argv[1])
 from aosedge_demo_orchestrator import runtime_paths as p
 r=Path(sys.argv[2]); root, identity=p.instance(r)
@@ -167,7 +177,8 @@ repo=Path(sys.argv[1]).parents[2]
 p._active=p.Layout(root,repo,repo.parent/'demo-artifacts',identity)
 spec=importlib.util.spec_from_file_location('proof_server',sys.argv[3])
 m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-assert m.inspect(root)['state']=='VERIFIED'
+with patch('aosedge_demo_orchestrator.host_runtime.selected',return_value=None):
+ assert m.inspect(root)['state']=='VERIFIED'
 print('VERIFIED_NO_CHANGE')
 '''
         result=subprocess.run([sys.executable,'-I','-B','-c',code,

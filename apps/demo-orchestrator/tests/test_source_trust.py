@@ -20,6 +20,13 @@ VEHICLE = dict(unitId="42c0bf43-4eb7-44e6-8c74-f60f9959da66",
 
 
 class TrustTests(unittest.TestCase):
+    def setUp(self):
+        # These fixtures use developer OpenSSL and temporary identities, never
+        # a real demo-artifact catalog left in the developer workspace.
+        selected = patch('aosedge_demo_orchestrator.host_runtime.selected', return_value=None)
+        selected.start()
+        self.addCleanup(selected.stop)
+
     def test_cloud_node_and_native_node_are_not_conflated(self):
         value = trust.identity(VEHICLE)
         self.assertNotEqual(value["nodeId"].replace("-", ""), value["nodeHardwareId"])

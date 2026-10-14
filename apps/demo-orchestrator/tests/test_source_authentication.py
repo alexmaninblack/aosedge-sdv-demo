@@ -100,6 +100,36 @@ class AuthenticationTests(unittest.TestCase):
             self.driver.guest.side_effect = [status, dict(serverTls=False, mutualTls=False)]
             self.assertFalse(auth.connection(self.driver, self.state, "test")["serverTls"])
 
+    def test_factory_baseline_wait_observes_again_inside_existing_deadline(self):
+        current = dict(state="SELECTED", assignmentGeneration=2, selectedSource=auth.selection(self.state),
+            activeRoleCounts=dict(selectedPlatformUnit=0))
+        status = dict(factoryBaseline=True, mutualTlsConfigured=True, vdpProcess="inactive", vdpData="")
+        self.driver.guest.side_effect = [status,
+            dict(serverTls=False, reason="VISS_FRAME_NOT_ADVANCING"), status,
+            dict(serverTls=True, mutualTls=True, advancingVissFrames=True)]
+        with patch.object(auth, "observe", return_value=current), \
+                patch.object(auth.time, "monotonic", side_effect=[0, 1]), \
+                patch.object(auth.time, "sleep") as pause, \
+                patch.object(auth.trust, "assignment") as mutation:
+            result = auth.connection(self.driver, self.state, "test", wait=True)
+        self.assertTrue(result["serverTls"])
+        self.assertEqual(4, self.driver.guest.call_count)
+        pause.assert_called_once_with(.25)
+        mutation.assert_not_called()
+
+    def test_factory_baseline_deadline_preserves_refusal_and_exact_reason(self):
+        current = dict(state="SELECTED", assignmentGeneration=2, selectedSource=auth.selection(self.state),
+            activeRoleCounts=dict(selectedPlatformUnit=0))
+        status = dict(factoryBaseline=True, mutualTlsConfigured=True, vdpProcess="inactive", vdpData="")
+        self.driver.guest.side_effect = [status, dict(serverTls=False, reason="VISS_PROBE_UPGRADE_INVALID")]
+        with patch.object(auth, "observe", return_value=current), \
+                patch.object(auth.time, "monotonic", side_effect=[0, 12]), \
+                patch.object(auth.time, "sleep") as pause:
+            result = auth.connection(self.driver, self.state, "test", wait=True)
+        self.assertFalse(result["serverTls"])
+        self.assertEqual("VISS_PROBE_UPGRADE_INVALID", result["reason"])
+        pause.assert_not_called()
+
     def test_manual_handoff_is_bound_to_exact_identity_and_pending_receipt(self):
         record = dict(state="PENDING", unitId=VEHICLE["unitId"], nodeId=VEHICLE["nodeId"])
         self.state["source"]["trust"]["onboarding"] = record

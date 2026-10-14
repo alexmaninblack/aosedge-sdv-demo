@@ -20,6 +20,7 @@ class TrustGuestTests(unittest.TestCase):
     def setUp(self):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
+        self.stack.enter_context(patch('aosedge_demo_orchestrator.host_runtime.selected', return_value=None))
         root = Path(self.stack.enter_context(tempfile.TemporaryDirectory())).resolve()
         certs = root / "certs"
         public = trust.prepare(certs, VEHICLE)

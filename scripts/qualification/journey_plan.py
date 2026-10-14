@@ -158,14 +158,14 @@ def plan(config):
             # Let that already-issued update settle before publishing a new one.
             read(key+'-prior-update-settled', 'component-idle',
                  dict(test='equals', actual='$sample.idle', expected=True))
-            # Provision already establishes the initial stationary-Manual
-            # connection. Test-set membership can immediately offer an older
-            # component. Stop physically and settle that update before the
-            # redundant connection confirmation probes the deployed provider.
-            op('connect', 'connect-test')
+            # Provision establishes the initial stationary-Manual assignment,
+            # but the existing Cloud release may have an obsolete runtime.
+            # Confirm the connection only after the current V1 has replaced it.
         op(key+'-prepare', 'prepare', profile=profile)
         op(key+'-publish', 'publish', version='$'+key+'-prepare.version')
         read(key+'-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$'+key+'-prepare.version'))
+        if profile == 'v1':
+            op('connect', 'connect-test')
     def service(team, profile, first=False):
         key = team + '-' + profile
         op(key+'-prepare', 'service-prepare', team=team, profile=profile)

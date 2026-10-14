@@ -22,7 +22,7 @@ BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
               'stop-demo', 'start-demo'}
-QUERIES = {'installed', 'component', 'component-idle', 'service', 'backend', 'local', 'combined', 'platform',
+QUERIES = {'installed', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
            'snapshot', 'publication', 'demo-stopped', 'exercise'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
@@ -74,6 +74,21 @@ def component_idle_projection(value):
                and all(isinstance(row, dict) for row in rows))
     return dict(idle=current and not any(row.get('pending_component') or
         row.get('pending_component_error') for row in rows), cloudCurrent=current)
+
+
+def component_install_projection(value):
+    """Installation only, never a substitute for provider/data readiness."""
+    section=value.get('components') or {}
+    rows=section.get('value')
+    require(section.get('state')=='CURRENT' and isinstance(rows,list),'COMPONENT_INSTALL_OBSERVATION_NOT_CURRENT')
+    matches=[r for r in rows if isinstance(r,dict)
+             and r.get('type')=='aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider']
+    require(len(matches)==1,'EXACT_VDP_COMPONENT_REQUIRED')
+    row=matches[0];release=row.get('installed_component') or {};version=release.get('version')
+    require(version is None or isinstance(version,str) and re.fullmatch('[0-9]+\\.[0-9]+\\.[0-9]+',version),
+            'COMPONENT_INSTALL_VERSION_INVALID')
+    return dict(activeVersion=version,installed=bool(version) and not row.get('pending_component')
+        and not row.get('pending_component_error'),providerDataReady='NOT_EVALUATED')
 
 
 def visible_presenter_projection(value):
@@ -593,6 +608,8 @@ class Worker:
                 BackendService(self.app.environment_service).observe_stack(), docker_info())
         if query == 'component-idle':
             return component_idle_projection(self.app.unit_service.observe('cloud-status', 'test'))
+        if query == 'component-installed':
+            return component_install_projection(self.app.unit_service.observe('cloud-status','test'))
         if query == 'publication':
             require(set(self.args) == {'query','release'}, 'PUBLICATION_FIELDS_INVALID')
             from aosedge_demo_orchestrator.environment import EnvironmentError
