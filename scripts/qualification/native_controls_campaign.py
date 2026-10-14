@@ -169,13 +169,15 @@ try:
    for team in ('brake','tire'):backends._image(backends._candidate(team)['imageId'])
    connection=CloudConnection(environment)
    pair=inspect_preflight_pair(connection,worker.config['oemCertificate'],worker.config['spCertificate'],state is not None)
-   require(pair['domain']==DOMAIN,'STAGING_REQUIRED')
+   require(pair['domain']==worker.domain,'QUALIFICATION_CLOUD_CHANGED')
    saved=connection._configuration().get('cloudProfiles',{})
    require(all(saved.get(role,{}).get('credential')==worker.config[key] for role,key in
     [('oem-delivery','oemCertificate'),('service-provider','spCertificate')]),'SETUP_SAVE_PAIR_FIRST')
    report=CloudSetup(UnitService(VMService(environment=environment))).check(first_use=True)
    checks=local_checks+[dict(key=r['key'],state=r['state'],code=fixed_code(r.get('detail'))) for r in report['checks']]
-   require(report['domain']==DOMAIN,'STAGING_REQUIRED')
+   require(report['domain']==worker.domain,'QUALIFICATION_CLOUD_CHANGED')
+   if worker.owners is not None:
+    require(report['owners']==worker.owners,'QUALIFICATION_CLOUD_OWNERS_CHANGED')
    blockers=[r for r in checks if r['state'] in ('BLOCKED','CONFLICT','MISSING')]
    facts.update(cloudStage=report['stage'],checks=checks)
    answer=result(facts) if report['stage']=='READY' and not blockers else result(facts,outcome='BLOCKED',

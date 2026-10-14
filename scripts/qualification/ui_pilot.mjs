@@ -158,7 +158,9 @@ export async function main(inputPath) {
     await stage('open-installed-presenter', async () => {
       await page.goto(origin + '/#native-browser');
       const ops = await read('operations'), snapshot = await read('snapshot');
-      assert(snapshot.runId === input.test && ops.cloudDomain === 'aws-stage.epmp-aos.projects.epam.com'
+      const cloudDomain=input.cloudDomain??'aws-stage.epmp-aos.projects.epam.com';
+      assert(['aws-stage.epmp-aos.projects.epam.com','aoscloud.io'].includes(cloudDomain),'QUALIFICATION_CLOUD_NOT_ALLOWED');
+      assert(snapshot.runId === input.test && ops.cloudDomain === cloudDomain
         && !ops.uncertain && ops.active === null, 'PILOT_BINDING_REQUIRED');
       session = ops.sessionId;
       before = observed('before');

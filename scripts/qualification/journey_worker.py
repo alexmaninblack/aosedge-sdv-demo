@@ -17,6 +17,7 @@ import urllib.request
 from uuid import UUID
 
 DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
+DOMAINS = (DOMAIN, 'aoscloud.io')
 BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
@@ -123,11 +124,27 @@ def wait_for_exit(timeout=10):
     return dict(ownedDemoListeners=0, ownedDemoProcesses=0)
 
 
-def validate_binding(state, expected):
+def cloud_scope(config):
+    """Legacy staging remains default; production requires explicit owner pins."""
+    domain = config.get('cloudDomain', DOMAIN)
+    require(domain in DOMAINS, 'QUALIFICATION_CLOUD_NOT_ALLOWED')
+    owners = config.get('cloudOwners')
+    require(domain != 'aoscloud.io' or owners is not None, 'PRODUCTION_OWNER_PINS_REQUIRED')
+    if owners is not None:
+        require(isinstance(owners, dict) and set(owners) == {'oem', 'sp'}, 'CLOUD_OWNER_PINS_INVALID')
+        for value in owners.values():
+            require(isinstance(value, str) and re.fullmatch(
+                '[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}', value) is not None,
+                'CLOUD_OWNER_PINS_INVALID')
+            require(str(UUID(value)) == value, 'CLOUD_OWNER_PINS_INVALID')
+    return domain, owners
+
+
+def validate_binding(state, expected, domain=DOMAIN):
     require(state.get('schemaVersion') == 1 and state.get('kind') == 'democtl.current-run', 'JOURNAL_INVALID')
     require(set(state['vehicles']) == {'test'}, 'EXACT_TEST_ONLY_REQUIRED')
     require(state['vehicles']['test']['localVmId'] == expected, 'TEST_IDENTITY_CHANGED')
-    require(state.get('selectedCloudDomain') == DOMAIN, 'STAGING_REQUIRED')
+    require(state.get('selectedCloudDomain') == domain, 'QUALIFICATION_CLOUD_CHANGED')
 
 
 def docker_info():
@@ -309,6 +326,7 @@ class Worker:
     def __init__(self, request):
         self.request = request
         self.config, self.args = request['config'], request['args']
+        self.domain, self.owners = cloud_scope(self.config)
         self.state, self.package = Path(self.config['instanceRoot']), Path(self.config['packageRoot'])
         self.pin = self.config['manifestSha256']
         self.app = None
@@ -338,10 +356,13 @@ class Worker:
             require(allow_empty and self.request['expectedRun'] is None, 'TEST_JOURNAL_REQUIRED')
             return None
         state = read_json(path)
-        validate_binding(state, self.request['expectedRun'])
+        validate_binding(state, self.request['expectedRun'], self.domain)
         from aosedge_demo_orchestrator.status import load_configuration
         observed = load_configuration(self.state)  # ordinary product schema validation
-        require(observed['vehicles']['test']['cloudHost'] == DOMAIN, 'STAGING_REQUIRED')
+        require(observed['vehicles']['test']['cloudHost'] == self.domain, 'QUALIFICATION_CLOUD_CHANGED')
+        if self.owners is not None:
+            require((observed.get('cloudConnection') or {}).get('owners') == self.owners,
+                    'QUALIFICATION_CLOUD_OWNERS_CHANGED')
         return state
 
     def idle(self, allow_created=False):
@@ -350,7 +371,7 @@ class Worker:
             snapshot, operations = exchange('snapshot'), exchange('operations')
             if not allow_created:
                 require(snapshot.get('runId') == self.request['expectedRun'], 'PRESENTER_IDENTITY_CHANGED')
-            require(operations['cloudDomain'] == DOMAIN, 'STAGING_REQUIRED')
+            require(operations['cloudDomain'] == self.domain, 'QUALIFICATION_CLOUD_CHANGED')
             current = operations['sessionId']
             require(session in (None, current), 'SESSION_CHANGED_RECONCILE_REQUIRED')
             session = current
@@ -426,7 +447,7 @@ class Worker:
                 reconciliationOnly=self.request['phase'] == 'reconcile'))
         pair = dict(oem=self.config['oemCertificate'], sp=self.config['spCertificate'])
         observed = self.setup_call('cloud-inspect', **pair)
-        require(observed['domain'] == DOMAIN, 'STAGING_REQUIRED')
+        require(observed['domain'] == self.domain, 'QUALIFICATION_CLOUD_CHANGED')
         pair['selectionToken'] = observed['selectionToken']  # memory only, never evidence
         if action == 'cloud-subjects':
             # Never choose by label/eligibility. The operator's exact public

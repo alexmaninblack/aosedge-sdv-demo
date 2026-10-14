@@ -221,7 +221,7 @@ def main():
     media = media_input(args.dmg, config, args.remote_dmg, transport['user'])
     pin = hashlib.sha256(json.dumps(dict(media=media, journey=j.identity(config, transport)), sort_keys=True).encode()).hexdigest()
     records = Path(config['records']+'-installation')
-    probe = h.probe(transport)
+    probe = h.probe(transport, cloud_domain=j.cloud_scope(config)[0])
     h.require(probe['console'] == transport['user'] and probe['internal'] == 'true', 'TARGET_LOGIN_OR_STORAGE_REQUIRED')
     h.require(probe['memoryBytes'] >= 16*2**30 and probe['freeKiB']*1024 >= 90*2**30+media['bytes'],
               'TARGET_CAPACITY_REQUIRED')

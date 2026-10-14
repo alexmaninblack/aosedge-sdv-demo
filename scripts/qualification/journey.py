@@ -18,6 +18,7 @@ from uuid import uuid4
 
 import remote_harness as h
 from journey_plan import plan, evaluate, resolve, MUTATIONS, CONTINUOUS_GROUPS
+from journey_worker import cloud_scope
 
 HERE = Path(__file__).resolve().parent
 WORKER = HERE / 'journey_worker.py'
@@ -25,7 +26,7 @@ DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
 FIELDS = {'schemaVersion', 'manifestSha256', 'packageRoot', 'instanceRoot',
           'setupApp', 'setupSha256', 'sourceRoot', 'storeRoot', 'image',
           'oemCertificate', 'spCertificate', 'records'}
-OPTIONAL_FIELDS = {'subjectReferences', 'vmPasswordFile'}
+OPTIONAL_FIELDS = {'subjectReferences', 'vmPasswordFile', 'cloudDomain', 'cloudOwners'}
 
 
 def configuration(path, user):
@@ -36,6 +37,7 @@ def configuration(path, user):
     value = h.parse(path.read_bytes())
     h.require(isinstance(value, dict) and FIELDS <= set(value) <= FIELDS | OPTIONAL_FIELDS and value['schemaVersion'] == 1,
               'JOURNEY_CONFIG_INVALID')
+    cloud_scope(value)
     references = value.get('subjectReferences', [])
     h.require(isinstance(references, list) and len(references) <= 2, 'SUBJECT_REFERENCES_INVALID')
     teams = set()

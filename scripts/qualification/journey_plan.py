@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Fixed staging journey and pure postconditions; no product effects here."""
+"""Fixed Test-only journey and pure postconditions; no product effects here."""
 
 MUTATIONS = {'dependency', 'setup', 'vm-access', 'presenter-start', 'presenter', 'control', 'mode', 'poweroff', 'shutdown', 'restore'}
 

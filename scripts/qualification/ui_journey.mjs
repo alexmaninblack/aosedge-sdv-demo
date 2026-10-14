@@ -19,6 +19,12 @@ const profiles = { platform: ['Braking telemetry', 'Brake analysis', 'Tire & adv
   brake: ['Braking windows', 'Condition assessment', 'Driver advisory'], tire: ['Tire health'] };
 export const continuousSections = ['release-story','installed-views','moving-sota','stop-start'];
 
+export function qualificationCloud(input) {
+  const domain=input.cloudDomain??'aws-stage.epmp-aos.projects.epam.com';
+  assert(['aws-stage.epmp-aos.projects.epam.com','aoscloud.io'].includes(domain),'QUALIFICATION_CLOUD_NOT_ALLOWED');
+  return domain;
+}
+
 export function releaseViewSpec(team, profile, release) {
   assert(['platform','brake','tire'].includes(team) && version.test(release)
     && (team==='tire'?profile==='v1':['v1','v2','v3'].includes(profile)), 'RELEASE_VIEW_INPUT_INVALID');
@@ -211,6 +217,7 @@ export async function nativeBrokerReply(id, fd = 0) {
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
+  const cloudDomain=qualificationCloud(input);
   assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check','status-observation'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   const continuous=input.scenario==='continuous-campaign';
   const restartCheck=input.scenario==='restart-check';
@@ -444,7 +451,7 @@ export async function main(inputPath) {
     await stage('open-installed-presenter',async () => {
       await page.goto(origin+'/#native-browser');
       const [ops,snapshot]=await Promise.all([read('operations',true),read('snapshot',true)]);
-      assert(snapshot.runId===input.test && ops.cloudDomain==='aws-stage.epmp-aos.projects.epam.com','TEST_BINDING_REQUIRED');
+      assert(snapshot.runId===input.test && ops.cloudDomain===cloudDomain,'TEST_BINDING_REQUIRED');
       session=ops.sessionId; before=(await observed('before')); owners(before,before,'STOPPED');
       await expect(button('Start controller')).toBeEnabled();
     });

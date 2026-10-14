@@ -3,8 +3,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView } from './ui_journey.mjs';
+import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView,qualificationCloud } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('browser uses only an explicitly allowed qualification Cloud',()=>{
+  assert.equal(qualificationCloud({}),'aws-stage.epmp-aos.projects.epam.com');
+  assert.equal(qualificationCloud({cloudDomain:'aoscloud.io'}),'aoscloud.io');
+  for(const cloudDomain of ['other.example','https://aoscloud.io',[]])
+    assert.throws(()=>qualificationCloud({cloudDomain}),/QUALIFICATION_CLOUD_NOT_ALLOWED/);
+});
 test('each published release checks its exact team stages, installed card and capability',()=>{
   assert.deepEqual(releaseViewSpec('platform','v2','172.0.0'),{
     teamTab:'Platform Team',profileButton:'v2 Brake analysis',stages:['Published','Installed'],card:'Vehicle Data Platform installed details',

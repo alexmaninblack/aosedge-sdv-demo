@@ -173,6 +173,24 @@ earlier successful consumer verification only when its digest, byte count and
 current remote file identity match. A receipt alone is not proof that a changed
 consumer copy remains intact.
 
+### Explicit Cloud scope
+
+Legacy journey files remain staging-only by default. A production Cloud journey
+must explicitly contain `"cloudDomain": "aoscloud.io"` and `cloudOwners` with
+both authenticated OEM and SP UUIDs. Missing production owner pins, another
+domain, a changed owner, a different Test identity or a Production-role vehicle
+in the run journal fails closed. The source-streamed worker, native preflight,
+network probe and browser use the same selected domain; a production campaign
+does not depend on staging connectivity.
+
+These configuration fields do not grant mutation authority. The operator must
+authorize the Cloud campaign separately. Use new owner/domain-scoped receipts
+and an exact Test-only run; do not transplant staging Unit, service, Subject or
+publication identities. Account-level inventory and recipient checks precede
+publication. Existing incompatible models or verification sets are not silently
+overwritten by Setup. A separately authorized one-time administrative migration
+is distinct from ordinary installation and is recorded privately.
+
 The script clicks Start controller, Start simulator and Connect in Manual,
 opens the three installed-detail cards, cancels Stop, then confirms Stop. All
 four scenario actions originate from actual buttons. A request guard permits

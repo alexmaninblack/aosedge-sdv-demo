@@ -298,7 +298,7 @@ def run(args, transport, config):
     if not visible:
         with socket.socket() as reservation:
             reservation.bind(('127.0.0.1', 18080))
-    probe = h.probe(transport)
+    probe = h.probe(transport, cloud_domain=j.cloud_scope(config)[0])
     h.require(probe['console'] == transport['user'] and probe['demoProcesses'] == 0
               and probe['busyPorts'] == 0, 'IDLE_TARGET_REQUIRED')
     h.require((visible or args.node is not None and args.node.is_file())
@@ -362,7 +362,8 @@ def run(args, transport, config):
             with directory(args.workspace) as scratch:
                 value = dict(repository=str(HERE.parent.parent), records=str(records), python=sys.executable,
                     helper=str(Path(__file__).resolve()), config=str(args.config.resolve()),
-                    journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario)
+                    journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario,
+                    cloudDomain=j.cloud_scope(config)[0])
                 if native is not None: value['nativeRunner'] = True
                 if getattr(args,'native_versions',None) is not None:
                     h.require(scenario in ('native-controls','continuous-campaign','moving-sota'),'NATIVE_VERSION_SCOPE_INVALID')

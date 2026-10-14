@@ -202,8 +202,14 @@ def parse_probe(raw):
     return result
 
 
-def probe(config):
-    result = parse_probe(remote(config, (HERE/'remote_probe.sh').read_text()))
+def probe(config, *, cloud_domain='aws-stage.epmp-aos.projects.epam.com'):
+    require(cloud_domain in ('aws-stage.epmp-aos.projects.epam.com', 'aoscloud.io'),
+            'QUALIFICATION_CLOUD_NOT_ALLOWED')
+    # Keep the legacy observation field for existing receipt compatibility;
+    # its HTTP probe targets only the explicitly selected qualification Cloud.
+    script = (HERE/'remote_probe.sh').read_text().replace(
+        'https://aws-stage.epmp-aos.projects.epam.com/', 'https://'+cloud_domain+'/')
+    result = parse_probe(remote(config, script))
     require(result['arch'] == 'arm64' and result['model'] == config['model']
             and result['os'] == config['os'] and result['user'] == config['user'], 'HOST_MISMATCH')
     return result
