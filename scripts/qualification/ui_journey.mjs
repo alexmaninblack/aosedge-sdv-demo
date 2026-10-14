@@ -19,6 +19,40 @@ const profiles = { platform: ['Braking telemetry', 'Brake analysis', 'Tire & adv
   brake: ['Braking windows', 'Condition assessment', 'Driver advisory'], tire: ['Tire health'] };
 export const continuousSections = ['release-story','installed-views','moving-sota','stop-start'];
 
+export function releaseViewSpec(team, profile, release) {
+  assert(['platform','brake','tire'].includes(team) && version.test(release)
+    && (team==='tire'?profile==='v1':['v1','v2','v3'].includes(profile)), 'RELEASE_VIEW_INPUT_INVALID');
+  return {teamTab:team==='platform'?'Platform Team':team==='brake'?'Brake Team':'Tire Team',
+    stages:team==='platform'?['Published','Installed']:['Published','Assigned','Running'],
+    card:team==='platform'?'Vehicle Data Platform installed details':team==='brake'?'Brake service details':'Tire service details',
+    cardText:`${profile} · ${release}`,profile,release};
+}
+
+export function browserFailure(error) {
+  const text=String(error?.message??'');
+  for(const [pattern,code] of [[/ECONNRESET|socket hang up/,'UI_READ_CONNECTION_RESET'],
+    [/ECONNREFUSED/,'UI_READ_CONNECTION_REFUSED'],[/strict mode violation/,'UI_LOCATOR_AMBIGUOUS'],
+    [/Target.*closed|has been closed/,'UI_TARGET_CLOSED'],[/Timeout.*exceeded|timed out/,'UI_WAIT_TIMED_OUT']])
+    if(pattern.test(text))return code;
+  return /^[A-Z][A-Z0-9_]{1,100}$/.test(text.split('\n')[0])?text.split('\n')[0]:'UI_JOURNEY_CHECK_FAILED';
+}
+
+export function statusObservation(data, test) {
+  const v=data?.value,p=v?.installedProfile,u=v?.inventory?.unit;
+  const fixed=(value,allowed)=>allowed.includes(value)?value:null;
+  const timestamp=value=>typeof value==='string' && /^\d{4}-\d\d-\d\dT[\d:.]+(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:null;
+  const code=value=>typeof value==='string' && /^[A-Z][A-Z0-9_]{1,100}$/.test(value)?value:null;
+  return {bindingMatches:typeof data?.bindingKey==='string' && data.bindingKey.startsWith(test+':'),
+    observation:fixed(data?.state,['CURRENT','STALE','UNAVAILABLE']),observedAt:timestamp(data?.observedAt),
+    online:fixed(v?.online,['ONLINE','OFFLINE','CONNECTED','UNKNOWN']),
+    unitObservation:fixed(u?.state,['CURRENT','STALE','UNKNOWN','INCOMPLETE']),
+    unitReadCompletedAt:timestamp(u?.readCompletedAt),unitUpdatedAt:timestamp(u?.value?.updated_at),
+    onlineChangedAt:timestamp(u?.value?.last_online_changed_at),
+    installedVersion:version.test(v?.installedVersion??'')?v.installedVersion:null,
+    profile:fixed(p?.profile,['v1','v2','v3']),profileState:fixed(p?.state,['CURRENT','STALE','UNKNOWN']),
+    profileReason:code(p?.reason),reason:code(data?.reason)};
+}
+
 export function continuousActions(actions) {
   const lifecycle=actions.filter(a=>['start-demo','start-simulation','connect-test','stop-demo'].includes(a.action)).map(a=>a.action);
   assert.deepEqual(lifecycle,['start-demo','start-simulation','connect-test','stop-demo','start-demo','start-simulation','connect-test','stop-demo'],
@@ -166,7 +200,7 @@ export async function nativeBrokerReply(id, fd = 0) {
 export async function main(inputPath) {
   process.umask(0o077);
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check'].includes(input.scenario), 'UI_SCENARIO_INVALID');
+  assert(['installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check','status-observation'].includes(input.scenario), 'UI_SCENARIO_INVALID');
   const continuous=input.scenario==='continuous-campaign';
   const restartCheck=input.scenario==='restart-check';
   if (input.nativeRunner) assert(input.visibleM1 && ['native-controls','continuous-campaign'].includes(input.scenario), 'NATIVE_RUNNER_SCOPE_INVALID');
@@ -288,6 +322,24 @@ export async function main(inputPath) {
     await open(); await expect(dialog()).toBeVisible();
     return operate(expected, () => dialog().getByRole('button',{name:label,exact:true}).click());
   }
+  async function releaseViews(team,profile,release) {
+    const spec=releaseViewSpec(team,profile,release);
+    await button(spec.teamTab).click();
+    await expect(page.getByText(`Selected candidate · ${profile} · ${release}`,{exact:true})).toBeVisible();
+    for(const name of spec.stages) await expect(page.locator('.studio-release-stages')
+      .getByText(name,{exact:true}).locator('..')).toHaveClass(/\bcomplete\b/,{timeout:65000});
+    if(team==='platform') await expect(page.getByText(`Cloud installed · ${release}`,{exact:true})).toBeVisible();
+    else await expect(page.getByText(`Installed ${release}`,{exact:true})).toBeVisible();
+    await shot(`${team}-${release}-team-confirmed`);
+    await button('Vehicle').click();await expect(button(spec.card)).toContainText(spec.cardText,{timeout:65000});
+    await button(spec.card).click();await expect(dialog()).toBeVisible();
+    await expect(dialog()).toContainText(release);
+    if(team==='platform') await expect(dialog().getByText(profile.toUpperCase(),{exact:true})).toBeVisible();
+    await shot(`${team}-${release}-installed-details`);await close();
+    record({state:'RELEASE_VISIBLE_IN_PRESENTER',team,profile,version:release,
+      teamViewConfirmed:true,vehicleCardConfirmed:true,detailsConfirmed:true});
+    // Leave the audience on the installed architecture, not the publication form.
+  }
   async function native(label, action, check) {
     // The installed native controls are not HTML. A supported UI controller
     // clicks the named visible native button; this driver never substitutes RPC.
@@ -341,17 +393,20 @@ export async function main(inputPath) {
     page.setDefaultTimeout(30000);
     const readStarts = new WeakMap();
     const isSnapshot = req => req.method() === 'GET' && req.url() === `${origin}/api/presenter/snapshot`;
-    page.on('request', req => { if (isSnapshot(req)) readStarts.set(req, performance.now()); });
+    const isPlatform = req => req.method() === 'GET' && req.url() === `${origin}/api/presenter/platform`;
+    page.on('request', req => { if (isSnapshot(req) || isPlatform(req)) readStarts.set(req, performance.now()); });
     page.on('requestfailed', req => {
-      if (isSnapshot(req) && readStarts.has(req)) record({ state: 'UI_LOCAL_READ_FAILED', milliseconds: Math.round(performance.now() - readStarts.get(req)) });
+      if ((isSnapshot(req) || isPlatform(req)) && readStarts.has(req)) record({ state: isPlatform(req)?'UI_CLOUD_READ_FAILED':'UI_LOCAL_READ_FAILED', milliseconds: Math.round(performance.now() - readStarts.get(req)) });
     });
     page.on('response', async response => {
       const req = response.request();
-      if (!isSnapshot(req) || !readStarts.has(req)) return;
-      const event = { state: 'UI_LOCAL_READ', httpStatus: response.status(), milliseconds: Math.round(performance.now() - readStarts.get(req)) };
+      if ((!isSnapshot(req) && !isPlatform(req)) || !readStarts.has(req)) return;
+      const event = { state: isPlatform(req)?'UI_CLOUD_READ':'UI_LOCAL_READ', httpStatus: response.status(), milliseconds: Math.round(performance.now() - readStarts.get(req)) };
       try {
         const data = await response.json();
-        record({ ...event, runState: data.runId === input.test ? 'MATCHING' : data.runId ? 'OTHER' : 'MISSING' });
+        record(isPlatform(req)?{...event,...statusObservation(data,input.test)}:
+          { ...event, runState: data.runId === input.test ? 'MATCHING' : data.runId ? 'OTHER' : 'MISSING',
+            controllerProcess:['RUNNING','STOPPED'].includes(data.vehicles?.test?.process)?data.vehicles.test.process:null });
       } catch { record({ ...event, runState: 'UNREADABLE' }); }
     });
     await context.route('**/*',async route => {
@@ -435,6 +490,23 @@ export async function main(inputPath) {
       }
       record({state:'RESTART_BASELINE_BOUND',publication:'NOT_REQUESTED',reset:'NOT_REQUESTED'});
     });
+    if(input.scenario==='status-observation') await stage('bounded-status-observation',async()=>{
+      // Observe actual DOM and network responses; no injected product state or publication.
+      const end=performance.now()+60000;let index=0;
+      while(performance.now()<end) {
+        const team=index%2===0?'Vehicle':'Platform Team';await button(team).click();
+        await read('platform');
+        const text=await page.locator('.studio-topline > span').innerText();
+        const label=text.replace(/^Test Vehicle · /,'');
+        record({state:'UI_DISPLAYED_STATUS',view:team,
+          label:['ONLINE','OFFLINE','CONNECTED','UNKNOWN','Last known Cloud report','Cloud unavailable','Cloud not yet observed','Controller state unavailable','Not provisioned','Registration incomplete'].includes(label)?label:'UNRECOGNIZED',
+          vdpCard:team==='Vehicle'?/v[123] · [0-9]+\.0\.0/.test(await button('Vehicle Data Platform installed details').innerText()):null});
+        await new Promise(resolve=>setTimeout(resolve,2000));index++;
+      }
+      await button('Vehicle').click();await shot('status-observation');
+      assert(sent.every(row=>['start-demo','start-simulation','connect-test','cloud-inspect','workspace-restore'].includes(row.action)),
+        'STATUS_OBSERVATION_SCOPE_CHANGED');
+    });
     if (input.scenario === 'vdp-transition') {
       await stage('vdp-v1-current-baseline', async () => {
         await until(async () => transitionBaseline(await read('platform'), input.test), 'CURRENT_VDP_V1_REQUIRED', 65000);
@@ -476,6 +548,7 @@ export async function main(inputPath) {
           await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
           await confirmed({action:'publish',version:prepared.version},()=>button('Sign & publish').click(),'Sign & publish VDP');
           await until(async()=>installed((await query('component')),'platform',prepared.version),'VDP_INSTALL_NOT_CONFIRMED',180000);
+          await releaseViews('platform',profile,prepared.version);
           cards['Vehicle Data Platform installed details']=`${profile} · ${prepared.version}`;
         });
       };
@@ -492,6 +565,7 @@ export async function main(inputPath) {
           await until(async()=>(await query('publication',null,prepared.releaseHandle)).stage==='READY','SERVICE_PUBLICATION_NOT_READY',180000);
           // Retained Test already has both Subjects assigned; do not assign again.
           await until(async()=>installed((await query('service',team)),team,prepared.version),'SERVICE_INSTALL_NOT_CONFIRMED',180000);
+          await releaseViews(team,profile,prepared.version);
           cards[team==='brake'?'Brake service details':'Tire service details']=`${profile} · ${prepared.version}`;
           const old=(await query('backend',team)),priorExercise=continuous?(await query('exercise')):null;
           await native(team+'-'+profile+'-maneuver',team==='brake'?'Brake maneuver':'Tire maneuver',async()=>{
@@ -560,6 +634,7 @@ export async function main(inputPath) {
           }, 'MOVING_SERVICE_INSTALL_NOT_CONFIRMED', 180000);
           assert(installed((await query('component')),'platform',cards['Vehicle Data Platform installed details'].split(' · ')[1]),
             'MOVING_PLATFORM_CHANGED');
+          await releaseViews(team,profile,prepared.version);
           record({state:'MOVING_SOTA_INSTALLED',team,profile,version:prepared.version,releaseHandle:prepared.releaseHandle});
           if(continuous) cards[team==='brake'?'Brake service details':'Tire service details']=`${profile} · ${prepared.version}`;
           await shot(team+'-moving-installed');
@@ -654,7 +729,7 @@ export async function main(inputPath) {
         });
       });
     }
-    if (!['vdp-transition','road-return','moving-sota','native-controls','restart-check'].includes(input.scenario)) {
+    if (!['vdp-transition','road-return','moving-sota','native-controls','restart-check','status-observation'].includes(input.scenario)) {
     if(continuous) record({state:'CONTINUOUS_SECTION_STARTED',section:continuousSections[1]});
     await stage('installed-details',async () => {
       await button('Vehicle').click();
@@ -769,8 +844,8 @@ export async function main(inputPath) {
     if(restartCheck) restartActions(sent);
     assert.equal(refused,false); assert.equal(armed,null);
   } catch(error) {
-    failed=true;const code=String(error.message).split('\n')[0];
-    stages.push({stage:current,outcome:'FAIL',code:/^[A-Z][A-Z0-9_]{1,100}$/.test(code)?code:'UI_JOURNEY_CHECK_FAILED'});
+    failed=true;
+    stages.push({stage:current,outcome:'FAIL',code:browserFailure(error)});
     if(page && session) {
       try {
         const [snapshot,ops]=await Promise.all([read('snapshot'),read('operations')]);

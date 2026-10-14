@@ -13,6 +13,13 @@ export function confirmedInstalledProfile(evidence: InstalledProfile | null | un
   return evidence;
 }
 
+/** Never present a numeric release alone as a resolved capability. */
+export function installedProfileLabel(evidence: InstalledProfile | null | undefined,
+  version: string, versionId?: string | null): string {
+  if (version === "0.0.0") return "Factory baseline";
+  return confirmedInstalledProfile(evidence, version, versionId)?.profile ?? "Profile not confirmed";
+}
+
 export function installedCompatibility(evidence: InstalledProfile | null,
   team: "brake" | "tire" | undefined, serviceProfile: string | undefined, current: boolean) {
   const required = team === "brake" && ["v1", "v2", "v3"].includes(serviceProfile ?? "")

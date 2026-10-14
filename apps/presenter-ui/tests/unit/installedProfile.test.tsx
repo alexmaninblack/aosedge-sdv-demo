@@ -3,10 +3,18 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import { ComponentDetails, ServiceCompatibility } from "../../src/app/StudioReadViews";
-import { confirmedInstalledProfile, installedCompatibility } from "../../src/domain/installedCompatibility";
+import { confirmedInstalledProfile, installedCompatibility, installedProfileLabel } from "../../src/domain/installedCompatibility";
 import type { CloudComponent } from "../../src/domain/platformObservation";
 
 afterEach(cleanup);
+test("VDP card labels only the exact verified capability and explains unresolved metadata", () => {
+  const evidence = { state: "CURRENT" as const, profile: "v1" as const, releaseVersion: "171.0.0", cloudVersionId: "installed", source: "CLOUD_INSTALLATION_AND_PACKAGE" as const, reason: null };
+  expect(installedProfileLabel(evidence, "171.0.0", "installed")).toBe("v1");
+  expect(installedProfileLabel(evidence, "172.0.0", "installed")).toBe("Profile not confirmed");
+  expect(installedProfileLabel(evidence, "171.0.0", "other")).toBe("Profile not confirmed");
+  expect(installedProfileLabel(null, "171.0.0")).toBe("Profile not confirmed");
+  expect(installedProfileLabel(null, "0.0.0")).toBe("Factory baseline");
+});
 const row = (): CloudComponent => ({ type: "demo-vehicle-data-provider", reported_component_id: "component",
   installed_component: { id: "installed", version: "79.0.0" }, pending_component: { version: "80.0.0" },
   pending_component_status: "pending", runtimeState: "NOT_REPORTED_BY_CLOUD",

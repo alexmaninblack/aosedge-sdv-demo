@@ -87,8 +87,8 @@ class RetainedProfileTests(unittest.TestCase):
 
     def test_retained_publication_binds_after_inventory_without_journal_write(self):
         first = self.read()
-        self.assertIsNone(first["value"]["installedProfile"]["profile"])
-        self.assertFalse(any(call["domain"] == "component" for call in self.calls))
+        self.assertEqual("v3", first["value"]["installedProfile"]["profile"])
+        self.assertEqual(1, sum(call["domain"] == "component" for call in self.calls))
         result = self.reconcile()
         profile = result["value"]["installedProfile"]
         self.assertEqual(("CURRENT", "v3", "117.0.0"),
@@ -150,7 +150,6 @@ class RetainedProfileTests(unittest.TestCase):
             read.assert_not_called()
 
     def test_slow_retained_publication_does_not_block_or_duplicate_inventory(self):
-        self.read()
         released = threading.Event()
         self.addCleanup(released.set)
         original = self.execute
@@ -168,6 +167,27 @@ class RetainedProfileTests(unittest.TestCase):
             released.set()
             future.result(timeout=1)
             self.assertEqual("v3", self.reader()["value"]["installedProfile"]["profile"])
+        self.assertEqual(1, sum(call["domain"] == "component" for call in self.calls))
+
+    def test_publication_finishing_during_inventory_is_consumed_in_same_response(self):
+        self.journal["componentOperations"] = {"117.0.0": self.record}
+        self.journal_path.write_text(json.dumps(self.journal))
+        completed = threading.Event()
+        original = self.execute
+        def execute(request, application):
+            if request["domain"] == "component":
+                # Finish after the reader's early 50-ms harvest but before the
+                # inventory response, reproducing the extra-poll race.
+                threading.Event().wait(.08)
+                result = original(request, application)
+                completed.set()
+                return result
+            if request["domain"] == "unit":
+                self.assertTrue(completed.wait(1))
+            return original(request, application)
+        with patch.object(presenter, "execute_operation", side_effect=execute):
+            result = self.reader()
+        self.assertEqual("v3", result["value"]["installedProfile"]["profile"])
         self.assertEqual(1, sum(call["domain"] == "component" for call in self.calls))
 
     def test_changed_cloud_context_discards_retained_hint_and_cache(self):

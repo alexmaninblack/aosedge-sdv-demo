@@ -3,8 +3,35 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions } from './ui_journey.mjs';
+import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+test('each published release checks its exact team stages, installed card and capability',()=>{
+  assert.deepEqual(releaseViewSpec('platform','v2','172.0.0'),{
+    teamTab:'Platform Team',stages:['Published','Installed'],card:'Vehicle Data Platform installed details',
+    cardText:'v2 · 172.0.0',profile:'v2',release:'172.0.0'});
+  assert.deepEqual(releaseViewSpec('brake','v3','155.0.0').stages,['Published','Assigned','Running']);
+  assert.equal(releaseViewSpec('tire','v1','76.0.0').card,'Tire service details');
+  for(const args of [['unknown','v1','171.0.0'],['platform','v4','171.0.0'],['tire','v2','76.0.0'],['brake','v1','latest']])
+    assert.throws(()=>releaseViewSpec(...args),/RELEASE_VIEW_INPUT_INVALID/);
+});
+test('browser failure diagnostics expose fixed categories rather than raw error text',()=>{
+  assert.equal(browserFailure(new Error('apiRequestContext.get: read ECONNRESET private details')),'UI_READ_CONNECTION_RESET');
+  assert.equal(browserFailure(new Error('strict mode violation: private HTML')),'UI_LOCATOR_AMBIGUOUS');
+  assert.equal(browserFailure(new Error('private details')),'UI_JOURNEY_CHECK_FAILED');
+});
+test('status trace retains fixed source timestamps and real Offline, never raw credentials',()=>{
+  const data={bindingKey:id+':unit',state:'CURRENT',observedAt:'2026-10-14T09:20:00.123Z',
+    value:{online:'OFFLINE',installedVersion:'171.0.0',secret:'DO_NOT_COPY',
+      inventory:{unit:{state:'CURRENT',readCompletedAt:'2026-10-14T09:19:59Z',value:{updated_at:'2026-10-14T09:19:58Z',last_online_changed_at:'2026-10-14T09:19:57Z',certificate:'DO_NOT_COPY'}}},
+      installedProfile:{profile:'v1',state:'CURRENT',reason:null}}};
+  const value=statusObservation(data,id);
+  assert.equal(value.online,'OFFLINE');assert.equal(value.bindingMatches,true);
+  assert.equal(value.onlineChangedAt,'2026-10-14T09:19:57Z');assert.equal(value.profile,'v1');
+  assert(!JSON.stringify(value).includes('DO_NOT_COPY'));
+  assert.equal(statusObservation({...data,bindingKey:'other:unit'},id).bindingMatches,false);
+  const unsafe=statusObservation({state:'raw',reason:'private key',value:{online:'raw',installedVersion:'secret',installedProfile:{profile:'secret',reason:'private key'}}},id);
+  assert.equal(unsafe.reason,null);assert.equal(unsafe.online,null);assert.equal(unsafe.profileReason,null);
+});
 test('continuous campaign keeps the accepted section order',()=>{
   assert.deepEqual(continuousSections,['release-story','installed-views','moving-sota','stop-start']);
 });

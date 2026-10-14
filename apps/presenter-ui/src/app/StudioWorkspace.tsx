@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { WorkspacePlacement } from "./WorkspacePlacement";
 import type { Perspective, PresenterSnapshot, ServiceRelease } from "../domain";
 import type { CloudComponent, CloudService } from "../domain/platformObservation";
-import { confirmedInstalledProfile } from "../domain/installedCompatibility";
+import { confirmedInstalledProfile, installedProfileLabel } from "../domain/installedCompatibility";
 import type { DemoCommand } from "../domain/presenterCommandPort";
 import { componentIssue, componentPending, componentUpdateLabel, failedState, serviceIssue, servicePending as hasServicePending, serviceRunning } from "../domain/softwareObservation";
 import { serviceReleases, serviceCandidate, serviceProfile, teamService, versionOrder, type Profile } from "../domain/studioModel";
@@ -314,7 +314,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
                   </button><button className="studio-manage-release" onClick={() => openView(name)} aria-label={`Manage ${labels[name]} releases`}>Manage releases</button>
                 </article>;
               })}</div>
-              <div className="studio-vdp-slot"><button className="studio-vdp" aria-label="Vehicle Data Platform installed details" disabled={!vdpRow} onClick={() => vdpRow && setDetails({ kind: "component", row: vdpRow })}><StudioIcon name="component" /><strong>Vehicle Data Platform</strong><small>{installed ? `${installed === "0.0.0" ? "Factory baseline" : installedProfile ?? "Release"} · ${installed}${componentCurrent && profileEvidence?.state !== "STALE" ? "" : " · last known"}` : "Factory slot · no Cloud report"}</small></button><button className="studio-manage-release" onClick={() => openView("platform")}>Manage VDP releases</button></div>
+              <div className="studio-vdp-slot"><button className="studio-vdp" aria-label="Vehicle Data Platform installed details" disabled={!vdpRow} onClick={() => vdpRow && setDetails({ kind: "component", row: vdpRow })}><StudioIcon name="component" /><strong>Vehicle Data Platform</strong><small>{installed ? `${installedProfileLabel(value?.installedProfile, installed, vdpRow?.installed_component?.id)} · ${installed}${componentCurrent && profileEvidence?.state !== "STALE" ? "" : " · last known"}` : "Factory slot · no Cloud report"}</small></button><button className="studio-manage-release" onClick={() => openView("platform")}>Manage VDP releases</button></div>
               <footer className="studio-factory" data-team="platform"><div className="studio-core"><StudioIcon name="service" /><div><strong>AosCore</strong><small>In-vehicle runtime</small></div><small className="studio-platform-brand">AosEdge platform</small></div><label>Factory firmware{present || local.images.length <= 1 ? <span>{vehicle.imageVersion ?? local.images[0]?.version ?? "No Factory image available"}</span> : <select aria-label="Factory image" value={image} onChange={event => setSelectedImage(event.target.value)}>{local.images.map(row => <option key={row.selector} value={row.selector}>{row.version}</option>)}</select>}</label></footer>
             </section></div>
         </div>

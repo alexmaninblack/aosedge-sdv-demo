@@ -9,6 +9,11 @@ Reports below are dated evidence: their “current”, “next” and “open”
 describes that checkpoint, not today's installation instructions. Historical
 results remain unchanged; newer results do not retroactively qualify old images.
 
+- [Presenter status and release visibility — 14 October](presenter-status-and-release-views-2026-10-14.md):
+  delayed VDP profile reproduced and corrected in source; bounded visible status
+  observation passed, while intermittent Offline remains unclassified. Per-release
+  visible assertions are added; new-package acceptance is recorded separately.
+
 - [M1 cleanup and installed demo testing — 14 October](m1-clean-install-e2e-2026-10-14.md):
   fresh installation and 118 API steps passed; the continuous UI restart check
   failed, followed by separate passing diagnostic and visible UI restart checks.

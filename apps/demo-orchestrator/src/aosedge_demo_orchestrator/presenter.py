@@ -153,6 +153,7 @@ class StudioCloudReader:
         if unresolved_services:
             selected = max(unresolved_services, key=lambda row: row.get("preparedAt") or "")
             self.publication_read("service", (context, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]), start_only=True)
+        component_requested = None
         if unresolved:
             # The last inventory is only a scheduling hint; installation and
             # profile below always use this invocation's exact Cloud result.
@@ -164,6 +165,7 @@ class StudioCloudReader:
                 item[0] in self.installed_versions_hint and (item[0], item[1]["deploymentId"]) != self.last_component_publication,
                 tuple(map(int, item[0].split(".")))))
             identity = (version, record["deploymentId"])
+            component_requested = identity
             component_result = self.publication_read("component", (context, identity), dict(domain="component", action="cloud-status", component_version=version))
             if component_result is not None:
                 self.last_component_publication = identity
@@ -182,6 +184,32 @@ class StudioCloudReader:
         component_rows = ((result.get("data") or {}).get("components") or {}).get("value") or []
         self.installed_versions_hint = {(item.get("installed_component") or {}).get("version") for item in component_rows
                                        if item.get("reported_component_id") == COMPONENT or item.get("type") == COMPONENT}
+        # Inventory and completed publication belong to this same response.
+        # A read that finished while inventory was loading must not wait for
+        # another UI poll. Recover only the actual installed retained receipt.
+        journal = dict(journal, componentOperations=self.profile_resolver.publication_records(
+            journal, self.installed_versions_hint))
+        owned = [(version, row) for version, row in journal.get("componentOperations", {}).items()
+                 if row.get("deploymentId") and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)]
+        flight = self.publication_reads.get("component")
+        selected = next((item for item in owned if flight and flight[0] == (context, (item[0], item[1]["deploymentId"]))), None)
+        if selected is None and component_requested is None:
+            selected = next((item for item in owned if item[0] in self.installed_versions_hint
+                and cache.get((item[0], item[1]["deploymentId"]), {}).get("stage") not in ("READY", "ERROR", "FAILED")), None)
+        if selected is not None:
+            version, record = selected
+            identity = (version, record["deploymentId"])
+            # At most one new component request per invocation. Harvest a
+            # pending flight without extending the inventory's wait budget.
+            if flight is None or flight[1].done():
+                component_result = self.publication_read("component", (context, identity),
+                    dict(domain="component", action="cloud-status", component_version=version))
+                if component_result is not None:
+                    self.last_component_publication = identity
+                    raw = (component_result.get("data") or {}).get("publication")
+                    cache[identity] = ({key: raw.get(key) for key in ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
+                                      if raw else dict(stage="UNKNOWN", reason="PUBLICATION_NOT_OBSERVED"))
+                    cache[identity]["version"] = version
         self.publications = cache
         if owned:
             version, record = max(owned, key=lambda item: tuple(map(int, item[0].split("."))))

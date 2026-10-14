@@ -79,6 +79,11 @@ export class VisibleCloudObserver {
       if (!this.visible()) return;
       if (this.dirty) { void this.refresh(); return; }
       const pending = Boolean(this.state.observation?.value?.pendingVersion)
+        // Reuse the existing bounded pending cadence while the exact installed
+        // receipt is being reconciled. No new timer, endpoint or profile guess.
+        || Boolean(this.state.observation?.value?.installedProfile?.state === "UNKNOWN"
+          && this.state.observation.value.installedProfile.releaseVersion === this.state.observation.value.installedVersion
+          && this.state.observation.value.installedProfile.reason === "INSTALLED_PROFILE_PUBLICATION_NOT_CONFIRMED")
         || componentPending({ pending_component: null, pending_component_status: this.state.observation?.value?.updateStatus ?? null })
         || this.state.observation?.value?.inventory?.components.value?.some(componentPending)
         || this.state.observation?.value?.inventory?.services.value?.some(servicePending)

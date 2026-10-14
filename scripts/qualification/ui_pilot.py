@@ -265,7 +265,7 @@ def release_receipts(events):
 
 
 def run(args, transport, config):
-    cards = {} if args.scenario in ('native-controls','continuous-campaign','restart-check') else qualified_cards(config, transport, args.test)
+    cards = {} if args.scenario in ('native-controls','continuous-campaign','restart-check','status-observation') else qualified_cards(config, transport, args.test)
     if args.cards_from_release_records:
         prior = h.unlinked(args.cards_from_release_records)
         h.require('/.local/remote-qualification/' in str(prior), 'PRIVATE_RELEASE_RECORD_REQUIRED')
@@ -449,7 +449,7 @@ def main():
     parser.add_argument('--query', choices=('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication', 'exercise'))
     parser.add_argument('--team', choices=('brake', 'tire'))
     parser.add_argument('--release')
-    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check'), default='installed')
+    parser.add_argument('--scenario', choices=('pilot', 'installed', 'release-story', 'vdp-transition', 'release-continuation', 'tire-review', 'road-return', 'moving-sota', 'native-controls','continuous-campaign','restart-check','status-observation'), default='installed')
     parser.add_argument('--native-build',type=Path,help='Verified separate signed native qualification build')
     parser.add_argument('--native-run-id',default='native-ui-live-20261012')
     parser.add_argument('--continue-from', type=Path, help='Completed same-candidate prepare-only records')

@@ -175,6 +175,15 @@ and the profile unconfirmed. See the
 The inspected artifact is cached by path, device/inode, size and modification/
 change timestamps; an unchanged package is not rehashed on every UI refresh.
 
+The 14 October correction also harvests a publication that completes while
+the current inventory is loading, and recovers the current inventory's exact
+retained receipt in that same invocation. It preserves the one-new-component-
+request bound and does not wait for an unfinished publication after inventory.
+Unresolved metadata is labelled `Profile not confirmed`; its exact installed-
+publication reconciliation uses the existing bounded pending cadence. No
+numeric-release-to-profile inference is permitted. See the
+[M1 status and release visibility report](../qualification/presenter-status-and-release-views-2026-10-14.md).
+
 Missing/mismatched evidence leaves the functional profile unknown while
 preserving the Cloud-reported release. The guide does not treat unknown as
 absent and offer V1 as a required restart. Prepared jobs/candidates cannot

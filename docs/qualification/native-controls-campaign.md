@@ -151,6 +151,18 @@ campaign, exact releases, timings and final closure.
 
 ## Focused restart diagnostic
 
+The 14 October visibility amendment checks the Team view and its completed
+publication/installation stages, then the Vehicle card and detail dialog for
+each exact profile/version before the next release. Moving updates retain
+independent platform-version and motion checks. Fixed Cloud response, source
+timestamp, binding and local-process diagnostics accompany the visible run;
+they do not override status or product-quality gates. The separate
+`ui_pilot.py --scenario status-observation --display m1` scenario starts the
+retained Test, connects in Manual, observes status while switching Vehicle and
+Platform Team for about one minute, and closes all owners. It publishes,
+resets, provisions and deletes nothing. Results and scope are in the
+[status report](presenter-status-and-release-views-2026-10-14.md).
+
 The `ui_pilot.py --scenario restart-check --display m1` profile starts the
 preserved installed Test, binds its live VDP and service versions, performs one
 explicit Stop and Start, checks identity, models, backend history, stationary

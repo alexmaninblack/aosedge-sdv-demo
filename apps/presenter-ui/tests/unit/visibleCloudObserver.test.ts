@@ -48,6 +48,21 @@ describe("shared visible Cloud observer", () => {
     expect(value?.observation?.reason).toBe("AOS_CLOUD_STATE_UNAVAILABLE");
     read.mockResolvedValue(current()); await observer.refresh(); expect(value?.observation?.state).toBe("CURRENT");
   });
+  it("reconciles pending installed profile at the existing pending cadence without inventing V1", async () => {
+    const pending = current();
+    pending.value!.installedProfile = { state: "UNKNOWN", profile: null, releaseVersion: "18.0.0", cloudVersionId: "id",
+      source: "CLOUD_INSTALLATION_AND_PACKAGE", reason: "INSTALLED_PROFILE_PUBLICATION_NOT_CONFIRMED" };
+    const read = vi.fn().mockResolvedValue(pending);
+    const observer = new VisibleCloudObserver(read); let value: CloudObserverState | undefined;
+    observer.subscribe(next => { value = next; }); const leave = observer.enter(); await observer.refresh();
+    expect(value?.observation?.value?.installedProfile?.profile).toBeNull();
+    await vi.advanceTimersByTimeAsync(1999); expect(read).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1); expect(read).toHaveBeenCalledTimes(2);
+    read.mockResolvedValue(current()); await vi.advanceTimersByTimeAsync(4000); expect(read).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(9999); expect(read).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(1); expect(read).toHaveBeenCalledTimes(4);
+    leave(); await vi.advanceTimersByTimeAsync(30000); expect(read).toHaveBeenCalledTimes(4);
+  });
   it("queues exactly one post-action read behind the existing request; navigation does not cancel it", async () => {
     let resolve!: (value: PlatformCloudObservation) => void;
     const read = vi.fn().mockImplementationOnce(() => new Promise<PlatformCloudObservation>((done) => { resolve = done; })).mockResolvedValue(current());
