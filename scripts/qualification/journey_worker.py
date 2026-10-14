@@ -147,6 +147,15 @@ def validate_binding(state, expected, domain=DOMAIN):
     require(state.get('selectedCloudDomain') == domain, 'QUALIFICATION_CLOUD_CHANGED')
 
 
+def pair_selection_request(domain, pair):
+    require(domain in DOMAINS, 'QUALIFICATION_CLOUD_NOT_ALLOWED')
+    if domain == 'aoscloud.io':
+        # Local selection clears authenticated owner pins by design. The
+        # production campaign needs the normal authenticated pair operation.
+        return 'cloud-connect', {key:pair[key] for key in ('oem','sp')}
+    return 'cloud-save', pair
+
+
 def docker_info():
     require(Path(DOCKER).is_file(), 'DOCKER_APPLICATION_REQUIRED')
     endpoint = 'unix://' + str(Path.home()/'.docker/run/docker.sock')
@@ -471,10 +480,18 @@ class Worker:
                 profiles = current.get('cloudProfiles', {})
                 require(all(profiles.get(role, {}).get('credential') == pair[key] for role, key in
                     (('oem-delivery','oem'), ('service-provider','sp'))), 'PAIR_SAVE_UNCONFIRMED')
+                if self.owners is not None:
+                    require((current.get('cloudConnection') or {}).get('owners') == self.owners,
+                            'QUALIFICATION_CLOUD_OWNERS_CHANGED')
                 return result(dict(status='CLOUD_REFERENCES_SAVED'))
             self.attempted = True
-            value = self.setup_call('cloud-save', **pair)
-            require(value['status'] == 'CLOUD_REFERENCES_SAVED', 'PAIR_SAVE_UNCONFIRMED')
+            selected_action, selected_pair = pair_selection_request(self.domain,pair)
+            value = self.setup_call(selected_action, **selected_pair)
+            if selected_action == 'cloud-connect':
+                require(value['status']=='CLOUD_CONNECTED_OBSERVED' and value['domain']==self.domain
+                    and value['rolesChecked'] and value['cloudStage']=='READY','PAIR_SAVE_UNCONFIRMED')
+            else:
+                require(value['status'] == 'CLOUD_REFERENCES_SAVED', 'PAIR_SAVE_UNCONFIRMED')
             return result(dict(status=value['status']))
         value = self.setup_call('cloud-check', **pair)
         require(value['rolesChecked'] and value['cloudStage'] == 'READY', 'CLOUD_PREREQUISITES_NOT_READY')

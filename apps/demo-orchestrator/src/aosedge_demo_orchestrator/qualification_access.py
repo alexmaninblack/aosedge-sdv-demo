@@ -3,11 +3,13 @@
 """Explicit, instance/Factory-bound Test credential; never a shipped default."""
 
 import re
+from uuid import UUID
 from .environment import EnvironmentError, JOURNAL, atomic_json, factory_for
 from . import runtime_paths
 
 PROFILE = '.local/demo-control/qualification-vm-access.json'
 DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
+DOMAINS = (DOMAIN, 'aoscloud.io')
 FIELDS = {'schemaVersion', 'kind', 'instanceId', 'domain', 'factorySha256', 'password'}
 
 
@@ -16,7 +18,24 @@ def valid_password(value):
             and not any(c in value for c in '\r\n\x00'))
 
 
-def check_scope(environment, factory_sha):
+def selected_scope(environment):
+    from .status import load_configuration
+    connection = load_configuration(environment.root).get('cloudConnection') or {}
+    domain = connection.get('domain')
+    if domain not in DOMAINS:
+        raise EnvironmentError('QUALIFICATION_ACCESS_CLOUD_REQUIRED')
+    owners = connection.get('owners') if domain == 'aoscloud.io' else None
+    if domain == 'aoscloud.io':
+        try:
+            if (not isinstance(owners, dict) or set(owners) != {'oem', 'sp'}
+                    or any(not isinstance(v, str) or str(UUID(v)) != v for v in owners.values())):
+                raise ValueError()
+        except (ValueError, TypeError, AttributeError):
+            raise EnvironmentError('QUALIFICATION_ACCESS_OWNER_PINS_REQUIRED') from None
+    return domain, owners
+
+
+def check_scope(environment, factory_sha, domain=DOMAIN, owners=None):
     from .status import load_configuration, read_json
     root = environment.root
     if not runtime_paths.installed(root):
@@ -25,13 +44,16 @@ def check_scope(environment, factory_sha):
     # Before Create there is no vehicle binding: load_configuration still
     # exposes legacy vehicle defaults. The selected Cloud connection owns
     # first-use scope; a manufactured Test additionally requires its journal.
-    if (config.get('cloudConnection') or {}).get('domain') != DOMAIN:
-        raise EnvironmentError('QUALIFICATION_ACCESS_STAGING_REQUIRED')
+    selected_domain, selected_owners = selected_scope(environment)
+    if selected_domain != domain:
+        raise EnvironmentError('QUALIFICATION_ACCESS_CLOUD_DOMAIN_MISMATCH')
+    if selected_owners != owners:
+        raise EnvironmentError('QUALIFICATION_ACCESS_CLOUD_OWNER_MISMATCH')
     if (root / JOURNAL).exists():
         state = read_json(root / JOURNAL)
         if (set(state.get('vehicles', {})) != {'test'}
-                or state.get('selectedCloudDomain') != DOMAIN
-                or (config.get('vehicles', {}).get('test') or {}).get('cloudHost') != DOMAIN
+                or state.get('selectedCloudDomain') != domain
+                or (config.get('vehicles', {}).get('test') or {}).get('cloudHost') != domain
                 or factory_for(state, 'test').get('sha256') != factory_sha):
             raise EnvironmentError('QUALIFICATION_ACCESS_TEST_FACTORY_MISMATCH')
 
@@ -47,11 +69,12 @@ def password(environment, role, factory_sha=None):
         raise EnvironmentError('QUALIFICATION_ACCESS_TEST_ONLY')
     try:
         value, _ = runtime_paths.small_json(path, limit=4096, owned=True)
-        if (not isinstance(value, dict) or set(value) != FIELDS
+        if (not isinstance(value, dict)
+                or set(value) != FIELDS | ({'owners'} if value.get('domain') == 'aoscloud.io' else set())
                 or type(value['schemaVersion']) is not int or value['schemaVersion'] != 1
                 or value['kind'] != 'democtl.qualification-vm-access'
                 or value['instanceId'] != runtime_paths.instance_id()
-                or value['domain'] != DOMAIN
+                or value['domain'] not in DOMAINS
                 or not isinstance(value['factorySha256'], str)
                 or not re.fullmatch('[a-f0-9]{64}', value['factorySha256'])
                 or not valid_password(value['password'])):
@@ -64,7 +87,7 @@ def password(environment, role, factory_sha=None):
     # authoritative Factory. The pre-Create check supplies the resolved digest.
     if factory_sha is None and not (environment.root / JOURNAL).exists():
         raise EnvironmentError('QUALIFICATION_ACCESS_FACTORY_REQUIRED')
-    check_scope(environment, value['factorySha256'])
+    check_scope(environment, value['factorySha256'], value['domain'], value.get('owners'))
     return value['password']
 
 
@@ -88,7 +111,8 @@ def prepare(environment, image, source):
         candidate = environment.catalog.resolve(image)
         if candidate.problems:
             raise EnvironmentError('DEMO_FACTORY_IMAGE_UNAVAILABLE')
-        check_scope(environment, candidate.sha256)
+        domain, owners = selected_scope(environment)
+        check_scope(environment, candidate.sha256, domain, owners)
         value = input_password(source)
         path = environment.root / PROFILE
         if path.exists() or path.is_symlink():
@@ -97,9 +121,12 @@ def prepare(environment, image, source):
                 raise EnvironmentError('QUALIFICATION_ACCESS_PROFILE_CONFLICT')
         else:
             runtime_paths.private(path.parent, directory=True)
-            atomic_json(path, dict(schemaVersion=1, kind='democtl.qualification-vm-access',
-                instanceId=runtime_paths.instance_id(), domain=DOMAIN,
-                factorySha256=candidate.sha256, password=value))
+            profile = dict(schemaVersion=1, kind='democtl.qualification-vm-access',
+                instanceId=runtime_paths.instance_id(), domain=domain,
+                factorySha256=candidate.sha256, password=value)
+            if owners is not None:
+                profile['owners'] = owners
+            atomic_json(path, profile)
         return dict(available=True, mode='EXPLICIT_TEST_PROFILE', nativeInputTested=False)
 
 

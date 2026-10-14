@@ -14,6 +14,12 @@ class CloudScopeTests(unittest.TestCase):
     def test_staging_default_is_unchanged(self):
         self.assertEqual(worker.cloud_scope({}),(worker.DOMAIN,None))
 
+    def test_production_pair_authenticates_instead_of_erasing_established_owner_pins(self):
+        pair=dict(oem='/oem.p12',sp='/sp.p12',selectionToken='a'*64)
+        self.assertEqual(worker.pair_selection_request(worker.DOMAIN,pair),('cloud-save',pair))
+        self.assertEqual(worker.pair_selection_request('aoscloud.io',pair),
+                         ('cloud-connect',dict(oem='/oem.p12',sp='/sp.p12')))
+
     def test_production_requires_both_explicit_owner_pins(self):
         with self.assertRaisesRegex(ValueError,'PRODUCTION_OWNER_PINS_REQUIRED'):
             worker.cloud_scope({'cloudDomain':'aoscloud.io'})

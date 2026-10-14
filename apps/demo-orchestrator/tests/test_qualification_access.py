@@ -12,6 +12,7 @@ from aosedge_demo_orchestrator import qualification_access as q
 from aosedge_demo_orchestrator.environment import JOURNAL, EnvironmentError
 from aosedge_demo_orchestrator.native_access import NativeVMAccess
 from aosedge_demo_orchestrator.status import load_configuration as actual_configuration
+OWNERS = dict(oem='11111111-1111-4111-8111-111111111111',sp='22222222-2222-4222-8222-222222222222')
 
 
 class QualificationAccessTests(unittest.TestCase):
@@ -66,7 +67,7 @@ class QualificationAccessTests(unittest.TestCase):
                 self.assertTrue(q.preflight(self.env, 'factory')['available'])
             config.write_text(json.dumps(dict(schemaVersion=1, cloudProfiles={},
                 cloudConnection=dict(domain='aoscloud.io', source='OEM_CERTIFICATE_ORGANIZATION'))))
-            with self.assertRaisesRegex(EnvironmentError, 'STAGING_REQUIRED'):
+            with self.assertRaisesRegex(EnvironmentError, 'OWNER_PINS_REQUIRED'):
                 q.preflight(self.env, 'factory')
 
     def test_existing_journal_still_requires_staging_vehicle_binding(self):
@@ -106,7 +107,7 @@ class QualificationAccessTests(unittest.TestCase):
                 q.password(self.env, 'test', self.pin)
         self.save()
         with patch('aosedge_demo_orchestrator.status.load_configuration', return_value={}):
-            with self.assertRaisesRegex(EnvironmentError, 'STAGING_REQUIRED'):
+            with self.assertRaisesRegex(EnvironmentError, 'CLOUD_REQUIRED'):
                 q.preflight(self.env, 'factory')
 
     def test_existing_vm_requires_matching_journal_factory_and_test_only(self):
@@ -119,6 +120,37 @@ class QualificationAccessTests(unittest.TestCase):
             state['vehicles']['production'] = {}
             with self.assertRaisesRegex(EnvironmentError, 'TEST_FACTORY_MISMATCH'):
                 q.password(self.env, 'test')
+
+    def test_production_cloud_fixture_is_test_only_owner_instance_and_factory_bound(self):
+        source = self.root/'fixture.json'
+        source.write_text(json.dumps(dict(password='fixture-only'))); source.chmod(0o600)
+        config = dict(cloudConnection=dict(domain='aoscloud.io', owners=OWNERS),
+                      vehicles=dict(test=dict(cloudHost='aoscloud.io')))
+        with patch('aosedge_demo_orchestrator.status.load_configuration', return_value=config):
+            for _ in range(2):
+                self.assertTrue(q.prepare(self.env, 'factory', source)['available'])
+                self.assertTrue(q.preflight(self.env, 'factory')['available'])
+            stored=json.loads(self.path.read_text())
+            self.assertEqual(stored['domain'],'aoscloud.io')
+            self.assertEqual(stored['owners'],OWNERS)
+            self.assertEqual(self.path.stat().st_mode & 0o777,0o600)
+            with self.assertRaisesRegex(EnvironmentError,'TEST_ONLY'):
+                q.password(self.env,'production',self.pin)
+            with self.assertRaisesRegex(EnvironmentError,'TEST_FACTORY_MISMATCH'):
+                q.password(self.env,'test','b'*64)
+            config['cloudConnection']['owners']=dict(OWNERS,sp='33333333-3333-4333-8333-333333333333')
+            with self.assertRaisesRegex(EnvironmentError,'CLOUD_OWNER_MISMATCH'):
+                q.password(self.env,'test',self.pin)
+
+    def test_production_without_both_authenticated_owner_pins_cannot_create_profile(self):
+        source=self.root/'fixture.json'
+        source.write_text(json.dumps(dict(password='fixture-only')));source.chmod(0o600)
+        for owners in (None,{},dict(oem=OWNERS['oem']),dict(OWNERS,sp='bad')):
+            config=dict(cloudConnection=dict(domain='aoscloud.io',owners=owners))
+            with patch('aosedge_demo_orchestrator.status.load_configuration',return_value=config):
+                with self.assertRaisesRegex(EnvironmentError,'OWNER_PINS_REQUIRED'):
+                    q.prepare(self.env,'factory',source)
+                self.assertFalse(self.path.exists())
 
     def test_profile_uses_native_provider_without_keychain_or_dialog(self):
         runner, chain, progress = Mock(), Mock(), Mock()

@@ -530,7 +530,7 @@ applications and verify exit; never infer shutdown after a lost connection.
 
 ## Resumable installed journey
 
-`journey.py` runs one fixed staging sequence through the installed product. It
+`journey.py` runs one fixed, explicitly Cloud-scoped Test sequence through the installed product. It
 does not rebuild or patch the package, inject telemetry, replace the installer,
 or create its own Cloud or VM lifecycle. Use it after verified installation and
 selection; media transfer, installation/repair and initial macOS consent remain
@@ -729,13 +729,23 @@ field. This is the existing development Factory password, not a new password
 or a Cloud credential. Prepare the file once outside the package and evidence
 directories; never paste its contents into a command or report. The installed
 owner validates it and stores an equally private qualification profile bound
-to the instance, staging and Factory digest. Later runs need no dialog.
+to the instance, selected Cloud and Factory digest. Production Cloud additionally
+requires both authenticated OEM/SP owner IDs, pins them in the private profile,
+and rejects an owner change. The Production-role VM remains forbidden; an
+`aoscloud.io` Test is not a Production-role target. Staging profiles retain their
+existing format. Later runs need no dialog.
 No password is guessed, extracted from legacy tools or shipped as a default.
 
 An absent file/profile is a fast `QUALIFICATION_ACCESS_INPUT_REQUIRED` stop,
 before creating/starting a VM. An invalid profile never falls back to prompting.
 Ordinary installations without the explicit profile still use native secure
 input/Keychain. Automated access does not pass that separate native UI gate.
+
+Production campaign pair preparation uses the normal authenticated
+`cloud-connect` operation. A local-only `cloud-save` intentionally clears
+authenticated owner claims and cannot establish the production qualification
+scope. A scope refusal before profile creation is reconciled by observing the
+absent profile and absent vehicle journal; it is not a completed access test.
 
 On a terminal failed mutation the runner stops with projected diagnosis before
 cleanup. Re-running does not replay the mutation. After a diagnosed correction,
