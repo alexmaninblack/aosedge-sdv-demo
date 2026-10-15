@@ -77,27 +77,40 @@ def initialize_folder(client, folder):
 def connect(app_key, destination, folder, *, emit=print, timeout=600):
     destination = credential_target(destination)
     state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(64)
-    accepted = []
+    accepted, completed = [], []
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args): pass  # Request URLs contain a one-time code.
         def do_GET(self):
+            if self.path == '/dropbox/connected' and accepted:
+                completed.append(True)
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/plain; charset=utf-8')
+                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Referrer-Policy', 'no-referrer')
+                self.end_headers()
+                self.wfile.write(b'Dropbox authorization received. You can close this tab.')
+                return
             try:
                 value = callback_values(self.path, state)
             except CampaignError:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Authorization was not accepted.')
                 return
             accepted.append(value)
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            # Remove the one-time code from the visible browser address before
+            # any post-authorization observation or screenshot can capture it.
+            self.send_response(303)
+            self.send_header('Location', '/dropbox/connected')
             self.send_header('Cache-Control', 'no-store')
             self.send_header('Referrer-Policy', 'no-referrer')
-            self.end_headers(); self.wfile.write(b'Dropbox authorization received. You can close this tab.')
+            self.end_headers()
     with HTTPServer(('127.0.0.1', 53687), Handler) as server:
         server.timeout = 1
         emit(authorization(app_key, state, verifier), flush=True)
         deadline = time.monotonic() + timeout
-        while not accepted and time.monotonic() < deadline:
+        while not completed and time.monotonic() < deadline:
             server.handle_request()
+            if accepted:
+                deadline = min(deadline, time.monotonic() + 5)
         require(len(accepted) == 1, 'DROPBOX_OAUTH_TIMED_OUT')
     result = token_request(build_opener(ProxyHandler({}), NoRedirect()), dict(
         grant_type='authorization_code', code=accepted[0], client_id=app_key,
