@@ -3,41 +3,34 @@
 
 # Getting started
 
-Choose a route by what you want to do. You do not need the project's history,
-old kit numbers or sibling repositories to choose a route.
+Start with the [single launcher in README](../../README.md#start-here) and
+choose what you want to do:
 
 1. **Run:** [Install and connect Cloud access](installed-preview-cloud-first-use.md).
-   Use one matching DMG, with no compiler or Unreal Editor.
-2. **Build:** [Developer build](reproduce-demo.md). Build project components
-   and the installer, reusing the prebuilt CARLA simulator and ARM64 virtual
+   Use one complete DMG, with no compiler or Unreal Editor.
+2. **Build:** [Build the demo and installer](reproduce-demo.md). Build project
+   components while reusing the prebuilt CARLA simulator and ARM64 virtual
    controller image (**Factory image**, the clean Linux/AosEdge base).
 3. **Prepare tools to rebuild the controller image or simulator:**
-   [Specialist preparation and full-source scope](full-source-build.md).
-   This prepares compatible host tools, not a complete build. Source/Builder
-   prerequisites and full-source qualification remain separate.
+   [Specialist scope and prerequisites](full-source-build.md). This prepares
+   host tools; source, licensed assets and the separate Linux Builder are
+   additional requirements.
 
-All routes start with the [single launcher in README](../../README.md#start-here)
-and its menu. [Release selection and access](release-status.md) explains the
-matching inputs. Developers do not clone manually first: route B prepares tools,
-checks capacity, selects sources and builds automatically. The
-[launcher reference](unified-macos-launcher.md) explains handoff, repeats and the
-explicit partial specialist route. The [current release evidence](release-status.md)
-separates offline fixture coverage, actual M1 checks and remaining gates.
-For the system overview, use the [product map](../architecture/product-map.md).
-For changes, use [Contributing](../../CONTRIBUTING.md).
+[Release and access information](release-status.md) explains package selection
+and Cloud credentials. The [launcher reference](unified-macos-launcher.md)
+covers saved choices, repeats and optional controls.
+For a system overview, use the [component map](../architecture/product-map.md).
 
 ## When something stops
 
-Use [troubleshooting](troubleshooting.md). Preserve the failed operation and
-existing state; do not combine packages, erase a retained Test or disable
+Use [troubleshooting](troubleshooting.md). Keep the failed operation's message
+and existing state. Do not combine packages, erase a retained Test or disable
 security checks to make progress.
 
-## Specialist routes
+## Component development
 
-- [Standalone AosVM](../operations/aosvm-apple-silicon.md) is a component-level
-  engineering guide, not the installer workflow. Never run its launchers over
-  an installed Demo Control-owned instance.
-- [Design and requirements](../architecture/README.md) explain the system
-  contract. [Qualification](../qualification/README.md) contains dated evidence.
-- [Historical local setup preview](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/getting-started/local-setup-preview.md) is retained for
-  reference, not as a current installation procedure.
+Use [Contributing](../../CONTRIBUTING.md) and the
+[development map](../development/README.md) for source changes.
+[Standalone AosVM](../operations/aosvm-apple-silicon.md) is a component-level
+guide, not the installer workflow. Do not run its launchers over an installed
+Demo Control-owned instance.

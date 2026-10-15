@@ -152,8 +152,59 @@ READER_ROUTES = (
     "docs/getting-started/reproduce-demo.md",
     "docs/getting-started/full-source-build.md",
     "docs/getting-started/troubleshooting.md",
+    "docs/getting-started/macos-developer-tools.md",
+    "docs/getting-started/unified-macos-launcher.md",
     "docs/architecture/product-map.md", "docs/operations/current-demo-workflow.md",
+    "docs/operations/README.md", "docs/demo/README.md",
 )
+
+
+USER_GUIDES = {
+    "README.md", "docs/architecture/product-map.md", "docs/demo/README.md",
+    "docs/operations/README.md", "docs/operations/current-demo-workflow.md",
+}
+INTERNAL_STATUS_HEADING = re.compile(
+    r"^#{1,6}\s+(?:What is still being qualified|"
+    r"Remaining (?:qualification|acceptance|release) gates|"
+    r"Before claiming full source support|Release-owner activation|"
+    r"Private maintainer route)\b", re.I | re.M,
+)
+INTERNAL_STATUS_NARRATIVE = re.compile(
+    r"\b(?:Kit\d{3}|Setup\d{3}|VDP-TIMEOUT-\d+)\b|"
+    r"\b(?:M1|runtime|native|clean-host|public-consumer) "
+    r"(?:qualification )?(?:campaign|evidence|proof)\b|"
+    r"\bpassed \d+ (?:API|visible|scripted|installed)\b", re.I,
+)
+
+
+def check_user_guide_audience(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    """Keep installation/use instructions separate from internal status records."""
+    issues: list[Issue] = []
+    for source, text in documents.items():
+        name = relative(root, source)
+        if name not in USER_GUIDES and not name.startswith("docs/getting-started/"):
+            continue
+        if INTERNAL_STATUS_HEADING.search(text) or INTERNAL_STATUS_NARRATIVE.search(text):
+            issues.append(Issue(name, "internal qualification/history belongs in engineering records, not a user guide"))
+        for _, raw in MARKDOWN_LINK.findall(text):
+            target = link_target(raw)
+            parsed = urlsplit(target)
+            if parsed.scheme:
+                hosted = re.fullmatch(
+                    r"/alexmaninblack/aosedge-sdv-demo/(?:blob|tree)/[^/]+/(.+)",
+                    unquote(parsed.path),
+                ) if parsed.netloc.lower() == "github.com" else None
+                if not hosted:
+                    continue
+                destination_name = hosted[1]
+            else:
+                destination, _ = resolve_local_target(root, source, raw)
+                destination_name = relative(root, destination)
+            if destination_name.startswith((
+                "docs/qualification/", "docs/planning/", "workspace/checkpoints/",
+            )):
+                issues.append(Issue(name, "user guide links to an internal test/backlog record; use the engineering documentation map"))
+    return issues
 
 
 def pinned_workspace_link(repository: WorkspaceRepository, url: str) -> bool:
@@ -839,6 +890,7 @@ def check_repository(
     issues.extend(check_component_requirement_packages(root, documents))
     issues.extend(check_ui_traceability(root, documents))
     issues.extend(check_hygiene(root, documents))
+    issues.extend(check_user_guide_audience(root, documents))
     mermaid_issues, diagram_count = check_mermaid(root, documents)
     issues.extend(mermaid_issues)
     if include_external:
@@ -869,6 +921,7 @@ def main() -> int:
         issues, _, external = check_links(root, documents, selected)
         issues.extend(Issue(relative(root, path), "required reader guide is missing")
                       for path in selected if path not in documents)
+        issues.extend(check_user_guide_audience(root, documents))
         if args.external:
             issues.extend(check_external_links(external))
         for issue in sorted(issues, key=lambda item: (item.path, item.message)):

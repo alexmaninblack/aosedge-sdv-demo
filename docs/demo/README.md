@@ -10,10 +10,9 @@ services, not production diagnostic algorithms or vehicle-control functions.
 For the current experience, start with the
 [root README](../../README.md), [Setup guide](../getting-started/installed-preview-cloud-first-use.md)
 and [operator workflow](../operations/current-demo-workflow.md).
-Presenter, CARLA and native Driving Control are actual running components;
-an HTML mockup is not evidence of a live installation.
+Presenter, CARLA and native Driving Control run as separate applications.
 
-## Accepted design
+## Design references for contributors
 
 - [Demo name and scope](demo-name.md).
 - [Staged Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md).
@@ -26,10 +25,8 @@ an HTML mockup is not evidence of a live installation.
 
 The accepted scenario/interaction documents contain expanded two-vehicle and
 two-provider obligations. Later Test-only and one-associated-SP amendments
-define the implemented first-demo scope. Neither a Production Cloud connection
-nor a passed Test run proves Production vehicle-role promotion.
+define the implemented first-demo scope. A Production Cloud connection is not
+the same as promoting a Test to the separate Production vehicle role.
 
-Older versioned HTML mockups remain only where active regression tests or
-accepted design references require them. They are historical test/review
-fixtures, not alternative operator instructions. The obsolete two-vehicle
-walkthrough has been removed; the current workflow is the sole operation guide.
+The HTML mockups are design/test fixtures, not another installation or
+operation route. Follow the operator workflow for the live application.

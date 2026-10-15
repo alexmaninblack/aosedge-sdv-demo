@@ -210,6 +210,33 @@ previously downloaded copies retain their inactive pins. The user's actual
 walkthrough, archive-consumer checksum verification and build remain separate
 evidence, not results of these bounded access probes.
 
+## Maintainer catalog and private-input controls
+
+These are release-owner controls, not additional steps for ordinary route B.
+The default developer launcher uses the public catalog without a Google login.
+
+For explicit private-input maintenance, the standalone developer executor
+`scripts/prepare-macos.sh --private-inputs` discovers Google CLI and asks for
+the reader's own granted account. `--advanced-inputs` additionally requests
+the two private binding paths. Neither mode is an automatic fallback after a
+public download failure. At acquisition, the private `lab inputs prepare`
+invocation includes `--account "$SDV_DRIVE_ACCOUNT" --gcloud "$SDV_GCLOUD"`.
+Never use or request the publisher's credentials as a user prerequisite.
+
+To prepare public catalog records, use `scripts/preparation-catalog --public-links`
+with the existing receipt and the approved `buildInputs` and
+`simulation` URL mapping. It preserves byte/source pins and emits a distinct
+immutable public record; it does not upload or widen permissions. Publish the
+small `release-index.json` at its stable location, review its URL/record digest
+into `PUBLIC_PIN` in `scripts/developer_catalog.py`, then refresh the standalone
+wizard with `scripts/sync-preparation-catalog`.
+
+After catalog/helper changes, run `scripts/sync-launcher-pins --write` and
+`scripts/sync-launcher-pins --check`. Publish the helper graph and downloaded
+launcher together. The selected descriptor and frozen artifact identities are
+not rewritten to accommodate changed bytes. Follow the
+[release campaign](release-campaign.md) for source and option A promotion.
+
 ## References and interpretation
 
 The review uses the [Unreal Engine EULA](https://www.unrealengine.com/eula/unreal),

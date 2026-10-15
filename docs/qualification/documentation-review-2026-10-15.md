@@ -95,3 +95,40 @@ No build, signing, DMG assembly, installation, live demo, Cloud mutation or
 payload transfer is part of this documentation-only work.
 The [current baseline](current-baseline.md) retains release exclusions;
 documentation cleanup does not qualify a new product.
+
+## Follow-up: separate user guidance from internal status
+
+The operator identified an incomplete part of the initial review: the Setup
+guide still contained **What is still being qualified**, and several user
+routes repeated campaign history or internal acceptance exclusions. The
+follow-up reviewed the documentation by audience, not just by link validity
+or document age.
+
+- Removed that section and embedded test counts, older kit/release examples,
+  dated campaign claims, internal deferred-defect references and backlog links
+  from getting-started and operator instructions.
+- Replaced the developer guide's historical manual candidate walkthrough with
+  the current automatic route B, its results and continuation steps.
+- Moved private-input/catalog maintenance to the existing development reference.
+  The documentation map explicitly separates engineering records and plans.
+- Kept user-impacting restrictions: Apple Development signing/notarization,
+  Docker and Cloud prerequisites, space checks, limited route C tooling scope,
+  Safe Stop, retained-Test operations and safe shutdown/storage handling.
+- Corrected stale troubleshooting advice: public inputs need no Google login
+  or manual bindings, and a local internal Docker disk is not itself a failure.
+- Removed stale installed-step counts and branch-era prose from the Presenter
+  component README. Current test results remain in their canonical baseline.
+
+The documentation policy now defines this audience boundary. Both the full
+gate and reader-route gate reject known internal-status sections/narratives
+and direct test/backlog links in user guides, including Git-hosted copies.
+New getting-started pages are checked without a new allowlist entry. Tests
+also require practical restrictions and separate engineering reports to remain
+allowed; the policy is not a blanket ban on documenting limitations.
+
+Follow-up validation: **153 Markdown documents, 662 stable identifiers,
+36 Mermaid diagrams and 14 root-only reader routes** pass. All **80 offline
+regression tests** pass: 19 documentation-check, 13 reader-route and
+48 release-definition tests. The frozen release definition remains valid.
+No runtime source, launcher behavior, release lock, artifact, test result or
+acceptance status was changed. No build or live demo was started.

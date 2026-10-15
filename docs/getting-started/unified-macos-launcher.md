@@ -5,129 +5,99 @@
 
 Start with the one download/run entry in [README](../../README.md#start-here).
 The [launcher](../../scripts/aosedge-sdv-lab.sh) asks what you want to do before
-checking route-specific tools. It works before Git, Python or Homebrew. Its
-matching helpers are obtained automatically, not manually selected.
+checking route-specific tools. It works before Git, Python or Homebrew;
+matching helpers are downloaded and verified automatically.
 
 ## Route results
 
-| Route | Result | Not established by that result |
+| Route | What completes | What you do next |
 | --- | --- | --- |
-| A | Approved DMG/Setup verified; normal macOS open requested | Completed installation, authenticated Cloud access, visible Setup or a running vehicle |
-| B | Existing developer preparation/build completed, with its canonical receipt | Qualified release, bit-identical signing, installation or publication |
-| C / 3 — Prepare tools to rebuild the controller image or simulator | Compatible tools observed/prepared for the selected component | Complete source/assets/Builder closure, build capacity, compilation or full-source qualification |
+| A / 1 | Download or reuse the selected DMG, verify it and request macOS to open Setup | Follow Setup to install, connect Cloud access and open Presenter |
+| B / 2 | Prepare tools and sources, obtain inputs and build the signed DMG | Use the reported output path to install the package separately |
+| C / 3 | Check or prepare host tools for the controller image or simulator | Supply the component's source, assets and Builder prerequisites before building |
 
-A validates against the operator entry in the source-owned
-[launcher catalog](../../workspace/launcher-catalog.json), projected from the
-selected immutable delivery descriptor. It downloads the reviewed public
-locator or reuses an approved local file. An arbitrary
-same-named or developer-built DMG is not accepted automatically. The matching
-Setup/kit must stay together; signed Setup remains the installation and
-Cloud-access owner. Respect OS security warnings. Setup handoff deliberately
-keeps its installer media mounted until the user quits Setup and ejects it.
-On pre-handoff failure only a newly attached image is detached; an already
-mounted image is not owned by the launcher.
+A follows the selected [launcher catalog](../../workspace/launcher-catalog.json).
+Only a matching approved file is reused. A same-named or developer-built DMG
+is not accepted automatically. Keep Setup and Runtime Kit together. The image
+stays mounted for Setup; quit Setup before ejecting it. If handoff fails, the
+launcher detaches only an image it mounted itself.
 
-An operator download locator must be separately published and source-reviewed
-before anonymous delivery is enabled. The selected Dropbox link passed the real
-M1 consumer check. Provider redirects are bounded and HTTPS-only; HTML warning
-or sign-in pages cannot pass the DMG size/checksum gate. No credentials,
-cross-provider fallback or private-download workaround is added. Google Drive
-remains available for developer inputs and explicitly selected older deliveries.
+A's public download requires no storage-provider login. Unexpected sign-in or
+warning pages, incorrect sizes and checksum mismatches stop the download;
+there is no automatic private-download or alternate-provider fallback.
 
-B delegates to the unchanged standalone developer script. It retains the
-[preparation reference](macos-developer-tools.md), fixed root revision on repeat,
-pinned component inputs and explicit signing. The menu changes no producer
-plan, recipe, artifact bytes or release qualification status.
+B uses the [developer workflow](reproduce-demo.md). It retains the selected root
+revision on repeat, checks pinned inputs and asks for a signing identity.
 
 C offers **ARM64 virtual controller image (Factory)** and **Vehicle simulator
-(CARLA / Unreal)**. The Factory image is the clean Linux/AosEdge base used to
-create the controller, not a running VM. Its **Builder** is a separate Linux
-build VM. Controller-image preparation uses the Builder's exact
-QEMU/firmware identity and checks Homebrew's advertised version before a bottle
-installation. An existing incompatible tool is preserved rather than upgraded.
-Simulator uses its current CMake floor, native Python and compatible Xcode/Ninja.
-Host preparation does not install Linux guest packages, acquire a Builder,
-clone restricted Unreal or start a build. The
-[full-source guide](full-source-build.md) retains these gates and hardware needs.
+(CARLA / Unreal)**. Factory is the clean Linux/AosEdge controller base;
+its **Builder** is a separate Linux build VM. This route prepares compatible
+macOS tools, not Linux guest packages, a Builder or restricted source.
+See [specialist prerequisites](full-source-build.md).
 
 ## Repeat and storage behavior
 
 Rerun the same downloaded file after resolving a prerequisite. The menu offers
-the last route; press Return to select it. C also remembers controller image/simulator.
-Route B retains its finer-grained selections and verifies completed work.
-The menu is not a green-readiness cache. A retains the approved DMG path and
-C retains its workspace/volume identity. An unavailable saved disk/file stops
-without choosing the internal disk; use an explicit option for a deliberate
-new selection. The launcher does not update itself or pull new source
-revisions automatically.
+the last route; press Return to select it. C remembers the component and B
+retains its detailed selections. Each run checks the actual prerequisites,
+rather than trusting a saved success flag.
 
-Small control data and verified helper caches are under
-`~/Library/Application Support/AosEdge SDV Lab/Launcher`. The existing developer
-state remains in its `Developer` sibling. Choices are plain data, not executed
-shell code. A launcher lease spans helper preparation and delegated execution.
-Do not run a legacy standalone build concurrently with specialist preparation
-in the same workspace. Unsafe
-directories, links, wrong ownership, changed helpers and unknown lease contents
-stop rather than get overwritten. Changed helper pins require a new reviewed
-launcher; cached verified generations remain reusable.
+The launcher retains the selected DMG path or workspace and volume identity.
+An unavailable saved disk/file stops the run without choosing another disk.
+Use an explicit option below when you intend a new selection. The launcher
+does not update itself or pull a new source revision automatically.
 
-Bulk developer/specialist work uses the selected existing APFS parent and `sdv`
-workspace, with `.tmp` cleanup and stable volume checks. Host applications and
-Homebrew stay in their normal locations; choosing an external workspace does
-not move them. The launcher never formats a disk or relocates shared Docker.
-Only small installer/helper metadata uses private launcher scratch. Logs,
-sources, verified caches and outputs are not scratch and are preserved.
+Small control files and verified helpers are under
+`~/Library/Application Support/AosEdge SDV Lab/Launcher`; developer control
+files are in its `Developer` sibling. Unsafe directories, changed helpers
+and active workspace owners are reported, not overwritten.
 
-Ctrl+C stops the current owned transfer/tool process group and removes its
-owned scratch/lease. It does not erase a Test or stop shared Docker. Failed
-or interrupted owner operations are not automatically retried. A lost response
-is not permission to click/publish again; retain existing normal-owner receipts.
+Build work uses the selected existing APFS parent and `sdv` workspace.
+Temporary files use `.tmp` and are cleaned separately from sources, verified
+caches, logs and results. Host applications and Homebrew stay in their normal
+locations. Selecting an external workspace does not move those tools or
+shared Docker storage.
+
+Ctrl+C stops the current owned transfer/tool process and removes its temporary
+files and lock. It does not erase a Test or stop Docker Engine. Keep the first
+error and resolve it before rerunning. If an external action's response is
+uncertain, inspect its saved result before submitting it again.
 
 ## Optional controls
 
-These are diagnostic conveniences, not another sequence after README:
+These are conveniences, not another required checklist:
 
 ```sh
 /bin/bash "$HOME/Downloads/aosedge-sdv-lab.sh" --help
 ```
 
-`--route A`, `--route B` or `--route C --component factory|simulator` selects a
-route without the menu. `--plan` describes it without host probes, downloads or
-writes. `--check` performs only cached/local checks: absent verified helpers
-produce an explicit unavailable result without downloading. Passing local
-checks never proves installation, Cloud access or full-source readiness.
+- `--route A`, `--route B` or `--route C --component factory|simulator`
+  selects a route without the menu.
+- `--plan` describes the route without host probes, downloads or writes.
+- `--check` performs cached/local checks only. If a verified helper is missing,
+  it reports that fact without downloading it.
+- `--parent /absolute/existing/folder` selects the build/download parent.
+- `--dmg /absolute/file.dmg` selects an existing route A file.
+- `--xcode /path/to/Xcode.app` selects Xcode for this B/C session.
+- `--prepare-only` stops B after host preparation, before cloning or building.
 
-Use `--parent /absolute/existing/folder` for build/download workspace selection,
-`--dmg /absolute/file.dmg` to avoid A's file picker, or `--xcode /path/to/Xcode.app`
-for B/C session-only tool selection. `--prepare-only` belongs to B. Quote paths
-with spaces in command arguments; file-picker answers need no quoting. Wrong
-route/option combinations stop before installation or host preparation.
+Quote command arguments that contain spaces; do not add shell quotes to
+interactive file-picker/path answers. Incompatible route/options stop before
+installation or tool preparation.
 
-Exit 0 means the reported local check, handoff or developer operation completed,
-not a release-qualified demo. Exit 2 means cancellation, missing prerequisites
-or explicit partial preparation. Exit 1 means invalid input/integrity or an
-operation failure. C's normal final `HOST TOOLS PREPARED — FULL SOURCE NOT READY`
-is deliberately partial (exit 2). No heavy build is started on either result.
+Exit 0 means the reported local action completed. Exit 2 means cancellation,
+a missing prerequisite or partial preparation. Exit 1 means invalid input,
+integrity failure or an operation error. C ends with
+`HOST TOOLS PREPARED — FULL SOURCE NOT READY` and exit 2 because component
+source/Builder preparation is still required; no heavy build starts.
 
-## Helper integrity and source maintenance
+## Download integrity
 
-The downloaded script contains immutable Git blob locators and independently
-checked SHA-256/size pins. Public
-[GitHub raw blob reads](https://docs.github.com/en/rest/git/blobs#get-a-blob)
-need no account for this public source. Helpers and metadata must pass every
-pin before execution; mutable branch names are not helper authority. API denial
-or rate limiting stops with the verified cache preserved, not an OAuth request
-or automatic retry. No arbitrary executable URL is accepted.
+The launcher checks its helpers against fixed source identities, sizes and
+SHA-256 values before execution. It does not accept an arbitrary executable
+URL. A helper download failure preserves the verified cache and reports the
+problem; it does not ask for OAuth or retry indefinitely.
 
-Maintainers update the source catalog/helper code, then run the mechanical
-`scripts/sync-launcher-pins --write` projection and its `--check` gate. Tests
-compare operator fields to the existing delivery descriptor and Factory
-tool/capacity fields to the canonical Builder. No release pin is rewritten to
-make another artifact pass. Publish the complete helper graph and launcher in
-the same source checkpoint before asking a user to download it.
-
-Local fixture tests are distinct from real installation/runtime qualification.
-The [current release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
-records the separate passed M1 public-consumer and native Setup first-use checks.
-Neither a label change nor source publication transfers those results to new
-artifact bytes or closes specialist full-source gates.
+For package, Docker or Cloud errors, use [troubleshooting](troubleshooting.md).
+For changes to the launcher itself, use the
+[development map](../development/README.md).

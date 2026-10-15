@@ -56,6 +56,8 @@ class ReaderRouteTests(unittest.TestCase):
             shutil.copytree(ROOT / name, self.root / name)
         for name in ('README.md', 'CONTRIBUTING.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'):
             shutil.copy2(ROOT / name, self.root / name)
+        (self.root / 'scripts').mkdir()
+        shutil.copy2(ROOT / 'scripts/aosedge-sdv-lab.sh', self.root / 'scripts/aosedge-sdv-lab.sh')
         for source in (ROOT / 'apps').glob('*/README.md'):
             target = self.root / source.relative_to(ROOT)
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -118,23 +120,69 @@ class ReaderRouteTests(unittest.TestCase):
         self.assertEqual(descriptor['manifestSha256'], catalog['operator']['manifestSha256'])
         self.assertFalse(descriptor['notarized'])
 
-    def test_build_guide_shell_syntax_and_flags(self):
-        guide = (ROOT / 'docs/getting-started/reproduce-demo.md').read_text()
+    def test_developer_reference_uses_current_launcher_options(self):
+        guide = (ROOT / 'docs/getting-started/macos-developer-tools.md').read_text()
         blocks = re.findall(r'```sh\n(.*?)```', guide, re.S)
-        self.assertGreater(len(blocks), 3)
+        self.assertEqual(len(blocks), 2)
+        help_result = subprocess.run(
+            ['/bin/bash', str(ROOT / 'scripts/aosedge-sdv-lab.sh'), '--help'],
+            text=True, capture_output=True, timeout=10,
+        )
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
         for block in blocks:
             result = subprocess.run(['sh', '-n'], input=block, text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
-        for prefix in ([], ['inputs']):
-            help_result = subprocess.run([sys.executable, '-B', str(ROOT / 'lab'), *prefix, '--help'],
-                                         text=True, capture_output=True)
-            self.assertEqual(help_result.returncode, 0, help_result.stderr)
-        help_text = subprocess.check_output([sys.executable, '-B', str(ROOT / 'lab'), '--help'], text=True)
-        build = next(block for block in blocks if './lab build --target all' in block)
-        for option in set(re.findall(r'--[a-z][a-z-]+', build)):
-            self.assertIn(option, help_text)
-        for path in re.findall(r'workspace/[\w./-]+\.json', guide):
-            self.assertTrue((ROOT / path).is_file(), path)
+            self.assertIn('aosedge-sdv-lab.sh', block)
+            self.assertIn('--route B', block)
+            for option in set(re.findall(r'--[a-z][a-z-]+', block)):
+                self.assertIn(option, help_result.stdout)
+        build_guide = (ROOT / 'docs/getting-started/reproduce-demo.md').read_text()
+        self.assertNotIn('./lab build --target all', build_guide)
+        self.assertNotRegex(build_guide, r'workspace/releases/[\w.-]+\.json')
+
+    def test_user_guide_rejects_internal_status_sections_and_narratives(self):
+        target = self.root / 'docs/architecture/product-map.md'
+        original = target.read_text()
+        for tail in (
+            '## What is still being qualified\nInternal acceptance checklist.',
+            'The earlier Kit028 run is still pending.',
+            'The M1 campaign passed 118 API checks.',
+            'VDP-TIMEOUT-01 remains deferred.',
+        ):
+            with self.subTest(tail=tail):
+                target.write_text(original + '\n' + tail + '\n')
+                result = self.check()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('internal qualification/history', result.stderr)
+
+    def test_user_guide_rejects_internal_test_and_backlog_links(self):
+        target = self.root / 'docs/architecture/product-map.md'
+        original = target.read_text()
+        for path in (
+            '../qualification/current-baseline.md', '../planning/roadmap.md',
+            'https://github.com/alexmaninblack/aosedge-sdv-demo/blob/'
+            '84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/current-baseline.md',
+        ):
+            with self.subTest(path=path):
+                target.write_text(original + '\n[Internal status](' + path + ')\n')
+                result = self.check()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('internal test/backlog record', result.stderr)
+
+    def test_new_getting_started_guide_is_checked_without_an_allowlist_entry(self):
+        (self.root / 'docs/getting-started/new-route.md').write_text(
+            '# New route\n\n## What is still being qualified\nPending tests.\n'
+        )
+        self.assertIn('internal qualification/history', self.check().stderr)
+
+    def test_user_restrictions_and_engineering_records_remain_allowed(self):
+        self.append('Not notarized: follow macOS security prompts. Docker is required. '
+                    'Stop the demo before host sleep; VDP updates need Safe Stop.')
+        record = self.root / 'docs/qualification/current-baseline.md'
+        record.write_text(record.read_text() + '\n## What is still being qualified\n'
+                          'The M1 campaign passed 118 API checks; other gates remain.\n')
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == '__main__':

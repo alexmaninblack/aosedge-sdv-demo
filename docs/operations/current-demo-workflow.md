@@ -3,20 +3,11 @@
 
 # Current SDV Lab operator workflow
 
-Updated: 15 October 2026. The [launcher catalog](../../workspace/launcher-catalog.json)
-selects the current operator package. This is the implemented Presenter / Demo Control
-workflow, not a new qualification run. Use the
-[current baseline](../qualification/current-baseline.md) for dated evidence and
-exclusions and the [CLI reference](../../apps/demo-orchestrator/README.md) for
-configuration and engineering commands. The public demo name is
-**AosEdge Platform - SDV Lab**.
+Use Presenter and Driving Control to operate **AosEdge Platform - SDV Lab**.
+The sequence below takes a new controller through platform and service updates.
 
 For a new installation, begin with the [operator guide](../getting-started/installed-preview-cloud-first-use.md)
-and [release selection](../getting-started/release-status.md). This sequence is
-the implemented workflow. Current M1 Production runtime and separate native
-Setup first-use evidence are in the
-[release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2).
-Dated Kit028 observations below remain historical, not the current selection.
+and [release selection](../getting-started/release-status.md).
 The Cloud environment follows the selected credentials; connecting to Production
 Aos Cloud does not mean promoting a Test into the separate Production vehicle role.
 
@@ -52,15 +43,12 @@ Aos Cloud does not mean promoting a Test into the separate Production vehicle ro
 
 VDP is an OEM platform component delivered by FOTA and gated by Safe Stop.
 Brake and Tire are independently delivered QM SOTA containers: their updates
-do not require that component gate. Moving updates are supported by this
-separation. The current Production runtime campaign passed moving QM updates;
-the older Kit028 record's open moving-SOTA gate remains historical.
+do not require Safe Stop and may be installed while moving.
 These condition/advisory services do not control braking or steering.
 
-Functional profiles and allocated release numbers are different. The Kit028
-scripted run used VDP134/135/136, Brake112/113/114 and Tire60; these are dated
-evidence, not mandatory numbers for the next run. The release-continuity ledger allocates new numbers;
-never restore an old ledger to reuse a published release.
+Functional profiles (V1/V2/V3) and allocated Cloud release numbers are different.
+Demo Control allocates new release numbers automatically. Do not restore an
+old release ledger to reuse an already published number.
 
 ## Read the UI by authority, not by appearance
 
@@ -106,41 +94,35 @@ reads must not block independent backend/control actions.
 
 ## Pause, offline operation and recovery
 
-- For a normal pause, Safe Stop and leave the controller running. Studio
-  Park/Resume is removed and rejected; legacy CLI primitives are engineering
-  history, not the recommended operator path.
+- For a normal pause, use Safe Stop and leave the controller running.
 - Return to road places the car at a validated road location, stationary in
   Manual. It neither launches Autopilot nor resets service models.
 - External network OFF tests loss of backend/Cloud delivery while the local
   Gateway–KUKSA–service chain continues. Verify unchanged backend receipts,
   new local products and queued messages; after ON verify their delivery and
   restored freshness separately from Unit Online.
-- Controller ignition off/on is a separate test. In the current implementation the Presenter-owned
-  recovery worker can restore the same provisioned Unit/Node attachment after
-  a new boot, with external network ON, unchanged identities and no conflicting
+- After controller ignition off/on, Presenter can restore the same provisioned
+  Unit/Node attachment after a new boot, with external network ON, unchanged
+  identities and no conflicting
   operation. It does not provision again or start Autopilot; it ends Safe Stop.
   It will not override an explicit blocked gate or blindly retry uncertainty.
-- This does not implement automatic host laptop sleep/wake recovery, and does
-  not qualify cold ignition with external network OFF or power loss with a
-  nonempty outbox. Do not substitute a raw VM stop for an operator pause.
+- Stop the demo before putting the host Mac to sleep; host sleep/wake recovery
+  is not automatic. Keep the external network ON for controller restart.
+  Do not substitute a raw VM stop or forced power loss for an operator pause.
 
-## Finish and retention
+## Stop or delete the Test
 
-Finish requires confirmation of the exact current Test. It retires its Cloud
-identity, working VM and run-scoped backend data; uncertainty must be reconciled
+**Delete Test & start over** requires confirmation of the exact current Test.
+It retires its Cloud identity, working VM and run-scoped backend data;
+uncertainty must be reconciled
 before retry or deletion. It preserves Production, Factory images, published
-releases and release-number continuity. Git stores source and compact evidence,
-not provisioned disks, credentials or live model state.
+releases and release-number continuity.
 
-The current runtime has separate API and visible UI qualification, and the
-native Setup first-use check passed with newly issued certificates for existing
-accounts. The ordinary **Stop demo and keep data** / **Start controller** path
-also passed the visible UI campaign. Opening Presenter does not automatically
-power on a stopped Test: choose **Demo controls → Runtime → Start controller**,
-then follow simulator/connection readiness. This is distinct from Create,
-reprovisioning and host sleep/wake; broader recovery matrices remain separate.
+For a non-destructive session stop, choose **Demo controls → Runtime → Stop demo
+and keep data**. Opening Presenter later does not automatically power on the
+stopped Test: choose **Start controller**, then follow simulator/connection
+readiness. Do not use Create or reprovision merely to resume the retained Test.
 
-After each check, stop demo-owned processes/containers through their owners,
-close the windows and verify no owned listeners remain. Keep Docker Engine
-and unrelated workloads running. A temporary stop preserves data; Finish does
-not. No destructive or Cloud action is implicit in reading this guide.
+At the end of a session, use the normal stop action and close the windows.
+Keep Docker Engine and unrelated workloads running. Stopping preserves data;
+deleting the Test does not.

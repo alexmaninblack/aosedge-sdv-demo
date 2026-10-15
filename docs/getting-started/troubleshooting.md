@@ -4,7 +4,7 @@
 # Troubleshooting installation and builds
 
 Start with the exact [release](release-status.md), failed action and message.
-Preserve the Test and partial evidence. Do not rebuild the simulator, reinstall
+Preserve the Test and error details. Do not rebuild the simulator, reinstall
 everything or delete state as the first response.
 
 ## Installation and first use
@@ -31,8 +31,8 @@ Follow the [installation steps](installed-preview-cloud-first-use.md) and
   Publish versions sequentially, not all at once.
 - **Unavailable or Monitoring:** inspect local input/advisory readiness
   separately from backend receipt. Missing data alone is not a VDP version
-  mismatch. Load-sensitive readiness and the recorded VDP timeout remain
-  deferred; do not lower thresholds to hide them.
+  mismatch. Follow the displayed missing-input or stale-data reason; do not
+  change model thresholds to force a Ready indication.
 - **No backend data with external network OFF:** expected delivery loss does
   not prove local services stopped. Check local products, then queued delivery
   after ON.
@@ -48,18 +48,18 @@ Follow the [installation steps](installed-preview-cloud-first-use.md) and
 | Root or producer commit missing | Obtain the exact source-handoff revision. An old tag or latest branch is not an implicit substitute. |
 | A command/variable is missing from a fresh Terminal | Complete [macOS preparation](macos-developer-tools.md) and keep that session open. Restore declared values after a terminal restart; do not guess tool or returned artifact paths. |
 | Node/npm version differs | Use exact Node 26.0.0 / npm 11.12.1 from the official ARM64 archive, then recheck PATH. A floating Homebrew Node is not the declared toolchain. |
-| Drive bindings/access missing | Obtain both approved binding files and authorize Google CLI separately. No credentials in Git. |
+| Public input catalog or archive unavailable | Check internet access and the reported provider error. Ordinary builds need no Google login or binding JSON files; contact the release owner if a public link is unavailable. |
 | Interrupted transfer | Inspect the operation; reconcile its remote ID or reuse verified ranges/cache. Never create a duplicate or retry blindly. |
 | Checksum/metadata mismatch | Preserve and investigate the exact object. Do not promote it or accept a new expected hash from the download itself. |
-| Wrong/missing SSD | Reconnect the original bound volume. No fallback to the internal disk. |
-| Docker disk is internal or remote | Correct this host prerequisite through normal maintenance before building. `lab` does not relocate Docker. |
+| Wrong/missing build volume | Reconnect the original selected volume. The launcher does not switch to another disk automatically. |
+| Docker storage fails capacity or compatibility checks | Use the reported Docker backing-disk requirement. Project and Docker storage may be separate local volumes; an internal disk is not itself an error. The build does not relocate Docker. |
 | Dirty checkout or foreign output | Preserve it. Select an empty owned workspace or resolve the exact change; do not reset another checkout. |
 | SSD device number changed | Use explicit `lab revalidate` only for supported completed input groups. It does not adopt changed content or repair all receipt types. |
 | A build step fails | Keep earlier outputs, diagnose the first failing owner and repeat the same chain. Gateway resume requires its explicit inspected path. |
-| Built but readiness is false | `CHAIN_BUILT_NOT_QUALIFIED` is expected before qualification. Source-ready, input-ready and qualified are separate. |
+| Build ends with `CHAIN_BUILT_NOT_QUALIFIED` | The DMG was built; it has not been installed or published by this command. Use the reported output path and follow the installation guide. |
 
 Use the [developer guide](reproduce-demo.md) and
-[recovery reference](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/development/release-reproduction-r2.md#storage-and-recovery).
+[launcher recovery reference](unified-macos-launcher.md#repeat-and-storage-behavior).
 Do not repeat a full transfer merely to refresh status.
 
 ## Report an issue and stop safely
@@ -71,6 +71,6 @@ outside Git; share only the necessary sanitized evidence.
 
 Stop demo-owned processes through their owners and close their windows after
 testing. Preserve Docker Engine and unrelated workloads. Stopping preserves
-state; **Finish demo** irreversibly retires the selected Test and is not a
-generic cleanup button. Eject storage only after all consumers release it,
+state; **Delete Test & start over** irreversibly retires the selected Test and
+is not a generic cleanup button. Eject storage only after all consumers release it,
 including any separately managed shared Docker disk.

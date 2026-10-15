@@ -66,12 +66,11 @@ build plan identify the exact artifact/producer sources, which may differ.
 
 ## Read deeper when needed
 
-- [Implemented architecture and evidence](current-implementation.md)
+- [Implemented architecture](current-implementation.md)
 - [High-Level Architecture 1.8](high-level-architecture.md)
 - [Interface contracts](../../contracts/README.md)
 - [Developer build](../getting-started/reproduce-demo.md)
 - [Contributing](../../CONTRIBUTING.md)
 
-Specialist design documents may use the maintainer's sibling-workspace links.
-The initial operator/developer routes and this map work from the root repository
-alone. Historical research and dated tests remain evidence, not setup steps.
+The initial operator/developer guides and this map work from the root repository
+alone. Use the component references above when changing an individual component.

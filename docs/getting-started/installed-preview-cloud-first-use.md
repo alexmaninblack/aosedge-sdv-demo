@@ -3,198 +3,136 @@
 
 # Install the demo and connect Cloud access
 
-- Status: current engineering-preview instructions; acceptance is release-specific
-- Version: 3.2
+- Status: current user guide
+- Version: 3.3
 - Prepared: 2026-10-11
 - Updated: 2026-10-15
 - Owner: Demo Solution Team
-- Implementation: integrated Setup; exact media identity follows the launcher catalog
 
-First [select the exact release and obtain access](release-status.md), then
-use its complete approved DMG. The selected integrated Setup follows the
-[authorized scenario](../planning/active/work-packets/integrated-setup-scenario.md).
-The [current release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
-records anonymous delivery and a separate native first-use check on M1:
-empty certificate fields, newly issued OEM/SP certificates, Production
-connection and Presenter opening. This used existing authorized Cloud accounts;
-it did not qualify new-account registration or every clean-macOS permission path.
-Earlier Kit028 / Setup042 results remain in the
-[qualification baseline](../qualification/current-baseline.md).
-For older Setup042 media use its original guide rather than expecting the new UI.
-No source checkout,
+Use the [launcher in README](../../README.md#install-and-run) to obtain and
+open the complete DMG, then follow the steps below. No source checkout,
 Unreal Editor or local compilation is required.
 
 ## Before opening Setup
 
-Start with [README route A](../../README.md#install-and-run): host checks,
-Docker's separate first-run setup, approved DMG download, size/checksum
-comparison and opening the verified file. No source clone is needed for this
-route. Then follow the numbered actions below in order and wait for each result.
-Follow the selected release's evidence and remaining limits; a documentation
-update alone does not qualify another package or host.
-
-Use Apple silicon with macOS 26 or later. The recorded clean-host campaign
-used an M1 with 16 GiB RAM and an internal disk; it does not establish a
-universal performance minimum. Preflight checks a complete payload copy plus
-a **90 GiB engineering free-space reserve**. Let Setup report the selected
-kit's logical size; a compressed DMG's size is not its installed footprint.
+Use Apple silicon with macOS 26 or later. Setup checks the space needed for
+the complete payload plus a **90 GiB free-space reserve**. A compressed DMG's
+size is not its installed footprint.
 
 Install Docker Desktop separately and complete its first-run/license prompts.
 The local Linux/arm64 engine must be available through `desktop-linux`.
-If it is already running, leave it running: opening/closing its dashboard is
-not preparation, and restarting the engine is not a normal demo step.
-Setup does not install, launch or stop Docker Engine.
+If it is already running, leave it running: you do not need to open its dashboard
+or restart it. Setup does not install, launch or stop Docker Engine.
 
 Prepare access to the intended **Aos Cloud environment**: one vehicle
-manufacturer (**OEM**) and one associated **Service Provider (SP)**, with Brake
-and Tire remaining separate services. Setup supports **Production**
-(`aoscloud.io`) and **Staging** (`aws-stage.epmp-aos.projects.epam.com`). Existing
-certificates determine the domain; for new certificates select the environment
-before requesting issuance. The current first-use evidence used Production.
-No working credentials, account sessions, provisioned VM or private run state
-are included in the media.
+manufacturer (**OEM**) and one associated **Service Provider (SP)**, used for
+the separate Brake and Tire services. Setup supports **Production**
+(`aoscloud.io`) and **Staging** (`aws-stage.epmp-aos.projects.epam.com`).
+Existing certificates determine the environment; for new certificates, select
+it before requesting issuance. Credentials are not included in the DMG.
+See [release and access information](release-status.md).
 
-The application is locally Apple Development signed. It is not notarized or
-approved for public distribution. Follow ordinary macOS security/consent;
-do not disable Gatekeeper or grant broad disk permissions as a workaround.
+The application is Apple Development signed, not notarized. Follow normal
+macOS security prompts; do not disable Gatekeeper or grant broad disk
+permissions to bypass a refusal.
 
 ## Install and select local data
 
-1. Mount the complete DMG and open **AosEdge SDV Lab Setup**. Its fixed sibling
-   Runtime Kit is the only source; Setup never searches for a substitute.
-2. Choose **Install SDV Lab**. No kit, package-store or private-data questions
-   are required. Defaults are `~/AosEdge SDV Packages` and `~/SDV-Lab-Data`.
-   Advanced settings can change program storage, not silently move existing data.
-3. Wait for the named checks, verified copy, local selection, backend-image
-   preparation and signed launcher installation. Copy progress measures actual
-   verified bytes; other phases show an indeterminate indicator. Missing Docker
-   or insufficient space stops before copying and gives a specific next action.
-4. Continue to **Connect to Aos Cloud**. Installed files and imported images
-   are not a created vehicle, running backend or provisioned Unit.
+1. Mount the complete DMG and open **AosEdge SDV Lab Setup**. Keep its matching
+   Runtime Kit beside Setup in the mounted image.
+2. Choose **Install SDV Lab**. Defaults are `~/AosEdge SDV Packages` for
+   programs and `~/SDV-Lab-Data` for private demo data. No separate kit or
+   package-store selection is required. Advanced settings can change program
+   storage; they do not move existing data.
+3. Wait for the checks, verified copy, backend-image preparation and launcher
+   installation. Missing Docker or insufficient space stops before copying
+   and gives a next action.
+4. Continue to **Connect to Aos Cloud**.
 
-Do not edit installed program files, add Python caches or use the private
-runtime interpreter as a development environment. Version selection, runtime
-leases and inventory checks protect the immutable package. A failed or
-interrupted operation preserves existing data and evidence; it is not
-permission to delete an unknown folder or lower verification requirements.
+Installed programs and imported images do not yet create a controller or a
+Cloud Unit. Do not modify installed program files or use their private Python
+interpreter for development. If an operation fails, keep its message and
+existing data and use [troubleshooting](troubleshooting.md).
 
 ## Set up Cloud access
 
-Choose **Connect to Aos Cloud…** after local preparation. Two routes exist:
+Choose **Connect to Aos Cloud…** after installation:
 
-- **Existing certificates:** select the intended OEM and associated SP PKCS#12
-  files, then **Connect**. Setup authenticates both roles, their association and
-  delivery permissions before storing references. It stores no copy of the working
-  private keys. Files must satisfy the private ownership/permissions contract.
-- **New certificates:** choose **Get new certificates…**, select Staging or
-  Production, use the official registration/sign-in flow and enter the OEM and
-  associated SP tokens in secure fields. Choose **Get certificates** to receive
-  both and connect them. New enrollment uses the package-signing-compatible
-  RSA path. Register accounts/obtain invitations through the official Cloud
-  process; Setup is not an automatic account-registration or mailbox client.
+- **Existing certificates:** select the OEM and its associated SP PKCS#12
+  files, then choose **Connect**. Setup checks both roles, their association
+  and delivery permissions. It saves file references, not copies of your
+  existing private keys. Keep those files in an owner-only private location.
+- **New certificates:** choose **Get new certificates…**, select Production or
+  Staging, follow the official registration/sign-in flow and enter the OEM
+  and associated SP issuance tokens in the secure fields. Choose
+  **Get certificates** to receive and connect the pair. Account registration
+  and invitations use the official Cloud process; Setup does not register
+  accounts or read your mailbox automatically.
 
-For response loss, use **Details and enrollment recovery…** and the supported
-**Inspect saved attempt** / recovery
-path. An uncertain token submission is not replayed automatically. Keep tokens,
-passwords and private keys out of screenshots, logs and reports. Never replace
-working access merely to repeat a first-use test.
+If the response to a certificate request is lost, open
+**Details and enrollment recovery… → Inspect saved attempt**. Do not submit
+the same one-time token again without inspecting the saved attempt. Keep
+tokens, passwords and private keys out of screenshots and logs.
 
-A successful Connect establishes the observed role/domain/association and
-required permissions/prerequisites. Missing objects and an occupied Test set
-are not authentication failures. Connect can explicitly prepare only the fixed
-absent model and Test set through the existing owner. It never provisions a Unit,
-publishes a package or deletes a conflicting object. Reopening checks are read-only.
+Connect checks access and prerequisites. Missing Cloud objects and an occupied
+Test are different from authentication failure. Connect can prepare the fixed
+missing model and Test set, but does not provision a Unit, publish software
+or delete conflicting objects. Reopening performs read-only access checks.
 
-For a retained Test missing SP access, keep the same OEM reference and select
-the associated SP, then Connect. The bounded repair preserves the Unit, VDP,
-journal, history and ledger; it cannot change the OEM or Cloud environment.
+If a retained Test lacks SP access, keep its OEM selection, choose the
+associated SP and Connect. This preserves the Test, its controller and data;
+it does not switch the Test to another OEM or Cloud environment.
 
-For diagnostic reference reuse, expand **Details and existing references…**,
-inspect/save the pair through the low-level controls, then choose **Review existing
-Brake / Tire assignments…**, **Read existing objects**, and the exact intended
-reference. Do not pick by a similar display name. Missing objects are handled
-by the ordinary explicit Demo Control preparation flow, not guessed or silently
-created by the read-only selector.
+Use **Details and existing references…** only when you need to inspect or
+reuse existing Cloud objects. Under **Review existing Brake / Tire
+assignments…**, read the objects and choose the exact intended reference,
+not just a similar display name.
 
 <a id="open-presenter-and-create-the-test"></a>
 
 ## Open Presenter and create the virtual controller
 
-Authorize the signed Setup application for **Accessibility** when needed for
-window placement/inspection. A removable-volume consent is a separate macOS
-permission; it is not needed for the internal-disk campaign. Neither Full Disk
-Access nor screen recording is a prerequisite for installation/placement.
-An older app's permission entry may not authorize this executable.
+Allow **Accessibility** for the signed Setup application when requested for
+window placement. Using removable storage may require separate volume access;
+an internal-disk installation does not need that permission. Installation and
+window placement do not require Full Disk Access or screen recording.
 
-Choose **Open SDV Lab**. It rechecks local installation/backend images and saved
-Cloud access, then opens the selected instance's Presenter through the
-existing Demo Control owner. It does not start Docker, create/power on a VM,
-start CARLA, provision, publish, reset models or enable Autopilot. A successful
-Open is Presenter availability, not full demo readiness.
+Choose **Open SDV Lab**. It checks the installed files, backend images and saved
+Cloud access, then opens **Presenter**, the operator interface. This does not
+start Docker, create or power on a controller, start CARLA or publish software.
 
-Continue with the [current operator workflow](../operations/current-demo-workflow.md):
-Create Controller → detached simulator → VDP V1 publication/provisioning →
-same-Unit attachment → Safe Stop FOTA → serial service/profile evolution.
-Create Controller uses the prepared Linux/AosEdge base image (**Factory image**)
-to create an ARM64 virtual controller. The **Test** is this demo run and its
-associated Cloud identity, VM and data; it is not another simulator.
-Use the ordinary secure **VM access / Use once** dialog when Create requests
-the fresh VM's password. Do not embed that password in a configuration or guide.
+Continue with the [operator workflow](../operations/current-demo-workflow.md):
+Create Controller → simulator → VDP V1 publication and provisioning →
+connection to the same Unit → Safe Stop FOTA → service evolution.
+**Create Controller** uses the prepared Linux/AosEdge base (**Factory image**)
+to create the ARM64 virtual controller. A **Test** is this demo run and its
+associated Cloud identity, VM and data, not another simulator.
 
-The linked workflow is the next part of this operator route, not a requirement
-to read the architecture or engineering history. Start with its numbered
-sequence and keep each version's installation/check ahead of the next upload.
-If a step stops, use [troubleshooting](troubleshooting.md).
-
-Use a display configuration that fits all three windows. The M1 campaign
-observed the correct Presenter/CARLA/Driving Control layout; this does not
-qualify every display scale, monitor topology or lock/unlock transition.
+If Create requests VM access, enter the VM password in the secure
+**VM access / Use once** dialog. Use a display configuration that fits
+Presenter, CARLA and Driving Control. If a step stops, follow its message
+and [troubleshooting](troubleshooting.md).
 
 ## Returning, stopping and removing
 
 Open **AosEdge SDV Lab** from your user Applications folder and choose
-**Open SDV Lab**; the DMG/source kit is not needed. The installed selection and
-saved access are revalidated, not inferred from a cached Ready indicator.
-Do not repeat installation or reselect a version over a retained vehicle run.
-Opening Presenter does **not** automatically power on a stopped retained
-controller. In **Demo controls → Runtime**, choose **Start controller** and
-follow simulator/connection readiness. This starts the existing Test and
-backends without Create, reprovisioning or release publication; Autopilot stays off.
+**Open SDV Lab**. The DMG is no longer needed. Do not reinstall over a retained
+Test just to resume it.
 
-When a check ends, stop the demo-owned runtime through its normal owners and
-close the windows. Verify no owned processes/listeners remain. Preserve Docker
-Engine and unrelated processes. A stop preserves Test identity/state;
-**Finish demo** is the distinct destructive retirement of the exact Test and
-its run data. Package removal is not vehicle retirement or Cloud rollback.
+Opening Presenter does not power on a stopped controller. In
+**Demo controls → Runtime**, choose **Start controller**, then follow the
+simulator and connection prompts. This resumes the existing Test without
+creating or provisioning it again; Autopilot stays off.
 
-In **Demo controls → Runtime**, **Stop demo and keep data** stops the owned
-simulator, controller and backends while preserving the Test. **Start controller**
-is the ordinary return path. In contrast, **Close Presenter (keep demo running)**
-only closes its native window; disappearing windows do not mean storage is safe
-to eject. The current visible UI campaign checked ordinary Stop/Start; that
-does not qualify every interruption, macOS sleep/wake or recovery case.
+Use **Demo controls → Runtime → Stop demo and keep data** to stop the
+simulator, controller and backends while preserving the Test. Leave Docker
+Engine and unrelated workloads running. **Close Presenter (keep demo running)**
+closes only its window, not the demo.
 
-For external storage, only disconnect after owned consumers are stopped and
-the volume is safely ejected. External-SSD and host sleep/wake qualification
-are not part of the current M1 internal-disk campaign.
+**Delete Test & start over** is a separate destructive action: it removes the
+selected Test's Cloud identity, working VM and run data. Removing a program
+package is not the same as deleting its Test.
 
-## What is still being qualified
-
-Use the [current qualification baseline](../qualification/current-baseline.md)
-and [M1 campaign report](../qualification/m1-clean-install-e2e-2026-10-14.md)
-for exact package identities and test scope. The latest recorded runtime
-campaign passed 118 API checks and 42 visible browser UI checks, including
-moving QM service updates, offline recovery and controller ignition. A separate
-native Setup first-use check passed issuance/connection with existing accounts;
-the public-download consumer reused that installed certificate instance.
-
-These proofs do not close new-company/account registration, every clean-macOS
-permission path, every installation/interruption/recovery case,
-Developer ID/notarization, host sleep/wake or power loss with a nonempty outbox.
-Load-sensitive readiness and `VDP-TIMEOUT-01` remain deferred. Earlier Kit028
-records retain their original passed/open gates; they do not select today's DMG.
-
-See the [native Setup contract](../../contracts/distribution-installation/native-setup.md)
-for action boundaries and the [active plan](../planning/active/installable-distribution-and-reproducibility.md)
-for outstanding work. Earlier Kit/Setup reports retain their original dates
-and are not instructions to reinstall retired candidates.
+If using external storage, stop all consumers and safely eject the volume
+before disconnecting it. Stop the demo before putting the host Mac to sleep;
+do not rely on automatic host sleep/wake recovery.

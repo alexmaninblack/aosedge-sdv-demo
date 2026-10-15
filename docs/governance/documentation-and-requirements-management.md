@@ -4,7 +4,7 @@
 # Documentation and Requirements Management
 
 - Status: Accepted
-- Version: 1.2
+- Version: 1.3
 - Prepared: 2026-10-09
 - Updated: 2026-10-15
 - Owner: System Architecture
@@ -30,6 +30,30 @@ database is introduced at the current project scale.
 
 A downstream document may summarize an upstream decision, but it must link to
 the canonical definition and must not reproduce a second normative copy.
+
+## Separate user instructions from engineering records
+
+The root README, getting-started guides, product overview and operator workflow
+serve people installing, building or using the lab. They explain prerequisites,
+actions, expected results and recovery. Keep concrete user-impacting limits,
+including signing/security prompts, storage requirements, required accounts,
+unsupported actions and data-loss warnings.
+
+Do not embed test counts, campaign diaries, historical kit/build numbers,
+internal defect IDs, qualification checklists or release-owner backlog in those
+guides. A failed or untested engineering case is not automatically another
+user prerequisite. Where a limitation affects the user's action, state the
+practical restriction and next step, not its testing history.
+
+Keep dated evidence under `docs/qualification`, unfinished work under
+`docs/planning`, and publication/private-input maintenance under
+`docs/development`. The documentation map labels these as engineering reference;
+users do not need to read them to complete an installation. Removing internal
+status from a guide does not close a test gate or change release status.
+
+The documentation gate checks user guides for internal-status sections,
+retired kit references and links into test/backlog records. Editorial review
+must also check paragraphs that an automated pattern cannot classify.
 
 ## Human-Readable References
 

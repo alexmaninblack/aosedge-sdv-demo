@@ -109,10 +109,10 @@ publishes software to Cloud.
 
 ## Releases and access
 
-See [release selection](docs/getting-started/release-status.md) for available
-versions, validation status and access. Versions, checksums and artifact
-identities belong to release records, not manually copied README constants.
-An engineering candidate is not a qualified public release.
+See [release selection](docs/getting-started/release-status.md) for
+package and access information. The launcher reads the selected version and
+checksums automatically; you do not need to choose a release JSON file.
+The current package is an engineering preview.
 
 The developer route has owner-authorized public input downloads and needs no
 Google login. Route A downloads the selected engineering DMG from its reviewed
@@ -204,7 +204,7 @@ work stays in `sdv/.tmp` and is cleaned by its owner. Sources, verified caches,
 results and compact diagnostic logs remain reusable after interruption.
 
 See the optional [preparation reference](docs/getting-started/macos-developer-tools.md)
-or [manual build reference](docs/getting-started/reproduce-demo.md) for diagnosis,
+or [developer build guide](docs/getting-started/reproduce-demo.md) for diagnosis,
 not another required checklist.
 
 <a id="heavy-dependencies"></a>
@@ -234,7 +234,6 @@ complete. See the [specialist guide](docs/getting-started/full-source-build.md).
 - [Troubleshooting](docs/getting-started/troubleshooting.md)
 - [Documentation map](docs/README.md)
 - [Implemented architecture](docs/architecture/current-implementation.md)
-- [Qualification record](docs/qualification/current-baseline.md)
 - [Contributing](CONTRIBUTING.md)
 
 This repository owns integration, orchestration, contracts and system

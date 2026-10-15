@@ -2,11 +2,10 @@
 
 ## Current Presenter
 
-The operator-experience changes are integrated into main and the selected
-engineering preview. The [current baseline](../../docs/qualification/current-baseline.md)
-and [release report](../../docs/qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
-record exact source/media and current API/visible UI/native Setup evidence.
-A source checkout or HTML mockup alone is not qualification.
+This package implements the SDV Lab operator interface. For installation and
+use, start with the [Setup guide](../../docs/getting-started/installed-preview-cloud-first-use.md)
+and [operator workflow](../../docs/operations/current-demo-workflow.md).
+The sections below describe the component for contributors.
 
 The accepted visual/interaction reference is [Studio 2.8](../../docs/demo/mockups/aosedge-demo-interaction-mockup-2-8.html), qualified by the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 The original mockup is unchanged. Live state comes from existing Demo Control operations, not mockup timers.
@@ -64,9 +63,9 @@ simulation path is not used by Presenter actions.
   introduced by tab entry, Refresh, details or monitoring. Resources preserve
   node/service/Subject/instance/partition identity. CPU is DMIPS; memory/disk and traffic accounting are bytes, formatted
   without inventing a rate. Missing units/values are not guessed. Missing/stale is not zero, absent, Offline or success.
-- Team backends use the existing same-origin Demo Control backend read. Products are current-Test scoped and versioned. Real vehicle-derived
-  products/advisories are recorded in the current M1 runtime campaign; historical
-  synthetic .33 receipts and fixture mode are separate, never live evidence.
+- Team backends use the existing same-origin Demo Control backend read.
+  Products are current-Test scoped and versioned; fixture data is never
+  substituted for a live result.
 - Native telemetry observes vehicle data only. It reads the existing advisory
   contract, rejects unknown values, and does not consume synthetic backend data.
 - Routine local actions require one deliberate click. Publication, assignment,
@@ -133,12 +132,7 @@ to stop a busy or uncertain server. `workspace close` closes only Presenter.
 Fixtures never submit external actions and are not live qualification evidence.
 Without a fixture selector, an unavailable local backend stays unavailable.
 
-See the [delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md)
-and [implementation receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/studio-2-8-implementation-2026-09-13.md).
-The [current baseline](../../docs/qualification/current-baseline.md) separates
-98 passed installed scripted steps from the incomplete native journey. Reset
-Driver Advisory is on each backend's main card; independent result history is
-preserved. Cloud resource history, installed-profile mapping and backend
-function observation have separate authorities. Open demo opens Presenter,
-not a stopped controller; this branch adds explicit Start controller through
-the existing Test VM/backend owners, without automatic driving.
+Use the [current baseline](../../docs/qualification/current-baseline.md) for
+release-specific test results and the
+[release campaign](../../docs/development/release-campaign.md) for publication.
+Neither belongs to the operator's installation checklist.

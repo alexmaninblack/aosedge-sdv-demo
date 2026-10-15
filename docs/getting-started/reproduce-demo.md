@@ -1,230 +1,102 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Developer build reference
+# Build the demo and installer
 
-The normal route is the **single downloaded launcher in
-[README option 2 / B](../../README.md#developer-build)**. It handles
-preparation, root/component checkouts, storage checks, verified input acquisition
-and the existing developer DMG chain automatically. You do not need the manual
-commands below after running it. Repeat the same launcher to continue after a
-resolved interruption; it keeps the selected root commit and delegates reuse
-to the existing owners. Public input delivery is available; build qualification
-and exact producer/storage gates remain separate. A wrapper does not qualify a build.
+Use **2 / B** in the [single README launcher](../../README.md#developer-build).
+The script prepares the host, obtains the sources and dependencies, checks
+storage, and builds a signed DMG. You do not need to run another set of clone
+or build commands afterward.
 
-This page preserves the older source-Factory candidate's individual commands
-for engineering diagnosis and historical manual reproduction only. They are
-not the current option B recipe. Do not run them concurrently with the launcher.
-
-This developer route builds project components and a matching installer using
-the verified prebuilt CARLA simulator, native support and ARM64 virtual
-controller image (**Factory image**, the clean Linux/AosEdge base).
-It does not compile Unreal/CARLA or require an old installed kit. To run
-a prebuilt package, use the [installation guide](installed-preview-cloud-first-use.md).
-
-Current option B resolves the reviewed producer plan through
-[`workspace/current-developer-build.json`](../../workspace/current-developer-build.json)
-and obtains inputs automatically from the pinned public catalog. The selected
-plan can reuse older binary-input definitions while selecting newer build tools;
-it is independent of the operator DMG selected for option A. Read
-[release selection](release-status.md) for the current evidence and limitations.
-
-The explicit build commands below retain the `1.2.0-rc.1` source-Factory plan
-and checkpoints. Its warm-build evidence is not a fresh-host guarantee or the
-current published operator release. Use option B for the current supported
-automation rather than substituting newer pins into these historical commands.
+This route builds the demo's project components and installer. It reuses the
+prebuilt CARLA simulator, native support and **Factory image**, the clean
+Linux/AosEdge base for the ARM64 virtual controller. It does not rebuild
+Unreal/CARLA or the controller image. For those tools, see the
+[specialist route](full-source-build.md). To run the demo without compiling,
+use [route A](installed-preview-cloud-first-use.md).
 
 ## 1 Prepare the host and access
 
-For the optional manual route, download the launcher from README and run it in
-preparation-only mode, then load the generated handoff:
-
-```sh
-/bin/bash "$HOME/Downloads/aosedge-sdv-lab.sh" --route B --prepare-only
-source "$HOME/Library/Application Support/AosEdge SDV Lab/Developer/environment.sh"
-```
-
-Continue only after `READY FOR SOURCE PREPARATION` and `Developer environment
-loaded`. This checks tools/versions, storage, public
-input availability and signing selection, and supplies all `SDV_*` variables below. No long
-shell blocks or clone are required for preparation. The optional
-[preparation reference](macos-developer-tools.md) covers diagnostics and recovery.
-Fresh-host developer reproduction remains a separate gate; offline wizard
-fixtures are not evidence of a completed host setup or build on a new machine.
-The M1 operator installation has its own release-specific evidence. Stop after any error.
+Have these prerequisites available; the launcher checks versions and explains
+any required action before continuing:
 
 | Requirement | Purpose |
 | --- | --- |
-| Apple Silicon, macOS 26, Xcode macOS SDK and Swift | Native UI, Gateway and packaging |
-| Python 3.10 or later for `lab`; ARM64 Python 3.12 with `packaging` for build owners | Resolver and isolated Cloud worker assembly |
-| Node 26.0.0 and npm 11.12.1 | Pinned UI and backend tooling |
-| CMake, Git, Docker CLI and running local Docker Desktop | Gateway and Linux ARM64 builds |
-| Writable APFS workspace with sufficient capacity | Current option B supports internal or external local storage and checks Docker's actual backing disk separately; the historical commands below retain their frozen external-storage policy |
-| Published public release catalog and input links | Automatic input selection, then acquisition of five locked archives; no Google account or CLI |
-| Authorized Apple Development signing identity in Keychain | Explicit Setup signing, not notarized distribution |
+| Apple Silicon, macOS 26+, Xcode with macOS SDK and Swift | Native applications, Gateway and packaging |
+| Git, CMake/CTest and native Python 3.12 | Source checkout and build tools |
+| Node and npm versions selected by the launcher | UI and backend tooling; installed in the workspace when needed |
+| Docker CLI and a running local Linux ARM64 Docker Engine | Backend images and service builds |
+| Existing writable local APFS parent folder | Sources, downloads, caches, temporary work and results |
+| Authorized Apple Development identity in Keychain | Signing the Setup application |
 
-Host tools are prerequisites, not installed by `lab`. Declare their paths;
-do not use the installed demo's private Python as a development interpreter.
-Automatically prepared public selections contain download URLs, not
-credentials; checked-in locks supply sizes and hashes. OEM/SP certificates are
-needed later for the installed demo, not these builds.
+The parent folder may be on the internal disk or an external SSD. Leave room
+for the complete build, not just the downloaded archives: the launcher checks
+the workspace and Docker's actual backing storage separately before large
+stages. It does not move Docker storage or restart a running Engine.
 
-The table and exact commands below reproduce the existing candidate, whose
-frozen producers retain the external-only layout. New scripts accept internal
-or external APFS workspaces and separately check the active Docker disk, but
-those changes do not rewrite this historical candidate's producer plan.
-The current launcher selects reviewed storage-aware successor owners. Do not
-edit historical pins or infer an unmeasured cold/internal-disk build peak.
+No Google account, input-binding JSON files, Cloud certificates or old
+installed kit are needed for this build. Xcode, Homebrew and Docker may
+require their own first-run, license or system prompts. Do not use the
+installed demo's private Python interpreter for development.
 
-Do not relocate Docker's disk or restart it as a build side effect. No live
-Test, backend container, VM or simulator is started by this route.
+For checks and recovery details, use the
+[macOS preparation reference](macos-developer-tools.md).
 
 ## 2 Select the root revision and storage
 
-Clone only the product repository. If the automatic launcher already created
-this checkout, do not run another clone; return to that launcher for normal
-continuation. These commands are the separate manual route.
+Choose **Build the demo and installer**, select an existing APFS parent and
+follow the preparation prompts. Confirm the workflow and signing identity.
 
-```sh
-git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
-cd "$SDV_ROOT/source"
-git rev-parse HEAD
-"$SDV_PYTHON" -B scripts/developer_catalog.py --check-source "$SDV_PREPARED_SOURCE"
-```
+The launcher records the integration repository's `main` revision at the
+start and obtains the component revisions from its selected build plan.
+It checks the compatible public dependency catalog automatically; do not
+collect the component repositories or select input JSON files by hand.
 
-Expect `Source compatibility: PASS`. A mismatch means stop and prepare matching
-release inputs before continuing; no archive is downloaded by this check.
-
-The current walkthrough intentionally uses root `main`; record the printed
-revision. It is not a frozen release tag. The build plan below still selects
-historical exact component and producer revisions, not all current component
-mains. Adopting newer owners requires a reviewed successor plan, not editing
-historical pins. For exact historical reproduction, use the root checkpoint in
-[release selection](release-status.md). Do not collect components manually.
-Source and frozen producer revisions are published; a public
-clone alone does not supply the binary inputs or host tools.
-
-Run from that clean root checkout. Host preparation already defined the selected
-volume, parent directories and scratch (at most 29 UTF-8 bytes). `lab` creates and
-owns its own workspaces; do not populate them by hand.
-
-```sh
-./lab plan --profile developer \
-  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
-./lab inputs plan
-./lab space --storage "$SDV_ROOT/build" \
-  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json \
-  --docker "$SDV_DOCKER"
-```
-
-Inspect gates before acquisition. `qualified: false` is intentional: planning
-is not release acceptance. State binds the volume UUID; a missing/replaced SSD
-causes failure, not fallback to the internal disk.
+The selected volume and root revision are retained for continuation. A
+missing/replaced volume stops the run rather than switching to another disk.
+Existing unowned directories and local source edits are preserved and reported.
 
 ## 3 Prepare sources and binary inputs
 
-```sh
-./lab prepare --profile developer --storage "$SDV_ROOT/build" --sources-only
-./lab verify --storage "$SDV_ROOT/build" --sources-only
-./lab inputs prepare --storage "$SDV_ROOT/inputs" \
-  --binding "$SDV_BUILD_BINDING" \
-  --simulation-binding "$SDV_SIM_BINDING"
-./lab inputs verify --storage "$SDV_ROOT/inputs" > "$SDV_ROOT/input-paths.json"
-```
+The launcher checks source and producer compatibility, then downloads and
+verifies the pinned inputs. Large downloads show the artifact name and
+progress. Compatible verified downloads and caches are reused.
 
-Both selections were prepared automatically; the public route needs no Google
-account. Maintainers using `--private-inputs` add the explicit account/CLI
-options described in the [preparation reference](macos-developer-tools.md#private-maintainer-route).
-Never paste tokens into commands, logs or source files. Repeats reuse verified
-inputs; no Google access is needed for offline verification. The last
-command writes only the input verification result, not progress lines or tokens.
+The inputs include CARLA and its Python API, host support, Gateway SDK,
+unsigned vehicle/VM bases and the Factory image. These reusable dependencies
+are not rebuilt just because Presenter or a service changed.
 
-Expect seven source roles and `BUILD_INPUTS_READY_NOT_PROFILE_QUALIFIED`.
-Input preparation reports `kitInputs`, `gatewaySdk` and `factoryInputs`.
-Read those three paths from the verification result, without guessing a
-directory or substituting an installed kit:
-
-```sh
-"$SDV_PYTHON" -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "BUILD_INPUTS_READY_NOT_PROFILE_QUALIFIED"; print(r["status"])' "$SDV_ROOT/input-paths.json"
-SDV_KIT_INPUTS="$("$SDV_PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["kitInputs"])' "$SDV_ROOT/input-paths.json")"
-SDV_GATEWAY_SDK="$("$SDV_PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["gatewaySdk"])' "$SDV_ROOT/input-paths.json")"
-SDV_FACTORY_INPUTS="$("$SDV_PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["factoryInputs"])' "$SDV_ROOT/input-paths.json")"
-```
-
-The five archives contain CARLA/Python API, host support, Gateway SDK, unsigned
-vehicle/VM bases, and the independently built Factory image. CARLA is reused
-across demo releases while its inputs remain unchanged.
+A failed checksum or access check stops the affected stage. Keep the reported
+error and resolve it before rerunning the same launcher; do not supply a new
+expected hash from the download itself.
 
 ## 4 Build the complete candidate
 
-The tool paths and signing fingerprint come from host preparation; there are no
-remaining `/path/to/...` placeholders. This is one ordered command. The first
-run explicitly permits acquisition of missing pinned build dependencies.
-It compiles components and runs their build gates: do not use it for a
-documentation-only review.
+The ordered build compiles UI, Cloud worker, backend images, Brake profiles,
+Tire and Gateway, then assembles the runtime package, signed Setup and DMG.
+The progress display counts completed steps; it does not predict build time.
 
-```sh
-./lab build --target all --storage "$SDV_ROOT/build" \
-  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json \
-  --kit-inputs "$SDV_KIT_INPUTS" \
-  --gateway-sdk "$SDV_GATEWAY_SDK" \
-  --factory-inputs "$SDV_FACTORY_INPUTS" \
-  --input-checkpoint workspace/releases/1.2.0-rc.1-source-factory-packaging.json \
-  --release-checkpoint workspace/releases/1.2.0-rc.1-source-factory-setup.json \
-  --test-tmp-parent "$SDV_TMP" \
-  --python "$SDV_PYTHON" --ui-python /usr/bin/python3 \
-  --node "$SDV_NODE" --npm "$SDV_NPM" --cmake "$SDV_CMAKE" \
-  --docker "$SDV_DOCKER" \
-  --signing-identity "$SDV_SIGNING_IDENTITY" \
-  --prepare-dependencies
-```
-
-The 17 steps build UI, Cloud worker, backend images, Brake V1/V2/V3, Tire V1
-and Gateway, then assemble input groups, application, signed Setup and DMG.
-VDP bases and Factory are pinned binary inputs here. Rebuilding Factory itself
-is a separate [full-source subroute](full-source-build.md).
-
-Success is `CHAIN_BUILT_NOT_QUALIFIED`. Use emitted result paths and receipts
-to locate the DMG, not newest timestamps. Independent manifest and Setup pins
-must match; never replace expected hashes with observed ones to clear a failure.
+On success, the launcher prints **BUILD COMPLETE** and a readable path under
+`<workspace>/output/`. The machine-readable result is
+`CHAIN_BUILT_NOT_QUALIFIED`: the package was built, but this command does not
+install or publish it. Use the reported path rather than searching for the
+newest DMG by timestamp.
 
 ## 5 Repeat or continue after a failure
 
-Repeat the same command to verify/reuse unchanged outputs and continue from
-the failed step. Omit `--prepare-dependencies` when no acquisition is needed.
-Preserve partial output and the first error. Incomplete native output requires
-diagnosis, not blind retries; see [recovery](troubleshooting.md#build-and-acquisition).
+Resolve the first reported error, then rerun the same downloaded launcher
+and choose **2 / B**. It verifies and reuses completed work before continuing.
+It does not silently update the retained root checkout to a newer `main`.
+Sources, verified caches and completed outputs stay available after an
+interruption; owned temporary files are cleaned separately.
 
-```sh
-./lab status --storage "$SDV_ROOT/build"
-```
-
-This inspects saved results without starting a simulator. Source
-readiness, built targets and qualification are distinct. Ordinary full-profile
-`prepare`/`verify` can remain blocked even when the explicit source/input/chain
-route above has passed. Do not erase those gates.
-
-## Space and elapsed time
-
-| Observation or guard | Value | Interpretation |
-| --- | ---: | --- |
-| Five compressed archives | 13.70 GB | Download once or reuse a verified cache |
-| Extracted inputs | 28.34 GB | 31,491 files; not the complete footprint |
-| Chain admission guard | 166 GiB free | 76 GiB allowance plus 90 GiB reserve, not a measured cold peak |
-| Completed source-Factory chain | 17 min 2 sec | Recorded campaign run with reusable inputs, not a cold-host estimate |
-| Unchanged chain repeat | 69 sec | Observed warm result, not a guarantee |
-| Fresh-host build time and peak storage | Not yet measured | R4 must establish these on its declared host |
-
-Large payloads, caches and temporary files stay on the selected build volume
-(the external SSD in this historical campaign). Routine delivery does
-not download a just-uploaded DMG back to the maintainer. The real installation
-consumer verifies its own download.
+Do not start another build in the same workspace while one is active.
+For a deliberate new source selection or a storage change, use the
+[launcher reference](unified-macos-launcher.md) rather than editing saved state.
 
 ## Next steps
 
-Installation is a separate action through the [operator guide](installed-preview-cloud-first-use.md).
-A build does not launch the demo, create a Cloud Unit, publish a service,
-notarize the app or prove clean-machine operation. For changes, follow
-[Contributing](../../CONTRIBUTING.md); pins are not floating branches.
-The [build reference](../development/release-reproduction-r2.md) retains
-per-target options and evidence without making that history a prerequisite.
+Install the resulting DMG through its matching Setup application using the
+[installation guide](installed-preview-cloud-first-use.md). Building does not
+create a Cloud Unit, publish services, launch the simulator or upload the DMG.
+For source changes and release publication, see [Contributing](../../CONTRIBUTING.md).
