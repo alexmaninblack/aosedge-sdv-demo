@@ -16,6 +16,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/distribution'))
 import build_scratch as scratch
+sys.path.insert(0, str(ROOT / 'scripts'))
+import developer_build
 
 
 class ScratchTests(unittest.TestCase):
@@ -104,10 +106,7 @@ class ScratchTests(unittest.TestCase):
                     self.assertNotIn(node.func.attr, ('mkdtemp', 'TemporaryDirectory'), str(path))
 
     def test_active_launcher_selects_committed_scratch_aware_producers(self):
-        tree = ast.parse((ROOT/'scripts/developer_build.py').read_text())
-        selected = next(ast.literal_eval(node.value) for node in tree.body
-            if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'PLAN' for t in node.targets))
-        plan = json.loads((ROOT/selected).read_bytes())
+        plan = json.loads(developer_build.selected_plan(ROOT).read_bytes())
         self.assertEqual(len(plan['steps']), 17)
         self.assertEqual(plan['resultPolicy'], 'seal-developer-results-v1')
         for revision in set(plan['producers'].values()):

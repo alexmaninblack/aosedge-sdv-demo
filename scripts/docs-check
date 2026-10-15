@@ -137,6 +137,8 @@ def markdown_documents(root: Path) -> dict[Path, str]:
         *sorted((root / "contracts").rglob("*.md")),
         *sorted((root / "apps").glob("*/README.md")),
         *sorted((root / "scripts").rglob("*.md")),
+        *sorted((root / "components").rglob("*.md")),
+        *sorted((root / "tests").rglob("*.md")),
     ]
     return {
         path.resolve(): path.read_text(encoding="utf-8")

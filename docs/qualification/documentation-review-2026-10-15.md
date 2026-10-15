@@ -132,3 +132,41 @@ regression tests** pass: 19 documentation-check, 13 reader-route and
 48 release-definition tests. The frozen release definition remains valid.
 No runtime source, launcher behavior, release lock, artifact, test result or
 acceptance status was changed. No build or live demo was started.
+
+## Follow-up: source-tree retirement and current developer selection
+
+The automatic Dropbox publisher was integrated into main at
+`3804cfbff4d3ca3f3825bfd67d20667e894a594a`. The same checkpoint corrects the
+capacity review's rejection of the independently pinned current r7 producer
+plan. Publisher verification used offline fixtures, not a live upload.
+
+The next cleanup retires **36 integration files** and **11 platform historical
+documents**. The separate `sourceCleanup` section in the existing retirement
+inventory records their published baselines and content hashes. It does not
+rebind the earlier documentation inventory to a different source checkpoint.
+Superseded build plans, old bootstrap-only validators and their own tests,
+orphan mockups, duplicate upstream review patches and obsolete checkpoints are
+not current build dependencies. Six component README files retain their
+first-use commands and current technical references instead of dated diaries.
+
+Current tooling requires the source-owned developer selector rather than
+silently choosing a removed plan. Capacity review retains the frozen base and
+source-Factory definitions plus the validated current selection. Selected
+option A, r7, all five public input source files, Factory configuration
+inheritance and locked namespace files remain unchanged. No product runtime,
+protocol, security policy, release allocation or packaged artifact is changed.
+
+Validation before source publication:
+
+- Full integration unit discovery: **1,335 tests**, one platform-dependent
+  skip. The process-cancellation fixture requires host process-list access;
+  its isolated rerun with that access passed after the sandbox denied `pgrep`.
+- Documentation: **155 Markdown documents, 662 stable identifiers and 36
+  Mermaid diagrams** pass, now including test/component reference READMEs.
+  A negative regression rejects broken links in the upstream fixture README.
+- Platform and Brake source-policy gates, component README local references,
+  launcher/helper pins, confidential-input guard and frozen release definition
+  pass. All 47 additional retirement hashes match their original Git blobs.
+- No build, signing, DMG assembly, installation, simulator, Docker or Cloud
+  operation was run. Fresh-clone checks and local-data relocation are separate
+  maintenance operations, not new live-product acceptance.

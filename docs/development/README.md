@@ -29,6 +29,7 @@ simulator and controller image; it is not a reason to rebuild Unreal or Yocto.
 - [Add or change a scenario](add-demo-scenario.md).
 - [Release campaign and publication](release-campaign.md).
 - [M1 qualification scenario runner](../../scripts/qualification/README.md).
+- [Native upstream concurrency regression fixture](../../tests/upstream/cm-lock-harness/README.md).
 - [Reusable simulator dependency](reusable-simulation-inputs.md).
 - [Public artifacts, notices and remaining redistribution review](public-artifact-preparation.md).
 - [Retained specialist commands and measured build evidence](release-reproduction-r2.md).

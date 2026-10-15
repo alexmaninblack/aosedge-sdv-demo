@@ -150,6 +150,12 @@ class WorkflowTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.control = self.root/'.developer-preparation'
         self.control.mkdir()
+        self.plan = self.root/'source/workspace/releases/fixture.json'
+        self.plan.parent.mkdir(parents=True)
+        self.plan.write_bytes(b'{}')
+        (self.root/'source/workspace/current-developer-build.json').write_text(json.dumps(dict(
+            schemaVersion=1, path='workspace/releases/fixture.json',
+            sha256=hashlib.sha256(b'{}').hexdigest())))
         (self.control/'root-source.json').write_text(json.dumps({'revision': 'a'*40, 'volumeUUID': 'fixture-volume'}))
         self.binding = self.root/'binding.json'
         self.binding.write_text('{"schemaVersion":2}')
@@ -193,7 +199,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('--docker', first[2])
         for args in first:
             if '--build-plan' in args:
-                self.assertEqual(args[args.index('--build-plan')+1], str(self.root/'source'/workflow.PLAN))
+                self.assertEqual(args[args.index('--build-plan')+1], str(self.plan))
         self.assertIn('--prepare-dependencies', first[-1])
         self.assertNotIn('--resume', first[-1])
         self.assertIn('not release-qualified', output)

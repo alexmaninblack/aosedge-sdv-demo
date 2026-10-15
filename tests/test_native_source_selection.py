@@ -47,22 +47,23 @@ class SelectionTests(unittest.TestCase):
         row=self.selection['vehicle-gateway'];path=native_sources.location(storage,'vehicle-gateway',row)
         self.assertEqual(path,Path('/selected/sources/native-ui/vehicle-gateway')/row['revision'])
     def test_schema_three_preserves_historical_base(self):
-        value=json.loads((chain.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r5.json').read_bytes())
+        value=json.loads(developer_build.selected_plan(chain.ROOT).read_bytes())
         value['schemaVersion']=3;value['nativeSources']=self.selection
         with tempfile.TemporaryDirectory() as directory:
             p=Path(directory).resolve()/'plan.json';p.write_text(json.dumps(value))
             self.assertEqual(chain.read_plan(self.release,p)['nativeSources'],self.selection)
     def test_old_schema_cannot_sneak_in_native_override(self):
-        value=json.loads((chain.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r5.json').read_bytes())
+        value=json.loads((chain.ROOT/chain.PLAN).read_bytes())
         value['nativeSources']=self.selection
         with tempfile.TemporaryDirectory() as directory:
             p=Path(directory).resolve()/'plan.json';p.write_text(json.dumps(value))
             with self.assertRaises(LabError):chain.read_plan(self.release,p)
 
-    def test_active_plan_fallback_preserves_old_checkouts(self):
+    def test_missing_active_plan_cannot_fall_back_to_a_retired_build(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory).resolve()
-            self.assertEqual(developer_build.selected_plan(root),root/developer_build.PLAN)
+            with self.assertRaisesRegex(developer_build.WorkflowError, 'selection is missing'):
+                developer_build.selected_plan(root)
 
     def test_active_plan_is_pinned_not_a_mutable_filename(self):
         import hashlib

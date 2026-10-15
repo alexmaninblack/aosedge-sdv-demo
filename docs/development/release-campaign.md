@@ -63,10 +63,11 @@ assembly uses the same source trees as the selected UI receipt; it cannot combin
 a current binary with old helper source by accident. Missing, dirty, foreign or
 mutable source selections stop before compilation.
 
-An optional committed `workspace/current-developer-build.json` selects one
-immutable successor plan by repository-relative path and SHA-256. Fresh B runs
-resolve that source-owned selection; older checkouts without it retain their
-historical plan. Saved root checkouts never silently update. The public binary
+The committed `workspace/current-developer-build.json` selects one immutable
+successor plan by repository-relative path and SHA-256. Current B tooling
+requires that source-owned selection and stops if it is missing; it never falls
+back to a retired plan. Earlier Git revisions retain their own matching tools.
+Saved root checkouts never silently update. The public binary
 input catalog remains independently pinned and unchanged by a UI-only source
 successor.
 

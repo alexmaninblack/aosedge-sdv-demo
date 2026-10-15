@@ -20,14 +20,13 @@ from developer_progress import Display
 from developer_result import expose_result
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r4.json'
 
 
 def selected_plan(source):
     """Source-owned successor selection; historical plans remain immutable."""
     selector=source/'workspace/current-developer-build.json'
-    if not selector.exists():
-        return source/PLAN
+    require(selector.is_file(),
+            'Active developer build selection is missing. Use the current complete source checkout.')
     value=read(selector)
     require(isinstance(value,dict) and set(value)=={'schemaVersion','path','sha256'}
             and type(value['schemaVersion']) is int and value['schemaVersion']==1,

@@ -4,9 +4,9 @@
 # Native CM disconnect lock regression
 
 Test-only proof authorized on 19 September 2026. See the
-[incident and execution record](../../../docs/qualification/cm-monitoring-disconnect-deadlock-2026-09-19.md).
+[incident and execution record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/cm-monitoring-disconnect-deadlock-2026-09-19.md).
 This harness does not patch, deploy, restart or repair native CM.
-The subsequent [correction record](../../../docs/qualification/cm-disconnect-lock-fix-2026-09-19.md)
+The subsequent [correction record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/cm-disconnect-lock-fix-2026-09-19.md)
 separates the expanded fixed-source proof from the original negative execution.
 
 ## What runs

@@ -11,6 +11,261 @@
     "docs/qualification/m1-live-journey-2026-10-03.md",
     "docs/qualification/kit028-setup042-source-publication-2026-10-05.md"
   ],
+  "sourceCleanup": {
+    "reviewDate": "2026-10-15",
+    "baselineCommit": "3804cfbff4d3ca3f3825bfd67d20667e894a594a",
+    "retired": [
+      {
+        "path": "workspace/checkpoints/demo-v1.0.json",
+        "sha256": "8fe931cc7a1f5e30e7232a70d148f21e70f814930290908c062d9847bbf9a7fb",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/checkpoints/developer-launcher-e2e-20261010.json",
+        "sha256": "11a2521a63897f795adfcac948a352abac6eef615a2ec09c4110fefb56c269e4",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/checkpoints/documentation-inventory-2026-10-07.json",
+        "sha256": "3716ab1d60f83d1dfd9f521c28b53140684091bb95a42a2b5ac05e7c275a8b97",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/checkpoints/factory-40-candidate.json",
+        "sha256": "70e4b8ec937c602e83b46ee099cd895d1cbae3b8c426204041316abbd19418e0",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-public-build-chain-r1.json",
+        "sha256": "56fe4f8613dd1c6b490b0374af759513aa341bfc7fa7bb7e4ce995c6e585d11c",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-public-build-chain-r2.json",
+        "sha256": "69862edbbde2a8a2e2a2844afc67af85e6d209af20965e1260a45d35bb95db4f",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-public-build-chain-r3.json",
+        "sha256": "fa7dd67d7a7a3caa59af533c32f4b11730aeabebdf11c849b5178888b03b8239",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-public-build-chain-r4.json",
+        "sha256": "0433cab554f82c83945c42d7a87b60f02cd9865e91046462e22ac0094afd40cb",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-public-build-chain-r5.json",
+        "sha256": "6e44b86c26d2226aafaf2610cc508e473608327cb63d48d5d1eefeaa4d451309",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-public-build-chain-r6.json",
+        "sha256": "35d1936863e5e2c7109b7e057301b3de010ba9ce090a2a6c0c94842671276fa9",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-qualification-build-chain-r6.json",
+        "sha256": "1d4d88d2185eee604518c6319c08a563b005432eb629883a2967a98e987ba5d4",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-qualification-build-chain-r7.json",
+        "sha256": "bdb15469717fd5c2a67ba39d01f8e727b5e00eab275f702b35abd7257fbcaa47",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-qualification-build-chain-r8.json",
+        "sha256": "92b6b23910bb779a65dcde054c250b49decc06dd7a454587b5ac76ec0c1a5e41",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-presenter-preview-delivery.json",
+        "sha256": "e9b36197f83e7b88c1f7c5acc57c2abc9d84f044f8be09fedfcac51212aa566d",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-presenter-preview-dropbox-delivery.json",
+        "sha256": "e9b36197f83e7b88c1f7c5acc57c2abc9d84f044f8be09fedfcac51212aa566d",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-source-factory-packaging.json",
+        "sha256": "b27f1c5e2d18f26ccec636060b73307e5b04668aac428508d2d0c02614b18a86",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "workspace/releases/1.2.0-rc.1-source-factory-setup.json",
+        "sha256": "87e3d0463e828dab5bbb4f8af792da0d8789524758797baf7a433e1a1776152a",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/freeze-r6-1-bootstrap-release",
+        "sha256": "21b1b4f5d5a2ee0e0f5e8c868cbca26a5f45117fdda7f5a996176b4ce64a6c6b",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/validate-r6-1-bootstrap-release",
+        "sha256": "2293bebd61bddc548a4a1d866f372ee8091f28f300de8ae06e1fafdb79629790",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/validate-r6-1-manifest",
+        "sha256": "7154366b2a6acf6ee4af29cc13d81b1cf6e4f50c44590830e0a78f5945975e9f",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/validate-r6-1-source-lock",
+        "sha256": "2deb460742b4efa4843f73a597c8aa2265525bf749dc696905633af7918115d4",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/verify-r6-1-signed-bootstrap",
+        "sha256": "d04c4b7c8198a5d7d488af43cf4af3599c818aaf229a42766ae402110d2de6d3",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/verify-r6-1-signed-provider",
+        "sha256": "7df075bc5830dd8bb18137d058a842bef85fb1f8148485e6573e70e425ff1d1b",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "scripts/r6-1-validation-vm",
+        "sha256": "e51deaf6bfe038aacafff0392a0da59024b92e8fbf5968edf9c6f59bd4098a40",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "tests/test_r6_1_bootstrap_release.py",
+        "sha256": "a6001e2229a422d676194afa2a62f0fe2c57f6fc491be5d578f38c10eb2a3acc",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "tests/test_r6_1_manifest.py",
+        "sha256": "88fcf3fce24233881b844dbd6eb6d702507f191d28f8dc3806131982ac792a0f",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "tests/test_r6_1_source_lock.py",
+        "sha256": "43b0fd318737b38dbbe19bd5eb1f8117990df633233a6082c0dce738666c462a",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "tests/test_r6_1_signed_bootstrap.py",
+        "sha256": "79dda5eb09c29030e60177c71c1770e72e11cf37839da1c75a66b570874e0a67",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "tests/test_r6_1_signed_provider.py",
+        "sha256": "4a68e5f713e9b2b5a68e95aa49582041a61bf2030c01ba14cb180efe39ab7bad",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "tests/test_r6_1_validation_vm.py",
+        "sha256": "3e105893c20fc35a387c960f09e6b260f6f8bde604b5d73edb58848eef22de31",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "components/upstream-review/README.md",
+        "sha256": "79a8485dc81cf7d7310d573fd1a2795597d5e302eac0967bc1ca72fd48e900d2",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "components/upstream-review/cm-idle-full-status-app.patch",
+        "sha256": "641c93fa23b35aa8f01f85ef152902952a4dd3e1d65af655f0dfba12940f9aed",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "components/upstream-review/cm-idle-full-status-library.patch",
+        "sha256": "7b1e3f1d792e5fa4b9ca766b7ac6186f439b4dcb13ab83f23408ba9509040e9e",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "docs/demo/mockups/aosedge-demo-icon-study-2-7.html",
+        "sha256": "9bed3d5d310980813c9b58611fae3401cc5d7d1bc56e112e8a8e8b46a42d4474",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "docs/demo/mockups/aosedge-demo-interaction-mockup-2-5.html",
+        "sha256": "d467e3dc76f2d2bac8bae21b9b45f3c48658479025f34517407c464880d314e6",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      },
+      {
+        "path": "docs/demo/mockups/aosedge-demo-interaction-mockup-2-5.source.html",
+        "sha256": "b34e033c996577b319e5b4fd3d3c55502548e24294185715071d5bf90f72fba1",
+        "reason": "Superseded source artifact outside the current release/build dependency closure; original bytes remain in the published baseline."
+      }
+    ],
+    "platform": {
+      "historyRepository": "https://github.com/alexmaninblack/aos-vehicle-platform",
+      "baselineCommit": "392654ba7336373640512b925423b01d638bbf17",
+      "retired": [
+        {
+          "path": "qualification/factory-29-vss.md",
+          "sha256": "0ff858723e6fa3569d1a73480b06148feb194b56710b27f282bd4528732d883e",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-31.md",
+          "sha256": "1cbc25cea92781a033233926ab1b44e187eee3f630d1a7ccff25d265db98ea7a",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-32.md",
+          "sha256": "1a26a80b0bdf770dc0d32615ff9fa2328532a8a586b9abfad4b140abef2697dc",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-33.md",
+          "sha256": "b2504a1d65dc7d07a5290611f2a9e19e94466cad970c101f7854f51252a8bd9b",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-34.md",
+          "sha256": "7e22ebefe0561e791eefbc3e43bcc04b936ef7c324e338637fd7563bab062017",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-35.md",
+          "sha256": "20daf06b26fbab2676cc14585298f5f3de772c5b9c51bee4ec25f77b3f162b11",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-36.md",
+          "sha256": "820cdce24dcdf944c09c1311c3eb2708797c1a6b000295fdc2085ddfd83e758f",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "qualification/factory-37.md",
+          "sha256": "66102e5f613a67d62797173434f25606fc1bf55bd1be2a7464d92a1b94fdbebc",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "docs/cm-vlan-allocation-2026-10-03.md",
+          "sha256": "a1b5e8a288870355e61ac03dabc52cffc5c6768b48a6d97bdb88e7a81d87e8da",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "docs/aoscore-mainline-migration-2026-09-23.md",
+          "sha256": "8d837eabfe85a557ed6d74a061c4c23082e757797f1697bd428f8ed5e8342da0",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        },
+        {
+          "path": "authorization/aos-kuksa/README.md",
+          "sha256": "ba44743f56000458dae8fedf99019c6545681cd93a41b660352734b3933ee683",
+          "reason": "Historical qualification or migration narrative, not a current build input; recover from the published platform baseline."
+        }
+      ]
+    },
+    "preserved": [
+      "Current option A descriptor, DMG identity and catalog",
+      "Current developer selector and its pinned r7 plan",
+      "Frozen predecessor/source-Factory definitions and all five catalog sourceFiles",
+      "Factory .39/.40/.41 configuration inheritance",
+      "Source-lock namespace files and regression-fixture inputs",
+      "Credentials, persistent runtime state, warm Builder and caches"
+    ]
+  },
   "retired": [
     {
       "path": "docs/architecture/decisions/0003-two-node-aos1-topology.md",

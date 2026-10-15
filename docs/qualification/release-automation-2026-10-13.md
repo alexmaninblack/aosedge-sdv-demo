@@ -46,7 +46,8 @@ Historical build locks remain intact.
 ## Published artifact
 
 The selected [operator catalog](../../workspace/launcher-catalog.json) contains
-the reviewed Dropbox link and [delivery descriptor](../../workspace/releases/1.2.0-rc.1-presenter-preview-dropbox-delivery.json).
+the reviewed Dropbox link. Its [historical delivery descriptor](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/3804cfbff4d3ca3f3825bfd67d20667e894a594a/workspace/releases/1.2.0-rc.1-presenter-preview-dropbox-delivery.json)
+is retained in Git; the current catalog selects the successor below.
 The [older Drive publication](https://drive.google.com/file/d/1ddy0TgTCQSCqX8_oBVak2V9rJQAQlYOw/view)
 contains the same bytes but is not the current operator locator. This is an
 Apple Development engineering preview, not notarized or distribution-qualified.

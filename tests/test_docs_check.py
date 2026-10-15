@@ -41,10 +41,11 @@ class DocumentationCheckTests(unittest.TestCase):
         shutil.copy2(ROOT / "workspace" / "repositories.json", root / "workspace" / "repositories.json")
         shutil.copytree(ROOT / "contracts", root / "contracts")
         shutil.copytree(ROOT / "docs", root / "docs", ignore=shutil.ignore_patterns(".DS_Store"))
-        for source in (ROOT / "scripts").rglob("*.md"):
-            destination = root / source.relative_to(ROOT)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
+        for area in ("scripts", "components", "tests"):
+            for source in (ROOT / area).rglob("*.md"):
+                destination = root / source.relative_to(ROOT)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
         shutil.copytree(
             ROOT / "apps", root / "apps",
             ignore=shutil.ignore_patterns(".DS_Store", ".venv", "node_modules", "build", "dist", "__pycache__", "*.egg-info"),
@@ -101,6 +102,19 @@ class DocumentationCheckTests(unittest.TestCase):
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)
         self.assertIn("missing anchor", result.stderr)
+
+    def test_broken_test_reference_document_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "tests" / "upstream" / "cm-lock-harness" / "README.md"
+        target.write_text(
+            target.read_text(encoding="utf-8")
+            + "\n[Broken fixture reference](missing-fixture-document.md)\n",
+            encoding="utf-8",
+        )
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("missing-fixture-document.md", result.stderr)
 
     def test_undefined_identifier_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()

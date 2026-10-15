@@ -283,17 +283,17 @@ class SpaceTests(StorageFixture, unittest.TestCase):
         self.assertEqual(plan.read_bytes(), before)
         self.assertEqual(len(value['ownerGuards']), 17)
 
-    def test_public_plan_preserves_steps_and_only_adopts_component_storage_fix(self):
+    def test_current_plan_preserves_steps_and_frozen_source_definition(self):
         self.fixture()
         old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json')
-        path = core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r1.json'
-        new = space.chain.read_plan(self.release, path)
-        self.assertEqual(new['steps'], old['steps'])
+        new = space.current_reviewed_plan(self.release)
+        # Native UI source ownership is explicit in the successor; order,
+        # dependencies and functional profiles remain the same.
+        self.assertEqual([{k:v for k,v in row.items() if k != 'producer'} for row in new['steps']],
+                         [{k:v for k,v in row.items() if k != 'producer'} for row in old['steps']])
         self.assertEqual(new['baseDefinitionSha256'], old['baseDefinitionSha256'])
-        self.assertNotEqual(new['producers']['components'], old['producers']['components'])
-        self.assertEqual({k:v for k,v in new['producers'].items() if k != 'components'},
-                         {k:v for k,v in old['producers'].items() if k != 'components'})
-        self.assertEqual(len(space.report(self.storage, self.state, build_plan=path)['ownerGuards']), 17)
+        self.assertEqual(new['resultPolicy'], 'seal-developer-results-v1')
+        self.assertEqual(set(new['nativeSources']), {'integration', 'vehicle-gateway'})
 
     def test_fresh_developer_workspace_does_not_require_a_prepared_wheel_source(self):
         value = space.report(self.storage, self.state)
@@ -301,33 +301,11 @@ class SpaceTests(StorageFixture, unittest.TestCase):
         self.assertFalse(value['storagePreflightComplete'])
         self.assertFalse(value['qualified'])
 
-    def test_public_r2_only_adopts_the_verified_host_mode_fix(self):
-        self.fixture()
-        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r1.json')
-        path = core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r2.json'
-        new = space.chain.read_plan(self.release, path)
-        self.assertEqual(new['steps'], old['steps'])
-        self.assertNotEqual(new['producers']['host'], old['producers']['host'])
-        self.assertEqual({k:v for k,v in new['producers'].items() if k != 'host'},
-                         {k:v for k,v in old['producers'].items() if k != 'host'})
-        self.assertEqual(len(space.report(self.storage, self.state, build_plan=path)['ownerGuards']), 17)
-
     def test_non_docker_target_does_not_probe_or_require_engine(self):
         self.fixture()
         with patch.object(space.containers, 'inspect_storage', side_effect=AssertionError):
             value = space.report(self.storage, self.state, target='presenter', docker=Path('/unused'))
         self.assertTrue(value['storagePreflightComplete'])
-
-    def test_public_r3_keeps_completed_owners_and_seals_new_package_results(self):
-        self.fixture()
-        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r2.json')
-        path = core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r3.json'
-        new = space.chain.read_plan(self.release, path)
-        self.assertEqual(new['steps'], old['steps'])
-        self.assertEqual(new['resultPolicy'], 'seal-developer-results-v1')
-        for role in ('components', 'preparation', 'host'):
-            self.assertEqual(new['producers'][role], old['producers'][role])
-        self.assertEqual(len(space.report(self.storage, self.state, build_plan=path)['ownerGuards']), 17)
 
     def test_separate_docker_capacity_is_visible_and_not_added_to_workspace_free(self):
         self.fixture()

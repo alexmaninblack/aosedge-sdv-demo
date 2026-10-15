@@ -168,7 +168,7 @@ The six-partition raw image is 6,997,147,648 bytes, SHA-256
 `13fc1b3c9893df80261228783d345ea830658d3b4822993b5ed5a7e5b3a2f30f`.
 Host transfer matched and the Builder stopped cleanly.
 
-The separate `workspace/checkpoints/factory-40-candidate.json` pins this
+The separate [Factory .40 checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/3804cfbff4d3ca3f3825bfd67d20667e894a594a/workspace/checkpoints/factory-40-candidate.json) pins this
 engineering candidate. Historical `demo-v1.1` and Factory .39 are unchanged.
 Vehicle input manifest SHA-256 is
 `4333858ca44528ff815227ed400cced091513e78ac6f85675deececd4b2a9360`.
