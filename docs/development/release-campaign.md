@@ -127,7 +127,15 @@ saved but folder preparation was interrupted, use `prepare-folder` with the
 same `--credentials`; it reconciles that exact folder before creating it.
 The `selection` action prints non-token configuration fields, after verifying
 account and folder. Integration tooling uses those fields as the new campaign's
-`delivery` object:
+`delivery` object, or saves the object once as a private profile. New campaigns
+can select that profile directly through the single release entry, without
+editing delivery fields or supplying a shared link:
+
+```sh
+python3 -B scripts/release-campaign run --config /absolute/private/new-campaign.json --delivery-profile /absolute/private/dropbox-delivery.json
+```
+
+The profile contains these non-token fields:
 
 ```json
 {
@@ -181,6 +189,26 @@ private credentials, token refresh, endpoint restrictions, immutable destination
 URL projection and the failed-publication promotion gate using local fixtures.
 It never contacts Dropbox or M1, uploads media or switches the live catalog.
 A live provider check and a real new release remain separate acceptance results.
+
+For a changed provider adapter, the sender-only transport scenario can exercise
+one tiny valid DMG in the application's separate `/transport-checks` folder:
+
+```sh
+python3 -B scripts/check-dropbox-transport --profile /absolute/private/dropbox-delivery.json --workspace /absolute/selected/ssd/workspace
+```
+
+The private profile is the verified `selection` object saved by integration
+tooling. The scenario builds only a small image labelled as a transport fixture,
+uploads it, verifies provider metadata and public HEAD, then repeats with a fresh
+client and requires zero payload bytes and zero upload/link mutations. Re-running
+the named scenario in a new process reuses that exact fixture/session journal;
+numbered reports preserve earlier results. It never installs anything, connects
+to M1, downloads the payload, edits source/catalogs, or substitutes its
+`0.0.0-rc.0` fixture for a product release. Preserve this bounded proof rather than
+running it for every ordinary release. A real successor still needs its actual
+M1 consumer acceptance before the operator catalog is promoted. The
+[15 October sender acceptance record](../qualification/dropbox-publisher-2026-10-15.md)
+records the connected app, live tiny-image proof and remaining product boundary.
 
 ### Existing Dropbox publication
 

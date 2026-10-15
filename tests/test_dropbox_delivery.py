@@ -282,6 +282,13 @@ class ClientSecurityTests(unittest.TestCase):
         for delivery in choices:
             path=self.root/'config';atomic(path,dict(value,delivery=delivery))
             self.assertEqual(configuration(path)['delivery'],delivery)
+        profile=self.root/'delivery-profile';atomic(profile,choices[0])
+        original=path.read_bytes()
+        self.assertEqual(configuration(path,delivery_profile=profile)['delivery'],choices[0])
+        self.assertEqual(path.read_bytes(),original)
+        atomic(profile,choices[1])
+        with self.assertRaisesRegex(CampaignError,'AUTOMATIC_PROFILE'):
+            configuration(path,delivery_profile=profile)
 
 
 if __name__=='__main__':unittest.main()
