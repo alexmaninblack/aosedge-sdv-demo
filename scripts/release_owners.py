@@ -170,6 +170,9 @@ class Owners:
         require(ui.get('sourcesUnchanged') is True and
                 all(sha(Path(p)) == expected for p,expected in ui['inputHashes'].items()),
                 'UI_BUILD_INPUTS_CHANGED')
+        setup=metadata(self.candidate/'Setup/build-receipt.json')
+        require(all(sha(ROOT/p)==expected for p,expected in setup['sources'].items()),
+                'SETUP_BUILD_INPUTS_CHANGED')
         return dict(applicationFiles=len(rows), uiInputs=len(ui['inputHashes']),
                     applicationManifestSha256=sha(self.candidate/'Runtime Kit/application-manifest.json'),
                     reuse='PRODUCT_INPUT_EQUIVALENCE_PROVEN')
@@ -290,6 +293,10 @@ class Owners:
             and facts.get('cloudStage')=='READY' and facts.get('presenterObserved') is True
             and closed.get('ownedDemoProcesses')==0 and closed.get('ownedDemoListeners')==0
             and closed.get('mediaDetached') is True,'NATIVE_FIRST_USE_EFFECTS_UNCONFIRMED')
+        setup=metadata(self.candidate/'Setup/build-receipt.json')
+        tested=stages['native-launch']['facts'].get('setupSha256')
+        require(isinstance(tested,str) and re.fullmatch('[a-f0-9]{64}',tested)
+            and tested==setup['binarySha256'],'NATIVE_FIRST_USE_SETUP_CHANGED')
         source=stages['native-launch']['facts']['nativeSource']
         require(source==sha(ROOT/'scripts/qualification/native/SetupFirstUse.swift'),'NATIVE_FIRST_USE_SOURCE_CHANGED')
         return dict(sha256=sha(Path(path)),candidate=value['candidate'],domain=facts['domain'])
