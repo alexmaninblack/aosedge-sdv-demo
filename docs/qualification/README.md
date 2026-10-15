@@ -37,7 +37,7 @@ The earlier definition inventory is similarly retained in development docs.
 
 Other superseded reports were removed from the current tree. Their original
 contents and hashes are recorded by the
-[retirement inventory](../../workspace/checkpoints/documentation-retirement-20261015.json), and
+[retirement inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json), and
 historical citations resolve to the published Git snapshot.
 
 Developer ID/notarization, new-account registration, broader native recovery,

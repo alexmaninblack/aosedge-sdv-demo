@@ -32,4 +32,4 @@ Closed P0/P1 implementation packets, prior migration/storage plans and old
 experiment journals have been removed. Accepted obligations remain in
 architecture, requirements and contracts; exact original plans are accessible
 through immutable Git citations and the
-[documentation retirement record](../../workspace/checkpoints/documentation-retirement-20261015.json).
+[documentation retirement record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).

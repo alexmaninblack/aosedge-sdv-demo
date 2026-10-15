@@ -125,7 +125,8 @@ Neither provider selection, a source push nor a successful local metadata
 check closes the actual delivery gate.
 
 The explicit maintainer command `python3 -B scripts/drive-delivery` transfers
-the separately reviewed [successor DMG descriptor](../../workspace/releases/1.2.0-rc.1-delivery.json).
+the separately reviewed DMG descriptor selected by the
+[launcher catalog](../../workspace/launcher-catalog.json).
 It is not called by `lab`, Setup or any build. The historical release definition
 and its `unpublished` locator remain unchanged. A private transfer of this new
 engineering candidate does not qualify its installation or any build profile.

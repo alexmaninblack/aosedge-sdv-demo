@@ -80,7 +80,7 @@ retain current rationale; explicitly superseded decisions are Git references.
 separates current instructions, normative obligations and evidence.
 The [15 October documentation review](qualification/documentation-review-2026-10-15.md)
 records this complete README-link audit and the
-[retirement inventory](../workspace/checkpoints/documentation-retirement-20261015.json).
+[retirement inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).
 Obsolete instructions, completed execution packets and superseded reports have
 been removed from the working tree; original evidence is recoverable through
 immutable Git links, not a second active archive directory.

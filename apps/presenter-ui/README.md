@@ -7,8 +7,10 @@ use, start with the [Setup guide](../../docs/getting-started/installed-preview-c
 and [operator workflow](../../docs/operations/current-demo-workflow.md).
 The sections below describe the component for contributors.
 
-The accepted visual/interaction reference is [Studio 2.8](../../docs/demo/mockups/aosedge-demo-interaction-mockup-2-8.html), qualified by the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
-The original mockup is unchanged. Live state comes from existing Demo Control operations, not mockup timers.
+The accepted interaction reference is the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+The maintained visual implementation and its regression tests are in this
+package. Earlier simulated HTML prototypes are Git history, not parallel
+implementations. Live state comes from existing Demo Control operations.
 
 The physical workspace remains CARLA upper-left, the combined native Driving
 Control/telemetry below, and Studio on the right. CARLA is neither embedded nor

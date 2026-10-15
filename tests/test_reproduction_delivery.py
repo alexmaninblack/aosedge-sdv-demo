@@ -184,9 +184,12 @@ class DeliveryTests(unittest.TestCase):
                 d.check_remote({**self.meta, **change}, self.file_id, self.folder, self.expected)
 
     def test_descriptor_is_engineering_only(self):
-        path = d.ROOT / 'workspace/releases/1.2.0-rc.1-delivery.json'
+        catalog = json.loads((d.ROOT / 'workspace/launcher-catalog.json').read_bytes())
+        path = d.ROOT / catalog['operatorDescriptor']
         value = d.descriptor(path)
-        self.assertEqual(value['bytes'], 14162125968)
+        self.assertEqual(value['bytes'], catalog['operator']['bytes'])
+        self.assertEqual(value['sha256'], catalog['operator']['sha256'])
+        self.assertEqual(value['productVersion'], catalog['operator']['productVersion'])
         altered = self.root / 'descriptor.json'
         for field, replacement in [('notarized', True), ('status', 'QUALIFIED'), ('file', '../other.dmg'), ('extra', 'x')]:
             row = copy.deepcopy(value)

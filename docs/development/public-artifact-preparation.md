@@ -39,7 +39,7 @@ not sufficient when patches, bundled subdependencies, firmware sources or
 binary relocation/build scripts are missing. Supplemental notices must be
 matched to the actual shipped components before distribution.
 
-The [sanitized checkpoint](../../workspace/checkpoints/public-materials-preparation-20261010.json)
+The [sanitized checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/public-materials-preparation-20261010.json)
 pins the prepared bundle's file manifest: 339 files, including 263 notice files;
 the directory including its manifest/checksums occupies 321,162,679 bytes.
 

@@ -14,19 +14,11 @@
 - Requirement inputs: [Component Register 2.2](../../requirements/component-decomposition-and-interface-register.md), [Demo Orchestration](../../requirements/components/demo-orchestration.md) and [End-to-End Acceptance](../../requirements/components/end-to-end-acceptance.md)
 - Presentation policy: [D4-026.6](../../requirements/d4-decision-register.md#d4-026)
 - UI implementation: current Presenter is integrated into main; see the [current baseline](../../qualification/current-baseline.md). Versioned mockups are historical regression/review fixtures.
-- Layout review artifact that predates the complete Interaction Specification
-  2.5 and is not the implementation baseline:
-  [AosEdge Demo linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
 - Detailed Interaction Specification:
   [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
-- Retained pre-Studio review mockup derived from the earlier contract:
-  [Accepted AosEdge Demo Interaction Mockup](aosedge-demo-interaction-mockup-2-4.html)
-- Editable mockup source:
-  [AosEdge Demo Interaction Mockup Authoring Source](aosedge-demo-interaction-mockup-2-4.source.html)
-- Standalone build helper:
-  [`scripts/build-demo-interaction-mockup`](../../../scripts/build-demo-interaction-mockup)
+- Maintained implementation and tests: [Presenter UI](../../../apps/presenter-ui/README.md)
 
-## Current implementation and historical fixtures
+## Current implementation and retained contracts
 
 Use the [operator workflow](../../operations/current-demo-workflow.md),
 [implementation map](../../architecture/current-implementation.md) and
@@ -34,12 +26,14 @@ Use the [operator workflow](../../operations/current-demo-workflow.md),
 Presenter. Card Reset, real backend details, resources, serial releases,
 ordinary Stop/Start and native Driving Control are implemented.
 
-Versioned HTML artifacts are retained as regression-test/review fixtures.
-They simulate state and predate later accepted amendments; they are not
-alternative installation instructions or proof of runtime behavior.
-Their [original review chronology](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/demo/mockups/README.md)
-is in Git. The stable accepted I0 decisions below remain intact, subject to
-the later Test-only, one-associated-SP and lifecycle amendments.
+Versioned HTML prototypes, their duplicate artwork, generation helpers and
+prototype-only tests have been retired. Their [original review chronology](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/docs/demo/mockups/README.md)
+and source remain in Git. Regression coverage for the current product belongs
+to Presenter and Demo Control, not simulated prototype timers.
+The stable accepted I0 decisions below remain intact, subject to the later
+Test-only, one-associated-SP and lifecycle amendments. The three Markdown
+files in this directory remain because they own those requirements, stable
+identifiers and traceability; the directory is not a prototype archive.
 
 ## Purpose
 
@@ -52,22 +46,10 @@ Mockups are derived views of accepted architecture, scenarios, requirements
 and contracts. They do not create lifecycle state, release authority, product
 behavior or a second specification.
 
-The exact review mockup is the current clickable review artifact derived from
-Interaction Specification 2.5. It is generated as one self-contained HTML
-file with all repository-local image assets embedded, so copying or opening
-that one file does not lose CARLA screenshots or icons and requires no local
-web server. The adjacent `.source.html` file and asset directories are the
-editable inputs; `scripts/build-demo-interaction-mockup` deterministically
-regenerates the accepted standalone artifact.
-
-The standalone file is still a mockup rather than an implementation baseline.
-It contains no real AosCloud, VM, CARLA, signing, publication or deployment
-integration. Its simulated release states, team-perspective controls and
-action responses exist only to make review efficient; they do not assert a
-real Cloud result or create lifecycle shortcuts.
-
-The earlier linear-flow HTML is retained only for visual comparison. It
-predates the complete contract and is not the current review baseline.
+Earlier standalone files simulated Cloud, VM, CARLA and release state for
+design review. They were never a runtime implementation or proof of real
+integration. Review artifacts can be recovered at their published Git revision;
+they are not regenerated or shipped as part of the current product.
 
 ## <a id="i0-dec-001"></a>I0-DEC-001 Accepted — Linear Audience Interaction Model
 

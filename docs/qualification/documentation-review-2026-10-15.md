@@ -53,7 +53,7 @@ the obsolete UX discussion proposal was then also retired, for **213 total**.
 This includes earlier checkpoint reports, closed implementation/migration
 packets, superseded research/inventories, two superseded ADRs and obsolete user
 journeys. Their exact paths, content hashes and reasons are in the
-[retirement inventory](../../workspace/checkpoints/documentation-retirement-20261015.json).
+[retirement inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).
 
 Original content remains recoverable at the published baseline commit;
 historical citations use immutable Git URLs. No new archive directory, copied
@@ -202,3 +202,24 @@ from old completed workflow/media receipts. It retains input/build/tool caches
 and does not claim that an existing DMG was rebuilt from the new source commit.
 Private local-retirement and source-refresh results are retained in the SSD's
 maintenance records; they are not public release acceptance.
+
+## Maintained source retention
+
+The subsequent fresh-clone review separated executable input dependencies from
+prototype-only dependencies. Standalone HTML mockups, alternative/duplicate
+artwork and screenshots, the two prototype generators and five prototype test
+files are retired. The real Presenter implementation, its assets and its
+unit/browser scenarios remain; accepted interaction contracts and all stable
+identifiers are unchanged.
+
+The old rc.1 DMG descriptor, Kit027 predecessor checkpoint, public-materials
+preparation snapshot and this review's large retirement inventory are also
+retired from the current checkout. They remain recoverable in the published
+`d14e837c4cca30d8d9ebe83df996974b92c46f3b` Git snapshot. References needed for
+historical provenance point there rather than requiring local archive copies.
+
+The [development map](../development/README.md#retained-product-inputs)
+explains every retained release/checkpoint file's current executable consumer.
+Frozen base definitions, their byte-pinned authorities, the public dependency
+catalog requirements, current r7 selector and selected rc.2 DMG identity remain
+unchanged. Cleanup is not a new product build or a new acceptance verdict.

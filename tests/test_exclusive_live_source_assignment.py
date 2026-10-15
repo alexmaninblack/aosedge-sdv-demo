@@ -42,7 +42,7 @@ class ExclusiveLiveSourceAssignmentContractTest(unittest.TestCase):
         audience_sources = [
             ROOT / "docs" / "architecture" / "high-level-architecture.md",
             ROOT / "docs" / "demo" / "mockups" / "aosedge-demo-interaction-specification.md",
-            ROOT / "docs" / "demo" / "mockups" / "aosedge-demo-linear-flow-mockup.html",
+            ROOT / "apps" / "presenter-ui" / "src" / "app" / "SharedHeader.tsx",
         ]
         for source in audience_sources:
             rendered_source = source.read_text(encoding="utf-8")

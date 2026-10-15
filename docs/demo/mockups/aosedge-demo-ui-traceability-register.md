@@ -18,6 +18,10 @@ The earlier UI-INT/UI-AT rows remain for stable reverse links. For current Test,
 apply the replacement map in [UI-STUDIO-026](aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
 before using those rows as acceptance requirements; conflicting old layout,
 Production/approval and terminal-only clauses are superseded for this scope.
+References to mockup checks below describe historical design evidence retained
+in Git, not tests to run against the current product. The maintained Presenter
+unit/browser scenarios and the current baseline own present implementation
+and qualification evidence; removing prototypes changes no accepted obligation.
 
 | Current rule group | Implementation mapping | Mock evidence / real gate |
 |---|---|---|

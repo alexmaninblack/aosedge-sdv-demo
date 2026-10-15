@@ -75,5 +75,5 @@ select the current package. The immutable Factory41 provenance remains in its
 [checkpoint](../../workspace/checkpoints/factory-41-candidate.json).
 The [original baseline](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/current-baseline.md)
 preserves the earlier hashes and limits. Other retired documents are listed in
-the [retirement inventory](../../workspace/checkpoints/documentation-retirement-20261015.json).
+the [retirement inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).
 This page is a source/evidence summary, not a fresh observation of running hosts.

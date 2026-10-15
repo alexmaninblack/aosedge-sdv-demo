@@ -23,9 +23,7 @@
 - Platform FOTA Safe Stop contract: [1.1.1](../../../contracts/platform-fota-safe-stop/README.md)
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
 - UI traceability: [AosEdge Demo UI Traceability Register](aosedge-demo-ui-traceability-register.md)
-- Retained earlier 2.5-contract artifact (current Studio artifact linked below):
-  [Accepted Interaction Mockup](aosedge-demo-interaction-mockup-2-4.html)
-- Layout review artifact predating this complete contract: [Linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
+- Maintained UI implementation: [Presenter](../../../apps/presenter-ui/README.md)
 - UI implementation authorized: yes — 9 September 2026; the 13 September Studio convergence increment and remaining acceptance gates are recorded in the [current delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026).
 
 <a id="ui-studio-026--current-test-studio-contract"></a>
@@ -49,15 +47,14 @@ are not blanket acceptance of every interaction requirement.
 Accepted scope reconciliation: 9 September 2026. This section is the current
 interaction contract for the Test-only Studio B flow. It incorporates the
 [accepted questionnaire and subsequent amendments](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md).
-The [complete 2.10 review mockup](aosedge-demo-interaction-mockup-2-10.html)
-consolidates the full flow with the accepted Vehicle summary/dialog design and
-the already accepted startup, readiness/reset and abnormal-Finish amendments.
-The operator explicitly authorized its bounded application UI integration on
-17 September. The current delivery plan records implementation and evidence;
-the mockup itself remains a simulated reference, not live qualification.
-The [retained 2.8 mockup](aosedge-demo-interaction-mockup-2-8.html) captures the
-earlier contract with reviewed B2 visuals; [2.6](aosedge-demo-interaction-mockup-2-6.html)
-and [2.7](aosedge-demo-interaction-mockup-2-7.html) remain unchanged references.
+The accepted Vehicle summary/dialog, startup, readiness/reset and abnormal-
+Finish amendments were consolidated in the 2.10 design review; the operator
+authorized bounded application UI integration on 17 September. Those prototype
+files and their prototype-only tests are now retired from the current checkout.
+Their [review sources](https://github.com/alexmaninblack/aosedge-sdv-demo/tree/d14e837c4cca30d8d9ebe83df996974b92c46f3b/docs/demo/mockups)
+remain recoverable in Git. The maintained Presenter and its tests establish
+current implementation behavior; a simulated design artifact does not
+establish live qualification.
 The [2.8 corrective re-audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
 does not establish working Cloud or product integration. The user subsequently
 authorized implementation on 9 September; the current delivery plan owns
@@ -194,7 +191,7 @@ that its simulation or the running application already implements them.
 
 ### Retained 17 September visual amendment
 
-**17 September visual-only amendment:** the [2.9 Vehicle proposal](aosedge-demo-interaction-mockup-2-9.html)
+**17 September visual-only amendment:** the [2.9 Vehicle proposal](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/docs/demo/mockups/aosedge-demo-interaction-mockup-2-9.html)
 adds inline Brake/Tire backend summaries and a Cloud summary while retaining
 the architecture actors, B2 imagery, connectors and fixed native-left/Studio-right
 composition. Backend and Unit monitoring details use dialogs over Vehicle;
