@@ -106,10 +106,9 @@ deferred while still explaining the missing dependency.
 
 The current `Test Vehicle` or `Production Vehicle` remains visible in
 the shared header. `Details` opens a modal overlay and returns to the unchanged
-story when closed. The earlier switch-based version mockup is retained only as
-a local, explicitly obsolete Brainstorming comparison artifact; it is outside
-the active documentation tree and is not the review or implementation
-baseline.
+story when closed. The earlier switch-based version mockup is obsolete and is
+not the review or implementation baseline; do not restore its local comparison
+copy into the maintained workspace.
 
 This decision selects the presentation concept only. It does not complete the
 detailed Interaction Specification, alter HLA/scenario behavior, authorize UI

@@ -266,6 +266,80 @@
       "Credentials, persistent runtime state, warm Builder and caches"
     ]
   },
+  "localHistoryFollowup": {
+    "reviewDate": "2026-10-15",
+    "scope": "Local-history cleanup and retirement of the closed CM comparison host scenario; no product build or live operation",
+    "repositories": [
+      {
+        "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo",
+        "baselineCommit": "5ea40f03b714fea924f6af88027abbbd1e018127",
+        "retired": [
+          {
+            "path": "apps/demo-orchestrator/src/aosedge_demo_orchestrator/cm_comparison.py",
+            "sha256": "dde7dff879c7b0e21abede808f0955bd0ca36e461a0ead9afff3aa3031c58f85",
+            "reason": "Closed original Test CM comparison host experiment. Fail-closed guest compatibility checks and current runtime contracts remain."
+          },
+          {
+            "path": "apps/demo-orchestrator/tests/test_cm_comparison.py",
+            "sha256": "83254a8d4f2c09a0bff1a7d35a1f745bdf3696d5a585a1d20d244cb66a5f85e3",
+            "reason": "Closed original Test CM comparison host experiment. Fail-closed guest compatibility checks and current runtime contracts remain."
+          }
+        ]
+      },
+      {
+        "repository": "https://github.com/alexmaninblack/aos-vehicle-platform",
+        "baselineCommit": "43d2adf21b75d6dd0d543a60872df0f35185ebb2",
+        "retired": [
+          {
+            "path": "qualification/factory-29.conf",
+            "sha256": "480b6c17a4b9f407b837bb0b9b769a816d5996e0303a040cf195ec0497eca4f2",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-30.conf",
+            "sha256": "aa0e851e35e033497a6001c15fe4328640fec7fffdbf77f8cadcbfdaa963fb7e",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-32.conf",
+            "sha256": "48f1643feed466b6dee94d835fe7fc6faa2b69a32bc2f02396703f0c48b18e4b",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-34.conf",
+            "sha256": "2de45acff57ee01f557da991f70ed8eafa8c15f8ac4cd61f5346bcdaafc69bff",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-35.conf",
+            "sha256": "9d2acae4acf540974fb523945645df287193e7608a26edf2a6a8b8d502e06cfa",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-36.conf",
+            "sha256": "bb3f3a845729b081680663a77a03218c37be5ce8bdd700b12ddf46fc21814e06",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-37.conf",
+            "sha256": "ab75e50e250832254adc6b9591908b0e2acb3f5a899b94c06fc9ecd1471309dd",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          },
+          {
+            "path": "qualification/factory-38.conf",
+            "sha256": "86c05a3866b8f0e4780345d7fda49ef3c964a9361413e0783cdf7504debd151b",
+            "reason": "Superseded Factory configuration; current .41 inherits only .40 and .39. Historical builds retain their exact Git revisions."
+          }
+        ]
+      }
+    ],
+    "retainedDependencies": [
+      "Factory .31/.33 configurations consumed by retained exact-source diagnostic helpers",
+      "Factory .39/.40/.41 inheritance",
+      "Guest/journal compatibility and fail-closed safety tests",
+      "Selected DMG and pinned developer input/producer records"
+    ]
+  },
   "retired": [
     {
       "path": "docs/architecture/decisions/0003-two-node-aos1-topology.md",

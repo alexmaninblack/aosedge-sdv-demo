@@ -14,6 +14,14 @@ records subsequent main/tag/public-delivery completion. Earlier failure and
 pending-status statements below belong to their original candidate/checkpoint;
 they are not today's selected-release status and are not erased by later passes.
 
+Local-evidence retention policy for maintenance: protect final Production-clock
+and native first-use records, their referenced configuration dependencies and
+the published release receipts. Obsolete trial packages, one-off scripts and
+unreferenced raw attempts may be retired through an authorized exact-path
+cleanup. Paths in the chronological sections describe the original capture
+locations; they do not guarantee retention of every superseded local attempt.
+The private maintenance receipt records actual removals, not this policy note.
+
 ## Chronological record — beginning 14 October
 
 The M1 was cleaned and the unchanged engineering DMG was installed again.

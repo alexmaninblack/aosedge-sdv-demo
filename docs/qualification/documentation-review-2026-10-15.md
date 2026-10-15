@@ -170,3 +170,35 @@ Validation before source publication:
 - No build, signing, DMG assembly, installation, simulator, Docker or Cloud
   operation was run. Fresh-clone checks and local-data relocation are separate
   maintenance operations, not new live-product acceptance.
+
+## Follow-up: ignored history is not source isolation
+
+Fresh main clones passed the source gates, but copying ignored local trees back
+also restored obsolete artifacts, trial scripts and run records. That migration
+was not proof of a history-free working environment. The operating policy now
+requires selective preservation rather than wholesale ignored-tree restoration.
+
+The additional source retirement removes the closed original-Test CM comparison
+host adapter/CLI and eight superseded Factory configurations. The existing
+inventory's `localHistoryFollowup` records their published Git baselines and
+hashes. Guest fail-closed decoding, retained-journal handling and redaction tests
+remain. Factory .31/.33 helper inputs and .39/.40/.41 inheritance are retained;
+neither frozen source pins nor the selected packaged artifact is rewritten.
+
+The qualification guide now documents the current M1 campaign entries instead
+of dated pilot walkthroughs and development-Mac live browser instructions.
+Gateway's roadmap describes current scope and remaining boundaries instead of
+the completed M0-M6 diary. Old evidence citations in the still-used Factory39
+checkpoint resolve to immutable Git, not absent local files.
+
+Validation: **1,335 integration unit tests** (one skip), **116 affected
+orchestrator fixtures**, and **233 platform tests** (two skips) pass. Reader
+routes, documentation, source policy, pinned helper/catalog inputs and the
+frozen release definition pass. These are source-only checks; no build,
+installation, signing, simulator, VM, Docker or Cloud operation was run.
+
+Explicit maintenance refreshes the prepared root-source selection separately
+from old completed workflow/media receipts. It retains input/build/tool caches
+and does not claim that an existing DMG was rebuilt from the new source commit.
+Private local-retirement and source-refresh results are retained in the SSD's
+maintenance records; they are not public release acceptance.

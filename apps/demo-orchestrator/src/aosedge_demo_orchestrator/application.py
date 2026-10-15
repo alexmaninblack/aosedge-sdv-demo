@@ -39,6 +39,8 @@ class DemoOrchestrator:
         }
         if installed() and (operation in developer_only or operation.startswith('component.cm-compare-')):
             return OperationResult(operation, OperationState.BLOCKED, 'INSTALLED_DEVELOPER_OPERATION_UNAVAILABLE')
+        if operation.startswith('component.cm-compare-'):
+            return OperationResult(operation, OperationState.BLOCKED, 'RETIRED_QUALIFICATION_OPERATION')
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
@@ -319,15 +321,6 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "SOURCE_STATE_OR_RUNTIME_UNAVAILABLE")
-        if request.domain == "component" and request.action.startswith("cm-compare-"):
-            from .cm_comparison import compare
-            try:
-                data = compare(self.environment_service, request.target.value if request.target else None,
-                    request.action.removeprefix("cm-compare-"))
-                return OperationResult(operation, OperationState.COMPLETED,
-                    "Authorized Test CM comparison only; SM, VM, Cloud assignments and Production unchanged.", data=data)
-            except EnvironmentError as error:
-                return OperationResult(operation, OperationState.BLOCKED, str(error))
         if request.domain == "component" and request.action in ("readiness-build", "readiness-apply"):
             from .component_runtime import build_readiness, apply_readiness
             try:

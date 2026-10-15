@@ -36,10 +36,10 @@
     "sha256": "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"
   },
   "evidence": [
-    "docs/qualification/factory-39-build-2026-09-24.md",
-    "docs/qualification/factory-39-ignition-2026-09-24.md",
-    "docs/qualification/factory-39-offline-2026-09-24.md",
-    "docs/qualification/factory-39-cleanup-2026-09-24.md"
+    "https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-build-2026-09-24.md",
+    "https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-ignition-2026-09-24.md",
+    "https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-offline-2026-09-24.md",
+    "https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-cleanup-2026-09-24.md"
   ],
   "scope": "Source return point with focused Factory39 ignition and existing-installation offline evidence. Not full serial all-version E2E acceptance, an image backup or a running Cloud/VM snapshot."
 }

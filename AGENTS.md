@@ -169,6 +169,12 @@ boundary outside this scope or when a mandatory tool control requires it.
   open handles and preserved source/evidence. Delete child overlays before
   backing images; use no broad globs. Preserve the current accepted baseline,
   active diagnostic state, Builder/caches, Git, manifests and compact logs.
+- A clean clone proves source isolation, not absence of local history after
+  migration. Never restore ignored trees wholesale. Preserve an explicit
+  inventory of credentials, current runtime state, required caches and current
+  compact evidence; retire obsolete experiments separately. Refresh a frozen
+  developer source selection only through explicit maintenance, never by an
+  automatic pull or by rebinding a completed build receipt to newer source.
 
 The complete normative procedure and acceptance checklist are in
 [`docs/governance/rapid-development-and-debugging.md`](docs/governance/rapid-development-and-debugging.md).

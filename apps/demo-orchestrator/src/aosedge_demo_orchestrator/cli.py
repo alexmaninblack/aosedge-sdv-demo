@@ -150,7 +150,7 @@ def build_parser() -> argparse.ArgumentParser:
         if action != "core-permissions-status":
             command.add_argument("--iam-response-capacity", action="store_true",
                 help="targeted IAM reply-count correction on the preserved 256-byte Test proof")
-    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply", "cm-compare-inspect", "cm-compare-build", "cm-compare-control", "cm-compare-without-patch", "cm-compare-restore", "cm-compare-startup", "cm-compare-refresh-build", "cm-compare-refresh-apply", "cm-compare-refresh-cache-restore"):
+    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
         command = component_commands.add_parser(action, help="bounded Test AosCore qualification; comparison phases are CLI-only")
         command.add_argument("target", choices=("test",))
         if action in ("cm-test", "cm-build", "cm-apply"):

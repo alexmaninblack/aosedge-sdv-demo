@@ -268,5 +268,14 @@ retirement; do not rewrite a historical lock or weaken validation to enable
 cleanup. Age alone does not retire a stable requirement, accepted decision,
 unfulfilled verification obligation or active regression fixture.
 
+Local cleanup must distinguish source from ignored state. A clean clone and
+green unit/link checks do not prove that a later migration contains no history.
+Restore only explicitly inventoried credentials, retained runtime data,
+required caches and current compact evidence, never entire ignored trees.
+Remove obsolete local artifacts and one-off scripts after dependency/owner
+checks. Keep active source selection separate from completed build receipts;
+an explicitly authorized source refresh must not relabel an old DMG as built
+from the new commit.
+
 Documentation acceptance never authorizes a build, signature, Cloud mutation,
 assignment, VM reset, provisioning, deprovisioning or deletion.
