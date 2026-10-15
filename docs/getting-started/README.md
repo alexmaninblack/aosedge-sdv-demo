@@ -9,17 +9,20 @@ old kit numbers or sibling repositories to choose a route.
 1. **Run:** [Install and connect Cloud access](installed-preview-cloud-first-use.md).
    Use one matching DMG, with no compiler or Unreal Editor.
 2. **Build:** [Developer build](reproduce-demo.md). Build project components
-   and the installer, reusing verified CARLA and Factory inputs.
-3. **Rebuild heavy dependencies:** [Full source](full-source-build.md).
-   This separate route lists its unresolved prerequisites and is not yet qualified.
+   and the installer, reusing the prebuilt CARLA simulator and ARM64 virtual
+   controller image (**Factory image**, the clean Linux/AosEdge base).
+3. **Prepare tools to rebuild the controller image or simulator:**
+   [Specialist preparation and full-source scope](full-source-build.md).
+   This prepares compatible host tools, not a complete build. Source/Builder
+   prerequisites and full-source qualification remain separate.
 
 All routes start with the [single launcher in README](../../README.md#start-here)
 and its menu. [Release selection and access](release-status.md) explains the
 matching inputs. Developers do not clone manually first: route B prepares tools,
 checks capacity, selects sources and builds automatically. The
 [launcher reference](unified-macos-launcher.md) explains handoff, repeats and the
-explicit partial specialist route. Local fixture coverage is not the new M1
-first-use walkthrough.
+explicit partial specialist route. The [current release evidence](release-status.md)
+separates offline fixture coverage, actual M1 checks and remaining gates.
 For the system overview, use the [product map](../architecture/product-map.md).
 For changes, use [Contributing](../../CONTRIBUTING.md).
 

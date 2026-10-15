@@ -11,14 +11,14 @@ everything or delete state as the first response.
 
 | Symptom | Next action |
 | --- | --- |
-| Runtime Kit missing | Open the complete DMG or explicitly select its matching kit. Never mix packages. |
+| Runtime Kit missing | Open Setup from the complete matching DMG, with its Runtime Kit beside it. The integrated Setup does not search for substitute kits. Never mix packages. |
 | Signature or inventory mismatch | Stop and compare the descriptor/checksum. Do not edit installed files or expected pins. |
 | Insufficient space | Use Setup's logical payload estimate plus its 90 GiB reserve. Compressed DMG size is not installed size. |
 | Docker unavailable | Complete Docker's first-run prompts and check the local ARM64 engine. Leave an already-running engine alone; opening Dashboard is not a preparation step. |
-| Cloud access failure | Confirm staging, intended OEM/associated SP and exact access route. Missing objects or an occupied Test are distinct from failed authentication. |
+| Cloud access failure | Confirm the intended Production or Staging domain, OEM/associated SP and exact access route. Existing certificates determine the domain; new enrollment uses the selected environment. Missing objects or an occupied Test are distinct from failed authentication. |
 | Uncertain token submission | Use **Inspect saved attempt**. Do not replay the one-time token blindly or replace working credentials. |
 | macOS requests access | Grant the specific normal consent to the signed app. Window placement uses Accessibility; installation does not require blanket Full Disk Access. |
-| Presenter opens without a controller | **Open demo** opens Presenter only. Use Create Controller for a new Test. Native power-on of a stopped retained controller remains a limitation, not a passed returning-user flow. |
+| Presenter opens without a controller | **Open SDV Lab** opens Presenter only. Use Create Controller for a new Test, creating the ARM64 virtual controller from its Factory image. CARLA and Driving Control follow the operator sequence. Native power-on of a stopped retained controller remains a limitation, not a passed returning-user flow. |
 | Presenter closed, but the demo still consumes resources | **Close Presenter (keep demo running)** closes its windows only. Use the engineering owner for a complete non-destructive shutdown; do not treat **Finish demo** as a generic Close button. |
 
 Follow the [installation steps](installed-preview-cloud-first-use.md) and

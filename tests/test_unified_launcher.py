@@ -54,6 +54,27 @@ lab_main {args} --state-dir {shlex.quote(str(self.state))}''')
             self.assertNotIn('UNEXPECTED', result.stdout)
             self.assertFalse(self.state.exists())
 
+    def test_reader_menu_matches_readme_and_names_the_controller_image(self):
+        readme = (ROOT / 'README.md').read_text()
+        labels = ('1. Install and run the demo', '2. Build the demo and installer',
+                  '3. Prepare tools to rebuild the controller image or simulator')
+        for choice, component in (('1\n', None), ('2\n', None),
+                                  ('3\n1\n', 'ARM64 virtual controller image (Factory)'),
+                                  ('3\n2\n', 'Vehicle simulator (CARLA / Unreal)')):
+            result = self.shell(f'''uname() {{ echo UNEXPECTED_PROBE; exit 90; }}
+curl() {{ echo UNEXPECTED_DOWNLOAD; exit 91; }}
+lab_main --plan --state-dir {shlex.quote(str(self.state))}''', input=choice)
+            for label in labels:
+                self.assertIn(label, readme)
+                self.assertIn(label, result.stdout)
+            if component:
+                self.assertIn(component, readme)
+                self.assertIn(component, result.stdout)
+                self.assertIn('no build is started', result.stdout)
+            self.assertNotIn('UNEXPECTED', result.stdout)
+            self.assertFalse(self.state.exists())
+        self.assertLess(readme.index('**Factory image**'), readme.index(labels[2]))
+
     def test_bad_option_or_wrong_route_stops_before_host_access(self):
         for args in ('--oops', '--route D', '--route', '--parent', '--route A --prepare-only',
                      '--route B --dmg /file', '--route A --component factory', '--route A --xcode /Xcode.app',
@@ -229,6 +250,10 @@ prepare_python_cmake() {{ echo REUSED_TOOLS; }}
             self.assertEqual(result.returncode, 2, result.stderr + result.stdout)
             self.assertIn('HOST TOOLS PREPARED — FULL SOURCE NOT READY', result.stdout)
             self.assertIn('REUSED_TOOLS', result.stdout)
+            label = ('ARM64 virtual controller image (Factory)' if component == 'factory'
+                     else 'Vehicle simulator (CARLA / Unreal)')
+            self.assertIn(label, result.stdout)
+            self.assertIn('No controller image, simulator or DMG was built.', result.stdout)
             self.assertFalse(self.state.exists())
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')

@@ -3,7 +3,8 @@
 
 # Current SDV Lab operator workflow
 
-Updated: 7 October 2026. Candidate: Kit028 / Setup042 / Factory .41. This is the implemented Demo Studio / Demo Control
+Updated: 15 October 2026. The [launcher catalog](../../workspace/launcher-catalog.json)
+selects the current operator package. This is the implemented Presenter / Demo Control
 workflow, not a new qualification run. Use the
 [current baseline](../qualification/current-baseline.md) for dated evidence and
 exclusions and the [CLI reference](../../apps/demo-orchestrator/README.md) for
@@ -12,8 +13,12 @@ configuration and engineering commands. The public demo name is
 
 For a new installation, begin with the [operator guide](../getting-started/installed-preview-cloud-first-use.md)
 and [release selection](../getting-started/release-status.md). This sequence is
-the implemented workflow; its dated Kit028 observations do not qualify the new
-source-Factory candidate automatically.
+the implemented workflow. Current M1 Production runtime and separate native
+Setup first-use evidence are in the
+[release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2).
+Dated Kit028 observations below remain historical, not the current selection.
+The Cloud environment follows the selected credentials; connecting to Production
+Aos Cloud does not mean promoting a Test into the separate Production vehicle role.
 
 ## Preparation and version sequence
 
@@ -21,7 +26,9 @@ source-Factory candidate automatically.
    Check access and first-use tenant prerequisites before publication. Prepared
    packages are unsigned; sign with the selected instance's current certificate.
    Neither an old signature nor a previous tenant's identity is reusable authority.
-2. Create an empty Test controller from the current Factory catalog (.41 in Kit028).
+2. Use **Create Controller** to create an empty ARM64 virtual controller from
+   the selected **Factory image**, its clean Linux/AosEdge base. This Test run
+   has its own VM, Cloud identity and data; VDP and services are installed later.
    Any retained Production identity/backing image is outside the Test workflow.
 3. Start or reuse CARLA and native Driving Control / Telemetry in detached mode.
    A not-yet-provisioned controller is not a usable Gateway destination.
@@ -46,7 +53,8 @@ source-Factory candidate automatically.
 VDP is an OEM platform component delivered by FOTA and gated by Safe Stop.
 Brake and Tire are independently delivered QM SOTA containers: their updates
 do not require that component gate. Moving updates are supported by this
-separation, but moving-SOTA qualification for Kit028 remains open.
+separation. The current Production runtime campaign passed moving QM updates;
+the older Kit028 record's open moving-SOTA gate remains historical.
 These condition/advisory services do not control braking or steering.
 
 Functional profiles and allocated release numbers are different. The Kit028
@@ -124,8 +132,9 @@ before retry or deletion. It preserves Production, Factory images, published
 releases and release-number continuity. Git stores source and compact evidence,
 not provisioned disks, credentials or live model state.
 
-The Kit028 installed scripted sequence and subsequent Test retirement passed;
-the complete native operator journey is still open. Opening Presenter does not
+The current runtime has separate API and visible UI qualification, and the
+native Setup first-use check passed with newly issued certificates for existing
+accounts. Neither establishes every native returning-user path. Opening Presenter does not
 power on a stopped retained controller: that UI action is not implemented.
 Do not confuse engineering recovery with native acceptance.
 

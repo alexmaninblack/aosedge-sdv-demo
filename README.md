@@ -15,6 +15,50 @@ real AosEdge platform on a Mac, connected to Aos Cloud. The vehicle and
 controller hardware are simulated or virtualized; software deployment, runtime
 management and updates use actual platform components.
 
+The ARM64 virtual controller runs Linux and the AosEdge platform. It is created
+from a prepared base image, referred to in this project as the **Factory image**.
+This clean image supplies the software foundation; VDP and the demo services
+are installed later through the platform, rather than included in the base image.
+
+## What you can explore
+
+- Deploy software to the virtual controller and observe its operation.
+- Evolve the **Vehicle Data Platform (VDP)** component through firmware-over-the-air
+  (FOTA) delivery, with installation gated by **Safe Stop**.
+- Independently deploy and update **Brake and Tire** services through
+  software-over-the-air (SOTA) delivery, including while the vehicle is moving.
+- See vehicle-derived results, driver advisory, and local operation during a
+  temporary loss of Cloud/backend connectivity.
+
+Brake and Tire are illustrative, non-safety-related (QM) advisory services
+demonstrating the platform, not AosEdge production diagnostic algorithms.
+They do not control braking or steering.
+
+## How the lab fits together
+
+```mermaid
+flowchart TB
+    cloud["Aos Cloud<br/>Provisioning, updates and status"]
+    subgraph mac["Mac — SDV Lab"]
+        factory["Factory image<br/>Linux + AosEdge base"]
+        vehicle["CARLA + Driving Control<br/>Simulated vehicle"]
+        controller["ARM64 virtual controller — QEMU VM<br/>Real AosEdge runtime<br/>VDP + demo services installed later"]
+        backends["Brake and Tire backends<br/>Local Docker containers"]
+        presenter["Presenter + Demo Control<br/>Operator interface"]
+        factory -. "Creates a clean controller" .-> controller
+        vehicle <-->|"Via Vehicle Gateway"| controller
+        controller -->|"Analysis results"| backends
+        presenter -. "Operates and observes" .-> controller
+        backends -->|"Results and history"| presenter
+    end
+    cloud <-->|"Provisioning / FOTA / SOTA / status"| controller
+```
+
+This is a component overview, not a protocol or safety-boundary diagram. CARLA
+simulates the vehicle; the controller is a virtual machine running real platform
+software. The service backends run locally on the Mac, separately from Aos Cloud.
+See the [component map](docs/architecture/product-map.md) for responsibilities.
+
 ## Start here
 
 **Download one launcher, run it and choose what you want to do.** You do not need
@@ -44,16 +88,16 @@ The menu offers:
 ```text
 1. Install and run the demo
 2. Build the demo and installer
-3. Prepare Factory or simulator build tools
+3. Prepare tools to rebuild the controller image or simulator
 ```
 
 ## Choose your route
 
 | Choice | Use it when | What you receive |
 | --- | --- | --- |
-| **A / 1** | You want to use the demo without compiling | Verified approved DMG handed off to its signed Setup |
-| **B / 2** | You want to change project components or build an installer | A new engineering DMG, using prebuilt CARLA and Factory |
-| **C / 3** | You need to change Factory or the simulation engine | Selected specialist host tools prepared; full-source input/build gates remain separate |
+| **A / 1** | You want to use the demo without compiling | The selected DMG is downloaded and verified, then Setup opens for installation and Cloud access |
+| **B / 2** | You want to change project components or build an installer | A new engineering DMG, reusing the prebuilt simulator and controller image |
+| **C / 3** | You need to rebuild the controller image or vehicle simulator | Tools prepared for the selected component; source, Builder and full-build prerequisites remain separate |
 
 The launcher shows the selected route and its plan. Existing compatible tools
 and verified files are reused. Resolve a reported prerequisite, then rerun the
@@ -94,12 +138,21 @@ opening Setup. No source checkout, Xcode, Python, Node or signing key is needed.
 If Docker is missing, it explains how to install and initialize Docker Desktop.
 It does not restart a running Engine or interfere with another project's data.
 
-Installation, destination selection, Cloud access and macOS permission prompts
-remain in **Setup**, their normal owner. Keep the matching Runtime Kit beside
-Setup in the mounted image. Finish installation and Cloud access there, then
-open SDV Lab. Opening Setup alone is not verified installation or a running
-vehicle. Keep the image mounted until Setup quits; afterward you can eject it
-and use the installed application.
+In **Setup**, follow **Install SDV Lab → Connect to Aos Cloud → Open SDV Lab**.
+The complete DMG already contains its matching Runtime Kit; leave it beside
+Setup in the mounted image. Opening the lab displays **Presenter**, the operator
+interface. **Create Controller** begins the vehicle workflow; opening Presenter
+alone does not start the controller, CARLA or Driving Control.
+
+Cloud access requires one vehicle manufacturer (**OEM**) and one associated
+**Service Provider (SP)** account. Use their existing certificates, or obtain
+new certificates in Setup using OEM/SP issuance tokens from the official Cloud
+flow. Existing certificates identify the Cloud environment; for new certificates
+choose **Production** or **Staging**. Account registration remains a separate
+Cloud process. Credentials are not included in the DMG.
+
+macOS may request its normal permissions during setup. Keep the image mounted
+until Setup quits; afterward you can eject it and use the installed application.
 
 This preview is not a notarized public distribution. Do not disable Gatekeeper
 or bypass a macOS security refusal. The installer checks payload/storage needs
@@ -124,8 +177,8 @@ and shared Docker when ending a session—deletion is a different operation.
 
 ## B — Build the demo and installer
 
-Choose **2**. The existing developer workflow prepares tools, fixes the root
-main revision once, obtains pinned component sources and verified inputs,
+Choose **2**. The developer workflow prepares tools, records the root repository's
+`main` revision at the start, obtains pinned component sources and verified inputs,
 checks storage, then builds and signs the engineering DMG. No additional clone
 or build commands need to be copied. Have compatible Xcode and your Apple
 Development signing identity available; first-run/license/system prompts remain
@@ -137,8 +190,10 @@ before downloads and large stages, including Docker's actual storage location.
 A missing or replaced disk stops the run; it never falls back to another disk.
 Shared Docker storage is not moved or restarted.
 
-The workflow builds project components and packaging. It **reuses CARLA and
-Factory**, rather than rebuilding them. Its result is a readable DMG path under
+The workflow rebuilds the demo's project components and installer while
+**reusing the prebuilt vehicle simulator and ARM64 virtual controller image
+(Factory)**. It does not rebuild CARLA/Unreal or the controller image.
+Its result is a readable DMG path under
 `<workspace>/output/`, labelled `BUILD COMPLETE / CHAIN_BUILT_NOT_QUALIFIED`.
 It does not install, start or upload the resulting demo. Installation is a
 separate deliberate route using that candidate's matching approved inputs.
@@ -153,20 +208,22 @@ or [manual build reference](docs/getting-started/reproduce-demo.md) for diagnosi
 not another required checklist.
 
 <a id="heavy-dependencies"></a>
+<a id="c--prepare-factory-or-simulator-tools"></a>
 
-## C — Prepare Factory or simulator tools
+## C — Prepare tools to rebuild the controller image or simulator
 
-Choose **3**, then choose **Factory** or **CARLA / Unreal**. The script checks
-compatible tools and offers preparation of missing host tools, reusing the
-selected APFS workspace for Python, caches and scratch. Factory uses its
+Choose **3**, then choose **ARM64 virtual controller image (Factory)** or
+**Vehicle simulator (CARLA / Unreal)**. The script checks compatible tools and
+offers preparation of missing host tools, reusing the selected APFS workspace
+for Python, caches and scratch. Controller-image preparation uses the Builder's
 existing exact QEMU/firmware requirement. Simulator preparation checks Xcode,
 Python, CMake and Ninja. Neither needs Cloud credentials, Node, Docker or a
 signing key merely for this preparation.
 
 **This route prepares host tools; it does not yet provide a turnkey full-source
-build.** A retained exact-source Factory procedure exists, but fresh Builder
-acquisition/guest preparation remains separate. CARLA/Unreal still needs
-licensed source/assets and a complete reproducible macOS recipe. The script
+build.** A retained exact-source controller-image procedure exists, but acquiring
+and preparing its Linux build VM (**Builder**) remains separate. CARLA/Unreal
+still needs licensed source/assets and a complete reproducible macOS recipe. The script
 lists those remaining conditions and exits with an explicit partial result;
 it never launches a VM or an expensive engine build to make preparation look
 complete. See the [specialist guide](docs/getting-started/full-source-build.md).

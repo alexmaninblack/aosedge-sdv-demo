@@ -4,31 +4,35 @@
 # Developer build reference
 
 The normal route is the **single downloaded launcher in
-[README B1](../../README.md#b1-prepare-tools-storage-and-access)**. It handles
+[README option 2 / B](../../README.md#developer-build)**. It handles
 preparation, root/component checkouts, storage checks, verified input acquisition
 and the existing developer DMG chain automatically. You do not need the manual
 commands below after running it. Repeat the same launcher to continue after a
 resolved interruption; it keeps the selected root commit and delegates reuse
-to the existing owners. Public publication and the exact producer/storage gates
-remain open as described in README; a wrapper does not qualify the build.
+to the existing owners. Public input delivery is available; build qualification
+and exact producer/storage gates remain separate. A wrapper does not qualify a build.
 
-This page preserves the individual commands for engineering diagnosis and
-manual reproduction only. Do not run them concurrently with the launcher.
+This page preserves the older source-Factory candidate's individual commands
+for engineering diagnosis and historical manual reproduction only. They are
+not the current option B recipe. Do not run them concurrently with the launcher.
 
 This developer route builds project components and a matching installer using
-verified standalone CARLA, native support and source-built Factory .41 inputs.
+the verified prebuilt CARLA simulator, native support and ARM64 virtual
+controller image (**Factory image**, the clean Linux/AosEdge base).
 It does not compile Unreal/CARLA or require an old installed kit. To run
 a prebuilt package, use the [installation guide](installed-preview-cloud-first-use.md).
 
-The route targets the `1.2.0-rc.1` source-Factory candidate. Tooling and warm
-builds have passed; fresh-clone reproduction of this guide remains an R4 gate.
-Read [release selection](release-status.md) first. The historical source tag
-does not include these newer commands; the candidate tag is not yet published.
-The exact published root revision and its source branch are recorded in release
-selection; the preparation wizard resolves input selections automatically
-through the source-pinned public release catalog. Public publication/activation
-is still pending; the preparation reference documents the explicit private
-maintainer compatibility route.
+Current option B resolves the reviewed producer plan through
+[`workspace/current-developer-build.json`](../../workspace/current-developer-build.json)
+and obtains inputs automatically from the pinned public catalog. The selected
+plan can reuse older binary-input definitions while selecting newer build tools;
+it is independent of the operator DMG selected for option A. Read
+[release selection](release-status.md) for the current evidence and limitations.
+
+The explicit build commands below retain the `1.2.0-rc.1` source-Factory plan
+and checkpoints. Its warm-build evidence is not a fresh-host guarantee or the
+current published operator release. Use option B for the current supported
+automation rather than substituting newer pins into these historical commands.
 
 ## 1 Prepare the host and access
 
@@ -36,7 +40,7 @@ For the optional manual route, download the launcher from README and run it in
 preparation-only mode, then load the generated handoff:
 
 ```sh
-/bin/bash "$HOME/Downloads/aosedge-prepare-macos.sh" --prepare-only
+/bin/bash "$HOME/Downloads/aosedge-sdv-lab.sh" --route B --prepare-only
 source "$HOME/Library/Application Support/AosEdge SDV Lab/Developer/environment.sh"
 ```
 
@@ -45,8 +49,9 @@ loaded`. This checks tools/versions, storage, public
 input availability and signing selection, and supplies all `SDV_*` variables below. No long
 shell blocks or clone are required for preparation. The optional
 [preparation reference](macos-developer-tools.md) covers diagnostics and recovery.
-The real installation/build walkthrough remains pending; offline wizard fixtures
-are not evidence of a completed host setup or build. Stop after any error.
+Fresh-host developer reproduction remains a separate gate; offline wizard
+fixtures are not evidence of a completed host setup or build on a new machine.
+The M1 operator installation has its own release-specific evidence. Stop after any error.
 
 | Requirement | Purpose |
 | --- | --- |
@@ -54,7 +59,7 @@ are not evidence of a completed host setup or build. Stop after any error.
 | Python 3.10 or later for `lab`; ARM64 Python 3.12 with `packaging` for build owners | Resolver and isolated Cloud worker assembly |
 | Node 26.0.0 and npm 11.12.1 | Pinned UI and backend tooling |
 | CMake, Git, Docker CLI and running local Docker Desktop | Gateway and Linux ARM64 builds |
-| Mounted external APFS SSD | Sources, caches, scratch, outputs and Docker's active backing disk |
+| Writable APFS workspace with sufficient capacity | Current option B supports internal or external local storage and checks Docker's actual backing disk separately; the historical commands below retain their frozen external-storage policy |
 | Published public release catalog and input links | Automatic input selection, then acquisition of five locked archives; no Google account or CLI |
 | Authorized Apple Development signing identity in Keychain | Explicit Setup signing, not notarized distribution |
 
@@ -67,9 +72,9 @@ needed later for the installed demo, not these builds.
 The table and exact commands below reproduce the existing candidate, whose
 frozen producers retain the external-only layout. New scripts accept internal
 or external APFS workspaces and separately check the active Docker disk, but
-those changes are not yet regression-tested or adopted by this candidate's
-producer plan. Do not edit historical pins or claim the complete internal-disk
-route passed. A successor plan must select the reviewed new producers.
+those changes do not rewrite this historical candidate's producer plan.
+The current launcher selects reviewed storage-aware successor owners. Do not
+edit historical pins or infer an unmeasured cold/internal-disk build peak.
 
 Do not relocate Docker's disk or restart it as a build side effect. No live
 Test, backend container, VM or simulator is started by this route.
@@ -210,7 +215,8 @@ route above has passed. Do not erase those gates.
 | Unchanged chain repeat | 69 sec | Observed warm result, not a guarantee |
 | Fresh-host build time and peak storage | Not yet measured | R4 must establish these on its declared host |
 
-Large payloads, caches and temporary files stay on SSD. Routine delivery does
+Large payloads, caches and temporary files stay on the selected build volume
+(the external SSD in this historical campaign). Routine delivery does
 not download a just-uploaded DMG back to the maintainer. The real installation
 consumer verifies its own download.
 

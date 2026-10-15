@@ -7,15 +7,21 @@ SDV Lab combines a simulated vehicle with real AosEdge software delivery and
 runtime components. It demonstrates platform capability; Brake and Tire are
 illustrative QM advisory services, not production diagnostics or vehicle control.
 
+The **Factory image** is the prepared, unprovisioned Linux/AosEdge base used
+to create the **ARM64 virtual controller**. VDP and the Brake/Tire services are
+delivered afterward. A **Builder** is a separate build VM used to produce that
+image, not a second controller in the demo. The
+[README overview diagram](../../README.md#how-the-lab-fits-together) shows these roles.
+
 ## What runs where
 
 | Part | Location | Role |
 | --- | --- | --- |
 | CARLA and Vehicle Gateway | macOS | Simulated vehicle motion/measurements, driving controls and VISS transport |
-| AosCore, KUKSA and vehicle platform | ARM64 AosVM controller | Real platform runtime, identity, data contract and software installation |
+| AosCore, KUKSA and vehicle platform | ARM64 virtual controller (QEMU VM) | Real platform runtime, identity, data contract and software installation |
 | Brake and Tire services | Separate containers in that controller | Independent local analytics and typed advisory, using authorized KUKSA data |
 | Brake and Tire backends | Separate Docker containers on macOS in this lab | Receive products, retain history and answer Presenter queries |
-| Aos Cloud staging | Remote Cloud | Real provisioning, software delivery and authoritative Unit/software observations |
+| Aos Cloud | Remote Cloud; intended Production or Staging environment | Real provisioning, software delivery and authoritative Unit/software observations |
 | Presenter and Demo Control | macOS | One operator workflow across these owners; not a replacement Cloud or service runtime |
 
 The virtual controller represents a vehicle computer, not a simulation of the
@@ -32,8 +38,8 @@ backend delivery remain distinct when the external network is unavailable.
 
 ## Source ownership
 
-You clone the integration repository once. The developer build prepares exact
-source roles; there is no requirement to manually assemble this hierarchy.
+The launcher prepares the integration checkout and exact component source roles
+for developer builds; there is no requirement to manually assemble this hierarchy.
 Links below select the existing workspace source pins, not floating branches.
 They are component references, not promises that each README is an installer guide.
 
@@ -54,6 +60,9 @@ Component code stays with its owner. The [workspace manifest](../../workspace/re
 records source references; release definitions and producer plans distinguish
 component code from packaging tools. Documentation-only commits do not
 silently advance a built artifact's source pin.
+These retained workspace references explain ownership; the
+[selected release](../getting-started/release-status.md) and current developer
+build plan identify the exact artifact/producer sources, which may differ.
 
 ## Read deeper when needed
 

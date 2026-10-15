@@ -3,8 +3,10 @@
 
 # Full source build scope and prerequisites
 
-Use this route when changing the simulation engine, native dependencies or
-vehicle Factory image. For UI, Gateway, services and backends, use the
+Use this route when changing the vehicle simulator, native dependencies or
+**ARM64 virtual controller image (Factory)**. The Factory image is the clean
+Linux/AosEdge base from which the controller VM is created, not a running or
+provisioned vehicle. For UI, Gateway, services and backends, use the
 [developer route](reproduce-demo.md) and reuse heavy dependencies. Operators
 use a [prebuilt DMG](installed-preview-cloud-first-use.md).
 
@@ -13,8 +15,10 @@ resolver describes the scope, but does not provide a completed end-to-end
 full-source build for a new user.
 
 Choice **3 / C** in the [README launcher](../../README.md#start-here) now prepares
-host tools for either Factory or CARLA/Unreal. It does not run the compilation
-commands below or acquire the remaining source/assets/Builder inputs. Its final
+host tools under **Prepare tools to rebuild the controller image or simulator**.
+Its subchoices are **ARM64 virtual controller image (Factory)** and
+**Vehicle simulator (CARLA / Unreal)**. It does not compile either component
+or acquire the remaining source/assets/Builder inputs. Its final
 partial result is not full-source readiness. See the
 [launcher reference](unified-macos-launcher.md) for repeats and tooling scope.
 
@@ -33,11 +37,17 @@ unrecorded files from a maintainer's machine to clear them.
 | Area | Existing route | Remaining condition |
 | --- | --- | --- |
 | Project components and packaging | Developer chain | Fresh-environment qualification of the documented chain |
-| Factory .41 | Exact-source campaign in the SSD-backed ARM64 Builder with native/package/image gates | Independent packaging pins and live qualification for a new candidate |
+| ARM64 controller image (Factory) | Recorded .41 exact-source campaign in the SSD-backed ARM64 Builder with native/package/image gates | Independent packaging pins and live qualification for each new image/candidate |
 | CARLA and Unreal | Maintained Apple Silicon forks and retained standalone dependency | Complete source/assets/toolchain closure, licensed access, capacity and reproduction proof |
 | Native host support, SDK and unsigned vehicle bases | Pinned binary inputs in the developer route | Source/build closure for each full-source claim |
 
-## Factory subroute
+<a id="factory-subroute"></a>
+
+## Controller image (Factory) subroute
+
+The **Builder** is a separate ARM64 Linux build VM used to compile the image;
+it is not the demo's vehicle controller. Preparing macOS tools does not create
+or prepare this Builder.
 
 The Factory campaign rebuilt .41 using a separate exact-source directory in
 the retained ARM64 Builder, with explicit download and shared-state cache

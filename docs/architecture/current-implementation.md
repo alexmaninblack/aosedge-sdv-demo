@@ -4,10 +4,12 @@
 # Implemented architecture and traceability
 
 - Status: as-built candidate view; not blanket requirements acceptance
-- Version: 2.0
+- Version: 2.1
 - Prepared: 2026-10-07
+- Updated: 2026-10-15
 - Owner: SDV Lab integration
-- Source: [Kit028 / Setup042 source lock](../../workspace/checkpoints/installer-kit-028-source-lock.json)
+- Current selection: [launcher catalog](../../workspace/launcher-catalog.json) and its immutable delivery descriptor
+- Historical source: [Kit028 / Setup042 source lock](../../workspace/checkpoints/installer-kit-028-source-lock.json)
 
 ## Reading the design chain
 
@@ -17,9 +19,14 @@ Stable IDs and unfulfilled obligations remain intact. Accepted later amendments
 take precedence over original design examples; implementation is not authority
 to invent a new requirement or mark an unexecuted test passed.
 
-The [current baseline](../qualification/current-baseline.md) selects Kit028,
-Setup042 and Factory .41. The [source return point](../qualification/kit028-setup042-source-publication-2026-10-05.md)
-records exact sources; demo-v1.1 / Factory .39 is historical. Factory .41
+The [current baseline](../qualification/current-baseline.md) points to the
+selected release and its exact evidence. The
+[release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
+records current main/tag publication, M1 Production runtime checks, separate
+native Setup first use and anonymous delivery. Kit028 / Setup042 and
+demo-v1.1 / Factory .39 are historical; the
+[Kit028 return point](../qualification/kit028-setup042-source-publication-2026-10-05.md)
+preserves its exact sources. The retained Factory .41
 embeds mainline-derived AosCore with explicit retained patches, KUKSA and the
 removable KAC helper. It is not unmodified current upstream mainline.
 
@@ -27,9 +34,16 @@ removable KAC helper. It is not unmodified current upstream mainline.
 
 One complete DMG supplies signed Setup and a digest-bound Runtime Kit:
 application/UI, prebuilt standalone CARLA/Driving Control/Gateway, QEMU and
-Factory, preparation inputs, Cloud SDK and backend image archive. No Unreal
+the ARM64 controller base image (Factory), preparation inputs, Cloud SDK and backend image archive. No Unreal
 Editor, source checkout or compiler is required on the operator Mac.
 Docker Engine and access/permissions remain prerequisites.
+
+The **Factory image** is a clean, unprovisioned Linux/AosEdge base used to
+create the **ARM64 virtual controller**, a QEMU VM. VDP and the demo services
+are delivered later. The Linux **Builder** that compiles this image is a
+separate development tool, not part of the running vehicle. See the
+[reader overview](../../README.md#how-the-lab-fits-together) and
+[component map](product-map.md) for locations and responsibilities.
 
 Setup wraps existing transaction, selection and Demo Control code; it does not
 own a second vehicle lifecycle. Immutable program/input versions are separate
@@ -41,7 +55,9 @@ silently adopt a foreign instance or replace a live selected version.
 The first-use topology is one OEM and one associated SP with independent Brake
 and Tire identities. Cloud reads and backend-image preparation are explicit
 steps. Open demo opens Presenter; it does not create or start a controller.
-The full guided-wizard/returning-stopped-instance experience is not complete.
+Integrated Install / Connect / Open is implemented; native issuance/connection
+with existing accounts passed on M1 Production. New-account registration and
+the full returning-stopped-instance experience are not closed by that proof.
 See the [native Setup contract](../../contracts/distribution-installation/native-setup.md).
 
 ## Runtime and authority
@@ -98,17 +114,17 @@ cases and final acceptance remain as stated below and in the dated receipts.
 | --- | --- | --- |
 | [Vehicle Simulation](../requirements/components/vehicle-simulation.md) | `CarlaSim`; Gateway scenario/controller tooling | Native physics, scripted Brake/Tire maneuvers and road recovery; full frozen healthy/pre-aged repeat matrix is not established by a few successful maneuvers |
 | [Vehicle Gateway](../requirements/components/vehicle-gateway.md) | [runtime source](../../../carla-ego-runtime/src/runtime_carla.cpp), [tests](../../../carla-ego-runtime/tests/qm_advisory_test.cpp) | Sampling/units, bounded control handoff, strict selected-peer VISS, typed advisory and native telemetry implemented; complete hardware/actuator and dual-role matrix remain broader obligations |
-| [Factory Substrate](../requirements/components/factory-substrate.md) | [platform layer](../../../aos-vehicle-platform/meta-aos-vehicle-platform) | Immutable .41 with native managers, KUKSA/KAC, VLAN allocation and source-timestamp corrections; installed scripted sequence passed, full native acceptance open |
+| [Factory Substrate](../requirements/components/factory-substrate.md) | [platform layer](../../../aos-vehicle-platform/meta-aos-vehicle-platform) | Retained immutable .41 controller image with native managers, KUKSA/KAC, VLAN allocation and source-timestamp corrections; current installed runtime passed API/visible UI checks, not all Factory requirement cases |
 | [KUKSA compatibility](../requirements/components/kuksa-authorization-compatibility.md) | [KAC source](../../../aos-vehicle-platform/authorization/aos-kuksa-compat) | Real IAM/TLS/token renewal and offline-local operation; removable compatibility layer, not future native API or hardware-HSM certification |
-| [VDP](../requirements/components/vehicle-data-platform.md) | [provider](../../../aos-vehicle-platform/providers/carla-viss-kuksa), Demo Control component preparation | Common current runtime, profile-bound 7/15/23 telemetry paths, typed V3 output; Safe Stop FOTA and serial V1→V2→V3 passed in the installed Kit028 journey; native moving-SOTA/complete UI acceptance remain separate |
-| [Aos lifecycle](../requirements/components/aos-lifecycle.md) | Demo Control Unit, component/service publication and assignment modules; native AosCore/Cloud | Guarded Test provision/publish/assign/retire implemented; Kit028/.41 ignition/offline proof, no new native service-to-FOTA pre-transfer admission or full production-promotion qualification |
+| [VDP](../requirements/components/vehicle-data-platform.md) | [provider](../../../aos-vehicle-platform/providers/carla-viss-kuksa), Demo Control component preparation | Common current runtime, profile-bound 7/15/23 telemetry paths, typed V3 output; current M1 runtime passed serial V1→V2→V3 Safe Stop FOTA and moving QM service updates; VDP-TIMEOUT-01 remains deferred |
+| [Aos lifecycle](../requirements/components/aos-lifecycle.md) | Demo Control Unit, component/service publication and assignment modules; native AosCore/Cloud | Guarded Test provision/publish/assign/retire implemented; current Production-environment Test passed ignition/offline checks, not separate vehicle Production-role promotion or new native service-to-FOTA pre-transfer admission |
 | [Brake service](../requirements/components/brake-health-service.md) | [service source](../../../brake-health-service/src/runtime/product.cpp), [runtime profiles](../../../brake-health-service/docs/runtime-profiles.md) | V1 captures, V2 analyzes, V3 preserves model and adds advisory; real inputs/delivery/reset; quota stress/calibration/crash matrix not all complete |
 | [Brake Cloud](../requirements/components/brake-health-cloud.md) | [backend](../../../brake-health-cloud/README.md), Presenter | Durable ACK/idempotency, windows/details, products, function observation, Reset and exact cleanup implemented; production ingestion authentication and standalone live dashboard are not claimed |
 | [Tire service](../requirements/components/tire-health-service.md) | [service source](../../../tire-health-service/src/runtime/application.cpp) | Functional V1 consumes 15 VDP V3 inputs, estimates, queues and publishes advisory; fixed CPU-load demonstration and complete calibration remain unimplemented/unqualified scope |
 | [Tire Cloud](../requirements/components/tire-health-cloud.md) | [backend source](../../../tire-health-cloud/src/store.mjs), Presenter | Separate persistence/ACK/query/SSE/Reset/cleanup; fixed CPU qualification endpoint is not implemented; retained legacy cleanup schema differs from current Studio handler |
 | [Demo orchestration](../requirements/components/demo-orchestration.md) | [orchestrator](../../apps/demo-orchestrator), [Presenter](../../apps/presenter-ui) | Shared guarded commands, bounded read paths, source attachment, layout, resources, Finish and boot recovery; host sleep/wake remains planning |
 | [Cross-cutting](../requirements/components/cross-cutting.md) | Native policy/identity, contracts and repository/security gates | Enforcing/private credentials, separate teams, bounded transport and scoped negatives; no production safety/security certification inferred |
-| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | Kit028 passed 98 installed scripted steps; native acceptance, full P8 dossier, long soak and nonempty-queue power-loss are not closed |
+| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | Current runtime passed 118 API and 42 visible browser UI checks plus required native driving input; separate native Setup first use passed. New-account signup, full native return journey, full P8 dossier, long soak and nonempty-queue power loss are not closed |
 
 ## Protocol, compatibility and resource facts
 
@@ -120,7 +136,7 @@ entries alone is not a live publisher or fresh sample.
 
 Current service packages request 1024 file descriptors; Brake has 24 PIDs and
 Tire 16. Brake requests 250 DMIPS and Tire 600 DMIPS; the latter is the
-authorized staging requalification envelope, not a completed isolation proof. Native AosCore enforces quotas. CPU graphs in DMIPS are not proof of
+authorized test envelope, not a completed isolation proof. Native AosCore enforces quotas. CPU graphs in DMIPS are not proof of
 the planned fixed-load isolation experiment. That experiment must not be
 described as available merely because its design profile exists.
 
@@ -155,8 +171,10 @@ Load-sensitive readiness and VDP-TIMEOUT-01 remain explicitly deferred.
 
 ## Qualification and residual mismatches
 
-The [audit register](../qualification/documentation-reconciliation-2026-10-07.md)
-is the current consolidated list. The
+The [current baseline](../qualification/current-baseline.md) and selected release
+report supply current acceptance boundaries. The
+[7 October audit register](../qualification/documentation-reconciliation-2026-10-07.md)
+retains that review's dated findings. The
 [protocol map](../../contracts/implementation-status.md) records legacy
 machine-readable packages that need a separately versioned synchronization;
 passing their old fixtures is not proof of current backend conformance.

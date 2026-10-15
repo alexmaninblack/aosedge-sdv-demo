@@ -9,7 +9,7 @@ lab_spec() {
   case "$1" in
     developer) printf '%s\n' '0577cb8bac914f07648325b6370eb5cefbcad423 9a9b7c8fd95eb1a3e83558ada660260df9a4b4073a7fd8f08d2899f986735560 80942' ;;
     install) printf '%s\n' '66afb3b4178368fd938dca934f30b41463ca2b94 ae184281db9373165a7e0d5c72aec8420c2407a1ff4c294d38cda3352e3755b1 12280' ;;
-    heavy) printf '%s\n' '2b5d7cacffccac69720bf1419196b4e669ec74e8 d618bf110291058d04851b645f679b8b38eee7401803d3945235841e838b8819 7864' ;;
+    heavy) printf '%s\n' 'da9401cd44fe1a3afc2278b65b20863c57370465 32268514104f83e4a02afc4537d3432d1d31801480009f401705f5c886006764 8225' ;;
     common) printf '%s\n' '49cc7f6f13de75a2a7b289b2aeddefa9bf115cee cb16c4b81d3caf90c26d0ff723875975ab12eb349e220f7631d589c776a3969a 5401' ;;
     catalog) printf '%s\n' '8c0612eef41275076f6176eaa9406e0b1f57255f 2e6a93777a8f590bd953b6a8a62cb92b9b69a3342b929caaa0e567896741d9da 1284' ;;
     drive-parser) printf '%s\n' '0eb1575c25c0050567a3843d1962e23cf182da3b bf9dc8b53e694008a17dbddff63eaf9d5fc689abe959eda716a511b0400085a3 7634' ;;
@@ -25,7 +25,9 @@ lab_help() {
   lab_say 'Usage: /bin/bash aosedge-sdv-lab.sh [--route A|B|C] [--parent PATH] [--check | --plan]'
   lab_say 'A: approved DMG → signed Setup. Optional: --dmg /absolute/file.dmg'
   lab_say 'B: existing developer workflow → signed engineering DMG. Optional: --prepare-only'
-  lab_say 'C: host tools only. Optional: --component factory|simulator and --xcode PATH'
+  lab_say 'C: prepare tools to rebuild the controller image or simulator; no build is started.'
+  lab_say '   --component factory selects the ARM64 virtual controller image; simulator selects CARLA / Unreal.'
+  lab_say '   Optional: --xcode PATH'
   lab_say '--check: cached/local checks only; no download, installation or state write.'
   lab_say '--plan: describe the selected route only; no host probes, downloads or changes.'
   lab_say '--parent: existing APFS folder on an internal or external disk; no disk formatting.'
@@ -90,7 +92,7 @@ lab_menu() {
   lab_say ''; lab_say 'What would you like to do?'
   lab_say '  1. Install and run the demo'
   lab_say '  2. Build the demo and installer'
-  lab_say '  3. Prepare Factory or simulator build tools'
+  lab_say '  3. Prepare tools to rebuild the controller image or simulator'
   [ -z "$last" ] || lab_say "Last choice: $last. Press Return to resume that route."
   printf 'Your choice: ' >&2
   IFS= read -r answer || lab_die 'Input ended; no action started.'
@@ -103,9 +105,9 @@ lab_menu() {
 lab_component() {
   local answer
   if [ -z "$LAB_COMPONENT" ]; then
-    lab_say '  1. Factory — ARM64 controller image'; lab_say '  2. CARLA / Unreal — simulation engine'
+    lab_say '  1. ARM64 virtual controller image (Factory)'; lab_say '  2. Vehicle simulator (CARLA / Unreal)'
     printf 'Your choice: ' >&2; IFS= read -r answer || lab_die 'Input ended; no action started.'
-    case "$answer" in 1|factory) LAB_COMPONENT=factory ;; 2|simulator) LAB_COMPONENT=simulator ;; *) lab_die 'Choose Factory or simulator.' ;; esac
+    case "$answer" in 1|factory) LAB_COMPONENT=factory ;; 2|simulator) LAB_COMPONENT=simulator ;; *) lab_die 'Choose 1 for the controller image or 2 for the vehicle simulator.' ;; esac
   fi
 }
 lab_fetch() {
@@ -239,7 +241,12 @@ lab_main() {
     case "$LAB_ROUTE" in
       A) lab_say 'Approved DMG verification → signed Setup; no compiler, source checkout or Cloud action in this script.' ;;
       B) lab_say 'Existing developer preparation → pinned sources/inputs → engineering DMG; no installation or publication.' ;;
-      C) lab_say "Prepare $LAB_COMPONENT host tools only. Fresh Builder/source/assets and full-source qualification remain separate." ;;
+      C)
+        case "$LAB_COMPONENT" in
+          factory) lab_say 'Prepare tools for the ARM64 virtual controller image (Factory); no build is started.' ;;
+          simulator) lab_say 'Prepare tools for the vehicle simulator (CARLA / Unreal); no build is started.' ;;
+        esac
+        lab_say 'Fresh Builder/source/assets and full-source qualification remain separate.' ;;
     esac; return 0
   fi
   [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ] && [ "$(id -u)" != 0 ] || lab_die 'Use a native Apple Silicon Terminal as your ordinary user.'

@@ -81,7 +81,7 @@ heavy_install_qemu() {
   heavy_qemu || die 'QEMU/native firmware does not match the existing Builder recipe; full-source remains blocked.'
 }
 heavy_main() {
-  local arg component= mode=run parent= xcode= confirm missing=no
+  local arg component= component_label= mode=run parent= xcode= confirm missing=no
   while [ "$#" -gt 0 ]; do
     arg=$1; shift
     case "$arg" in
@@ -91,7 +91,11 @@ heavy_main() {
       *) printf 'STOP: Unknown specialist option.\n' >&2; return 1 ;;
     esac
   done
-  case "$component" in factory|simulator) ;; *) printf 'STOP: Select Factory or simulator.\n' >&2; return 1 ;; esac
+  case "$component" in
+    factory) component_label='ARM64 virtual controller image (Factory)' ;;
+    simulator) component_label='Vehicle simulator (CARLA / Unreal)' ;;
+    *) printf 'STOP: Select the controller image (--component factory) or vehicle simulator (--component simulator).\n' >&2; return 1 ;;
+  esac
   heavy_import || return $?; route_host
   heavy_parent "$parent" "$component"
   SDV_PYTHON="$SDV_ROOT/tools/python/bin/python3.12"
@@ -100,21 +104,22 @@ heavy_main() {
   export DEVELOPER_DIR; PRIVATE_INPUTS=no
   [ "$component" != simulator ] || SDV_CMAKE_MIN=$(route_field specialist.simulator.cmakeMin)
   heavy_discover
-  say "Specialist route: $component — host tools only, no build or VM boot."
+  say "Specialist route: $component_label — host tools only, no build or VM boot."
   say 'No Cloud access, Node, Docker or signing key is required by this preparation.'
   if [ "$component" = simulator ]; then
     [ "$XCODE_OK" = yes ] || { say 'ACTION: Install/open compatible Xcode and finish its license/components, then rerun. No global selection changed.'; return 2; }
     heavy_ninja || missing=yes
   else
     heavy_qemu || missing=yes
-    say "Factory Builder also requires $(route_field specialist.factory.builderMemoryGiB) GiB RAM, $(route_field specialist.factory.builderInitialHostFreeGiB) GiB initial host space and $(route_field specialist.factory.builderGuestFreeGiB) GiB free in the guest. These are not tool-installation checks."
+    say 'The Builder is a separate ARM64 Linux build VM, not the demo controller.'
+    say "The controller-image Builder also requires $(route_field specialist.factory.builderMemoryGiB) GiB RAM, $(route_field specialist.factory.builderInitialHostFreeGiB) GiB initial host space and $(route_field specialist.factory.builderGuestFreeGiB) GiB free in the guest. These are not tool-installation checks."
   fi
   [ -n "$SDV_CMAKE" ] && [ "$PYTHON_OK" = yes ] || missing=yes
   if [ "$mode" = check ]; then
     [ "$missing" != yes ] || { say 'LOCAL TOOLS INCOMPLETE — run this route normally to prepare missing compatible tools.'; return 2; }
     say 'HOST TOOLS OBSERVED — full-source inputs/build capacity not verified.'; return 0
   fi
-  say "Plan: reuse compatible Python/CMake and prepare missing $component host tools on the selected workspace."
+  say "Plan: reuse compatible Python/CMake and prepare missing host tools for $component_label on the selected workspace."
   say 'Xcode/Homebrew use normal host locations and may require system prompts; caches/scratch stay on the chosen disk.'
   confirm=$(ask 'Prepare these host tools? (yes/no)' no)
   [ "$confirm" = yes ] || { say 'Cancelled. No tools installed.'; return 2; }
@@ -129,11 +134,11 @@ heavy_main() {
   route_recheck
   say ''; say 'HOST TOOLS PREPARED — FULL SOURCE NOT READY.'
   if [ "$component" = factory ]; then
-    say 'Remaining: exact ARM64 Linux Builder/base, guest tool/cache preparation and Factory owner gates.'
+    say 'Remaining: exact ARM64 Linux Builder/base, guest tool/cache preparation and controller-image (Factory) owner gates.'
   else
     say 'Remaining: licensed Unreal access, pinned CARLA/Unreal source/assets and a closed macOS build recipe.'
   fi
-  say 'No Builder or simulator was started. No Factory/engine/DMG was built.'
+  say 'No Builder or simulator was started. No controller image, simulator or DMG was built.'
   say 'Specialist procedure: docs/getting-started/full-source-build.md'
   return 2
 }

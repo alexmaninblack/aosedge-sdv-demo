@@ -51,11 +51,15 @@ installed results; those results are not promoted to new bytes.
   verifies these automatically; no storage-provider login is required.
 - **Developer:** the exact root revision and available producer/component
   commits, and approved access to the release catalog plus simulation and
-  vehicle/Factory inputs. The preparation wizard obtains the compatible
+  ARM64 virtual controller image (Factory) inputs. This is the clean
+  Linux/AosEdge base used to create the controller. The preparation wizard obtains the compatible
   references automatically; users do not supply JSON binding files.
 - **Both:** instructions for access to the intended Aos Cloud environment.
   The first-demo topology uses one OEM and one associated SP for two separate
-  services. Credentials and provisioned identities are never included in media.
+  services. Existing certificates determine the Cloud domain; new enrollment
+  asks for Production or Staging. Credentials and provisioned identities are
+  never included in media. New certificate issuance for existing authorized
+  accounts is distinct from new-company/account registration.
 
 Dropbox/Google Drive delivery and Aos Cloud access are separate. A public
 download does not enroll an OEM/SP or grant Cloud publication rights. A Git

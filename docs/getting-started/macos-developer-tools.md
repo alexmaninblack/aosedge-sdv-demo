@@ -14,8 +14,10 @@ This page is a reference, not another six-block copy/paste prerequisite.
 The developer executor remains [prepare-macos.sh](../../scripts/prepare-macos.sh).
 Its earlier [build-only campaign](../../workspace/checkpoints/developer-launcher-e2e-20261010.json)
 completed through a signed DMG; that receipt is not acceptance of the newly
-added menu or a live installer. The new launcher has separate offline fixtures
-and an outstanding real M1 first-use walkthrough.
+added menu or a live installer. The launcher has separate offline fixtures;
+the [current release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
+records the passed M1 operator-download and native Setup first-use profiles.
+Neither substitutes for a fresh-host developer build.
 
 The default route needs no Google account or Google CLI. The owner-authorized
 public test inputs and pinned catalog are available through the current launcher
@@ -248,6 +250,9 @@ for later additions. Review its stable URL and generated record SHA-256 into
 `PUBLIC_PIN` in `scripts/developer_catalog.py`, then run
 `scripts/sync-preparation-catalog` to refresh the standalone wizard.
 
-Offline fixtures and the prior synthetic 1 MiB/128 MiB transport proof do not
-qualify actual large-archive delivery or grant redistribution rights. The
-joint first-use walkthrough remains a separate check after activation.
+Public activation is implemented; this section describes release-owner
+maintenance, not another action for readers. Offline fixtures and the prior
+synthetic 1 MiB/128 MiB transport proof do not alone qualify actual large-archive
+delivery or grant redistribution rights. Actual consumer evidence belongs to
+the selected release report; first-use installation and fresh developer builds
+have separate acceptance boundaries.

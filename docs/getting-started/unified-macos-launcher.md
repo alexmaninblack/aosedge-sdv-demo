@@ -14,7 +14,7 @@ matching helpers are obtained automatically, not manually selected.
 | --- | --- | --- |
 | A | Approved DMG/Setup verified; normal macOS open requested | Completed installation, authenticated Cloud access, visible Setup or a running vehicle |
 | B | Existing developer preparation/build completed, with its canonical receipt | Qualified release, bit-identical signing, installation or publication |
-| C | Compatible specialist host tools observed/prepared | Complete source/assets/Builder closure, build capacity, compilation or full-source qualification |
+| C / 3 — Prepare tools to rebuild the controller image or simulator | Compatible tools observed/prepared for the selected component | Complete source/assets/Builder closure, build capacity, compilation or full-source qualification |
 
 A validates against the operator entry in the source-owned
 [launcher catalog](../../workspace/launcher-catalog.json), projected from the
@@ -39,7 +39,10 @@ B delegates to the unchanged standalone developer script. It retains the
 pinned component inputs and explicit signing. The menu changes no producer
 plan, recipe, artifact bytes or release qualification status.
 
-C separates Factory and simulator tools. Factory uses the Builder's exact
+C offers **ARM64 virtual controller image (Factory)** and **Vehicle simulator
+(CARLA / Unreal)**. The Factory image is the clean Linux/AosEdge base used to
+create the controller, not a running VM. Its **Builder** is a separate Linux
+build VM. Controller-image preparation uses the Builder's exact
 QEMU/firmware identity and checks Homebrew's advertised version before a bottle
 installation. An existing incompatible tool is preserved rather than upgraded.
 Simulator uses its current CMake floor, native Python and compatible Xcode/Ninja.
@@ -50,7 +53,7 @@ clone restricted Unreal or start a build. The
 ## Repeat and storage behavior
 
 Rerun the same downloaded file after resolving a prerequisite. The menu offers
-the last route; press Return to select it. C also remembers Factory/simulator.
+the last route; press Return to select it. C also remembers controller image/simulator.
 Route B retains its finer-grained selections and verifies completed work.
 The menu is not a green-readiness cache. A retains the approved DMG path and
 C retains its workspace/volume identity. An unavailable saved disk/file stops
@@ -123,6 +126,8 @@ tool/capacity fields to the canonical Builder. No release pin is rewritten to
 make another artifact pass. Publish the complete helper graph and launcher in
 the same source checkpoint before asking a user to download it.
 
-Local fixture tests are distinct from the new real M1 first-use walkthrough.
-Neither source publication nor a successfully opened installer closes that
-walkthrough, full installer E2E or the specialist full-source gates.
+Local fixture tests are distinct from real installation/runtime qualification.
+The [current release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
+records the separate passed M1 public-consumer and native Setup first-use checks.
+Neither a label change nor source publication transfers those results to new
+artifact bytes or closes specialist full-source gates.
