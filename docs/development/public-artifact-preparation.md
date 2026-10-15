@@ -1,252 +1,104 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Public Artifact Distribution Preparation
+# Public artifact distribution and maintenance
 
-- Status: public test access active; redistribution review remains open
-- Version: 1.3
-- Prepared: 2026-10-10
-- Owner: Demo Solution Team
+Reviewed developer dependencies are available through the pinned public
+catalog. The [developer launcher](../getting-started/reproduce-demo.md)
+requires no Google login, publisher credentials or manual binding files.
+Operator DMG delivery is independently selected by the
+[launcher catalog](../../workspace/launcher-catalog.json) and release descriptor.
 
-The owner authorized preparing the materials needed to distribute the five
-developer dependency archives anonymously. This follows the
-[public-delivery contract](../../contracts/release-reproduction/README.md#anonymous-developer-input-delivery)
-and the [activation preflight](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/repository-change-journal.md#2026-october-10-public-artifact-activation-preflight).
-The owner subsequently confirmed public reading of the entire prepared eight-file
-folder after the remaining licensing questions were disclosed. The current
-launcher can use its inputs without Google authentication. This is not a new
-installer, runtime release, license-clearance decision or clean-build qualification.
+The [public companion folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
+contains dependency archives, the catalog and supplementary source/notices.
+Public test access is authorized; that is not blanket redistribution clearance
+or fresh-source-build qualification. The underlying byte/source locks remain
+immutable even when delivery locations change.
 
-## Prepared materials
+## Integrity and content boundaries
 
-The original private SSD review bundle, `distribution-materials`, contains:
+Verify each archive against its reviewed identity at the real consumer.
+Reuse compatible verified caches. Exporters preserve exact inventory, bytes,
+modes, source correspondence and manifests; failed content is not accepted
+by replacing its expected checksum.
 
-- 29 original installed Homebrew recipes, selected by the dependency versions
-  recorded in the hash-pinned runtime manifests;
-- 39 upstream source inputs: 29 primary archives and ten additional recipe
-  resources/patches, all checked against the SHA-256 in those recipes;
-- original retained notices from host support, gateway SDK, VDP and Python;
-- supplementary CARLA code and asset notices, and selected Unreal third-party
-  dependency notices from the pinned source revision;
-- original license texts extracted from the checked source archives, with
-  archive/member provenance;
-- machine-readable acquisition results, explicit unresolved inputs, a review
-  checklist and a file checksum inventory.
+No credentials, provisioned identity, live VM, raw run data, restricted Unreal
+source or build cache belongs in a public package. Retain independent content,
+secret-exclusion and producer/source checks before publication. A bounded
+filename/marker scan is not semantic inspection of every binary/cooked asset.
 
-The 39 source inputs are a **partial corresponding-source preparation**, not
-a declaration of complete license compliance. A matching upstream version is
-not sufficient when patches, bundled subdependencies, firmware sources or
-binary relocation/build scripts are missing. Supplemental notices must be
-matched to the actual shipped components before distribution.
+Completed copy, acquisition and activation diaries are available in Git
+history. They are not current maintainer instructions or extra user steps.
 
-The [sanitized checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/public-materials-preparation-20261010.json)
-pins the prepared bundle's file manifest: 339 files, including 263 notice files;
-the directory including its manifest/checksums occupies 321,162,679 bytes.
+## Outstanding redistribution obligations
 
-A separate `public-companion-r2` now adds the recovered GLib/Python patches,
-GEOS 3.11.4 and Shapely 2.0.7 sources, the published integration/exporter source,
-ONNX Runtime 1.17.1 notices, Apple header acknowledgements, five retained SDK
-notices, source-build guidance and a simulator terms draft. Its 356-file
-manifest includes 274 notice files. The compressed companion is 324,263,318
-bytes. Its digest and manifest digest are recorded in the checkpoint. The
-original sealed bundle has not been modified.
+The source/notice companion retains upstream archives, recipes, patches,
+notices and provenance. It is **partial corresponding-source preparation**,
+not a complete license-compliance verdict. Keep these review boundaries:
 
-Five exact server-side Drive copies and a distinct public-format
-`release-index.json` are available in the separate
-[AosEdge SDV Lab Public Artifacts folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7).
-Its eight files have read-only access for anyone with the link, with search
-discovery disabled. These are the five dependency archives, the catalog, the
-source/notice companion and its README. Historical private objects, permissions
-and source locks are unchanged. The companion and copied README retain their
-pre-activation review snapshot; this status supersedes their access statements,
-not their unresolved review findings or draft terms.
+- Reconcile the full SDK/source/notice mapping, including linked libraries,
+  recipe patches and build/relocation transformations; a matching version or
+  header alone is insufficient.
+- Match CARLA/cooked-asset attribution, provenance and modifications to actual
+  shipped content. CARLA code, assets and Unreal terms are distinct.
+- Retain Unreal third-party notices and determine applicable product/Engine
+  Tools distribution conditions from the actual packaged/linked modules, not
+  filenames or Editor descriptors.
+- Recover and review the applicable terms for the packaged Metal Shader
+  Converter binary. Apple header acknowledgements do not establish its binary
+  redistribution terms.
+- Adopt appropriate recipient terms and integrate required notices/source
+  access with actual distributed media; a draft companion is not an end-user
+  agreement.
 
-Large files and private review evidence remain outside Git. After public access
-and consumer verification, the owner authorized removing the temporary local
-publication workspace on October 10. Its duplicate archives and extracted
-payloads are deleted; compact review manifests, receipts and preparation tools
-are retained in the existing ignored local evidence area. Published files and
-their permissions are unchanged. Future preparation uses the selected
-workspace's managed `.tmp` instead of a separate directory at the volume root. The
-repository stores this sanitized status and the release boundaries. No access
-token, certificate, password value/hash, private Drive locator, Unreal source
-tree or Factory filesystem is included in the documentation.
+The owner excluded the separate Factory license/source-record audit from this
+preparation, relying on known upstream AosCore/Linux licensing. That scope is
+`OMITTED_BY_OWNER`, not a passed audit. Preserve notices, source references,
+image identity and credential-protection checks; do not request old SSD/Yocto
+reports or rebuild Factory for the omitted audit.
 
-## Content review performed
+Payload changes require a new reviewed dependency generation. Do not overwrite
+existing archives or silently reseal old locks to resolve an obligation.
+Consult the [licensing policy](../governance/licensing-and-copyright-policy.md)
+and [third-party notices](../../THIRD_PARTY_NOTICES.md).
 
-| Artifact role | Verified evidence | Limit of this review |
-| --- | --- | --- |
-| `host-support` | Full archive and all 92 payload hashes checked; recipes, external patches, sources and notices retained | Not a fresh build or a blanket license-compliance verdict |
-| `gateway-sdk` | Full archive and all 17,398 payload hashes checked; original notices retained | License coverage of the complete SDK still requires reconciliation |
-| `vehicle-bases` | Full archive and all 12 payload hashes checked; VDP V1/V2/V3 inner inventories reviewed | Metadata includes build/CI dependencies as well as runtime dependencies; these must not be misreported as all bundled |
-| `factory-image` | Full archive and both payload hashes checked; read-only rootfs/home/var inventory | No full Yocto package/license manifest found in the image; boot partitions, unused space and complete source closure not qualified |
-| `carla-runtime` | Complete 13,302,049,728-byte archive and all 13,987 regular-file hashes checked; private-key marker/path and bounded configuration scans found no candidates | Not a semantic inspection of cooked assets or proof of redistribution rights |
+## Maintainer catalog controls
 
-The retained local simulator differed from the pinned archive in 1,048 file
-entries (519 different hashes, 528 different sizes and one missing file), so it
-could not stand in for the selected archive. One authenticated acquisition of
-the exact archive supplied the content check; that verified copy was removed
-with the temporary publication workspace. This was not a second download to
-test the Drive storage provider.
-No simulator code was executed. The inventory contains no `Engine/Source`
-files or executables named Unreal Editor, UnrealPak or ShaderCompileWorker;
-that filename check alone does not classify statically linked Engine Tools.
+These controls are optional release-owner maintenance, not route B prerequisites.
+Prepare public catalog records from an existing verified receipt and approved
+URL mapping:
 
-VDP inner archives contain 247, 247 and 248 regular files respectively. The
-targeted scan found no private-key markers or credential-like filenames in
-those inner files. Factory inventory covered 15,895 rootfs, three home and
-1,657 var entries, without mounting filesystems, replaying journals or starting
-a guest. The targeted Factory scan found no private-key markers in the selected
-candidate files; it was **not** an exhaustive secret audit of the disk image.
+```sh
+python3 -B scripts/preparation-catalog --help
+python3 -B scripts/sync-preparation-catalog
+python3 -B scripts/sync-launcher-pins --write
+python3 -B scripts/sync-launcher-pins --check
+```
 
-The Factory root account setting was compared in memory with the pinned public
-upstream image recipe. It matches an upstream default rather than establishing
-an operator-secret leak. No value or hash was logged or retained. Default
-credentials still require an explicit first-use/security review; this check
-does not change or approve the authentication contract.
+The catalog generator's `--public-links` preserves byte/source pins and emits
+a distinct immutable public record; it neither uploads nor widens permissions.
+Publish the small stable `release-index.json`, review its URL/record digest
+into `PUBLIC_PIN` in `scripts/developer_catalog.py`, then regenerate the
+standalone preparation script and launcher together. Downloaded old launchers
+retain their old pins; they are not updated in place.
 
-## Factory scope decision
+For explicit private-input maintenance only, `scripts/prepare-macos.sh
+--private-inputs` uses the reader's authorized Google account;
+`--advanced-inputs` also asks for private binding paths. Neither is a fallback
+after public-access failure. Never request the publisher's credentials as a
+new user's prerequisite.
 
-On October 10 the owner removed the separate Factory license/source-record
-audit from this preparation, relying on the known upstream AosCore/Linux
-licensing. Do not request the original SSD, retrieve Yocto reports, copy build
-caches or rebuild Factory for that audit. It is no longer an active preparation
-task or a dependency on the owner's connecting another disk.
+Use the [release campaign](release-campaign.md) for source, immutable DMG and
+option A promotion. Routine delivery uploads once and checks remote identity,
+size, checksum, parent and access metadata. Verify bytes on the actual consumer;
+do not download gigabytes back merely to retest the storage provider.
 
-Record this as `OMITTED_BY_OWNER`, not a passed audit or a finding that every
-distribution obligation has been verified. Preserve the existing upstream
-license notices, source references, image hashes and content-review evidence.
-Integrity and credential-protection checks are unaffected. The original sealed
-bundle remains historical evidence; the checkpoint's scope decision supersedes
-its Factory-audit/resume instruction without changing any archived bytes.
+## Primary references
 
-## Remaining release gates
+- [Unreal Engine EULA](https://www.unrealengine.com/eula/unreal)
+- [CARLA license](https://github.com/carla-simulator/carla#license)
+- [QEMU GPLv2](https://www.qemu.org/license-gpl-2/)
+- [Yocto license maintenance](https://docs.yoctoproject.org/dev-manual/licenses.html)
 
-### Recovered source inputs
-
-Both previously missing Homebrew external patches have been recovered:
-
-- GLib 2.88.3: `Patches/glib/hardcoded-paths.diff`;
-- Python 3.12.14: `Patches/python/3.11-sysconfig.diff`.
-
-Removing only the upstream formula's bottle metadata produces the exact
-installed recipe; the arm64 Tahoe bottle digest also matches the installed
-SBOM. This establishes the patch correspondence without using newer formulae.
-The remaining external recipe resources already passed their recipe hashes.
-The libpng PNG fixture is Linux-only and was not acquired; the Snappy inline
-patch remains in its original recipe.
-
-The companion now contains GEOS/Shapely source archives and native/Python
-exporter transformations with build guidance. Shapely's source hash was checked
-against PyPI metadata. GEOS was obtained from the official release archive and
-its acquired hash recorded; no independent upstream checksum is claimed.
-No extra QEMU firmware files occur in the selected host-support archive. This
-does not audit firmware inside Factory, whose separate audit remains omitted.
-Complete SDK/source correspondence still requires reconciliation; the retained
-SDK notices and matching OpenSSL 3.6.3 headers do not prove every static
-library's provenance.
-
-### Simulator and asset distribution
-
-CARLA code is identified by the MIT notice at the pinned CARLA revision. The
-retained asset tree has a CC-BY-4.0 notice. Keep these distinct from Unreal's
-terms and record exact cooked-asset attribution, provenance and modifications.
-The local asset license file alone does not establish attribution for every
-asset in the packaged simulator.
-
-Selected TBB, Ogg, Vorbis, EOS SDK and Metal Shader Converter notices were
-retained from the pinned Unreal tree. ONNX Runtime 1.17.1 is identified in the
-exact archive and its upstream license/third-party notices were added. The
-Apple license and acknowledgements were found under `include`; the applicable
-agreement for `libmetalirconverter.dylib` has not been recovered. Do not treat
-the header license, or another project's redistribution of the library, as
-confirmation of the binary terms. Do not publish Unreal source anonymously.
-Editor/Developer descriptors alone do not classify Engine Tools; the actual
-packaged and linked modules remain the relevant scope.
-
-The retained CARLA asset checkout is at
-`639d6eff5aae672da4219e9ace4a2ee891367548` with a modified road material. This is
-a provenance lead, not a demonstrated correspondence to every cooked asset in
-the selected archive. The terms draft includes CARLA attribution and the
-Unreal product-use/disclaimer boundary, but is not an adopted end-user agreement.
-
-The Apple binary terms, cooked-asset attribution and applicable Unreal
-product-distribution conditions remain unresolved, as do the complete SDK
-source/notice mapping and adopted end-user terms. The owner's explicit
-test-access authorization supersedes the earlier activation hold, not these
-findings. The full archive integrity and bounded content scan are complete;
-the remaining questions are not a reason to repeat the 13.3 GB download or
-request Factory build reports.
-
-### Public test activation
-
-On October 10 the owner explicitly confirmed public reading of this exact
-eight-file folder after disclosure of the unresolved Unreal/Apple/SDK licensing
-questions. The folder permission is `anyone:reader`, with
-`allowFileDiscovery=false`; all eight files inherit it. An immediate child
-permission check ran before propagation had completed. Authoritative readback
-then confirmed every inherited permission, without repeating the sharing write.
-
-All eight names, sizes, provider SHA-256 values and parent identities match the
-prepared receipts. The original private root and five original archives remain
-private and unchanged. The anonymous reader obtained the 3,481-byte catalog,
-verified its pinned record and passed one-byte HTTP range probes for all five
-dependency roles. No cookies, OAuth, Google CLI credentials or API keys were
-used by that reader. No archive was downloaded back for this access check.
-
-The source/notice companion is available beside the binaries and linked from
-README B1 through the public folder. It is not automatically consumed by Setup
-or the launcher; its completeness and recipient-terms integration remain open.
-If review requires payload changes, create a new reviewed dependency generation
-rather than overwriting existing archives or locks.
-
-The new public record has ID `1.2.0-rc.1-source-factory-r1-public` and canonical
-SHA-256 `74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450`.
-The existing offline generator validated all five byte identities and source
-pins against the historical receipt. It contains only the new delivery
-locations. Its observed URL and hash are now active in `PUBLIC_PIN` and the
-regenerated standalone launcher. Download a fresh launcher from README B1;
-previously downloaded copies retain their inactive pins. The user's actual
-walkthrough, archive-consumer checksum verification and build remain separate
-evidence, not results of these bounded access probes.
-
-## Maintainer catalog and private-input controls
-
-These are release-owner controls, not additional steps for ordinary route B.
-The default developer launcher uses the public catalog without a Google login.
-
-For explicit private-input maintenance, the standalone developer executor
-`scripts/prepare-macos.sh --private-inputs` discovers Google CLI and asks for
-the reader's own granted account. `--advanced-inputs` additionally requests
-the two private binding paths. Neither mode is an automatic fallback after a
-public download failure. At acquisition, the private `lab inputs prepare`
-invocation includes `--account "$SDV_DRIVE_ACCOUNT" --gcloud "$SDV_GCLOUD"`.
-Never use or request the publisher's credentials as a user prerequisite.
-
-To prepare public catalog records, use `scripts/preparation-catalog --public-links`
-with the existing receipt and the approved `buildInputs` and
-`simulation` URL mapping. It preserves byte/source pins and emits a distinct
-immutable public record; it does not upload or widen permissions. Publish the
-small `release-index.json` at its stable location, review its URL/record digest
-into `PUBLIC_PIN` in `scripts/developer_catalog.py`, then refresh the standalone
-wizard with `scripts/sync-preparation-catalog`.
-
-After catalog/helper changes, run `scripts/sync-launcher-pins --write` and
-`scripts/sync-launcher-pins --check`. Publish the helper graph and downloaded
-launcher together. The selected descriptor and frozen artifact identities are
-not rewritten to accommodate changed bytes. Follow the
-[release campaign](release-campaign.md) for source and option A promotion.
-
-## References and interpretation
-
-The review uses the [Unreal Engine EULA](https://www.unrealengine.com/eula/unreal),
-[CARLA license summary](https://github.com/carla-simulator/carla#license),
-[QEMU GPLv2 text](https://www.qemu.org/license-gpl-2/) and
-[Yocto license-maintenance guidance](https://docs.yoctoproject.org/dev-manual/licenses.html).
-They identify release obligations; this preparation report is not a legal
-opinion or evidence that the product already satisfies them.
-
-No compiler, installer, simulator, VM or Docker workload was started. Only the
-prepared distribution folder was opened publicly. Source artifacts and license
-texts were read, acquired where necessary and checksummed; no downloaded code
-was run.
+These sources identify obligations. This maintenance guide is not a legal
+opinion or evidence that all public-distribution obligations are closed.

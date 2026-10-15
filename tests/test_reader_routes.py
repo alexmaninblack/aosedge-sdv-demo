@@ -91,10 +91,10 @@ class ReaderRouteTests(unittest.TestCase):
         self.append('[Sibling](../../../carla-ego-runtime/README.md)')
         self.assertIn('requires a sibling', self.check().stderr)
 
-    def test_unpinned_wrong_pin_and_escaping_hosted_links_fail(self):
+    def test_non_main_mutable_and_escaping_hosted_links_fail(self):
         prefix = 'https://github.com/alexmaninblack/carla-ego-runtime/blob/'
         pin = '2e3d1164d491dac25e212f59315057deca0bf3d8'
-        for suffix in ('main/README.md', '0' * 40 + '/README.md',
+        for suffix in ('unreviewed/README.md', 'v1.0/README.md',
                        pin + '/%2e%2e/README.md', pin + '/README.md?raw=1'):
             with self.subTest(suffix=suffix):
                 target = self.root / 'docs/architecture/product-map.md'
@@ -103,10 +103,14 @@ class ReaderRouteTests(unittest.TestCase):
                 self.assertNotEqual(self.check().returncode, 0)
                 target.write_text(original)
 
-    def test_exact_workspace_pin_is_allowed(self):
+    def test_current_workspace_documentation_is_allowed_without_siblings(self):
+        self.append('[Current component documentation](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/README.md)')
+        self.assertEqual(self.check().returncode, 0)
+
+    def test_immutable_workspace_citation_is_allowed_without_siblings(self):
         manifest = json.loads((ROOT / 'workspace/repositories.json').read_text())
         repo = next(row for row in manifest['repositories'] if row['id'] == 'vehicle-gateway')
-        url = repo['repository'].removesuffix('.git') + '/blob/' + repo['acceptedRevision'] + '/README.md'
+        url = repo['repository'].removesuffix('.git') + '/blob/' + repo['acceptedRevision'] + '/docs/viss-profile.md'
         self.append('[Pinned reference](' + url + ')')
         self.assertEqual(self.check().returncode, 0)
 

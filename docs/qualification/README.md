@@ -21,9 +21,6 @@ apply only to the exact source, media and profile identified by their receipt.
   main/tag publication and anonymous M1 download/verification/open passed for
   the selected successor. Its public consumer reused the installed certificate
   instance; it is not another clean-first-user proof.
-- [Documentation review](documentation-review-2026-10-15.md):
-  complete reader-link inventory, consistency corrections, retirement scope
-  and static checks. This is not a new installation or E2E campaign.
 - [D4-003 stimulus calibration plan](d4-003-stimulus-calibration-plan.md):
   an outstanding accepted verification obligation, not a passed calibration.
 

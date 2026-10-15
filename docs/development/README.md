@@ -32,7 +32,7 @@ simulator and controller image; it is not a reason to rebuild Unreal or Yocto.
 - [Native upstream concurrency regression fixture](../../tests/upstream/cm-lock-harness/README.md).
 - [Reusable simulator dependency](reusable-simulation-inputs.md).
 - [Public artifacts, notices and remaining redistribution review](public-artifact-preparation.md).
-- [Retained specialist commands and measured build evidence](release-reproduction-r2.md).
+- [Specialist build inspection and image prerequisites](release-reproduction-r2.md).
 - [Implemented architecture](../architecture/current-implementation.md) and
   [protocol status](../../contracts/implementation-status.md).
 - [Requirements](../requirements/README.md) and [executable contracts](../../contracts/README.md).

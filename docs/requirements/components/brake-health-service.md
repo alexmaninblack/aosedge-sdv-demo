@@ -64,7 +64,7 @@ rollout affecting OEM Units.
 | What this package does not own | CARLA or brake-condition ground truth, VISS, Vehicle Data Platform Provider/policy, KUKSA executable/trust, `CMP-KAC` implementation, Gateway advisory enforcement, Aos lifecycle execution, backend persistence or functional dashboard |
 | Intended result | The same independently deployable SOTA product progresses from finite high-detail event windows to on-board derived assessments/events and finally to an offline-capable typed maintenance advisory |
 | Accountable lifecycle owner | Function Team 1 publishes and accepts the exact Validation Unit result; independent OEM Release Authority authorizes Test deployment and Production rollout through SOTA 1 |
-| Primary repository | [`brake-health-service` architecture](../../../../brake-health-service/docs/architecture.md) |
+| Primary repository | [`brake-health-service` architecture](https://github.com/alexmaninblack/brake-health-service/blob/main/docs/architecture.md) |
 
 ## Component Boundary
 

@@ -28,5 +28,6 @@ two-provider obligations. Later Test-only and one-associated-SP amendments
 define the implemented first-demo scope. A Production Cloud connection is not
 the same as promoting a Test to the separate Production vehicle role.
 
-The HTML mockups are design/test fixtures, not another installation or
-operation route. Follow the operator workflow for the live application.
+The interface register and interaction specification are maintained contracts.
+Standalone HTML prototypes and their tests have been retired to Git history;
+the current implementation and tests belong to Presenter and Demo Control.

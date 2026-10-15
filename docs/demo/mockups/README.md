@@ -13,7 +13,7 @@
 - Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
 - Requirement inputs: [Component Register 2.2](../../requirements/component-decomposition-and-interface-register.md), [Demo Orchestration](../../requirements/components/demo-orchestration.md) and [End-to-End Acceptance](../../requirements/components/end-to-end-acceptance.md)
 - Presentation policy: [D4-026.6](../../requirements/d4-decision-register.md#d4-026)
-- UI implementation: current Presenter is integrated into main; see the [current baseline](../../qualification/current-baseline.md). Versioned mockups are historical regression/review fixtures.
+- UI implementation: current Presenter is integrated into main; see the [current baseline](../../qualification/current-baseline.md). Standalone prototypes are retired; this register retains accepted interface obligations.
 - Detailed Interaction Specification:
   [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
 - Maintained implementation and tests: [Presenter UI](../../../apps/presenter-ui/README.md)
@@ -156,7 +156,7 @@ authority, dependency, recipient, evidence and readiness gates. The UI does
 not generalize that statement to arbitrary automotive software.
 
 The detailed interaction behavior is fixed by
-[Interaction Specification 2.5, Section 3](aosedge-demo-interaction-specification.md#3-current-vehicle-and-test-to-production-handover)
+[Interaction Specification, Section 3](aosedge-demo-interaction-specification.md#3-current-vehicle-and-test-to-production-handover)
 and [D4-026.8](../../requirements/d4-decision-register.md#d4-026-8).
 
 ## <a id="i0-dec-004"></a>I0-DEC-004 Accepted — Test Validation and Production Live Operation
@@ -184,7 +184,7 @@ solution and remains outside the audience release story.
 
 The complete five-stage common story plus Platform v1-v3, Brake v1-v3, Tire v1
 and dependency behavior is fixed by
-[Interaction Specification 2.5, Section 4](aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
+[Interaction Specification, Section 4](aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
 and [D4-026.9](../../requirements/d4-decision-register.md#d4-026-9).
 
 ## <a id="i0-dec-005"></a>I0-DEC-005 Accepted — Action, Authority and Authoritative Results
@@ -222,7 +222,7 @@ logs, repeatable Scenario/Manual/Autopilot drive controls, current-drive
 restart, vehicle-external-connectivity control and the fixed Tire CPU proof.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 5](aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
+[Interaction Specification, Section 5](aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
 and [D4-026.10](../../requirements/d4-decision-register.md#d4-026-10).
 
 ## <a id="i0-dec-006"></a>I0-DEC-006 Accepted — Details, Runtime Isolation and Operational Logs
@@ -265,7 +265,7 @@ application-store presentation: the slots/state/credentials filesystem is OEM
 Component Runtime A/B working storage and remains an implementation detail.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 6](aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
+[Interaction Specification, Section 6](aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
 and [D4-026.11](../../requirements/d4-decision-register.md#d4-026-11).
 
 ## <a id="i0-dec-007"></a>I0-DEC-007 Accepted — Failure, Offline and Recovery Presentation
@@ -299,7 +299,7 @@ and local CARLA/Gateway/KUKSA/Service behavior. Operational Logs and Runtime
 Isolation retain their accepted exact source, state and verdict boundaries.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 7](aosedge-demo-interaction-specification.md#7-failure-offline-and-recovery-states)
+[Interaction Specification, Section 7](aosedge-demo-interaction-specification.md#7-failure-offline-and-recovery-states)
 and [D4-026.12](../../requirements/d4-decision-register.md#d4-026-12).
 
 ## <a id="i0-dec-008"></a>I0-DEC-008 Accepted — Live Vehicle and Function Evidence Correlation
@@ -336,7 +336,7 @@ installed software graph. Test evidence remains a sealed release reference;
 Production behavior always starts from a fresh live exercise.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 8](aosedge-demo-interaction-specification.md#8-vehicle-and-function-backend-correlation)
+[Interaction Specification, Section 8](aosedge-demo-interaction-specification.md#8-vehicle-and-function-backend-correlation)
 and [D4-026.13](../../requirements/d4-decision-register.md#d4-026-13).
 
 ## <a id="i0-dec-009"></a>I0-DEC-009 Accepted — UI Traceability and Acceptance Cases
@@ -368,7 +368,7 @@ and live vehicle-to-Function evidence correlation. Screenshots remain supporting
 evidence rather than lifecycle proof.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 9](aosedge-demo-interaction-specification.md#9-traceability-and-ui-acceptance-cases)
+[Interaction Specification, Section 9](aosedge-demo-interaction-specification.md#9-traceability-and-ui-acceptance-cases)
 and [D4-026.14](../../requirements/d4-decision-register.md#d4-026-14).
 
 ## <a id="i0-dec-010"></a>I0-DEC-010 Accepted — Global M0/M1/G0/R0 Interaction Model
@@ -399,7 +399,7 @@ cleanup remains `Reset incomplete · Recovery required`. Main-view progress is
 human-readable, while exact Unit/Node/API evidence remains in Details.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 5](aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
+[Interaction Specification, Section 5](aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
 and [D4-026.15](../../requirements/d4-decision-register.md#d4-026-15).
 
 ## <a id="i0-dec-011"></a>I0-DEC-011 Accepted — Independent Releases and Derived G3/G4 Milestones
@@ -428,7 +428,7 @@ state to AosCloud. Platform cards show `Enables ...`; Brake cards show
 `Requires ...`.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 4](aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
+[Interaction Specification, Section 4](aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
 and [D4-026.16](../../requirements/d4-decision-register.md#d4-026-16).
 
 ## <a id="i0-dec-012"></a>I0-DEC-012 Accepted — Workspace Composition and Shared Header Ownership
@@ -462,7 +462,7 @@ implementation qualification on the actual presenter Mac and introduces no
 new HLA component or persistent privileged daemon.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, Section 1](aosedge-demo-interaction-specification.md#1-screen-composition-and-global-interaction-invariants)
+[Interaction Specification, Section 1](aosedge-demo-interaction-specification.md#1-screen-composition-and-global-interaction-invariants)
 and [D4-026.17](../../requirements/d4-decision-register.md#d4-026-17).
 
 ## <a id="i0-dec-013"></a>I0-DEC-013 Accepted — Right-Hand Global Demo Lifecycle Workspace
@@ -489,7 +489,7 @@ and `Restore workspace layout` remain native Presenter Launcher actions and
 are not duplicated in the browser.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, UI-INT-079](aosedge-demo-interaction-specification.md#ui-int-079)
+[Interaction Specification, UI-INT-079](aosedge-demo-interaction-specification.md#ui-int-079)
 and [D4-026.18](../../requirements/d4-decision-register.md#d4-026-18).
 
 ## <a id="i0-dec-014"></a>I0-DEC-014 Accepted — Fixed Team Context and Version-Only Scrolling
@@ -520,7 +520,7 @@ their compact text, while release stages continue to distinguish producer
 ownership, OEM authorization and AosCloud execution.
 
 The complete contract is fixed by
-[Interaction Specification 2.5, UI-INT-004, UI-INT-008 and UI-INT-010](aosedge-demo-interaction-specification.md#ui-int-004)
+[Interaction Specification, UI-INT-004, UI-INT-008 and UI-INT-010](aosedge-demo-interaction-specification.md#ui-int-004)
 and [D4-026.19](../../requirements/d4-decision-register.md#d4-026-19).
 
 ## <a id="i0-dec-015"></a>I0-DEC-015 Accepted — Icon Vocabulary and Native Terminal Boundary
@@ -547,7 +547,7 @@ surrounding composed surface, but it remains outside the terminal content and
 has no telemetry or lifecycle semantics.
 
 The complete boundary is fixed by
-[Interaction Specification 2.5, UI-INT-003 and UI-INT-051](aosedge-demo-interaction-specification.md#ui-int-003)
+[Interaction Specification, UI-INT-003 and UI-INT-051](aosedge-demo-interaction-specification.md#ui-int-003)
 and [D4-026.20](../../requirements/d4-decision-register.md#d4-026-20).
 
 ## Accepted Presentation Shape
@@ -578,9 +578,9 @@ reuse its visual language and interaction model rather than inventing a new
 vehicle-control or engineering-telemetry product.
 
 Implementation references:
-[native control panel](../../../../carla-ego-runtime/tools/KeyboardControl.swift),
-[Terminal telemetry renderer](../../../../carla-ego-runtime/src/viss_client.cpp),
-[Brake Event operator behavior](../../../../carla-ego-runtime/docs/brake-event-scenario.md).
+[native control panel](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/tools/KeyboardControl.swift),
+[Terminal telemetry renderer](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/src/viss_client.cpp),
+[Brake Event operator behavior](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/brake-event-scenario.md).
 
 ### Current macOS control panel
 
@@ -704,7 +704,7 @@ surface content or make one product authoritative for another product's state.
 The surface inventory, 15 I0 decisions, Interaction Specification 2.5,
 Presenter Launcher/workspace ownership and all 50 UI acceptance cases are
 accepted. The complete one-row-per-rule mapping is maintained in the
-[UI Traceability Register 1.1](aosedge-demo-ui-traceability-register.md). The
+[UI Traceability Register](aosedge-demo-ui-traceability-register.md). The
 accepted standalone HTML review mockup is reconciled to that contract,
 including fixed team context and version-only scrolling. Current implementation and scoped API/UI evidence are linked above.
 The old linear-flow HTML is a fixture, not the current product or deployment authority.

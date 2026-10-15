@@ -4,7 +4,7 @@
 # Documentation and Requirements Management
 
 - Status: Accepted
-- Version: 1.3
+- Version: 1.4
 - Prepared: 2026-10-09
 - Updated: 2026-10-15
 - Owner: System Architecture
@@ -203,6 +203,24 @@ External HTTP links are intentionally separated from the commit gate:
 
 Network failures must not make the deterministic repository gate flaky.
 
+With the six maintained component checkouts present, run the complete source-documentation
+scenario (no build or runtime starts):
+
+```sh
+python3 -B scripts/docs-check --workspace
+```
+
+It inventories all tracked Markdown across the seven owned repositories,
+including nested application/component READMEs. It checks current hosted paths
+and anchors against the owning checkout, immutable citations against exact Git
+objects, secondary document-version labels and known superseded preparation/
+status patterns. Add `--external` for bounded parallel network probes. Those
+read at most a small fallback prefix, never a complete binary payload.
+Automated checks complement semantic review; their success does not prove
+that every normative requirement is implemented or every upstream page is current.
+Frozen producer/source checkouts use their own revision-matched checks; they
+are not the maintained current-documentation workspace.
+
 ### Component verification policy
 
 The reusable
@@ -221,27 +239,32 @@ replaces required isolated behavioral proof.
 
 ### Workspace and external link policy
 
-- Links to files owned by a repository declared in
-  [`workspace/repositories.json`](../../workspace/repositories.json) use a
-  relative sibling path in specialist workspace documents, or an HTTPS GitHub
-  Markdown-file link at that repository's exact `acceptedRevision`. Floating
-  branch/tag links are not a replacement for release-pinned references. This
-  R3 amendment lets initial reader routes work without a sibling checkout.
-- The offline gate validates the hosted reference's repository, full revision
-  and path shape. Actual hosted availability is a separate external check;
-  syntax validation is not proof that unpublished content is online.
+- Cross-repository **current human documentation** uses HTTPS GitHub links to
+  maintained `main`, not relative sibling paths or old revision-pinned READMEs.
+  Sibling-relative Markdown works in a local workspace but produces incorrect
+  GitHub URLs. Within a repository, retain normal relative links.
+- Exact source/release/provenance citations use full immutable Git revisions.
+  A current documentation link is not an input selector: never update a build
+  lock, producer revision, checksum or published artifact to make prose current.
+  [`workspace/repositories.json`](../../workspace/repositories.json) and the
+  selected producer/release records retain their independent byte/source pins.
+- Root-only checks validate hosted-reference shape without requiring component
+  checkouts. The workspace scenario independently validates current targets and
+  immutable Git objects. Actual remote availability remains a separate external
+  check; neither local existence nor URL syntax proves publication.
 - Initial human routes must not require sibling files. Check them with
   `python3 -B scripts/docs-check --reader-routes` in a root-only checkout;
   add `--external` for hosted-link checks. This scoped gate does not replace
-  the full design/requirements gate, which retains specialist sibling checks.
+  the full design/requirements gate or the cross-repository workspace scenario.
 - HTTPS links remain appropriate for genuine external or upstream sources
   that are not part of the workspace contract.
 - A repository clone URL in an installation procedure remains HTTPS because
   its purpose is to create the checkout before local links can work.
 
-Specialist relative cross-repository links assume the sibling workspace layout. A reader
-using Obsidian or a similar knowledge-base application should open the
-workspace parent directory as the vault so those links remain navigable.
+Historical evidence paths required by a frozen release may retain their original
+navigation. They are explicitly labelled historical, not used as current user
+guides and not silently rewritten to pass a new policy. Preserve accepted stable
+requirement IDs and normative scope while removing redundant implementation diaries.
 
 ## Review and Retirement
 

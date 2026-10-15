@@ -3749,7 +3749,7 @@ mutation.
 - Accepted: 2026-08-25
 - Owners: Demo owner / Demo Solution Team / Platform Team / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 3](../demo/mockups/aosedge-demo-interaction-specification.md#3-current-vehicle-and-test-to-production-handover)
+  [Interaction Specification, Section 3](../demo/mockups/aosedge-demo-interaction-specification.md#3-current-vehicle-and-test-to-production-handover)
 
 `Current Vehicle` is one global presentation/live-source state independent of
 Platform, Brake or Tire perspective. The audience explicitly selects
@@ -3790,7 +3790,7 @@ interfaces. It authorizes no external mutation.
 - Owners: Demo owner / Platform, Brake and Tire producer teams / OEM Release
   Authority / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
+  [Interaction Specification, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
 
 Every audience release uses one prepared immutable candidate. The owning team
 publishes it once; the independent OEM Release Authority authorizes deployment
@@ -3823,7 +3823,7 @@ Cloud or Unit mutation.
 - Owners: Demo owner / Platform, Brake and Tire producer teams / OEM Release
   Authority / Demo Solution Team / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
+  [Interaction Specification, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
 
 The first demo has no Cloud identity or generic demo credential. Its protected
 native helper uses one OEM user certificate through the non-interchangeable
@@ -3865,7 +3865,7 @@ provisioning, vehicle operation or cleanup.
 - Owners: Demo owner / Demo Solution Team / Platform, Brake and Tire producer
   teams / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 6](../demo/mockups/aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
+  [Interaction Specification, Section 6](../demo/mockups/aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
 
 `Details` is a read-only right-workspace explanation of one exact release
 stage. It uses a human-first summary and collapsed technical disclosure,
@@ -3911,7 +3911,7 @@ implementation, CPU load, log request, Cloud mutation or vehicle operation.
 - Owners: Demo owner / Demo Solution Team / Platform, Brake and Tire producer
   teams / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 7](../demo/mockups/aosedge-demo-interaction-specification.md#7-failure-offline-and-recovery-states)
+  [Interaction Specification, Section 7](../demo/mockups/aosedge-demo-interaction-specification.md#7-failure-offline-and-recovery-states)
 
 The audience UI preserves exact external-source state, local orchestration
 state and evidence/acceptance result as separate layers. `AosEdge Platform` is
@@ -3947,7 +3947,7 @@ proof, Cloud mutation or vehicle operation.
 - Owners: Demo owner / Demo Solution Team / Platform, Brake and Tire producer
   teams / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 8](../demo/mockups/aosedge-demo-interaction-specification.md#8-vehicle-and-function-backend-correlation)
+  [Interaction Specification, Section 8](../demo/mockups/aosedge-demo-interaction-specification.md#8-vehicle-and-function-backend-correlation)
 
 One audience context binds the exact Current Vehicle, selected release,
 installed graph, fresh CARLA exercise/generation and external-connectivity
@@ -3994,7 +3994,7 @@ connectivity fault, Cloud mutation or Unit operation.
 - Owners: Demo owner / Demo Solution Team / all visible-surface owners / System
   Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 9](../demo/mockups/aosedge-demo-interaction-specification.md#9-traceability-and-ui-acceptance-cases)
+  [Interaction Specification, Section 9](../demo/mockups/aosedge-demo-interaction-specification.md#9-traceability-and-ui-acceptance-cases)
 
 Every `UI-INT-001` through `UI-INT-079` maps bidirectionally to its actual
 architecture/requirement owner and at least one stable `UI-AT-*` case. The
@@ -4029,7 +4029,7 @@ operation or vehicle/Unit mutation.
 - Owners: Demo owner / Demo Solution Team / OEM Release Authority / System
   Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
+  [Interaction Specification, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
 
 The operator-facing lifecycle separates infrastructure readiness from vehicle
 manufacturing and provisioning. `Start or Restore Demo Environment` is a
@@ -4070,7 +4070,7 @@ qualification remain open, and no external mutation is authorized.
 - Owners: Platform Team / Brake Function Team / OEM Release Authority / Demo
   Solution Team / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
+  [Interaction Specification, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
 
 G3 and G4 are human-readable capability milestones, not deployable AosCloud
 release groups. Every VDP FOTA and Brake SOTA retains its own candidate,
@@ -4108,7 +4108,7 @@ authorized.
 - Owners: Demo owner / Demo Solution Team / OEM Software Delivery Dashboard
   owner / visible-surface owners / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, Section 1](../demo/mockups/aosedge-demo-interaction-specification.md#1-screen-composition-and-global-interaction-invariants)
+  [Interaction Specification, Section 1](../demo/mockups/aosedge-demo-interaction-specification.md#1-screen-composition-and-global-interaction-invariants)
 
 The composed one-display workspace has an explicit responsibility split.
 `CMP-ORCH` through the trusted Presenter Launcher owns only the physical shell:
@@ -4154,7 +4154,7 @@ defines the file/schema boundary and negative/restart evidence.
 - Owners: Demo owner / Demo Solution Team / OEM Software Delivery Dashboard
   owner / System Acceptance
 - Canonical interaction contract:
-  [Interaction Specification 2.5, UI-INT-079](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-079)
+  [Interaction Specification, UI-INT-079](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-079)
 
 Selecting the shared title `AosEdge Software Evolution Demo` opens the global
 `Demo Lifecycle` page only in the right browser region. The shared header and

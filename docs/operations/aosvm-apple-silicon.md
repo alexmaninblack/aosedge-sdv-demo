@@ -8,10 +8,12 @@ Silicon Mac. It uses QEMU with Apple's Hypervisor Framework, not VirtualBox.
 The result has its own persistent disk and, if provisioned, its own cloud Unit
 identity.
 
-This is the canonical setup and operating guide for AosVM on Apple Silicon.
-It can be followed independently of CARLA. To reproduce the larger SDV demo,
-complete this guide first and then return to the
-[getting-started paths](../getting-started/README.md).
+This is an optional standalone engineering workflow, **not a prerequisite for
+SDV Lab**. For the complete demo, use the [launcher and Setup](../../README.md#start-here):
+Create Controller uses the prepared Factory image and owns its VM lifecycle.
+Do not create this additional VM or provision another Unit to prepare for that
+workflow. Use the guide below only when you specifically need an independent
+official AosVM outside the installed lab.
 
 Do not copy another person's VM overlay, checkpoints, SSH access directory, or
 provisioning state. A provisioned disk contains a unique Unit identity and must

@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
 from collections import Counter, deque
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -131,15 +134,13 @@ def workspace_repository_for_url(
 
 
 def markdown_documents(root: Path) -> dict[Path, str]:
-    paths = [
-        *sorted(root.glob("*.md")),
-        *sorted((root / "docs").rglob("*.md")),
-        *sorted((root / "contracts").rglob("*.md")),
-        *sorted((root / "apps").glob("*/README.md")),
-        *sorted((root / "scripts").rglob("*.md")),
-        *sorted((root / "components").rglob("*.md")),
-        *sorted((root / "tests").rglob("*.md")),
-    ]
+    paths = list(root.glob("*.md"))
+    excluded = {".git", ".venv", "node_modules", "build", "dist", "out",
+                "__pycache__", "artifacts", ".local", ".cache"}
+    for area in ("docs", "contracts", "apps", "scripts", "components", "tests"):
+        for directory, children, files in os.walk(root / area):
+            children[:] = sorted(name for name in children if name not in excluded)
+            paths.extend(Path(directory) / name for name in sorted(files) if name.endswith(".md"))
     return {
         path.resolve(): path.read_text(encoding="utf-8")
         for path in paths
@@ -188,7 +189,7 @@ def check_user_guide_audience(root: Path, documents: dict[Path, str]) -> list[Is
             continue
         if INTERNAL_STATUS_HEADING.search(text) or INTERNAL_STATUS_NARRATIVE.search(text):
             issues.append(Issue(name, "internal qualification/history belongs in engineering records, not a user guide"))
-        for _, raw in MARKDOWN_LINK.findall(text):
+        for _, raw in markdown_links(text):
             target = link_target(raw)
             parsed = urlsplit(target)
             if parsed.scheme:
@@ -214,12 +215,20 @@ def pinned_workspace_link(repository: WorkspaceRepository, url: str) -> bool:
     parts = unquote(parsed.path).split("/")
     return (
         parsed.scheme == "https" and not parsed.query
-        and len(parts) >= 6 and parts[3] == "blob"
+        and len(parts) >= 6 and parts[3] in {"blob", "tree"}
         and bool(re.fullmatch(r"[a-f0-9]{40}", parts[4]))
-        and parts[4] == repository.accepted_revision
         and all(part not in {"", ".", ".."} for part in parts[5:])
-        and parts[-1].endswith(".md")
     )
+
+
+def current_workspace_link(repository: WorkspaceRepository, url: str) -> bool:
+    """Human navigation follows maintained main; this never selects build inputs."""
+    parsed = urlsplit(url)
+    parts = unquote(parsed.path).rstrip("/").split("/")
+    return (parsed.scheme == "https" and not parsed.query and
+            (len(parts) == 3 or
+             len(parts) >= 6 and parts[3] in {"blob", "tree"} and parts[4] == "main"
+             and all(part not in {"", ".", ".."} for part in parts[5:])))
 
 
 def relative(root: Path, path: Path) -> str:
@@ -257,13 +266,30 @@ def link_target(raw: str) -> str:
     return value.split(maxsplit=1)[0]
 
 
+def markdown_links(text: str) -> list[tuple[str, str]]:
+    """Reader-visible inline/reference/image/HTML links, excluding fenced examples."""
+    visible = re.sub(r"(?ms)^\s*(`{3,}|~{3,})[^\n]*\n.*?^\s*\1\s*$", "", text)
+    result = MARKDOWN_LINK.findall(visible)
+    references = {key.strip().casefold(): target for key, target in re.findall(
+        r"(?m)^\s*\[([^\]]+)\]:\s*(<[^>]+>|\S+)", visible)}
+    for title, key in re.findall(r"!?\[([^\]]+)\]\[([^\]]*)\]", visible):
+        name = (key or title).strip().casefold()
+        result.append((title, references.get(name, "missing-reference-" + name)))
+    result.extend((key, target) for key, target in references.items())
+    result.extend(("HTML reference", target) for target in re.findall(
+        r"(?i)\b(?:href|src)=[\"']([^\"']+)[\"']", visible))
+    result.extend(("Autolink", target) for target in re.findall(r"<(https?://[^>\s]+)>", visible))
+    return result
+
+
 def resolve_local_target(root: Path, source: Path, raw: str) -> tuple[Path, str]:
     target = unquote(link_target(raw))
     path_part, _, fragment = target.partition("#")
     destination = source if not path_part else (source.parent / path_part)
     destination = destination.resolve()
     if destination.is_dir():
-        destination = destination / "README.md"
+        if (destination / "README.md").is_file():
+            destination = destination / "README.md"
     return destination, fragment.lower()
 
 
@@ -278,18 +304,20 @@ def check_links(
     for source, text in documents.items():
         if source_paths is not None and source not in source_paths:
             continue
-        for _, raw in MARKDOWN_LINK.findall(text):
+        for _, raw in markdown_links(text):
             target = link_target(raw)
             scheme = urlsplit(target).scheme.lower()
             if scheme in {"http", "https"}:
                 external.add(target)
                 repository = workspace_repository_for_url(repositories, target)
-                if repository is not None and not pinned_workspace_link(repository, target):
+                if repository is not None and not (
+                    pinned_workspace_link(repository, target) or current_workspace_link(repository, target)
+                ):
                     issues.append(
                         Issue(
                             relative(root, source),
-                            "workspace repository link must use the local sibling "
-                            f"checkout {repository.directory} or its exact accepted-revision Markdown URL: {target}",
+                            "workspace repository link must use a safe main documentation URL "
+                            f"or immutable full-revision URL for {repository.directory}: {target}",
                         )
                     )
                 continue
@@ -386,6 +414,14 @@ def metadata(text: str, field: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def named_document_versions(title: str, fragment: str = "") -> list[str]:
+    # D4-026.17 is a stable decision identifier, not document version 026.17.
+    # Likewise, a requirement about product v1.0 does not name its doc version.
+    if re.match(r"(?:req|ut|sys|cmp|if|d4)-", fragment.lower()):
+        return []
+    return re.findall(r"(?<![\w.-])v?(\d+\.\d+(?:\.\d+)?)\b", title)
+
+
 def retired_identifiers(text: str) -> set[str]:
     """Return stable IDs declared in explicitly labelled retired sections."""
 
@@ -430,18 +466,19 @@ def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
                     )
                 )
     for source, text in documents.items():
-        for title, raw_target in MARKDOWN_LINK.findall(text):
+        for title, raw_target in markdown_links(text):
             destination, _ = resolve_local_target(root, source, raw_target)
-            if destination not in canonical_paths:
+            if destination not in documents or destination.suffix != ".md":
                 continue
             target_text = documents.get(destination)
             target_version = metadata(target_text or "", "Version")
-            named_versions = re.findall(r"\b\d+\.\d+\b", title)
+            named_versions = named_document_versions(title, urlsplit(link_target(raw_target)).fragment)
             if target_version and named_versions and target_version not in named_versions:
                 issues.append(
                     Issue(
                         relative(root, source),
-                        "versioned canonical link label is stale: "
+                        ("versioned canonical link label is stale: " if destination in canonical_paths
+                         else "versioned document link label is stale: ") +
                         f"{title} names {', '.join(named_versions)}, target is {target_version}",
                     )
                 )
@@ -608,7 +645,7 @@ def check_component_requirement_packages(
             section = text[match.end():end]
             parent_links = [
                 target
-                for _, target in MARKDOWN_LINK.findall(section)
+                for _, target in markdown_links(section)
                 if "#sys-" in target.lower()
             ]
             if not parent_links:
@@ -852,29 +889,148 @@ def check_mermaid(root: Path, documents: dict[Path, str]) -> tuple[list[Issue], 
 
 
 def check_external_links(urls: set[str]) -> list[Issue]:
+    """Bounded parallel probes, never full payload round trips or sign-in bypass."""
+    def probe(url: str) -> Issue | None:
+        for method in ("HEAD", "GET"):
+            headers = {"User-Agent": "aosedge-docs-check/1"}
+            if method == "GET":
+                headers["Range"] = "bytes=0-1023"
+            request = urllib.request.Request(url, method=method, headers=headers)
+            try:
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    if method == "GET":
+                        response.read(1024)
+                    return None if response.status < 400 else Issue(url, f"HTTP {response.status}")
+            except urllib.error.HTTPError as error:
+                if method == "HEAD" and error.code in {403, 404, 405}:
+                    continue
+                return Issue(url, f"HTTP {error.code}")
+            except (urllib.error.URLError, TimeoutError) as error:
+                return Issue(url, f"external check failed: {error}")
+        return None
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        return [issue for issue in executor.map(probe, sorted(urls)) if issue is not None]
+
+
+# These exact paths are executable dependencies of the unchanged release
+# definition. Historical contents are not current navigation or status claims.
+LOCKED_EVIDENCE = frozenset({
+    "docs/development/release-reproduction-r1.md",
+    "docs/qualification/m1-live-journey-2026-10-03.md",
+    "docs/qualification/kit028-setup042-source-publication-2026-10-05.md",
+})
+
+
+def workspace_documentation(root: Path) -> tuple[dict[Path, str], tuple[WorkspaceRepository, ...], list[Issue]]:
+    """Inspect owned integration/components, not licensed engine source or caches."""
+    root = root.resolve()
+    repositories = (WorkspaceRepository(root.name, root,
+        "alexmaninblack/aosedge-sdv-demo", None), *(
+        item for item in workspace_repositories(root)
+        if item.directory not in {"CarlaSim", "UnrealEngine5_carla"}))
+    documents: dict[Path, str] = {}
     issues: list[Issue] = []
-    for url in sorted(urls):
-        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "aosedge-docs-check/1"})
-        try:
-            with urllib.request.urlopen(request, timeout=10) as response:
-                if response.status >= 400:
-                    issues.append(Issue(url, f"HTTP {response.status}"))
-        except urllib.error.HTTPError as error:
-            if error.code in {403, 405}:
-                try:
-                    request = urllib.request.Request(
-                        url, method="GET", headers={"User-Agent": "aosedge-docs-check/1"}
-                    )
-                    with urllib.request.urlopen(request, timeout=10):
-                        pass
-                    continue
-                except (urllib.error.URLError, TimeoutError) as retry_error:
-                    issues.append(Issue(url, f"external check failed: {retry_error}"))
-                    continue
-            issues.append(Issue(url, f"HTTP {error.code}"))
-        except (urllib.error.URLError, TimeoutError) as error:
-            issues.append(Issue(url, f"external check failed: {error}"))
+    for repository in repositories:
+        result = subprocess.run(["git", "-C", str(repository.path), "ls-files", "-z",
+            "--cached", "--others", "--exclude-standard", "--", "*.md"],
+            capture_output=True, check=False)
+        if result.returncode:
+            issues.append(Issue(repository.directory, "workspace documentation requires its Git checkout"))
+            continue
+        for name in result.stdout.decode().split("\0"):
+            path = repository.path / name
+            if name and path.is_file():
+                documents[path.resolve()] = path.read_text(encoding="utf-8")
+    return documents, tuple(repositories), issues
+
+
+def check_current_guidance(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    issues: list[Issue] = []
+    for path, text in documents.items():
+        name = relative(root, path)
+        if name in LOCKED_EVIDENCE:
+            continue
+        if re.search(r"The HTML mockups are design/test fixtures", text):
+            issues.append(Issue(name, "retired HTML prototypes must not be described as present"))
+        if path.name == "aosvm-apple-silicon.md" and re.search(
+            r"To reproduce the larger SDV demo,\s*complete this guide first", text, re.I):
+            issues.append(Issue(name, "standalone AosVM is not an SDV Lab prerequisite"))
+        if path.name == "README.md" and path.parent.name in {
+            "carla-ego-runtime", "aos-vehicle-platform", "brake-health-service",
+            "brake-health-cloud", "tire-health-service", "tire-health-cloud"}:
+            if re.search(r"Mounted external APFS volume|export TMPDIR=|await the joint walkthrough|walkthrough has not been executed", text):
+                issues.append(Issue(name, "component quickstart retains superseded storage or editing-history instructions"))
     return issues
+
+
+def check_workspace(root: Path) -> tuple[list[Issue], int, set[str]]:
+    root = root.resolve()
+    documents, repositories, issues = workspace_documentation(root)
+    issues.extend(check_current_guidance(root, documents))
+    external: set[str] = set()
+    historical: dict[tuple[Path, str, str], bytes | None] = {}
+    for source, text in sorted(documents.items()):
+        owner = next(item for item in repositories if source.is_relative_to(item.path))
+        for title, raw in markdown_links(text):
+            target = link_target(raw)
+            parsed = urlsplit(target)
+            destination: Path | None = None
+            body: str | None = None
+            if parsed.scheme in {"http", "https"}:
+                repository = workspace_repository_for_url(repositories, target)
+                if repository is None:
+                    external.add(target)
+                    continue
+                if not (current_workspace_link(repository, target) or pinned_workspace_link(repository, target)):
+                    issues.append(Issue(relative(root, source), f"unsafe hosted workspace reference: {target}"))
+                    continue
+                parts = unquote(parsed.path).rstrip("/").split("/")
+                if len(parts) == 3:
+                    continue
+                revision, name = parts[4], "/".join(parts[5:])
+                if revision != "main":
+                    if (name == "README.md" and repository.path != root and
+                            relative(root, source) not in LOCKED_EVIDENCE):
+                        issues.append(Issue(relative(root, source), "current component README navigation must use main; keep exact source pins in provenance records"))
+                    key = (repository.path, revision, name)
+                    if key not in historical:
+                        result = subprocess.run(["git", "-C", str(repository.path), "show",
+                            f"{revision}:{name}"], capture_output=True, check=False)
+                        historical[key] = result.stdout if result.returncode == 0 else None
+                    content = historical[key]
+                    if content is None:
+                        issues.append(Issue(relative(root, source), f"missing immutable Git target: {target}"))
+                    elif name.endswith(".md") and parsed.fragment and unquote(parsed.fragment).lower() not in anchors(content.decode()):
+                        issues.append(Issue(relative(root, source), f"missing immutable Git anchor: {target}"))
+                    continue
+                destination = (repository.path / name).resolve()
+                if not destination.is_relative_to(repository.path):
+                    issues.append(Issue(relative(root, source), f"hosted path leaves repository: {target}"))
+                    continue
+            elif parsed.scheme in {"mailto", "data"}:
+                continue
+            elif parsed.scheme or target.startswith("//"):
+                issues.append(Issue(relative(root, source), f"unsupported link: {target}"))
+                continue
+            else:
+                destination, _ = resolve_local_target(root, source, raw)
+                if (not destination.is_relative_to(owner.path) and
+                        relative(root, source) not in LOCKED_EVIDENCE):
+                    issues.append(Issue(relative(root, source), f"GitHub-unsafe sibling link; use the owning repository HTTPS URL: {target}"))
+            if destination.is_dir():
+                destination = destination / "README.md" if (destination / "README.md").is_file() else destination
+            if not destination.exists():
+                issues.append(Issue(relative(root, source), f"missing workspace link target: {target}"))
+                continue
+            if destination.suffix == ".md" and destination.is_file():
+                body = documents.get(destination) or destination.read_text(encoding="utf-8")
+                if parsed.fragment and unquote(parsed.fragment).lower() not in anchors(body):
+                    issues.append(Issue(relative(root, source), f"missing workspace anchor: {target}"))
+                version = metadata(body, "Version")
+                named = named_document_versions(title, parsed.fragment)
+                if version and named and version not in named:
+                    issues.append(Issue(relative(root, source), f"versioned document link label is stale: {title}, target is {version}"))
+    return issues, len(documents), external
 
 
 def check_repository(
@@ -893,6 +1049,7 @@ def check_repository(
     issues.extend(check_ui_traceability(root, documents))
     issues.extend(check_hygiene(root, documents))
     issues.extend(check_user_guide_audience(root, documents))
+    issues.extend(check_current_guidance(root, documents))
     mermaid_issues, diagram_count = check_mermaid(root, documents)
     issues.extend(mermaid_issues)
     if include_external:
@@ -909,6 +1066,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--external", action="store_true", help="also check HTTP(S) links")
     parser.add_argument("--reader-routes", action="store_true", help="check initial human routes without sibling checkouts; not the full design gate")
+    parser.add_argument("--workspace", action="store_true", help="also audit every tracked Markdown document in the six component checkouts, hosted references and GitHub-safe navigation")
     parser.add_argument(
         "--root",
         type=Path,
@@ -916,6 +1074,8 @@ def main() -> int:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
+    if args.workspace and args.reader_routes:
+        parser.error("--workspace and --reader-routes are separate acceptance scopes")
     if args.reader_routes:
         root = args.root.resolve()
         documents = markdown_documents(root)
@@ -932,9 +1092,14 @@ def main() -> int:
             return 1
         print(f"Reader route gate: PASS ({len(selected)} entry documents; no sibling checkout required)")
         return 0
-    issues, document_count, identifier_count, diagram_count = check_repository(
-        args.root, args.external
-    )
+    issues, document_count, identifier_count, diagram_count = check_repository(args.root)
+    if args.workspace:
+        workspace_issues, workspace_count, external = check_workspace(args.root.resolve())
+        issues.extend(workspace_issues)
+        if args.external:
+            issues.extend(check_external_links(external))
+    elif args.external:
+        issues.extend(check_external_links(check_links(args.root.resolve(), markdown_documents(args.root))[2]))
     if issues:
         for issue in issues:
             print(f"ERROR {issue.render()}", file=sys.stderr)
@@ -945,6 +1110,8 @@ def main() -> int:
         f"({document_count} Markdown documents, {identifier_count} stable identifiers, "
         f"{diagram_count} Mermaid diagrams)"
     )
+    if args.workspace:
+        print(f"Workspace documentation gate: PASS ({workspace_count} Markdown documents; GitHub-safe current navigation and immutable Git references)")
     return 0
 
 

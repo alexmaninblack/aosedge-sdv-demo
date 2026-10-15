@@ -16,8 +16,8 @@ against the same workspace.
   operator delivery; a B build is not automatically the current A release.
 - [Reproduction contract](../../contracts/release-reproduction/README.md)
   defines immutable inputs, provenance, candidate results and storage.
-- [Developer guide](../getting-started/reproduce-demo.md) separates current
-  automatic B from the explicitly historical manual recipe.
+- [Developer guide](../getting-started/reproduce-demo.md) explains automatic B
+  continuation and the separate installation/publication steps.
 - [Reusable simulation inputs](reusable-simulation-inputs.md) describes retained
   CARLA dependencies; no engine rebuild is needed for an unchanged dependency.
 

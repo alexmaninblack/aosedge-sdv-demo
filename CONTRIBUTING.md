@@ -30,7 +30,7 @@ Never reset or clean another contributor's files.
 3. Update the owning usage documents. Update integration requirements,
    contracts and evidence only where the change affects them; retain stable IDs.
 4. Use the component's documented local checks. For integration documentation,
-   run the commands below. Keep build/test scratch on the declared SSD.
+   run the commands below. Keep build/test scratch in the declared workspace.
 5. Commit the bounded change with its test results and exclusions. Do not
    present source-only tests as a deployed or qualified release.
 
@@ -40,8 +40,13 @@ python3 -B scripts/validate-release-definition
 ```
 
 These two checks work without sibling checkouts or a live demo. The broader
-`python3 -B scripts/docs-check` gate covers all specialist documentation and
-requires its declared sibling reference files. Full local tests use
+`python3 -B scripts/docs-check` gate covers the full integration documentation.
+With all six maintained component checkouts, run `python3 -B scripts/docs-check --workspace`
+to verify all seven repositories, current hosted paths/anchors, immutable Git
+citations and GitHub-safe navigation without builds. Network probes are an
+optional separate `--external` scope. This current-documentation audit is not
+for frozen producer/source checkouts; those retain their own matching gates.
+Full local tests use
 `python3 -B -m unittest discover -s tests -p 'test_*.py'`; some suites require
 the declared workspace/tool prerequisites. CI labels root-only fixtures
 separately from workspace/native/live qualification.

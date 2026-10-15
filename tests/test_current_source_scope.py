@@ -43,6 +43,15 @@ class CurrentSourceScopeTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256((ROOT / selection['path']).read_bytes()).hexdigest(),
                          selection['sha256'])
 
+    def test_closed_documentation_diaries_are_not_current_product_inputs(self):
+        for name in ('docs/qualification/documentation-review-2026-10-15.md',
+                     'apps/presenter-ui/tests/human/full-screen-review.md'):
+            self.assertFalse((ROOT / name).exists(), name)
+        for name in ('docs/development/release-reproduction-r1.md',
+                     'docs/qualification/m1-live-journey-2026-10-03.md',
+                     'docs/qualification/kit028-setup042-source-publication-2026-10-05.md'):
+            self.assertTrue((ROOT / name).is_file(), name)
+
 
 if __name__ == '__main__':
     unittest.main()

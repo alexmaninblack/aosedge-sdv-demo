@@ -63,7 +63,7 @@ None creates a second runtime owner or implies full native acceptance.
 
 As-built exception to the original “unmodified KUKSA” target: the current
 Factory retains explicit scope-path compatibility and VAL v1 source-timestamp
-patches. See the [platform compatibility record](../../../aos-vehicle-platform/docs/contract-compatibility.md).
+patches. See the [platform compatibility record](https://github.com/alexmaninblack/aos-vehicle-platform/blob/main/docs/contract-compatibility.md).
 Factory ownership, KAC/IAM authority and service isolation remain unchanged.
 The historical .21 allocation and original diagram below are not the current
 image selector or a claim of byte-identical upstream KUKSA.

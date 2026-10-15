@@ -78,9 +78,7 @@ retain current rationale; explicitly superseded decisions are Git references.
 
 [Review and retirement](governance/documentation-and-requirements-management.md)
 separates current instructions, normative obligations and evidence.
-The [15 October documentation review](qualification/documentation-review-2026-10-15.md)
-records this complete README-link audit and the
-[retirement inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).
-Obsolete instructions, completed execution packets and superseded reports have
-been removed from the working tree; original evidence is recoverable through
-immutable Git links, not a second active archive directory.
+Run the documentation checks in that policy before publishing changes.
+Keep current guidance and required evidence in the working tree; completed
+cleanup diaries, superseded instructions and prototypes belong in Git history,
+not another navigation route or archive directory.

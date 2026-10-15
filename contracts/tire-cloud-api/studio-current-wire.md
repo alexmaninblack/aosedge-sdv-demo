@@ -9,10 +9,10 @@ The legacy `cleanup-preview.schema.json` and profile's `exactSystemUidCount: 2`
 do **not** fully describe the current response. Their historical fixtures and
 digests remain unchanged. See [contract maintenance status](../implementation-status.md).
 
-Sources: [context validation](../../../tire-health-cloud/src/context.mjs),
-[private HTTP handler](../../../tire-health-cloud/src/main.mjs),
-[store/cleanup transaction](../../../tire-health-cloud/src/store.mjs) and
-[product/selector tests](../../../tire-health-cloud/test/product.test.mjs).
+Sources: [context validation](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/context.mjs),
+[private HTTP handler](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/main.mjs),
+[store/cleanup transaction](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/store.mjs) and
+[product/selector tests](https://github.com/alexmaninblack/tire-health-cloud/blob/main/test/product.test.mjs).
 
 ## Context and selectors
 

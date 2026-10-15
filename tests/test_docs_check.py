@@ -385,19 +385,19 @@ class DocumentationCheckTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("semicolon in sequenceDiagram source is prohibited", result.stderr)
 
-    def test_workspace_github_link_is_rejected(self) -> None:
+    def test_mutable_non_main_workspace_github_link_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "getting-started" / "README.md"
         target.write_text(
             target.read_text(encoding="utf-8")
             + "\n[Bad workspace link]"
-            + "(https://github.com/alexmaninblack/carla-ego-runtime/blob/main/README.md)\n",
+            + "(https://github.com/alexmaninblack/carla-ego-runtime/blob/unreviewed/README.md)\n",
             encoding="utf-8",
         )
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("workspace repository link must use the local sibling checkout", result.stderr)
+        self.assertIn("workspace repository link must use a safe main documentation URL", result.stderr)
 
 
 if __name__ == "__main__":
