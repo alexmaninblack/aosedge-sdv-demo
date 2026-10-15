@@ -29,6 +29,13 @@ applicable scenario and record directory. The plan grants no new signing,
 publication, deletion or Cloud authority. Do not copy identities or completed
 receipts from a different candidate or domain.
 
+The fixed native first-use profile derives its M1 paths from the validated SSH
+user and the journey's `instanceRoot` / `storeRoot`, not a developer's account
+name. Its existing producer certificates are read locally under the invoking
+user's `~/.aos/security prod/`; they are not the newly issued M1 certificates
+and are never copied to the target. This path portability does not change the
+profile's fixed Test/Unit, candidate, Cloud-owner or at-most-once issuance guards.
+
 For the API installation/journey campaign:
 
 ```sh

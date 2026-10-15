@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""First-use path isolation fixtures: no SSH, Cloud, installation or signing."""
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import Mock, patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/qualification'))
+import setup_first_use_campaign as first
+
+
+class FirstUsePathTests(unittest.TestCase):
+    def test_remote_paths_use_the_validated_target_not_local_home(self):
+        with patch.object(Path, 'home', return_value=Path('/Users/developer')):
+            remote, dmg = first.remote_paths('test_operator')
+        self.assertEqual(remote, '/Users/test_operator/' + first.REMOTE)
+        self.assertEqual(dmg, '/Users/test_operator/' + first.DMG)
+
+    def test_invalid_target_users_are_rejected_before_paths_are_used(self):
+        for user in ('', '../operator', '/Users/operator', 'operator/name',
+                     'operator;command', 'operator\n', 'a' * 33, None):
+            with self.subTest(user=user), self.assertRaisesRegex(first.h.Error, 'USER_INVALID'):
+                first.remote_paths(user)
+
+    def test_producer_certificate_paths_are_local_and_role_bounded(self):
+        with patch.object(Path, 'home', return_value=Path('/Users/developer')):
+            for role in ('oem', 'sp'):
+                self.assertEqual(first.local_certificate(role),
+                    '/Users/developer/.aos/security prod/aos-user-' + role + '.p12')
+            with self.assertRaisesRegex(first.h.Error, 'CERTIFICATE_ROLE_INVALID'):
+                first.local_certificate('../other')
+
+    def test_initialization_binds_both_existing_and_supplied_media_to_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            media = root / 'media'
+            (media / 'Setup').mkdir(parents=True)
+            (media / 'Setup/build-receipt.json').write_text(json.dumps(
+                dict(manifestSha256='a' * 64, binarySha256='b' * 64)))
+            for supplied in (None, media):
+                with self.subTest(supplied=supplied is not None), \
+                     patch.object(first.h, 'configuration', return_value=({'user': 'tester'}, None)), \
+                     patch.object(first.j, 'configuration', return_value={'manifestSha256': 'a' * 64}), \
+                     patch.object(first.os, 'umask'):
+                    campaign = first.Campaign(root / 'runner', root / ('records-media' if supplied else 'records'),
+                                              media=supplied)
+                remote, existing = first.remote_paths('tester')
+                self.assertEqual(campaign.remote_root, remote)
+                self.assertEqual(campaign.remote_dmg,
+                    remote + '/AosEdge-SDV-Lab-1.2.0-rc.2.dmg' if supplied else existing)
+
+    def campaign(self):
+        campaign = object.__new__(first.Campaign)
+        campaign.t = {'user': 'tester'}
+        campaign.c = dict(instanceRoot='/Users/tester/Selected data',
+                          storeRoot='/Users/tester/Selected packages')
+        campaign.remote_root, campaign.remote_dmg = first.remote_paths('tester')
+        campaign.installed = campaign.reconcile = campaign.parked = False
+        campaign.worker = Mock(return_value={'retiredTest': first.TEST})
+        campaign.remote = Mock(return_value='{}')
+        return campaign
+
+    def test_parking_uses_configured_target_paths_and_preserves_guards(self):
+        campaign = self.campaign()
+        with patch.object(first.h, 'probe', return_value={'demoProcesses': 0, 'busyPorts': 0}):
+            result = campaign.prepare()
+        source = campaign.remote.call_args.args[0]
+        compile(source, '<remote-parking-fixture>', 'exec')
+        for key in ('instanceRoot', 'storeRoot'):
+            self.assertIn(repr(campaign.c[key]), source)
+        self.assertIn(repr(campaign.remote_root), source)
+        self.assertIn('pathlib.Path.home()', source)
+        self.assertIn('PARKING_VOLUME_CHANGED', source)
+        self.assertIn('PARKING_OPEN_HANDLES', source)
+        self.assertTrue(campaign.parked)
+        self.assertEqual(result['sharedDocker'], 'PRESERVED')
+
+    def test_progress_reads_only_the_same_target_campaign_root(self):
+        campaign = self.campaign()
+        self.assertEqual(campaign.progress(), {})
+        source = campaign.remote.call_args.args[0]
+        self.assertIn(repr(campaign.remote_root + '/progress.json'), source)
+        compile(source, '<remote-progress-fixture>', 'exec')
+
+
+if __name__ == '__main__':
+    unittest.main()

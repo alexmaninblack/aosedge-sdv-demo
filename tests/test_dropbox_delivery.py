@@ -219,8 +219,9 @@ class ClientSecurityTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name).resolve();self.credentials=self.root/'credentials.json'
+        # Deliberately short non-credential fixture; OAuth is always mocked.
         atomic(self.credentials,dict(schemaVersion=1,appKey='public_app_key',
-            refreshToken='never-log-this-refresh-token',accountId=ACCOUNT,scopes=sorted(d.SCOPES)))
+            refreshToken='fixture',accountId=ACCOUNT,scopes=sorted(d.SCOPES)))
     def test_refresh_is_cached_and_no_bearer_in_request_url(self):
         client=d.Client(self.credentials,ACCOUNT)
         with patch.object(d,'token_request',return_value={'access_token':'private_token','expires_in':14400}) as refresh:

@@ -14,6 +14,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import sys
@@ -29,9 +30,22 @@ import remote_harness as h
 TEST = '79adbc10-3f37-40f7-8642-b03968791734'
 UNIT = 'e0f42f9e-bb33-4b39-aa58-c461b4d1e693'
 PRESERVED = 'd87ba9cb-b21f-45db-8773-553e52d0353e'
-REMOTE = '/Users/alexagizim/SDV-Qualification/native-first-use-production-20261015'
-DMG = '/Users/alexagizim/SDV-Qualification/production-clock-20261015/AosEdge-SDV-Lab-Production-Clock-20261015.dmg'
+REMOTE = 'SDV-Qualification/native-first-use-production-20261015'
+DMG = 'SDV-Qualification/production-clock-20261015/AosEdge-SDV-Lab-Production-Clock-20261015.dmg'
 SIGNER = '0514708CB8DA6BB8C26823D4F01C9F6869908008'
+
+
+def remote_paths(user):
+    """Match the accepted macOS SSH profile, never the development user's home."""
+    h.require(isinstance(user, str) and re.fullmatch(r'[a-z][a-z0-9_]{0,31}', user), 'USER_INVALID')
+    home = Path('/Users') / user
+    return str(home / REMOTE), str(home / DMG)
+
+
+def local_certificate(role):
+    """Existing producer credentials stay local; remote issued keys are separate."""
+    h.require(role in ('oem', 'sp'), 'CERTIFICATE_ROLE_INVALID')
+    return str(Path.home() / '.aos' / 'security prod' / ('aos-user-' + role + '.p12'))
 
 
 class Campaign:
@@ -39,6 +53,7 @@ class Campaign:
         os.umask(0o077)
         self.t, _ = h.configuration(ROOT / '.local/remote-qualification/m1-20261001.json')
         self.c = j.configuration(ROOT / '.local/remote-qualification/m1-production-clock-full-20261015/journey.json', self.t['user'])
+        self.remote_root, self.remote_dmg = remote_paths(self.t['user'])
         self.build, self.records = build, records
         if effects:
             prior=h.parse((records/'report.json').read_bytes())
@@ -72,13 +87,12 @@ class Campaign:
         self.mounted = False
         self.effects=effects
         self.media=media
-        self.remote_dmg=DMG
         if media:
             receipt=h.parse((media/'Setup/build-receipt.json').read_bytes())
             h.require(receipt['manifestSha256']==self.c['manifestSha256'],'RUNTIME_PRODUCT_CHANGED')
             self.c=dict(self.c,setupApp='/Volumes/SDV-First-Use-20261015/AosEdge SDV Lab Setup.app',
                 sourceRoot='/Volumes/SDV-First-Use-20261015/Runtime Kit',setupSha256=receipt['binarySha256'])
-            self.remote_dmg=REMOTE+'/AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
+            self.remote_dmg=self.remote_root+'/AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
         if effects:
             h.require(media is not None,'CORRECTED_MEDIA_REQUIRED')
             self.parked=True;self.mounted=True
@@ -132,14 +146,14 @@ print(json.dumps(dict(installedUnenrolled=True,retiredTest='''+repr(TEST)+''',re
         if self.reconcile:
             from aosedge_demo_orchestrator.unit_cloud import Cloud
             with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-                cloud=Cloud(dict(credential='/Users/alexagizim/.aos/security prod/aos-user-oem.p12',cloudDomain='aoscloud.io'))
+                cloud=Cloud(dict(credential=local_certificate('oem'),cloudDomain='aoscloud.io'))
                 h.require(cloud.user['ownerId']==self.c['cloudOwners']['oem'] and cloud.unit(UNIT,nodes=False) is None
                     and cloud.unit(PRESERVED,nodes=False) is not None,'RETIREMENT_RECONCILIATION_FAILED')
             self.remote('''
 import pathlib,subprocess,time,json
-assert not pathlib.Path('/Users/alexagizim/SDV-Lab-Data/.run/demo-current/journal.json').exists(),'RETIREMENT_JOURNAL_REMAINS'
+assert not (pathlib.Path(''' + repr(self.c['instanceRoot']) + ''')/'.run/demo-current/journal.json').exists(),'RETIREMENT_JOURNAL_REMAINS'
 docker='/Applications/Docker.app/Contents/Resources/bin/docker'
-args=[docker,'--host','unix:///Users/alexagizim/.docker/run/docker.sock']
+args=[docker,'--host','unix://'+str(pathlib.Path.home()/'.docker/run/docker.sock')]
 assert not subprocess.check_output(args+['ps','-q'],text=True).strip(),'RUNNING_CONTAINERS_BLOCK_MAINTENANCE'
 subprocess.run([docker,'desktop','restart'],check=True,capture_output=True,timeout=120)
 end=time.monotonic()+60
@@ -168,9 +182,9 @@ print(json.dumps(answer))
         # Recoverable parking, no recursive cleanup or shared Docker restart.
         self.remote('''
 import os,pathlib,json,subprocess
-r=pathlib.Path(''' + repr(REMOTE) + '''); backup=r/'previous-installation'
+r=pathlib.Path(''' + repr(self.remote_root) + '''); backup=r/'previous-installation'
 assert not backup.exists(),'BACKUP_ALREADY_EXISTS'
-paths=[pathlib.Path('/Users/alexagizim/SDV-Lab-Data'),pathlib.Path('/Users/alexagizim/AosEdge SDV Packages'),pathlib.Path('/Users/alexagizim/Applications/AosEdge SDV Lab.app')]
+paths=[pathlib.Path(''' + repr(self.c['instanceRoot']) + '''),pathlib.Path(''' + repr(self.c['storeRoot']) + '''),pathlib.Path.home()/'Applications/AosEdge SDV Lab.app']
 assert all(p.exists() and not p.is_symlink() for p in paths),'PARKING_PATH_CHANGED'
 assert all(p.stat().st_dev==r.stat().st_dev for p in paths),'PARKING_VOLUME_CHANGED'
 for p in paths:
@@ -197,10 +211,10 @@ assert all(not p.exists() for p in paths),'PARKING_UNCONFIRMED'
         h.require(h.digest(app/'Contents/MacOS/NativeUIRunner') == receipt['executableSha256'] and receipt['signer']==SIGNER,
                   'FIRST_USE_RUNNER_CHANGED')
         subprocess.run(['/usr/bin/rsync', '-rpt', '-e', shlex.join(h.ssh_args(self.t)[:-1]),
-            str(app), self.t['user']+'@'+self.t['host']+':'+shlex.quote(REMOTE+'/')], check=True, capture_output=True, timeout=40)
+            str(app), self.t['user']+'@'+self.t['host']+':'+shlex.quote(self.remote_root+'/')], check=True, capture_output=True, timeout=40)
         self.remote('''
 import pathlib,os,subprocess,time,json,hashlib
-r=pathlib.Path(''' + repr(REMOTE) + '''); exe=pathlib.Path(''' + repr(self.c['setupApp'] + '/Contents/MacOS/Setup') + ''')
+r=pathlib.Path(''' + repr(self.remote_root) + '''); exe=pathlib.Path(''' + repr(self.c['setupApp'] + '/Contents/MacOS/Setup') + ''')
 # Discover the executable from signed Info.plist instead of trusting its name.
 import plistlib
 app=pathlib.Path(''' + repr(self.c['setupApp']) + ''')
@@ -234,7 +248,7 @@ subprocess.run(['/usr/bin/open','-a',str(runner),'--args',str(r)],check=True,cap
         return dict(setupSha256=self.c['setupSha256'], nativeSource=receipt['sourceSha256'], certificatesInitiallyAbsent=True)
 
     def progress(self):
-        return h.parse(self.remote('import pathlib,json; p=pathlib.Path('+repr(REMOTE+'/progress.json')+'); print(p.read_text() if p.exists() else "{}")'))
+        return h.parse(self.remote('import pathlib,json; p=pathlib.Path('+repr(self.remote_root+'/progress.json')+'); print(p.read_text() if p.exists() else "{}")'))
 
     def run_ui(self):
         last = None
@@ -262,14 +276,14 @@ subprocess.run(['/usr/bin/open','-a',str(runner),'--args',str(r)],check=True,cap
             for role in ('oem','sp'):
                 intent = self.records/('token-'+role+'.intent.json')
                 h.require(not intent.exists(), 'TOKEN_ALREADY_ISSUED_RECONCILE')
-                client = Cloud(dict(credential='/Users/alexagizim/.aos/security prod/aos-user-'+role+'.p12', cloudDomain='aoscloud.io'),
+                client = Cloud(dict(credential=local_certificate(role), cloudDomain='aoscloud.io'),
                     expected_role='oem' if role=='oem' else 'service provider')
                 h.require(client.user['ownerId']==self.c['cloudOwners'][role], 'TOKEN_OWNER_CHANGED')
                 client.require('users_new_token', 'user_certificates_create')
                 h.atomic(intent, dict(role=role, ownerId=client.user['ownerId'], method='POST', route='users/new-token/', replayAllowed=False))
                 tokens[role] = client.call('users/new-token/','POST',expected=201)['token']
             # The remote program is fixed; only stdin carries the secret JSON.
-            program = "import os,sys,stat; p="+repr(REMOTE+'/tokens.fifo')+"; s=os.lstat(p); assert stat.S_ISFIFO(s.st_mode) and stat.S_IMODE(s.st_mode)==0o600 and s.st_uid==os.getuid(); data=sys.stdin.buffer.read(16384); fd=os.open(p,os.O_WRONLY|os.O_NOFOLLOW|os.O_NONBLOCK); os.write(fd,data); os.close(fd)"
+            program = "import os,sys,stat; p="+repr(self.remote_root+'/tokens.fifo')+"; s=os.lstat(p); assert stat.S_ISFIFO(s.st_mode) and stat.S_IMODE(s.st_mode)==0o600 and s.st_uid==os.getuid(); data=sys.stdin.buffer.read(16384); fd=os.open(p,os.O_WRONLY|os.O_NOFOLLOW|os.O_NONBLOCK); os.write(fd,data); os.close(fd)"
             proc = subprocess.run(h.ssh_args(self.t)+[shlex.join(['/usr/bin/python3','-I','-B','-c',program])],
                 input=(json.dumps(tokens)+'\n').encode(), capture_output=True, timeout=20)
             tokens.clear()
@@ -307,7 +321,7 @@ print(json.dumps(answer))
 ''', fresh=True,phase='reconcile' if self.effects else 'execute')
         self.remote('''
 import pathlib,json,os,signal,subprocess,time
-r=pathlib.Path('''+repr(REMOTE)+''')
+r=pathlib.Path('''+repr(self.remote_root)+''')
 profiles=[(r/'profile.json','pid'),(r/'progress.json','pid')];closing=[]
 for file,key in profiles:
  if not file.exists(): continue

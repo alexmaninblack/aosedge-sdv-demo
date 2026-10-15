@@ -21,6 +21,9 @@ ICON = "apps/presenter-ui/src/assets/icons/image1.png"
 
 
 class PublicSourceGuardTests(unittest.TestCase):
+    def test_complete_tracked_integration_source_passes_publication_scan(self):
+        SCAN(ROOT)
+
     def scan(self, content, relative="example.txt", repository="aosedge-sdv-demo", symlink=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / repository
@@ -80,6 +83,11 @@ class PublicSourceGuardTests(unittest.TestCase):
         for host in ("192.168.1.2", "172.16.2.3", "10.0.0.2", "internal.corp"):
             with self.subTest(host=host), self.assertRaisesRegex(ERROR, "private URL"):
                 self.scan(("https://" + host + "/api").encode())
+
+    def test_personal_absolute_paths_remain_rejected(self):
+        path = "/Users/" + "alexagizim" + "/local-only-file"
+        with self.assertRaisesRegex(ERROR, "personal absolute path"):
+            self.scan(path.encode())
 
     def test_credentials_and_prohibited_files_stay_rejected(self):
         fixtures = [b"-----BEGIN " + b"PRIVATE KEY-----", b"AK" + b"IA" + b"A" * 16,
