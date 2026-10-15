@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "catalogRevision": 4,
+  "catalogRevision": 5,
   "product": "aosedge-sdv-lab",
   "operator": {
-    "productVersion": "1.2.0-rc.1",
+    "productVersion": "1.2.0-rc.2",
     "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
-    "file": "AosEdge-SDV-Lab-1.2.0-rc.1.dmg",
-    "bytes": 14165529112,
-    "sha256": "5e0dbf77f6b48e9efcaee8a38b85157dd691c0bb11369f316e5919fe5fa6f719",
-    "manifestSha256": "31f135fae8b547358495d5a046c73840a22dac3fbfebbf4e3ddc8d8b137d462c",
-    "downloadURL": "https://www.dropbox.com/scl/fo/t7w0q7gse8xkav7fekm1p/AJaEG6HMFNBezw9GtJwkBT0/AosEdge-SDV-Lab-Native-Live-20261012.dmg?rlkey=g4tx2pnnp1tv8xytkn3yqrenl&dl=1",
+    "file": "AosEdge-SDV-Lab-1.2.0-rc.2.dmg",
+    "bytes": 14159474231,
+    "sha256": "71063a5d05ce9287feb0964d661b8408343aa85a58b4c3baaed8c0fd14664270",
+    "manifestSha256": "0f6216c8f300d5106e5ad80cc5ebe25682e397b7ae4174977055018477ffedb8",
+    "downloadURL": "https://www.dropbox.com/scl/fo/t7w0q7gse8xkav7fekm1p/AAPhSldsgqQpN11nX-iG-m8/AosEdge-SDV-Lab-1.2.0-rc.2.dmg?rlkey=g4tx2pnnp1tv8xytkn3yqrenl&dl=1",
     "setupBundle": "AosEdge SDV Lab Setup.app",
     "kitDirectory": "Runtime Kit",
     "setupIdentifier": "org.aosedge.sdvlab.setup.preview",
@@ -30,5 +30,5 @@
       "fullSourceReady": false
     }
   },
-  "operatorDescriptor": "workspace/releases/1.2.0-rc.1-presenter-preview-dropbox-delivery.json"
+  "operatorDescriptor": "workspace/releases/1.2.0-rc.2-presenter-preview-dropbox-delivery.json"
 }
