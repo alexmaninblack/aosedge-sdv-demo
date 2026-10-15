@@ -101,7 +101,10 @@ def configuration(path):
     for key in ('campaign', 'closure', 'browser'):
         safe(value['evidence'][key])
     require(isinstance(value['delivery'],dict),'DELIVERY_SELECTION_INVALID')
-    if value['delivery'].get('provider')=='dropbox':
+    if value['delivery'].get('provider')=='dropbox' and 'credentialFile' in value['delivery']:
+        from reproduction.dropbox_delivery import selection
+        selection(value['delivery'])
+    elif value['delivery'].get('provider')=='dropbox':
         require(set(value['delivery']) in ({'provider','downloadURL'},{'provider','downloadURL','attempt'}),
                 'DELIVERY_SELECTION_INVALID')
         require(type(value['delivery'].get('attempt',1)) is int and

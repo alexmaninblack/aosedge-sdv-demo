@@ -45,6 +45,34 @@ Source gates precede normal main integration; the new operator catalog and
 tag are promoted only after the M1 consumer check and final cleanup pass.
 The existing engineering-preview and first-use limitations remain unchanged.
 
+## Automatic Dropbox publication amendment on 15 October 2026
+
+The operator explicitly authorized completing automatic upload of new DMGs to
+Dropbox and catalog-link updates, while preserving the concurrent final M1
+acceptance campaign. Implement in an isolated integration worktree; do not
+modify the active candidate, campaign selection, M1 environment, main or tags.
+
+The Dropbox adapter may publish the exact newly qualified immutable DMG through
+a dedicated scoped App folder application, obtain its public download link and
+feed that checked URL into the existing operator projection. Previous artifacts
+and links remain valid. This supersedes the manual-copy restriction for this
+new automatic delivery mode; legacy link adoption remains supported.
+
+Authorize the application once with PKCE/offline access and store refresh
+credentials privately outside Git. Acceptance of API terms and granting persistent
+access require the operator's explicit confirmation at connection time. Limit
+access to the app folder, account identity/capacity, metadata, upload and sharing;
+no content-read, account-wide file access or general sharing changes are needed.
+
+Require cursor-based recovery, remote file ID/revision/size and Dropbox hash
+verification, no overwrite/renaming, redacted receipts, anonymous public metadata,
+then the existing consumer and final promotion gates. A local fixture scenario
+can finish independently of M1; neither fixtures nor successful OAuth constitute
+live delivery or a completed new release. Keep the current catalog generation
+until its ordinary successor has passed the existing acceptance sequence.
+
+See [automatic publisher operation](../../../development/release-campaign.md#automatic-dropbox-publication).
+
 ## Checkpoint at plan acceptance
 
 The following heads were remotely verified on 13 October. Reconcile them before

@@ -66,6 +66,19 @@ def descriptor(owner):
 
 
 def publish(owner):
+    from reproduction.dropbox_delivery import automatic
+    if automatic(owner.config['delivery']):
+        from reproduction.dropbox_delivery import Client, publish as dropbox_publish
+        selected=owner.config['delivery'];expected=descriptor(owner)
+        atomic(owner.root/'delivery-descriptor.json',expected)
+        client=Client(selected['credentialFile'],selected['accountId'])
+        def progress(stage,count):
+            if count==expected['bytes'] or stage!='UPLOAD_BYTES' or count%(256*2**20)==0:
+                print('    Dropbox '+stage+': '+str(round(100*count/expected['bytes'],1))+'%',flush=True)
+        facts=dropbox_publish(client,next(owner.candidate.glob('*.dmg')),expected,selected,
+            owner.root/'dropbox-upload.private.json',check=owner.storage,progress=progress,
+            verified_source=read(owner.root/'artifact-verification.json'))
+        return dict(facts,descriptorSha256=sha(owner.root/'delivery-descriptor.json'))
     if owner.config['delivery'].get('provider')=='dropbox':
         # The operator has already copied this artifact to the shared folder.
         # Adopt its exact reviewed link by metadata, never upload it again.
@@ -109,7 +122,13 @@ def verify_saved(owner,name,facts):
         require(all(remote_main(repo)==expected[role] for role,repo in
                     [('gateway',owner.gateway),('integration',ROOT)]),'PUBLISHED_MAIN_CHANGED')
     elif name=='publication':
-        if facts.get('provider')=='dropbox':
+        if facts.get('automaticUpload') is True:
+            from reproduction.dropbox_delivery import Client, verify
+            selected=owner.config['delivery']
+            require(facts['descriptorSha256']==sha(owner.root/'delivery-descriptor.json'),
+                    'DROPBOX_DESCRIPTOR_CHANGED')
+            verify(Client(selected['credentialFile'],selected['accountId']),descriptor(owner),selected,facts)
+        elif facts.get('provider')=='dropbox':
             from reproduction.dropbox_public import observe
             require(facts['downloadURL']==owner.config['delivery']['downloadURL'],'DROPBOX_LINK_CHANGED')
             require(observe(facts['downloadURL'],descriptor(owner)['bytes'])==facts['metadata'],
@@ -130,6 +149,13 @@ def reconcile(owner,name,previous):
         return all(remote_main(repo) in (intent['before'][role],intent['targets'][role]) for role,repo in
                    [('gateway',owner.gateway),('integration',ROOT)])
     if name=='publication':
+        from reproduction.dropbox_delivery import automatic
+        if automatic(owner.config['delivery']):
+            from reproduction.dropbox_delivery import Client, reconcile as reconcile_dropbox
+            selected=owner.config['delivery']
+            return reconcile_dropbox(Client(selected['credentialFile'],selected['accountId']),
+                next(owner.candidate.glob('*.dmg')),descriptor(owner),selected,
+                owner.root/'dropbox-upload.private.json')
         if owner.config['delivery'].get('provider')=='dropbox':
             from reproduction.dropbox_public import observe
             observe(owner.config['delivery']['downloadURL'],descriptor(owner)['bytes'])
