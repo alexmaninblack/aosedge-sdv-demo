@@ -3,13 +3,20 @@
 
 # Current demo baseline
 
-- Status: engineering candidate; full native E2E and external distribution open
-- Version: 2.0
-- Prepared: 2026-10-07
+- Status: engineering preview; current selection and exact profiles are linked below
+- Version: 2.1
+- Prepared: 2026-10-15
 - Owner: SDV Lab integration
-- Source checkpoint: `candidate/kit028-setup042`
+- Current source checkpoint: use the selected operator version in the launcher catalog
 
-The current implementation is **Kit028 / Setup042 / Factory .41**.
+The current operator selection is owned by the
+[launcher catalog](../../workspace/launcher-catalog.json), not this historical
+table. See the [release campaign report](release-automation-2026-10-13.md)
+for public delivery and [production M1 results](m1-clean-install-e2e-2026-10-14.md)
+for the exact 118-step API, 42-stage visible UI and new-certificate native Setup
+profiles. Their scope and unchanged-runtime reuse are explicit.
+
+The historical installed baseline retained below is **Kit028 / Setup042 / Factory .41**.
 `demo-v1.1 / Factory .39` remains a historical return point, not the current
 installer. HLA 1.8 is a document version, not a demo release number.
 This page reconciles retained evidence; it is not a fresh observation of a
@@ -20,9 +27,11 @@ build/delivery evidence, not inherited installed qualification. Use
 [release selection](../getting-started/release-status.md) to choose between
 them. This page retains the exact Kit028 installed evidence and original hashes.
 
-## Immutable Factory
+<a id="immutable-factory"></a>
 
-| Item | Selected candidate |
+## Historical immutable Factory media
+
+| Item | Historical Kit028 candidate |
 | --- | --- |
 | Complete media | `AosEdge-SDV-Lab-Kit028-Setup042.dmg` |
 | Media size | 14,150,764,550 bytes |
@@ -69,9 +78,13 @@ renewal continuity and Tire persistence recovery. Tire packaging requests
 is still not implemented. See [implemented architecture](../architecture/current-implementation.md)
 and [protocol status](../../contracts/implementation-status.md).
 
-## Current qualification limitation
+<a id="current-qualification-limitation"></a>
 
-**Full E2E: NOT_COMPLETE.** Four candidate gates remain open:
+## Historical Kit028 qualification limitation
+
+**Full E2E: NOT_COMPLETE for Kit028.** Four gates remained open for that
+specific candidate; neither its missing gates nor its passes transfer to a
+later package:
 
 1. Moving-SOTA qualification on this candidate.
 2. Native secure-token field entry (API/worker enrollment is not that UI proof).
@@ -83,6 +96,8 @@ The 4 October native review needed separately recorded engineering restoration;
 there is no native Power on action in the current Studio lifecycle. Do not
 describe that restoration as native first-use or cold-resume acceptance.
 
+## Continuing exclusions
+
 Load-sensitive brief readiness transitions and **VDP-TIMEOUT-01** are explicitly
 deferred, not repaired by changing freshness limits. **D4-023** fixed CPU-load
 worker/control, complete calibration/negative matrices, nonempty-outbox power
@@ -93,7 +108,7 @@ internal-disk campaign; controller ignition does not qualify laptop sleep/wake.
 ## Current boundaries
 
 The complete DMG contains Setup and its matching Runtime Kit. It is an
-engineering preview, not a finished one-click wizard or a notarized public
+engineering preview, not a notarized public
 release. The [installation guide](../getting-started/installed-preview-cloud-first-use.md)
 describes actual buttons and prerequisites. Operators do not compile Unreal
 or CARLA. Developers use the [source reproduction guide](../getting-started/reproduce-demo.md).
