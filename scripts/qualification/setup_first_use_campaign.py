@@ -35,18 +35,20 @@ SIGNER = '0514708CB8DA6BB8C26823D4F01C9F6869908008'
 
 
 class Campaign:
-    def __init__(self, build, records, reconcile=False, installed=False):
+    def __init__(self, build, records, reconcile=False, installed=False, media=None):
         os.umask(0o077)
         self.t, _ = h.configuration(ROOT / '.local/remote-qualification/m1-20261001.json')
         self.c = j.configuration(ROOT / '.local/remote-qualification/m1-production-clock-full-20261015/journey.json', self.t['user'])
         self.build, self.records = build, records
         if installed:
             prior=h.parse((records/'report.json').read_bytes())
-            h.require(prior['outcome']=='FAIL' and prior['code'] in ('PRODUCTION_SELECTION_UNCONFIRMED','UI_WAIT_CONNECTEDTOPRODUCTION')
+            h.require(prior['outcome']=='FAIL' and prior['code'] in ('PRODUCTION_SELECTION_UNCONFIRMED','UI_WAIT_CONNECTEDTOPRODUCTION','SETUP_ENROLLMENT_ENVIRONMENT_INVALID')
                 and any(r['stage']=='retire-and-park' and r['status']=='PASS' for r in prior['stages']),
                 'INSTALLED_CONTINUATION_REFUSED')
-            h.atomic(records/('before-environment-selection-correction.json' if prior['code']=='PRODUCTION_SELECTION_UNCONFIRMED'
-                             else 'before-native-error-diagnostics.json'),prior)
+            names={'PRODUCTION_SELECTION_UNCONFIRMED':'before-environment-selection-correction.json',
+                   'UI_WAIT_CONNECTEDTOPRODUCTION':'before-native-error-diagnostics.json',
+                   'SETUP_ENROLLMENT_ENVIRONMENT_INVALID':'before-setup-domain-fix.json'}
+            h.atomic(records/names[prior['code']],prior)
         elif reconcile:
             prior=h.parse((records/'report.json').read_bytes())
             h.require(prior['outcome']=='FAIL' and prior['code']=='REMOTE_COMMAND_FAILED'
@@ -61,6 +63,14 @@ class Campaign:
         self.started = time.monotonic()
         self.parked = False
         self.mounted = False
+        self.media=media
+        self.remote_dmg=DMG
+        if media:
+            receipt=h.parse((media/'Setup/build-receipt.json').read_bytes())
+            h.require(receipt['manifestSha256']==self.c['manifestSha256'],'RUNTIME_PRODUCT_CHANGED')
+            self.c=dict(self.c,setupApp='/Volumes/SDV-First-Use-20261015/AosEdge SDV Lab Setup.app',
+                sourceRoot='/Volumes/SDV-First-Use-20261015/Runtime Kit',setupSha256=receipt['binarySha256'])
+            self.remote_dmg=REMOTE+'/AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
 
     def remote(self, code, timeout=40):
         return h.remote(self.t, "/usr/bin/python3 -I -B - <<'FIRST_USE_SCENARIO'\n" + code + '\nFIRST_USE_SCENARIO\n', timeout=timeout)
@@ -101,7 +111,8 @@ print(json.dumps(dict(installedUnenrolled=True,retiredTest='''+repr(TEST)+''',re
             for role in ('oem','sp'):
                 intent=self.records/('token-'+role+'.intent.json')
                 if intent.exists():
-                    destination=intent.with_name('token-'+role+'.before-native-error-diagnostics.intent.json')
+                    suffix='before-setup-domain-fix' if self.media else 'before-native-error-diagnostics'
+                    destination=intent.with_name('token-'+role+'.'+suffix+'.intent.json')
                     h.require(not destination.exists(),'TOKEN_INTENT_ALREADY_ARCHIVED')
                     intent.rename(destination)
             return facts
@@ -162,8 +173,13 @@ assert all(not p.exists() for p in paths),'PARKING_UNCONFIRMED'
         return dict(facts, previousInstallation='PARKED', sharedDocker='PRESERVED')
 
     def launch(self):
+        if self.media:
+            from campaign import Media,media_input
+            path=self.media/'AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
+            selected=media_input(path,self.c,self.remote_dmg,self.t['user'])
+            Media(self.t,self.c,selected,emit=lambda s:print(s,flush=True)).transfer()
         mount = str(Path(self.c['setupApp']).parent)
-        h.remote(self.t, shlex.join(['/usr/bin/hdiutil', 'attach', DMG, '-nobrowse', '-readonly', '-mountpoint', mount]) + ' >/dev/null\n', timeout=70)
+        h.remote(self.t, shlex.join(['/usr/bin/hdiutil', 'attach', self.remote_dmg, '-nobrowse', '-readonly', '-mountpoint', mount]) + ' >/dev/null\n', timeout=90)
         self.mounted = True
         app = self.build / 'Native UI Runner.app'
         receipt = json.loads((self.build / 'build-receipt.json').read_bytes())
@@ -333,5 +349,6 @@ if __name__=='__main__':
     p.add_argument('--records',type=Path,required=True)
     p.add_argument('--reconcile-retired-docker-sharing',action='store_true')
     p.add_argument('--resume-installed-ui',action='store_true')
+    p.add_argument('--media',type=Path)
     a=p.parse_args()
-    sys.exit(Campaign(a.build,a.records,a.reconcile_retired_docker_sharing,a.resume_installed_ui).run())
+    sys.exit(Campaign(a.build,a.records,a.reconcile_retired_docker_sharing,a.resume_installed_ui,a.media).run())
