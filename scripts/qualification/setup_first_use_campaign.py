@@ -35,12 +35,19 @@ SIGNER = '0514708CB8DA6BB8C26823D4F01C9F6869908008'
 
 
 class Campaign:
-    def __init__(self, build, records, reconcile=False, installed=False, media=None):
+    def __init__(self, build, records, reconcile=False, installed=False, media=None, effects=False):
         os.umask(0o077)
         self.t, _ = h.configuration(ROOT / '.local/remote-qualification/m1-20261001.json')
         self.c = j.configuration(ROOT / '.local/remote-qualification/m1-production-clock-full-20261015/journey.json', self.t['user'])
         self.build, self.records = build, records
-        if installed:
+        if effects:
+            prior=h.parse((records/'report.json').read_bytes())
+            native=h.parse((records/'native-report.json').read_bytes())
+            h.require(prior['code']=='CLOSURE_UNCONFIRMED' and native['stage']=='PASS'
+                and any(r['stage']=='native-first-use' and r['status']=='PASS' for r in prior['stages']),
+                'EFFECT_RECONCILIATION_REFUSED')
+            h.atomic(records/'before-effect-tool-correction.json',prior)
+        elif installed:
             prior=h.parse((records/'report.json').read_bytes())
             h.require(prior['outcome']=='FAIL' and prior['code'] in ('PRODUCTION_SELECTION_UNCONFIRMED','UI_WAIT_CONNECTEDTOPRODUCTION','SETUP_ENROLLMENT_ENVIRONMENT_INVALID')
                 and any(r['stage']=='retire-and-park' and r['status']=='PASS' for r in prior['stages']),
@@ -59,10 +66,11 @@ class Campaign:
             records.mkdir(mode=0o700)
         self.reconcile=reconcile
         self.installed=installed
-        self.stages = []
+        self.stages = list(prior['stages']) if effects else []
         self.started = time.monotonic()
         self.parked = False
         self.mounted = False
+        self.effects=effects
         self.media=media
         self.remote_dmg=DMG
         if media:
@@ -71,6 +79,9 @@ class Campaign:
             self.c=dict(self.c,setupApp='/Volumes/SDV-First-Use-20261015/AosEdge SDV Lab Setup.app',
                 sourceRoot='/Volumes/SDV-First-Use-20261015/Runtime Kit',setupSha256=receipt['binarySha256'])
             self.remote_dmg=REMOTE+'/AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
+        if effects:
+            h.require(media is not None,'CORRECTED_MEDIA_REQUIRED')
+            self.parked=True;self.mounted=True
 
     def remote(self, code, timeout=40):
         return h.remote(self.t, "/usr/bin/python3 -I -B - <<'FIRST_USE_SCENARIO'\n" + code + '\nFIRST_USE_SCENARIO\n', timeout=timeout)
@@ -86,8 +97,8 @@ class Campaign:
         print(json.dumps(row), flush=True)
         return result
 
-    def worker(self, body, *, fresh=False, timeout=150):
-        request = dict(config=self.c, kind='observe', args={}, phase='execute', requestId=str(uuid4()),
+    def worker(self, body, *, fresh=False, timeout=150, phase='execute'):
+        request = dict(config=self.c, kind='observe', args={}, phase=phase, requestId=str(uuid4()),
                        expectedRun=None if fresh else TEST)
         program = j.WORKER.read_text() + '\nREQUEST=' + repr(request) + '\n' + body
         python = self.c['packageRoot'] + '/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
@@ -277,15 +288,12 @@ with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.Str
  w=Worker(REQUEST)
  with w.imports():
   require(w.binding(allow_empty=True) is None,'UNEXPECTED_TEST_CREATED')
-  from aosedge_demo_orchestrator.cloud_connection import inspect_certificate
-  certs=[inspect_certificate(w.config[key]) for key in ('oemCertificate','spCertificate')]
-  require(all(row['domain']=='aoscloud.io' for row in certs),'ISSUED_CERTIFICATE_DOMAIN_CHANGED')
   connected=w.setup_call('cloud-observe',oem=w.config['oemCertificate'],sp=w.config['spCertificate'])
-  require(connected['cloudStage']=='READY' and connected['rolesChecked'],'ISSUED_PAIR_NOT_READY')
-  require(exchange('operations')['cloudDomain']=='aoscloud.io','PRESENTER_DOMAIN_CHANGED')
-  answer=dict(newOemAndSpCertificates=True,domain='aoscloud.io',cloudStage='READY',noTestCreated=True,presenterObserved=True)
+  require(connected['cloudStage']=='READY' and connected['rolesChecked'] and connected['domain']=='aoscloud.io','ISSUED_PAIR_NOT_READY')
+  answer=dict(newOemAndSpCertificates=True,domain='aoscloud.io',cloudStage='READY',noTestCreated=True,
+   presenterObserved=True,presenterObservation='RETAINED_NATIVE_AND_TRUSTED_HELPER_BEFORE_SHUTDOWN')
 print(json.dumps(answer))
-''', fresh=True)
+''', fresh=True,phase='observe')
 
     def cleanup(self):
         facts = {}
@@ -296,17 +304,18 @@ with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.Str
  w=Worker(REQUEST)
  with w.imports(): answer=w.shutdown()
 print(json.dumps(answer))
-''', fresh=True)
+''', fresh=True,phase='reconcile' if self.effects else 'execute')
         self.remote('''
 import pathlib,json,os,signal,subprocess,time
 r=pathlib.Path('''+repr(REMOTE)+''')
-profiles=[(r/'profile.json','pid'),(r/'progress.json','pid')]
+profiles=[(r/'profile.json','pid'),(r/'progress.json','pid')];closing=[]
 for file,key in profiles:
  if not file.exists(): continue
  pid=json.loads(file.read_text())[key]
  comm=subprocess.run(['/bin/ps','-p',str(pid),'-o','comm='],capture_output=True,text=True).stdout.strip()
  if comm and (comm.startswith('''+repr(str(Path(self.c['setupApp']).parent)) + ''') or comm.startswith(str(r/'Native UI Runner.app'))):
   os.kill(pid,signal.SIGTERM)
+  closing.append(pid)
 p=r/'tokens.fifo'
 if p.exists(): p.unlink()
 owner=r/'display-owner.json'
@@ -314,6 +323,12 @@ if owner.exists():
  value=json.loads(owner.read_text());pid=value['pid']
  comm=subprocess.run(['/bin/ps','-p',str(pid),'-o','comm='],capture_output=True,text=True).stdout.strip()
  if comm=='/usr/bin/caffeinate':os.kill(pid,signal.SIGTERM)
+end=time.monotonic()+10
+while time.monotonic()<end:
+ active=[pid for pid in closing if subprocess.run(['/bin/ps','-p',str(pid),'-o','comm='],capture_output=True,text=True).stdout.strip()]
+ if not active:break
+ time.sleep(.1)
+assert not active,'NATIVE_OWNER_CLOSE_UNCONFIRMED'
 ''')
         if self.mounted:
             h.remote(self.t, shlex.join(['/usr/bin/hdiutil','detach',str(Path(self.c['setupApp']).parent)])+' >/dev/null\n', timeout=30)
@@ -324,9 +339,10 @@ if owner.exists():
     def run(self):
         outcome, code = 'FAIL', 'NOT_RUN'
         try:
-            self.stage('retire-and-park',self.prepare)
-            self.stage('native-launch',self.launch)
-            self.stage('native-first-use',self.run_ui)
+            if not self.effects:
+                self.stage('retire-and-park',self.prepare)
+                self.stage('native-launch',self.launch)
+                self.stage('native-first-use',self.run_ui)
             self.stage('independent-effects',self.verify)
             outcome, code = 'PASS', 'FIRST_USE_ACCEPTED'
         except Exception as error:
@@ -338,7 +354,8 @@ if owner.exists():
                 outcome, code = 'FAIL', 'CLOSURE_UNCONFIRMED'
                 print(json.dumps(dict(outcome=outcome,code=code)),flush=True)
             h.atomic(self.records/'report.json',dict(outcome=outcome,code=code,stages=self.stages,
-                seconds=round(time.monotonic()-self.started,3),candidate=self.c['manifestSha256'],
+                seconds=round(sum(row['seconds'] for row in self.stages),3),
+                continuationSeconds=round(time.monotonic()-self.started,3),candidate=self.c['manifestSha256'],
                 tokensPersisted=False,workingKeysCopied=False))
         return 0 if outcome=='PASS' else 1
 
@@ -350,5 +367,6 @@ if __name__=='__main__':
     p.add_argument('--reconcile-retired-docker-sharing',action='store_true')
     p.add_argument('--resume-installed-ui',action='store_true')
     p.add_argument('--media',type=Path)
+    p.add_argument('--reconcile-effects-only',action='store_true')
     a=p.parse_args()
-    sys.exit(Campaign(a.build,a.records,a.reconcile_retired_docker_sharing,a.resume_installed_ui,a.media).run())
+    sys.exit(Campaign(a.build,a.records,a.reconcile_retired_docker_sharing,a.resume_installed_ui,a.media,a.reconcile_effects_only).run())

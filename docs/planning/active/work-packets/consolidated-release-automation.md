@@ -47,6 +47,23 @@ The existing engineering-preview and first-use limitations remain unchanged.
 
 ## Checkpoint at plan acceptance
 
+### Authorized 15 October successor
+
+The operator authorized the remaining native Setup first-use profile on M1,
+then main fan-in, version tags and publication of a new option A DMG. Use
+`1.2.0-rc.2` for changed media; do not replace the published rc.1 bytes. The
+production migration's exact Test-only authority applies, preserving the
+retained Production-role Unit and unrelated resources. Platform's reviewed
+VDP runtime enters main before integration pins it; Gateway is already in main.
+
+Native first use passed with new M1-generated certificates after correcting
+Setup's menu/domain binding. The [qualification report](../../../qualification/m1-clean-install-e2e-2026-10-14.md)
+identifies changed Setup bytes, unchanged qualified runtime, reused installation
+evidence and remaining exclusions. Public option A still requires its separate
+anonymous consumer check. The active B plan uses current frozen producer/native
+sources over the unchanged rc.1 binary-input definition; historical locks and
+plans are not rewritten.
+
 The following heads were remotely verified on 13 October. Reconcile them before
 execution rather than treating these dated values as moving release authority.
 

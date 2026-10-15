@@ -12,7 +12,7 @@ qualified public release.
 
 | Selection | Use and evidence |
 | --- | --- |
-| Selected option A preview | The [launcher catalog](../../workspace/launcher-catalog.json) supplies the version, status, approved identity and download link. The selected Dropbox media passed anonymous M1 download, checksum/signature, Setup handoff and installed/open reconciliation. It reused an existing Test; native Setup button-input and clean-first-user acceptance remain open. |
+| Selected option A preview | The [launcher catalog](../../workspace/launcher-catalog.json) supplies the current version, status, approved identity and download link. Qualification belongs to its exact descriptor and release report; a filename or shared product version cannot transfer another candidate's results. |
 | `1.2.0-rc.1`, earlier source-Factory build | Retained build candidate, distinct from the selected Presenter preview. Assembly and its private delivery passed; its own fresh-environment reproduction, installation and live qualification remain open. Historical input/producer pins remain unchanged. |
 | `candidate/kit028-setup042` | Published historical source checkpoint for the earlier installer. Its 98-step scripted M1 evidence and open native gates remain in the qualification baseline. It does not contain the newer reproduction commands. |
 | `demo-v1.1` | Earlier Factory .39 source return point, not the current installer or new build candidate. |
@@ -28,9 +28,10 @@ demo repositories, including our CARLA and restricted Unreal forks. Historical
 branches remain available; there is no separate maintenance branch to find for
 the latest README or current development work.
 
-`sdv-lab-v1.2.0-rc.1` is the published engineering source checkpoint after
-the Dropbox consumer check. It does not claim completed native first-use
-acceptance. `sdv-lab-v1.2.0` remains reserved for a future qualified release.
+The engineering source checkpoint is tagged `sdv-lab-v<version>`, using the
+operator version selected by the catalog. Check its exact qualification report;
+older tags retain their original acceptance boundaries. `sdv-lab-v1.2.0`
+remains reserved for a future qualified release.
 To reproduce the earlier R2/R3
 candidate, select root checkpoint
 `dbfd542d38f3730f151f43dd303af94e4902c74d` and its frozen producer ancestors.
@@ -52,7 +53,7 @@ installed results; those results are not promoted to new bytes.
   commits, and approved access to the release catalog plus simulation and
   vehicle/Factory inputs. The preparation wizard obtains the compatible
   references automatically; users do not supply JSON binding files.
-- **Both:** instructions for access to the intended Aos Cloud staging instance.
+- **Both:** instructions for access to the intended Aos Cloud environment.
   The first-demo topology uses one OEM and one associated SP for two separate
   services. Credentials and provisioned identities are never included in media.
 

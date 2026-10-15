@@ -116,3 +116,38 @@ packaged product and verified publication, preserved prior receipts, confirmed
 closure and affirmative M1 proof of no media/partial file or mounted image.
 Any existing payload or uncertain handoff refuses this path. The new consumer
 attempt uses a fresh named namespace; confirmed publication is not replayed.
+
+## Native Setup first-use gate
+
+The 15 October continuation adds a separate first-use receipt to the release
+selection (`evidence.firstUse`). It is not inferred from the API or Presenter
+campaign. The fixed M1 scenario is `scripts/qualification/setup_first_use_campaign.py`;
+its Setup-only native client is `native/SetupFirstUse.swift` in the same folder.
+The client finds semantic labels and menu items, verifies exact signed target
+identity and hit-tested geometry, and dispatches actual mouse/keyboard input.
+It does not use vehicle or enrollment APIs as a substitute for UI input.
+
+With the authorized existing OEM/SP accounts, the scenario retires only the
+exact previous Test, parks its stopped installation by recoverable rename,
+and observes Setup with no certificate references. New one-time tokens enter
+native secure fields through pinned SSH stdin and an owner-private FIFO. Tokens
+never enter argv, environment, clipboard, files, screenshots or reports. New
+private keys are generated on M1. Independent checks require the new matching
+pair, Cloud readiness, Presenter opening and no newly created Test.
+
+An optional first-use receipt is accepted only for the exact tested Setup
+binary, runtime manifest and native scenario source, with successful final
+closure. An input/tool fault can continue from a verified installed-but-not-
+enrolled state; saved attempts and token intents are retained, and uncertain
+issuance is never resubmitted. The original installation evidence remains
+separate from continuation timing. Shared Docker is not routinely restarted;
+a one-time idle-engine maintenance recovery for stale retired-Test file handles
+is recorded separately.
+
+This qualification uses production Cloud only under the explicit production
+Test scope accepted in the migration packet. The retained Production-role Unit
+and unrelated resources remain excluded. It does not certify a newly installed
+macOS user's first permission prompts or new Cloud company registration.
+The anonymous option A consumer remains a separate delivery gate. Engineering
+preview signing and lack of notarization remain visible even after these gates
+pass.

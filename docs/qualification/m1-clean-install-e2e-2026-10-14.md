@@ -437,3 +437,64 @@ Private immutable campaign, timing, API/UI receipts/screenshots and closure
 records: `.local/remote-qualification/m1-production-clock-full-20261015`.
 The earlier failed candidate and proof evidence remain separately identified;
 their results are not substituted for this candidate's acceptance.
+
+### Native Setup with no ready certificates: PASS on 15 October
+
+The remaining first-use profile ran on M1 internal storage with the same
+authorized production OEM/SP accounts, but no certificate files/references in
+the fresh instance. The previous successful Test was normally retired to free
+the account's single Test slot; its reports and parked installation were retained.
+An idle-Docker maintenance restart released stale retired-Test file-sharing
+handles. It was not an Engine lifecycle test or routine shutdown policy.
+
+The first native installation completed in 170.705 seconds. This exposed a real
+Setup defect: choosing Production changed the menu but did not initialize the
+hidden enrollment domain, so the paired request stopped locally with
+`SETUP_ENROLLMENT_ENVIRONMENT_INVALID`, before any certificate request. Setup
+now derives the paired request domain directly from the selection and resets
+both token fields when changing environment. Offline state proof and compiled
+native Staging/Production assertions passed before successor media creation.
+
+The corrected Setup was checked against the same installed, still-unenrolled
+Runtime Kit. The earlier install evidence is reused because the installation
+helpers and all runtime/UI bytes are unchanged; it is not represented as a
+second empty-disk installation with the corrected binary.
+
+| Corrected media identity | Value |
+| --- | --- |
+| Filename | `AosEdge-SDV-Lab-1.2.0-rc.2.dmg` |
+| Bytes | 14,159,474,231 |
+| SHA-256 | `71063a5d05ce9287feb0964d661b8408343aa85a58b4c3baaed8c0fd14664270` |
+| Runtime application manifest | `0f6216c8f300d5106e5ad80cc5ebe25682e397b7ae4174977055018477ffedb8` |
+| Setup executable SHA-256 | `95dbe894f0046c1709795525e0a4b9cf547a9aec8cac2f6955918f20bc582fa3` |
+
+The fixed native scenario found both certificate fields empty, selected the
+Production menu item, typed fresh one-time tokens into native secure fields,
+clicked Get certificates, observed Connected to Production and opened Presenter.
+New private keys were generated on M1; working developer keys were not copied.
+Tokens passed in memory over pinned SSH stdin and a private FIFO, never through
+argv, environment, clipboard, files or screenshots. No new Test was created.
+
+The final native sequence took 67.139 seconds. Separate packaged-SDK Cloud
+observation confirmed the matching authenticated pair and READY in 4.871 seconds;
+final reconciled closure took 5.999 seconds. Corrected media transfer/mount took
+247.376 seconds. These are individual phase times, not total elapsed time for
+diagnosis, earlier failed harness attempts, installation and packaging.
+
+Two evidence-tool corrections did not replay successful UI/enrollment actions:
+popup input now selects a semantic menu item rather than assuming keyboard
+position; certificate observation uses the packaged SDK helper rather than
+importing cryptography into host Python. Presenter opening is retained from the
+successful native action and its trusted helper's actual window/server checks,
+before its confirmed shutdown. The final observation does not claim the already
+closed Presenter was still running. Zero owned demo processes/listeners, native
+client/Setup closure, media detachment and preserved shared Docker were checked.
+
+This closes new-certificate native first use for this exact Setup/runtime pair.
+It does not certify a new macOS user's permission prompts, new Cloud company
+registration, notarization or the deferred VDP timeout. The preceding 118 API
+and 42 visible-UI results apply to the unchanged Runtime Kit. Source fan-in and
+anonymous public option A delivery are separate subsequent release gates.
+
+Private first-use receipts and preserved failed-attempt evidence:
+`.local/remote-qualification/native-first-use-production-20261015`.
