@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import shutil
@@ -183,6 +184,36 @@ class CatalogueTests(StorageFixture, unittest.TestCase):
 class SpaceTests(StorageFixture, unittest.TestCase):
     def fixture(self):
         self.patch('reproduction.cache.catalogue', return_value={})
+
+    def test_current_pinned_developer_plan_passes_capacity_review_without_writes(self):
+        self.fixture()
+        selector = core.ROOT/'workspace/current-developer-build.json'
+        selected = json.loads(selector.read_bytes())
+        path = core.ROOT/selected['path']
+        before = (selector.read_bytes(), path.read_bytes(), self.storage.state_path.read_bytes())
+        value = space.report(self.storage, self.state, build_plan=path)
+        self.assertEqual(len(value['ownerGuards']), 17)
+        self.assertEqual(value['largestStepGuardBytes'], 166*core.GIB)
+        self.assertEqual((selector.read_bytes(), path.read_bytes(), self.storage.state_path.read_bytes()), before)
+
+    def test_reviewed_developer_plan_rejects_changed_pin_and_escaping_path(self):
+        root = self.base/'source-review'; (root/'workspace/releases').mkdir(parents=True)
+        original = json.loads((core.ROOT/'workspace/current-developer-build.json').read_bytes())
+        payload = (core.ROOT/original['path']).read_bytes()
+        target = root/original['path']; target.write_bytes(payload)
+        selector = root/'workspace/current-developer-build.json'
+        for values, message in (({**original, 'sha256':'f'*64}, 'source pin'),
+                                ({**original, 'path':'../foreign.json'}, 'unsafe'),
+                                ({**original, 'schemaVersion':True}, 'selection'),
+                                ({**original, 'extra':True}, 'selection')):
+            with self.subTest(values=values):
+                selector.write_text(json.dumps(values))
+                with patch.object(space, 'ROOT', root), self.assertRaisesRegex(core.LabError, message):
+                    space.current_reviewed_plan(self.release)
+        selector.write_text(json.dumps(original))
+        target.unlink(); target.symlink_to(core.ROOT/original['path'])
+        with patch.object(space, 'ROOT', root), self.assertRaisesRegex(core.LabError, 'Symlink'):
+            space.current_reviewed_plan(self.release)
 
     def test_report_is_read_only_and_does_not_claim_peak_or_reuse(self):
         self.fixture()

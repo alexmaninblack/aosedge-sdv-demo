@@ -73,7 +73,7 @@ class Owners:
         self.workspace = safe(selected['workspace'])
         self.gateway = safe(selected['gateway'])
         self.candidate = safe(selected['candidate']['directory'])
-        # A manually published delivery successor must not rebind the completed
+        # A Dropbox delivery successor must not rebind the completed
         # Drive campaign or manufacture a different product version.
         suffix='-dropbox' if selected['delivery'].get('provider')=='dropbox' else ''
         attempt=selected['delivery'].get('attempt',1)
@@ -97,11 +97,15 @@ class Owners:
         self.storage()
         require(not git(ROOT, 'status', '--porcelain') and
                 not git(self.gateway, 'status', '--porcelain'), 'DIRTY_CANDIDATE_SOURCE')
+        executor_paths=['release-campaign','release_automation.py','release_owners.py',
+                        'release_publication.py','release_operator_proof.py']
+        from reproduction.dropbox_delivery import automatic
+        if automatic(self.config['delivery']):
+            executor_paths.extend(('reproduction/dropbox_delivery.py','reproduction/dropbox_public.py'))
         current = dict(schemaVersion=1, configSha256=digest(self.config),
             source=dict(integration=git(ROOT,'rev-parse','HEAD'), gateway=git(self.gateway,'rev-parse','HEAD')),
             executorSha256=digest({p:sha(ROOT/'scripts'/p) for p in
-                ('release-campaign','release_automation.py','release_owners.py',
-                 'release_publication.py','release_operator_proof.py')}))
+                executor_paths}))
         marker=self.root/'identity.json'
         if marker.exists() and not allow_readonly_restart:
             from release_automation import read
@@ -191,7 +195,7 @@ class Owners:
             ('docs',[sys.executable,'-B','scripts/docs-check']),
             ('launcher-pins',[sys.executable,'-B','scripts/sync-launcher-pins','--check']),
             ('regression',[sys.executable,'-B','-m','unittest','tests.test_release_automation','tests.test_release_projection','tests.test_native_source_selection',
-                'tests.test_unified_launcher','tests.test_drive_download_parser','tests.test_dropbox_download_parser','tests.test_dropbox_public','tests.test_release_operator_amendment','tests.test_prepare_macos','tests.test_developer_catalog',
+                'tests.test_unified_launcher','tests.test_drive_download_parser','tests.test_dropbox_download_parser','tests.test_dropbox_public','tests.test_dropbox_delivery','tests.test_dropbox_oauth','tests.test_release_operator_amendment','tests.test_prepare_macos','tests.test_developer_catalog',
                 'tests.test_developer_workflow','tests.test_developer_progress','tests.test_reader_routes',
                 'tests.test_reproduction_chain','tests.test_reproduction_recipes','tests.test_reproduction_host',
                 'tests.test_reproduction_delivery']),

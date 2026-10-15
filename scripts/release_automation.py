@@ -77,7 +77,7 @@ def atomic(path, value):
             pending.unlink()
 
 
-def configuration(path):
+def configuration(path, *, delivery_profile=None):
     value = read(path)
     required = {'schemaVersion', 'version', 'workspace', 'volumeUUID', 'gateway',
                 'expectedMain', 'candidate', 'remoteConfig', 'operatorJourney', 'evidence', 'delivery'}
@@ -103,8 +103,16 @@ def configuration(path):
         safe(value['evidence'][key])
     if 'firstUse' in value['evidence']:
         safe(value['evidence']['firstUse'])
+    if delivery_profile is not None:
+        from reproduction.dropbox_delivery import automatic, selection
+        selected=read(delivery_profile)
+        require(isinstance(selected,dict) and automatic(selected),'DROPBOX_AUTOMATIC_PROFILE_REQUIRED')
+        value['delivery']=selection(selected)
     require(isinstance(value['delivery'],dict),'DELIVERY_SELECTION_INVALID')
-    if value['delivery'].get('provider')=='dropbox':
+    if value['delivery'].get('provider')=='dropbox' and 'credentialFile' in value['delivery']:
+        from reproduction.dropbox_delivery import selection
+        selection(value['delivery'])
+    elif value['delivery'].get('provider')=='dropbox':
         require(set(value['delivery']) in ({'provider','downloadURL'},{'provider','downloadURL','attempt'}),
                 'DELIVERY_SELECTION_INVALID')
         require(type(value['delivery'].get('attempt',1)) is int and
@@ -239,11 +247,14 @@ def main(argv=None):
     parser.add_argument('mode', choices=('plan', 'run', 'resume'))
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--until', choices=STAGES)
+    parser.add_argument('--delivery-profile', type=Path,
+                        help='Private automatic Dropbox selection; never changes an existing campaign binding')
     parser.add_argument('--restart-readonly', action='store_true')
     parser.add_argument('--amend-operator-tooling', action='store_true')
     args = parser.parse_args(argv)
     try:
-        selected = configuration(args.config.absolute())
+        selected = configuration(args.config.absolute(), delivery_profile=
+            args.delivery_profile.absolute() if args.delivery_profile is not None else None)
         if args.mode == 'plan':
             print(json.dumps(dict(version=selected['version'], stages=STAGES,
                 policy='SSD build, M1 acceptance, staging only; no changes in plan mode'), indent=2))

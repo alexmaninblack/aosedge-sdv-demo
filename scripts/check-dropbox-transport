@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""Small sender-side transport fixture; never install or promote a product release."""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import time
+
+ROOT=Path(__file__).resolve().parents[1]
+from release_automation import atomic,code,read,require,safe
+from reproduction import dropbox_delivery as delivery
+from reproduction.dropbox_oauth import initialize_folder
+sys.path.insert(0,str(ROOT/'scripts/distribution'))
+from build_scratch import directory
+
+
+class ObservedClient(delivery.Client):
+    def __init__(self,*args):
+        super().__init__(*args);self.payload_bytes=0;self.mutations=[]
+    def call(self,route,value=None,*,data=None):
+        if route in delivery.CONTENT:self.payload_bytes+=len(data or b'')
+        if route in delivery.CONTENT or route=='sharing/create_shared_link_with_settings':
+            self.mutations.append(route)
+        return super().call(route,value,data=data)
+
+
+def main(argv=None):
+    os.umask(0o077)
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--profile',type=Path,required=True)
+    parser.add_argument('--workspace',type=Path,required=True)
+    args=parser.parse_args(argv);started=time.monotonic()
+    root=None
+    try:
+        workspace=safe(args.workspace)
+        require(workspace.is_dir() and workspace.is_relative_to('/Volumes') and
+                shutil.disk_usage(workspace).free>=60*2**30,'SELECTED_SSD_REQUIRED')
+        selected=read(args.profile.absolute());delivery.selection(selected)
+        # This fixed, separate app-folder destination never contains real releases.
+        selected=dict(selected,folderPath='/transport-checks')
+        parent=workspace/'build';require(parent.is_dir(),'WORKSPACE_BUILD_DIRECTORY_REQUIRED')
+        root=parent/'dropbox-publisher-transport';root.mkdir(mode=0o700,exist_ok=True)
+        require(root.stat().st_uid==os.getuid() and root.stat().st_mode&0o777==0o700,
+                'PRIVATE_TRANSPORT_RECORDS_REQUIRED')
+        fd=os.open(root/'.lease',os.O_CREAT|os.O_RDWR|os.O_NOFOLLOW,0o600)
+        try:
+            fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            media=root/'AosEdge-SDV-Lab-0.0.0-rc.0.dmg';receipt=root/'fixture.json'
+            if receipt.exists():
+                expected=read(receipt)
+                require(media.is_file() and media.stat().st_size==expected['bytes'] and
+                        hashlib.sha256(media.read_bytes()).hexdigest()==expected['sha256'],
+                        'TRANSPORT_FIXTURE_CHANGED')
+            else:
+                require(not media.exists(),'UNRECORDED_TRANSPORT_FIXTURE')
+                with directory(workspace) as scratch:
+                    payload=scratch/'payload';payload.mkdir()
+                    (payload/'README.txt').write_text('AosEdge SDV Lab publisher transport fixture.\n'
+                        'This image tests Dropbox delivery only. It is not an application release.\n')
+                    result=subprocess.run(['/usr/bin/hdiutil','create','-quiet','-fs','HFS+',
+                        '-format','UDZO','-volname','Publisher Transport Fixture','-srcfolder',
+                        str(payload),str(scratch/'fixture.dmg')],capture_output=True,timeout=60)
+                    require(result.returncode==0,'TRANSPORT_FIXTURE_BUILD_FAILED')
+                    os.replace(scratch/'fixture.dmg',media)
+                expected=dict(schemaVersion=1,productVersion='0.0.0-rc.0',
+                    status='TRANSPORT_FIXTURE_NOT_A_PRODUCT_RELEASE',file=media.name,
+                    bytes=media.stat().st_size,sha256=hashlib.sha256(media.read_bytes()).hexdigest())
+                atomic(receipt,expected)
+            atomic(root/'intent.json',dict(folderPath=selected['folderPath'],
+                descriptorDigest=delivery.digest(expected),catalogPromotion=False,m1Used=False))
+            first=ObservedClient(selected['credentialFile'],selected['accountId'])
+            initialize_folder(first,selected['folderPath'])
+            print('Publishing separate tiny transport fixture; selected release unchanged.',flush=True)
+            facts=delivery.publish(first,media,expected,selected,root/'upload.private.json')
+            second=ObservedClient(selected['credentialFile'],selected['accountId'])
+            repeated=delivery.publish(second,media,expected,selected,root/'upload.private.json')
+            require(repeated==facts and second.payload_bytes==0 and not second.mutations,
+                    'TRANSPORT_REPEAT_REUPLOADED')
+            delivery.verify(second,expected,selected,facts)
+            report=root/'report.json';number=2
+            while report.exists():
+                report=root/('report-'+str(number)+'.json');number+=1
+            atomic(report,dict(schemaVersion=1,outcome='PASS',
+                purpose='SENDER_TRANSPORT_FIXTURE_NOT_PRODUCT_QUALIFICATION',
+                bytes=expected['bytes'],sha256=expected['sha256'],
+                providerHash=facts['remote']['content_hash'],downloadURL=facts['downloadURL'],
+                firstPayloadBytes=first.payload_bytes,repeatPayloadBytes=second.payload_bytes,
+                repeatedWithFreshClient=True,remoteRevisionVerified=True,
+                publicHeadVerified=True,m1Used=False,catalogChanged=False,
+                consumerPayloadDownload=False,seconds=round(time.monotonic()-started,3)))
+            print('Transport fixture: PASS; upload, public link, remote hash and no-upload repeat verified.',flush=True)
+            print('Report: '+str(report),flush=True)
+        finally:os.close(fd)
+        return 0
+    except (Exception,KeyboardInterrupt) as error:
+        if root is not None:
+            atomic(root/'failure.json',dict(outcome='BLOCKED',code=code(error),
+                catalogChanged=False,m1Used=False,seconds=round(time.monotonic()-started,3)))
+        print('STOP: '+code(error),file=sys.stderr);return 2
+
+
+raise SystemExit(main())

@@ -9,6 +9,9 @@ apply only to the exact source, media and profile identified by their receipt.
 
 ## Current evidence
 
+- [Dropbox publisher](dropbox-publisher-2026-10-15.md): automatic immutable
+  publication, interrupted-transfer reconciliation and private OAuth handling;
+  source integration does not republish or replace the selected operator DMG.
 - [M1 runtime and native Setup record](m1-clean-install-e2e-2026-10-14.md):
   the 15 October corrected Production runtime passed 118 API and 42 visible
   browser UI checks with actual native driving input. A separate native Setup

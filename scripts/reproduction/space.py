@@ -1,11 +1,14 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 """Read-only cache/capacity accounting; never an invented cold-build peak."""
+import hashlib
 import os
+from pathlib import Path
+import re
 import shutil
 import stat
 
-from .core import GIB, ROOT, LabError, require, digest, capacity_report
+from .core import GIB, ROOT, LabError, require, digest, capacity_report, read_json, no_links
 from . import cache, chain, containers
 
 # Additional GiB and reserve GiB from the existing owner guards. These are
@@ -15,6 +18,28 @@ GUARDS = {'presenter':(2,90), 'cloud-sdk':(1,90), 'brake-backend':(2,60),
     'tire-service':(8,90), 'gateway':(2,90), 'preparation':(8,90),
     'host-runtime':(24,90), 'backend-inputs':(1,90), 'vm-runtime':(1,90),
     'application':(40,90), 'setup':(2,90), 'dmg':(76,90)}
+
+
+def current_reviewed_plan(release):
+    """Accept the source-owned plan only after checking its independent byte pin."""
+    selector = ROOT/'workspace/current-developer-build.json'
+    if not selector.exists():
+        return None
+    selected = read_json(selector)
+    require(isinstance(selected, dict) and set(selected) == {'schemaVersion', 'path', 'sha256'}
+            and type(selected['schemaVersion']) is int and selected['schemaVersion'] == 1
+            and isinstance(selected['path'], str) and isinstance(selected['sha256'], str)
+            and re.fullmatch('[a-f0-9]{64}', selected['sha256']),
+            'Invalid reviewed developer plan selection')
+    relative = Path(selected['path'])
+    require(not relative.is_absolute() and '..' not in relative.parts and
+            relative.parent == Path('workspace/releases') and relative.suffix == '.json',
+            'Reviewed developer plan path is unsafe')
+    path = no_links(ROOT/relative)
+    require(path.is_file() and path.stat().st_size <= 2**20 and
+            hashlib.sha256(path.read_bytes()).hexdigest() == selected['sha256'],
+            'Reviewed developer plan differs from source pin')
+    return chain.read_plan(release, path)
 
 
 def footprint(path, check):
@@ -63,6 +88,9 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
                     chain.read_plan(storage.release, ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r3.json'),
                     chain.read_plan(storage.release, ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r4.json'),
                     chain.read_plan(storage.release, ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r5.json')]
+        current = current_reviewed_plan(storage.release)
+        if current is not None:
+            reviewed.append(current)
         require(plan in reviewed, 'Capacity guards require a reviewed producer plan')
         selected = plan['steps'] if target == 'all' else [{'id':target,'target':target}]
         for step in selected:
