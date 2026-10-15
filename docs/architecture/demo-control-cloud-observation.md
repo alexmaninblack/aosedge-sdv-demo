@@ -5,7 +5,7 @@
 
 Implemented P2 source increment, 10 September 2026; Cloud-first profile
 projection updated 18 September 2026. This implements the
-read-only portion of the [accepted delivery plan](../planning/active/demo-studio-delivery-plan.md#p2-make-cloud-observations-and-publication-results-truthful),
+read-only portion of the [accepted delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p2-make-cloud-observations-and-publication-results-truthful),
 not publication, Presenter refresh timers, service assignment or runtime qualification.
 
 ## Commands and authority
@@ -171,7 +171,7 @@ receipt's saved READY status is not trusted as the current reconciliation:
 the same bounded Cloud publication read must bind the installed version UUID.
 Missing, malformed, unsafe or mismatched receipts leave inventory available
 and the profile unconfirmed. See the
-[retained-profile regression proof](../qualification/presenter-retained-profile-2026-09-26.md).
+[retained-profile regression proof](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-retained-profile-2026-09-26.md).
 The inspected artifact is cached by path, device/inode, size and modification/
 change timestamps; an unchanged package is not rehashed on every UI refresh.
 
@@ -182,7 +182,7 @@ request bound and does not wait for an unfinished publication after inventory.
 Unresolved metadata is labelled `Profile not confirmed`; its exact installed-
 publication reconciliation uses the existing bounded pending cadence. No
 numeric-release-to-profile inference is permitted. See the
-[M1 status and release visibility report](../qualification/presenter-status-and-release-views-2026-10-14.md).
+[M1 status and release visibility report](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-status-and-release-views-2026-10-14.md).
 
 Missing/mismatched evidence leaves the functional profile unknown while
 preserving the Cloud-reported release. The guide does not treat unknown as
@@ -204,7 +204,12 @@ the metric incomplete. A supplied different system UID rejects the response.
 
 CPU has `unit: "DMIPS"` and `unitEvidence: "CLOUD_DMIPS_DOCUMENTATION"`.
 RAM has `unit: "bytes"`, `unitEvidence: "CLOUD_OEM_RAM_BYTES"`. Verified on
-20 September 2026 against the platform team's deployed [OEM frontend source](https://oem.aws-stage.epmp-aos.projects.epam.com/chunk-5VTGQMUH.js):
+20 September 2026 against the platform team's then-deployed OEM frontend.
+Its deployment-specific hashed JavaScript asset is no longer available and is
+not a stable API reference. The
+[original observation](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control-cloud-observation.md)
+preserves that checkpoint; use the official schema/monitoring documentation
+linked above for the current API contract:
 the latest `ram` value is assigned without scaling and displayed with
 `bytesIEC`; dashboard `ram` pairs are used directly as chart data, whose axis
 formatter divides by 1024 into B/KiB/MiB/GiB. A selected-tenant dashboard read
@@ -297,13 +302,13 @@ truth. Separately, the functional-backend read adapter now includes Docker
 ownership preflight in a ten-second request budget (six seconds for exact-window
 detail). Its existing per-exchange HTTP watchdog also covers window response
 bodies. Ownership, binding checks, data caps and no-retry behavior are preserved.
-See the [U1–U5 correction record](../qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
+See the [U1–U5 correction record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
 
 The initial 10 September increment did not bind the Studio architecture and
 monitor screens. Subsequent P4/2.10 integration reuses this normalized Unit
 inventory and visible-only resource observer. The 18 September source increment
 adds exact installed-profile provenance, with fixture and selected staging
-read-only proof in the [qualification record](../qualification/cloud-installed-profile-2026-09-18.md).
+read-only proof in the [qualification record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/cloud-installed-profile-2026-09-18.md).
 The operator subsequently authorized its Presenter-only activation on the
 same date; the qualification record contains build and live read/display proof.
 Inventory read time still does not establish a fresh Unit report. Service-local

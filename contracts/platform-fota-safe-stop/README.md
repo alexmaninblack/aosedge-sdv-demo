@@ -109,7 +109,7 @@ conditions are unchanged. Production and signed VDP profile hashes are not
 modified. The initial proof uses a temporary Test-only SM binary/config mount;
 it does not qualify or alter the immutable Factory .29 image. The independent
 StopInstance/StartInstance correction is now proven by Test VDP 7.0.0; see the
-[qualification record](../../docs/qualification/democtl-vdp-family.md).
+[qualification record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/democtl-vdp-family.md).
 
 <a id="local-test-timing-2026-09-10"></a>
 
@@ -133,7 +133,7 @@ deadlines and rollback remain unchanged. Every new transaction reconstructs
 evidence; a cached frame cannot manufacture stability. This is initially a
 targeted transient SM proof on the current Test `.31`, not a rebuilt or newly
 qualified Factory image. See the
-[current implementation checkpoint](../../docs/qualification/demo-studio-implementation-progress-2026-09-10.md).
+[current implementation checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/demo-studio-implementation-progress-2026-09-10.md).
 
 ## Queued cold-boot recovery correction — accepted 2026-09-10
 

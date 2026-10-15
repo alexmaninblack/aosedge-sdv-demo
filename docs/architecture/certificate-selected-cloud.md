@@ -9,12 +9,14 @@ not a change to the presentation story or permission to provision automatically.
 **15 September accepted amendment:** [Unsigned packages and session-scoped signing
 (ADR 0016)](decisions/0016-unsigned-packages-and-session-scoped-signing.md)
 replaces the historical source-certificate dependency and separates
-destination-specific signing/publication receipts. The operator's parked Test
-is preserved; offline tests do not establish staging deployment success.
+destination-specific signing/publication receipts. Retained-Test guards are
+preserved; actual current deployment evidence follows the current baseline.
 
 ## Operator interaction
 
-Open **Session → Cloud connection**. The panel reads the configured OEM
+For ordinary first use, configure the OEM/SP pair in **Setup → Connect to Aos
+Cloud**. Exceptional Presenter-side OEM selection is under **Advanced settings**,
+not a separate mandatory Session step. The panel reads the configured OEM
 certificate locally, or **Choose certificate…** opens the native macOS file
 picker. The browser receives public metadata only. **Use this Cloud** confirms
 the exact native preview. A changed domain between preview and selection blocks
@@ -46,8 +48,9 @@ manually typed browser URL. The user confirmed the existing endpoint contract:
 | TLS trust | Existing packaged Aos CA; unchanged hostname verification |
 | Debug name resolution | Explicit matching entries in the Mac's `/etc/hosts`, projected into Test |
 
-The selected domain is pinned in `.local/demo-control/status.json` under
-`cloudConnection`. Credential paths remain local `cloudProfiles` references;
+The selected domain is pinned in the active private instance's configuration
+under `cloudConnection` (a developer checkout may use `.local/demo-control/status.json`).
+Credential paths remain local `cloudProfiles` references;
 the key and certificate are neither copied into the repository nor uploaded by
 the settings panel. PKCS#12 files must be private to their owner. The existing
 SDK credential path supports unencrypted PKCS#12 files; a password-protected
@@ -79,9 +82,11 @@ not available in debug mode; the normal Studio verification-publication path is.
 The selected Cloud must provide its own matching Unit Model, node support,
 Test verification set and service catalog. Selection does not create them or
 imply that another tenant's IDs are valid there. The 15 September approved
-[first-use packet](../qualification/first-use-cloud-configuration-audit-2026-09-15.md)
-adds explicit `democtl cloud check` and `democtl cloud prepare`, also exposed
-in Session. Check is read-only. Prepare authenticates OEM and SP, reuses Default,
+[first-use packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/first-use-cloud-configuration-audit-2026-09-15.md)
+adds explicit `democtl cloud check` and `democtl cloud prepare`. Ordinary Setup
+composes the agreed preparation through Connect; those CLI commands are
+engineering controls, not extra first-use steps. Check is read-only.
+Prepare authenticates OEM and SP, reuses Default,
 creates only the absent `aos-vm;1.0.0` model with the tracked single-node config
 and `Test Vehicles` verification set, then authoritatively rereads them.
 An existing incompatible/ambiguous object, denied read or uncertain creation

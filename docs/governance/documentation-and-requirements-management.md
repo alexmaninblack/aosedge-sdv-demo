@@ -4,8 +4,9 @@
 # Documentation and Requirements Management
 
 - Status: Accepted
-- Version: 1.1
+- Version: 1.2
 - Prepared: 2026-10-09
+- Updated: 2026-10-15
 - Owner: System Architecture
 
 ## Purpose
@@ -230,6 +231,18 @@ Before accepting a documentation change:
    artifacts after proving that no active link or launcher depends on them;
 6. retain historical rationale in ADRs, accepted evidence and Git history,
    not in competing active documents.
+
+For retired documentation, record the exact published source commit, path,
+content hash, reason and replacement/current route in a compact checkpoint.
+Rewrite historical citations to immutable Git URLs before deleting the working
+files; do not create another active archive directory. Check incoming links
+from declared sibling repositories as well as local navigation.
+
+A frozen release definition may require an old evidence path. Preserve that
+dependency with an explicit historical label until its owning contract permits
+retirement; do not rewrite a historical lock or weaken validation to enable
+cleanup. Age alone does not retire a stable requirement, accepted decision,
+unfulfilled verification obligation or active regression fixture.
 
 Documentation acceptance never authorizes a build, signature, Cloud mutation,
 assignment, VM reset, provisioning, deprovisioning or deletion.

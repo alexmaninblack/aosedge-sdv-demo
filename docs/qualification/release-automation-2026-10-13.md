@@ -3,6 +3,16 @@
 
 # Release automation and public delivery on 13 October 2026
 
+## Current outcome — 15 October 2026
+
+The [published successor](#successor-published-on-15-october-120-rc2) completed
+all seven release stages, main/tag publication and the anonymous M1 public
+consumer. Native Setup first use passed as a separate profile. The preceding
+rc.1 and Drive quota notes below are dated history, not current promotion
+blockers. Media remains Apple Development engineering preview, not notarized.
+
+## Chronological record — beginning 13 October
+
 The selected engineering DMG passed public Dropbox delivery on M1 and its
 operator catalog was promoted to main under `sdv-lab-v1.2.0-rc.1`. The package
 is unchanged; existing product evidence remains applicable. This delivery check
@@ -133,7 +143,7 @@ and any remaining full installer E2E gates remain separate engineering-preview
 boundaries. The prior 42-stage product campaign was reused for the exact
 unchanged package, not rerun or relabelled as a fresh complete E2E result.
 
-See the [accepted release plan](../planning/active/work-packets/consolidated-release-automation.md)
+See the [accepted release plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/consolidated-release-automation.md)
 and [campaign operating contract](../development/release-campaign.md).
 
 ## Successor published on 15 October: 1.2.0-rc.2

@@ -3,7 +3,7 @@
 
 # ADR 0016: Unsigned Packages and Session-scoped Signing
 
-- Status: Accepted — implemented; offline verification and live staging publication passed; guest E2E blocked by missing staging Unit Sets
+- Status: Accepted and implemented; current selected-preview API/UI evidence follows the current baseline
 - Version: 1.1
 - Prepared: 2026-09-15
 - Owner: Demo Solution Team
@@ -11,7 +11,7 @@
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Existing contract: [Certificate-selected Test Cloud](../certificate-selected-cloud.md)
-- Delivery context: [Demo Studio delivery plan](../../planning/active/demo-studio-delivery-plan.md)
+- Delivery context: [Demo Studio delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md)
 
 ## 1. Accepted decision
 
@@ -30,7 +30,7 @@ qualification; the operator resumes that run after the implementation handoff.
 After the handoff the user separately authorized the agent to run live checks.
 VDP, Brake and Tire publication reached Ready in the selected staging; Unit
 provisioning stopped at the absent role-set preflight. See the
-[verification receipt](../../qualification/unsigned-package-signing-2026-09-15.md)
+[verification receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/unsigned-package-signing-2026-09-15.md)
 for the evidence and the preserved Parked state. This does not expand the
 Cloud-selection contract to automatic fleet or Unit Set creation.
 
@@ -279,7 +279,7 @@ the real Cloud result; do not promise a specific next number in advance.
 ## 9. Audit sources and limits
 
 Implementation follow-up: the accepted changes, offline tests and real pinned
-source migration are recorded in the [verification receipt](../../qualification/unsigned-package-signing-2026-09-15.md).
+source migration are recorded in the [verification receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/unsigned-package-signing-2026-09-15.md).
 The following paragraphs retain the boundary of the original pre-change audit,
 not the result of the subsequent implementation.
 

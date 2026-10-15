@@ -11,7 +11,7 @@
 - Change class: C — application provenance contract and credential-file boundary
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Delivery context: [Demo Studio delivery plan](../../planning/active/demo-studio-delivery-plan.md)
+- Delivery context: [Demo Studio delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md)
 
 ## 1. Accepted decision
 
@@ -336,7 +336,7 @@ The [service-input contract](../demo-control-service-inputs.md) is the current
 implementation mapping. This ADR replaces its former seven-field input,
 manifest-before-assignment requirement and token-owner patch proposal only;
 the valid read-only trust/resource findings remain applicable. The
-[11 September checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-11.md)
+[11 September checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/demo-studio-implementation-progress-2026-09-11.md)
 remains historical evidence of what was actually built, committed or tested.
 
 The accepted provenance tradeoff, token root/private-directory distinction

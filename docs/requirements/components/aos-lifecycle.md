@@ -81,17 +81,15 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Test lifecycle and role-bound publication/assignment | Shared Demo Control plus native AosCore/Cloud; current-Test identities, exact recipient guards, uncertain-result reconciliation and guarded Finish are implemented. |
-| Evidence and remaining obligations | Kit028/Factory41 installed scripted serial progression, ignition/offline and later Test retirement passed; full production promotion, native service-to-FOTA admission and broader native-log/recovery matrix are not closed. |
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
 ## Unit Set and Demo Lane Model
 
@@ -604,7 +602,7 @@ authorizes no Cloud mutation.
 
 ## Open Issues
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

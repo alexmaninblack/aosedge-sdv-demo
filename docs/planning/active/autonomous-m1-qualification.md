@@ -24,10 +24,12 @@ acceptance claim follows from engineering success.
 The operator also authorized reuse of the development Factory password for
 automated Test enrollment. A locally supplied test credential may be provisioned
 once into an owner-private installed-instance qualification profile, bound to
-the instance UUID, staging domain and exact Factory SHA-256. The value is not
+the instance UUID, explicitly authorized Cloud domain and exact Factory SHA-256. The value is not
 shipped in the DMG, committed, displayed, passed in argv/environment or copied
 into qualification reports. This is an explicit test configuration, never an
-implicit developer-Keychain fallback or access to Production. An invalid profile
+implicit developer-Keychain fallback or permission to operate a Production-role
+vehicle. The current approved campaign uses Production Aos Cloud with a Test
+vehicle; environment and vehicle role are independent. An invalid profile
 fails closed instead of opening a dialog. An absent profile preserves ordinary
 native first-use behavior; the unattended runner requires it before Create.
 The ordinary console login, per-VM SSH key and pinned host-key exchange remain

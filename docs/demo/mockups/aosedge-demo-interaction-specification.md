@@ -26,7 +26,7 @@
 - Retained earlier 2.5-contract artifact (current Studio artifact linked below):
   [Accepted Interaction Mockup](aosedge-demo-interaction-mockup-2-4.html)
 - Layout review artifact predating this complete contract: [Linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
-- UI implementation authorized: yes — 9 September 2026; the 13 September Studio convergence increment and remaining acceptance gates are recorded in the [current delivery plan](../../planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026).
+- UI implementation authorized: yes — 9 September 2026; the 13 September Studio convergence increment and remaining acceptance gates are recorded in the [current delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026).
 
 <a id="ui-studio-026--current-test-studio-contract"></a>
 
@@ -34,18 +34,21 @@
 
 ### Presenter operator experience October amendment
 
-The operator authorized the [Presenter operator experience packet](../../planning/active/work-packets/presenter-human-friendly.md)
+The operator authorized the [Presenter operator experience packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/presenter-human-friendly.md)
 on 11 October 2026 for implementation and testing on a separate branch.
-For that branch, its ordinary controls, contextual next-step guidance, compact
+Those changes are now integrated into main and the selected engineering preview.
+Its ordinary controls, contextual next-step guidance, compact
 confirmations, explicit non-destructive stop/start and clearly named Test
 deletion supersede conflicting earlier Studio presentation rules below.
 Existing operation ownership, Safe Stop, serial delivery, uncertain-response
-reconciliation and Production exclusion remain unchanged. Branch test results
-do not establish acceptance or integration on main.
+reconciliation and Production-role exclusion remain unchanged. Current exact
+API/UI/native Setup evidence and remaining gates are owned by the
+[baseline](../../qualification/current-baseline.md); earlier branch results
+are not blanket acceptance of every interaction requirement.
 
 Accepted scope reconciliation: 9 September 2026. This section is the current
 interaction contract for the Test-only Studio B flow. It incorporates the
-[accepted questionnaire and subsequent amendments](../../planning/active/demo-studio-delivery-plan.md).
+[accepted questionnaire and subsequent amendments](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md).
 The [complete 2.10 review mockup](aosedge-demo-interaction-mockup-2-10.html)
 consolidates the full flow with the accepted Vehicle summary/dialog design and
 the already accepted startup, readiness/reset and abnormal-Finish amendments.
@@ -55,7 +58,7 @@ the mockup itself remains a simulated reference, not live qualification.
 The [retained 2.8 mockup](aosedge-demo-interaction-mockup-2-8.html) captures the
 earlier contract with reviewed B2 visuals; [2.6](aosedge-demo-interaction-mockup-2-6.html)
 and [2.7](aosedge-demo-interaction-mockup-2-7.html) remain unchanged references.
-The [2.8 corrective re-audit](../../research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
+The [2.8 corrective re-audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
 does not establish working Cloud or product integration. The user subsequently
 authorized implementation on 9 September; the current delivery plan owns
 implementation evidence and remaining acceptance gates. Mockup review alone
@@ -65,7 +68,7 @@ does not close those gates.
 
 ### Resource units follow-up — 20 September 2026
 
-The accepted [UI amendments](../../planning/active/presenter-ui-amendments-2026-09-20.md)
+The accepted [UI amendments](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/presenter-ui-amendments-2026-09-20.md)
 and their resource-review follow-up retain native Cloud resource authority.
 Disk usage is verified used bytes, formatted as B/KiB/MiB/GiB, with all four
 current controller partitions visible together and separate instance scope.
@@ -78,7 +81,7 @@ No guest collector, network change or service/VM rebuild is introduced.
 
 ### Displayed-fact audit corrections — 19 September 2026
 
-The subsequent [flow/status re-audit](../../qualification/presenter-ui-flow-reaudit-2026-09-19.md)
+The subsequent [flow/status re-audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-flow-reaudit-2026-09-19.md)
 and operator-approved U1–U5 corrections additionally require:
 
 - Conflicted product content is explicitly untrusted on the backend card and
@@ -98,10 +101,10 @@ and operator-approved U1–U5 corrections additionally require:
 
 These are display/read-path corrections, not telemetry cadence requirements,
 changed service thresholds or live qualification. See the
-[correction record](../../qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
+[correction record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
 
 The operator accepted all F1–F7, L1–L2 and O1–O7 in the
-[displayed-fact audit](../../qualification/presenter-ui-truth-audit-2026-09-19.md).
+[displayed-fact audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-truth-audit-2026-09-19.md).
 These are bounded Presenter/read-path corrections, not new product authority:
 
 - Retained results keep their source and receipt dates. Backend/Cloud checked
@@ -148,9 +151,9 @@ storage loss is a known upstream defect, not fixed by hiding restart controls.
 
 ### Versioned service and platform clarity — 18 September 2026
 
-Decisions 1A–6A in the [accepted audit](../../qualification/versioned-service-scenario-audit-2026-09-18.md)
+Decisions 1A–6A in the [accepted audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/versioned-service-scenario-audit-2026-09-18.md)
 and the subsequent instruction to proceed authorize the
-[versioned-observability packet](../../planning/active/work-packets/versioned-service-observability.md).
+[versioned-observability packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
 The 2.10 mockup stays a retained reference; these amendments are not a claim
 that its simulation or the running application already implements them.
 
@@ -211,7 +214,7 @@ accepted independent reset contract. Prior artifacts remain unchanged.
 The implementation-first 2.10 follow-up uses the existing application as truth:
 Prepare → Sign & publish; current-release backend proof; producer-bound reset;
 Session Cloud/OEM/SP setup; independent partial/last-known observations; and
-Finish continuation only after Cloud Offline. Its [audit closure table](../../qualification/mockup-2-10-2026-09-17.md#implementation-first-audit-closure)
+Finish continuation only after Cloud Offline. Its [audit closure table](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/mockup-2-10-2026-09-17.md#implementation-first-audit-closure)
 records source references and simulation limits. The approved summary/modal
 visual changes are now the authorized UI integration target; completion is
 established by the implementation verification record, not by mockup tests.
@@ -313,7 +316,7 @@ because an unavailable read omits the run identity.
     simulator, VM and backends before Cloud retirement. A stalled guest may
     be powered off through its exact owned QMP endpoint, only for Finish.
     See the shared Demo Control
-    [retirement contract](../../architecture/demo-control.md#finish-after-an-abnormal-run--authorized-14-september-2026).
+    [retirement contract](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#finish-after-an-abnormal-run--authorized-14-september-2026).
     Retained Brake/Tire Subjects may be unused in a new run: their exact
     identities and absence of assigned/reported Units are verified after local
     shutdown, without inventing service assignments. Existing incomplete or
@@ -358,16 +361,16 @@ OEM assignment passes `service_ids:[service UUID]` only; Unit attachment passes
 number of instances. Observe the actual expected version/instance in Cloud;
 the requested minimum does not itself prove a running process.
 
-The [decision/evidence table](../../research/demo-studio-action-audit.md#subject-and-package-proposal)
+The [decision/evidence table](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md#subject-and-package-proposal)
 records the supporting documentation/API review. These decisions close the
 remaining configuration choices; they do not change a tenant setting, package
 or executable API schema and do not authorize live operations.
 
 ### Verification and implementation handoff
 
-The [action audit](../../research/demo-studio-action-audit.md) maps the current
+The [action audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md) maps the current
 flow to existing and missing operations and records reproducible mock-only
-tests. The [delivery plan](../../planning/active/demo-studio-delivery-plan.md#current-reconciled-sequence)
+tests. The [delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#current-reconciled-sequence)
 is the current phase order. Normal/reload/offline/service/retire mockup tests
 precede implementation; real CLI E2E, scoped cleanup and a visually approved UI
 repeat from the same image SHA follow it. No simulation test qualifies the VM,

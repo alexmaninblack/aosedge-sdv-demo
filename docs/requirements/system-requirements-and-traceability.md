@@ -46,8 +46,8 @@ first-use deliverable; path separation does not grant publishing authority.
 
 ## Current implementation view — 24 September 2026
 
-The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
-7 October 2026. The historical heading is retained for incoming links.
+Current package selection and qualification are owned by the launcher catalog and
+[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review
@@ -146,7 +146,7 @@ record and execution control plane.
 | --- | --- | --- | --- |
 | `CarlaSim` | Virtual physical vehicle and upstream simulator behavior | Simulator source | Existing |
 | `carla-ego-runtime` | Vehicle Gateway, control, VSS projection, VISS and Engineering Telematics Dashboard | Gateway tooling | Existing |
-| `aos-vehicle-platform` | Shared Vehicle Data Platform Component, factory-installed KUKSA integration, provider runtime, separately packaged current-release Service-authorization helper and trusted Provider-side connection configuration | Platform FOTA plus separately governed factory/system integration | Existing; helper and accepted factory integration not yet implemented |
+| `aos-vehicle-platform` | Shared Vehicle Data Platform Component, factory-installed KUKSA integration, provider runtime, separately packaged current-release Service-authorization helper and trusted Provider-side connection configuration | Platform FOTA plus separately governed factory/system integration | Implemented within the retained controller image; formal acceptance remains separately scoped |
 | `brake-health-service` | Function Team 1 on-board Brake Health application and local inference | Service Provider 1 / SOTA 1 | Existing |
 | `tire-health-service` | Function Team 2 on-board tire-condition estimation, bounded reporting and inspection advisory | Service Provider 2 / SOTA 2 | **Proposed repository** |
 | `brake-health-cloud` | Function Team 1 backend and Function Dashboard | Function Team 1 Cloud product | Isolated source foundation `68fe61b` over governance baseline `6da2926`; data packet proposed/review required |

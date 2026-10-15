@@ -11,14 +11,14 @@ for delivery and remaining proof.
 
 - [ADR 0001: Repository and Artifact Boundaries](0001-repository-and-artifact-boundaries.md)
 - [ADR 0002: Run AosVM as a QEMU System VM with HVF](0002-qemu-system-hvf-for-aosvm.md)
-- [ADR 0003: Use the Official Two-Node AosVM Topology in AOS-1](0003-two-node-aos1-topology.md)
+- [ADR 0003: Use the Official Two-Node AosVM Topology in AOS-1](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0003-two-node-aos1-topology.md)
 - [ADR 0004: Start AOS-1 with One Main Node](0004-single-main-node-for-aos1.md)
 - [ADR 0005: Keep the CARLA Adapter Inside AosVM](0005-kuksa-vehicle-data-boundary.md)
 - [ADR 0006: Separate Platform and Service Repositories by Lifecycle](0006-lifecycle-based-repository-ownership.md)
 - [ADR 0007: Solution Documentation Home](0007-solution-documentation-home.md)
 - [ADR 0008: Use Tire Health for Function Team 2](0008-use-tire-health-for-function-team-2.md)
 - [ADR 0009: Separate Release Decision Ownership from Cloud Execution](0009-separate-release-decision-from-cloud-execution.md)
-- [ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA](0010-aos-kuksa-credential-broker.md)
+- [ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md)
   — superseded historical HLA 1.3/1.4 baseline retained for traceability.
 - [ADR 0011: Contain QM Services at the Gateway and Make OEM Approval Evidence-Backed](0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - [ADR 0012: Authorize Running Workloads, Not Software Artifacts](0012-authorize-running-workloads-not-software-artifacts.md)
@@ -26,8 +26,8 @@ for delivery and remaining proof.
   — accepted current-release authorization boundary; implementation and live
   qualification remain separately gated.
 - [ADR 0014: Enforce Platform FOTA Safe Stop in the OEM Component Runtime](0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-  — accepted vehicle-state boundary and application policy; implementation and
-  live qualification remain open.
+  — implemented vehicle-state boundary and application policy; current scoped
+  FOTA proof and remaining negative matrices follow the current baseline.
 - [ADR 0015: Use Native Aos Facilities for Service Identity, Data and Tokens](0015-use-native-aos-service-runtime-inputs.md)
   — accepted application provenance, public inputs and private KUKSA token
   sessions without new SM code changes; implementation authorized.

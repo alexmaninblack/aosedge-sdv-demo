@@ -11,7 +11,7 @@
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
+- CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
 - Requirements input: [System Requirements and Traceability 2.2](../requirements/system-requirements-and-traceability.md)
 - Component input: [Component Decomposition and Interface Register 2.2](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
@@ -90,8 +90,8 @@ on local validation failure. Background observation remains asynchronous; an
 existing run keeps its backend identity. No implicit image import or engine
 start is inserted into navigation, observation or runtime start.
 
-The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
-7 October 2026. The historical heading is retained for incoming links.
+Current package selection and qualification are owned by the launcher catalog and
+[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
 [Implemented architecture and traceability](current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review

@@ -4,7 +4,7 @@
 # Demo Control: service catalog and ownership inspection
 
 Read-only P5 tooling increment. It supports the
-[accepted SOTA work package](../planning/active/demo-studio-delivery-plan.md#p5-implement-sota-and-backend-plumbing-with-brake-v1)
+[accepted SOTA work package](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p5-implement-sota-and-backend-plumbing-with-brake-v1)
 without creating an SP, Service, Subject, assignment, version or credential.
 
 ## Shared CLI/API contract

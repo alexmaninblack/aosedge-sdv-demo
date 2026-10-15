@@ -156,9 +156,10 @@ Open **AosEdge SDV Lab** from your user Applications folder and choose
 **Open SDV Lab**; the DMG/source kit is not needed. The installed selection and
 saved access are revalidated, not inferred from a cached Ready indicator.
 Do not repeat installation or reselect a version over a retained vehicle run.
-Opening Presenter does **not** power on a stopped retained controller:
-the current UI has no native Power on action. Engineering restoration observed
-during qualification is not a completed returning-user workflow.
+Opening Presenter does **not** automatically power on a stopped retained
+controller. In **Demo controls → Runtime**, choose **Start controller** and
+follow simulator/connection readiness. This starts the existing Test and
+backends without Create, reprovisioning or release publication; Autopilot stays off.
 
 When a check ends, stop the demo-owned runtime through its normal owners and
 close the windows. Verify no owned processes/listeners remain. Preserve Docker
@@ -166,12 +167,12 @@ Engine and unrelated processes. A stop preserves Test identity/state;
 **Finish demo** is the distinct destructive retirement of the exact Test and
 its run data. Package removal is not vehicle retirement or Cloud rollback.
 
-In particular, **Close Presenter (keep demo running)** means exactly that:
-closing its native window/menu is not a full runtime stop. A complete
-non-destructive operator shutdown/return journey is not yet available as one
-Setup action. For a retained Test, use the documented engineering owner with
-the release maintainer rather than assuming the disappearance of windows
-means storage is safe to eject.
+In **Demo controls → Runtime**, **Stop demo and keep data** stops the owned
+simulator, controller and backends while preserving the Test. **Start controller**
+is the ordinary return path. In contrast, **Close Presenter (keep demo running)**
+only closes its native window; disappearing windows do not mean storage is safe
+to eject. The current visible UI campaign checked ordinary Stop/Start; that
+does not qualify every interruption, macOS sleep/wake or recovery case.
 
 For external storage, only disconnect after owned consumers are stopped and
 the volume is safely ejected. External-SSD and host sleep/wake qualification
@@ -188,7 +189,7 @@ native Setup first-use check passed issuance/connection with existing accounts;
 the public-download consumer reused that installed certificate instance.
 
 These proofs do not close new-company/account registration, every clean-macOS
-permission path, a complete native returning-stopped-controller workflow,
+permission path, every installation/interruption/recovery case,
 Developer ID/notarization, host sleep/wake or power loss with a nonempty outbox.
 Load-sensitive readiness and `VDP-TIMEOUT-01` remain deferred. Earlier Kit028
 records retain their original passed/open gates; they do not select today's DMG.

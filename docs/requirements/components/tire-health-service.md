@@ -38,7 +38,7 @@ the referenced legacy records and all unrelated requirements. Use the
 [current input contract](../../architecture/demo-control-service-inputs.md);
 application version comes from the package, not public Unit metadata.
 Implementation and live gates remain in the
-[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose
 
@@ -130,17 +130,15 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Independent Tire V1 product | Repository, ARM64 packaging, native KAC/KUKSA runtime, fifteen VDP V3 inputs, deterministic model/hysteresis, persistent outbox, typed advisory, function observation and Reset exist. Ordinary packages request 1024 files and 16 PIDs. There is no Tire V3. |
-| Evidence and remaining obligations | Kit028/.41 V1 products, ignition and offline delivery passed. Current source includes input/renewal continuity and interrupted-state recovery. Full frozen healthy/pre-aged calibration, CPU-load demonstration and all crash/overflow cases remain separate. |
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
 ## Accepted Provisional Resource Envelope
 
@@ -512,13 +510,13 @@ waive D4-003 calibration, implementation review or live qualification.
 
 ## Open D4 Gates
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented V1 | Fifteen real KUKSA dynamics inputs, source-time maneuvers, synthetic model, durable outbox, typed advisory/Gateway correlation and independent Reset are implemented; V1 is already advisory-capable. |
 | Calibration | The accepted 16 September raw dispersion/slip arithmetic exists. Frozen healthy/pre-aged 10+10 classification and oracle-negative/repeatability evidence remain required; do not call the model a production diagnosis. |
-| Current Kit028 proof | Tire60/V1 produced results/advisory with VDP136/V3; independent Reset/history, offline backlog recovery and post-ignition products passed in the installed scripted sequence. Deferred load-sensitive readiness is not claimed fixed. |
+| Current runtime proof | Tire V1 with VDP V3 passed real products/advisory, moving update, independent Reset/history, offline recovery and post-ignition products in the current M1 campaign. Deferred load-sensitive readiness is not claimed fixed. |
 | Remaining fault/resource matrix | Complete corrupt-state physical quarantine, replacement epoch, crash/overflow, cold externalOFF, nonempty-queue power loss and quota/failure isolation. |
 | CPU qualification | No fixed CPU worker/control is enabled. A design profile or Cloud CPU chart is not an implemented isolation test. |
 | Compatibility and native admission | Service checks actual local inputs; Presenter maps exact installed VDP profile. Missing data is not proven incompatibility; native Cloud pre-transfer dependency admission remains deferred. |

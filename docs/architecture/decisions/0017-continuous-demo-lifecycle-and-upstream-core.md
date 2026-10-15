@@ -14,8 +14,8 @@ Park/Resume. Native CM retired old version records that share a version-less
 storage identity with the current version. The same removal is reachable from
 expired-version cleanup. The pinned upstream library reproduces both cases;
 source inspection of newer main still finds the unconditional removal.
-See the [upstream handoff](../../qualification/aoscore-shared-storage-handoff-2026-09-19.md)
-and [retained-Test evidence](../../qualification/preserved-test-function-observation-2026-09-19.md).
+See the [upstream handoff](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/aoscore-shared-storage-handoff-2026-09-19.md)
+and [retained-Test evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/preserved-test-function-observation-2026-09-19.md).
 
 The operator prefers using native AosCore facilities without another demo-only
 CM patch. Removing a demonstration action does not fix the storage defect.
@@ -29,7 +29,7 @@ connection after controller ignition off/on, retaining Unit/Node/certificates
 and service state, stationary and without Autopilot. The authorized native
 storage/cold-component corrections and Presenter-owned guarded recovery are
 implemented in the v1.1 source / Factory39. See the
-[ignition receipt](../../qualification/factory-39-ignition-2026-09-24.md).
+[ignition receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-ignition-2026-09-24.md).
 This supersedes original item 3's blanket fresh-controller-only instruction
 for this qualified controller recovery, not the removal of Studio Park/Resume.
 
@@ -121,4 +121,4 @@ The retained 2.10 mockup is not overwritten: its Park/Resume controls are a
 documented intentional difference pending a separately versioned mockup update.
 
 The current implementation/evidence status is in the
-[delivery plan](../../planning/active/demo-studio-delivery-plan.md).
+[delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md).

@@ -1,171 +1,42 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Control: backend foundation increment
+# Demo Control: backend ownership
 
-Status: source increment, not P1/live qualification. Updated 10 September 2026.
-This implements part of the [accepted Studio plan](../planning/active/demo-studio-delivery-plan.md)
-and the [D4-020 hosting profile](../../contracts/local-demo-hosting/local-demo-hosting-profile.v1.json).
+Brake and Tire have separate service-owned backends and durable stores.
+In this lab they run as Linux ARM64 Docker containers on the Mac, not inside
+remote Aos Cloud. The [component map](product-map.md) and
+[operator workflow](../operations/current-demo-workflow.md) show the current system.
 
-## Shared operations
+## Runtime boundary
 
-```bash
-democtl backend build brake
-democtl backend build tire
-democtl backend start brake
-democtl backend start tire
-democtl backend status brake
-democtl backend status tire
-democtl backend stop brake
-democtl backend stop tire
-```
+Installed media supplies the reviewed backend image set. Setup prepares those
+images in an already available local Engine; ordinary runtime start reuses
+them. Starting a backend is not a build, pull, image activation or Engine start.
+The development-only backend build/activation primitives are not operator
+installation steps.
 
-Development-only candidate activation is explicit: after stopping one owned
-team backend, `democtl backend activate <team>` selects its latest successfully
-built immutable image. It removes/recreates no data volume and does not start
-a process. The next `backend start <team>` uses that recorded image. A running
-container, foreign resource, lost/ambiguous identity or changed candidate during
-reconciliation blocks activation. This command is not a browser action and does
-not add a step to the operator's demo story. Ordinary Park/Resume preserves the
-recorded image even when a newer development candidate exists.
+Demo Control owns exact container/network/context identities and journaled
+operations. Conflicts are not adopted. Lost responses are reconciled before
+another mutation. Private instance state and credentials are not exported
+through the read-only current-Test context.
 
-Build is development preparation only. It requires committed, clean source
-in the owning sibling repository and a running Docker engine. A pinned base
-image/dependency may be fetched during this explicit build. It records the
-local ARM64 image SHA256 ID and source commit under the artifact catalog's
-`backends/<team>/<source-commit>/manifest.json`. No binaries enter Git.
+## Results and lifecycle
 
-Start never builds, pulls, starts Docker Desktop or replaces an image in an
-existing run. Only explicit stopped development activation changes that binding.
-It requires a current Test-containing run and a locally present
-immutable image. Production is optional; no Production VM is created.
-CLI and transport-neutral API use the same operation implementation. API
-requests accept only the fixed team and start/stop/status, not builds, paths,
-image references, shell commands or credentials.
+A healthy container does not prove current-vehicle context, service execution,
+fresh products or a driver warning. Presenter queries current-Test-scoped
+products, observations and history through existing team APIs.
+[Brake wire/API](../../contracts/brake-cloud-api/README.md) and
+[Tire current wire](../../contracts/tire-cloud-api/studio-current-wire.md)
+remain authoritative. The legacy Tire cleanup schema is not the current
+one-Test cleanup contract; see [protocol status](../../contracts/implementation-status.md).
 
-The containers publish ingestion ports only on loopback (Brake 18091, Tire
-18092), use independent labelled networks/volumes, non-root image users and
-no new privileges. The current context directory is mounted read-only; no
-host keys or broad host directory is mounted. Product dashboard UI ports and
-Presenter proxy integration remain later work, not phantom listeners.
+Stop demo and keep data stops the two owned backend containers and preserves
+their state. Start controller restores the retained Test and backends.
+Confirmed Test retirement alone removes exact run-scoped data, preserving
+peer/unrelated records. Docker Engine is shared infrastructure and stays running.
 
-Only the non-secret context export directory is 0755 and its JSON projection
-0444, so a different container UID can read the read-only mount. The parent
-run directory remains 0700; journal, access keys and Compose files are not
-exported. This does not grant the container write access or change guest trust.
-
-## Ownership and recovery
-
-The existing journal records the LOCAL_CREATE operation owner, team, immutable
-image ID, source revision, exact Compose path and start/stop intent. Conflicting
-container, volume or network ownership blocks rather than adopting/deleting
-another run. Lost responses retain UNCERTAIN intent. A repeated start first
-observes the exact owned process; it never blindly starts a second container.
-Explicit stop is available for an owned partial start and retains storage.
-
-Status reports Docker process health only. A healthy process does not prove
-current Unit context, guest connectivity, product ingestion, service execution
-or driver advisory. Docker connection errors are unavailable, not absence.
-
-The closed context projection supplies the successfully provisioned current
-Test UID and optional successful Production peer. It contains no Cloud state,
-keys or telemetry. The same Test may acquire its just-provisioned Production
-peer, but an old UID cannot silently be replaced or removed. Cloud deletion
-does not erase the retiring UID selector before exact backend cleanup.
-
-## Composed Test lifecycle
-
-The following shared commands have source and fixture coverage; the complete
-live cycle is not yet qualified. They do not replace the existing engineering
-commands for independent Test/Production/all operations.
-
-| Command | Ordered scope | Result boundary |
-| --- | --- | --- |
-| `demo create --image <catalog-id>` | Create the current Test overlay when absent, boot Test, start both prepared backend images | Controller running; no provisioning, simulator connection or software publication |
-| `environment park` | Read current update state; stop/detach the owned simulator, stop Test, stop both backends | Preserve identity, disks, data, selection intent and immutable image bindings |
-| `environment resume` | Start retained Test/backends; restore the previously running simulator and Test connection in initial Manual | Local resumption; Cloud Online and product readiness need their own observations |
-| `demo retire` | Refuse unresolved updates; stop simulator; establish backend cleanup context; deprovision/delete Test; stop Test; remove exact Test data and local overlay | Preserve Production, published releases and shared dependencies; resume only journaled incomplete steps |
-
-All commands are invoked with the `democtl` prefix. Create accepts the catalog
-selector, not a filesystem path. Browser requests remain fixed to Test. Native
-VM access uses the same protected-input path as existing preparation.
-Park is refused promptly for an unfinished or uncertain update: it does not
-queue a shutdown or implicitly cancel an update. Stop preserves backend data;
-only scoped Retire may remove it after exact owned-state checks.
-
-For a retained Production peer, backend cleanup deletes only records selected
-by the retiring Test UID and preserves storage/nonmatching records. Single-Test
-resource deletion additionally requires whole-store emptiness against the
-known schema. Legacy Tire images supply only a foundation-only proof; product
-images use the explicit protocol below. The 12 September two-role Test replacement
-retains exact per-service Group Subjects after Cloud proves their Unit bindings
-are empty; terminal old-Test assignment receipts are removed. Single-role full
-journal removal with Subjects remains blocked pending persistent ID retention.
-
-### Context-file cleanup amendment — authorized 12 September 2026
-
-After authoritative removal of both owned backend containers, `demo retire`
-unlinks only the fixed non-secret `current-unit-context.json` projection even
-if Docker's filesystem process retains an open reference. It checks recorded
-container removal, actual container absence, owner/regular-file identity and
-exact context contents; it journals intent and rechecks identity before unlink.
-An OS unlink/fsync error remains unconfirmed and preserves the pending receipt.
-Interruption after unlink resumes from that receipt without repeating Cloud
-deletion or product-data cleanup. A replacement/reappearing file is not adopted.
-
-This is the explicit, narrow exception to the generic zero-open-handles policy:
-VM images/overlays, access material, Compose files and stores retain their existing
-checks. No Docker Desktop restart or unrelated-container interruption is performed.
-[Apple's unlink contract](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/unlink.2.html)
-distinguishes removing a pathname from releasing the underlying open file. This
-operation claims pathname removal, not that Docker has closed its cached reference.
-
-## Tire product cleanup protocol — 11 September 2026
-
-Committed backend package metadata selects `tire-product-v1` in the immutable
-build manifest. Activation and runtime ownership records preserve that exact
-protocol; it is not inferred from an HTTP 200 or a container being healthy.
-Earlier images retain their foundation-only protocol.
-
-The private product endpoints are `/private/demo/cleanup/preview`,
-`/private/demo/cleanup/execute`, and `/private/demo/empty-proof`. Requests carry
-`schemaVersion: 1`, `contractVersion: "1.0.0"` and, for scoped cleanup,
-`systemUids`. Execute also carries the one-use preview `confirmationToken`.
-That token remains in memory, never in journal/evidence or the Presenter.
-
-Preview supplies exact matching/nonmatching record counts and record-set
-digests. Execute must report `CLEANED`, zero remaining matching counts and
-unchanged nonmatching counts/digest. The six collections are `messages`,
-`assessments`, `events`, `advisories`, `functionStatus` and `quarantine`.
-Whole-store emptiness additionally requires `databaseSchemaVersion: 2` and
-zero counts for every collection. Missing fields, unknown schema and uncertain
-responses are not proof of deletion or permission to retry. Production and
-foreign/nonmatching data remain protected.
-
-The exact requests and response shapes are fixture-tested against the Tire
-product implementation. Its image was built and activated with retained data;
-no live cleanup deletion or real Tire service ingestion is claimed. See the
-[11 September checkpoint](../qualification/demo-studio-implementation-progress-2026-09-11.md).
-
-## Earlier foundation boundaries and evidence
-
-Ten isolated lifecycle tests and six context tests pass. The lifecycle suite
-also rejects container identity changes, cross-team storage and unrecorded
-Compose files. Native Brake tests
-cover durable SQLite storage, current-Test queries and private exact cleanup.
-The independent Tire foundation exposes process/context health and explicitly
-returns `501 NOT_IMPLEMENTED` for product routes. Its foundation-only proof is
-not a product-record cleanup implementation or an empty product result.
-
-The initial build attempts stopped while Docker was unavailable. After the
-user started Docker, both real ARM64 backend builds and starts succeeded.
-Brake also passed explicit stop/activate/start with its existing database
-retained. Scoped Test cleanup reached confirmed data proofs and stopped
-containers, but local context removal remains blocked by an open file handle.
-The exact source/image revisions and current recovery boundary are in the
-[implementation checkpoint](../qualification/demo-studio-implementation-progress-2026-09-10.md#resumed-execution).
-
-Remaining P1/P3 live gates include completed scoped retirement, fresh Create,
-Park/Resume and full CLI repeat, shared native protected-action integration,
-independent guest routes and loopback/LAN-negative proof. Composed source and
-fixture coverage are not qualification of the complete preparation command.
+Earlier foundation-only images, two-role cleanup examples and Park/Resume
+tables are [historical design evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control-backends.md),
+not current behavior. The package reference retains engineering commands;
+current accepted transaction/security constraints are unchanged.

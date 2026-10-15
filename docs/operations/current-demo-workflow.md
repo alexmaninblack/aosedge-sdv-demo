@@ -134,9 +134,11 @@ not provisioned disks, credentials or live model state.
 
 The current runtime has separate API and visible UI qualification, and the
 native Setup first-use check passed with newly issued certificates for existing
-accounts. Neither establishes every native returning-user path. Opening Presenter does not
-power on a stopped retained controller: that UI action is not implemented.
-Do not confuse engineering recovery with native acceptance.
+accounts. The ordinary **Stop demo and keep data** / **Start controller** path
+also passed the visible UI campaign. Opening Presenter does not automatically
+power on a stopped Test: choose **Demo controls → Runtime → Start controller**,
+then follow simulator/connection readiness. This is distinct from Create,
+reprovisioning and host sleep/wake; broader recovery matrices remain separate.
 
 After each check, stop demo-owned processes/containers through their owners,
 close the windows and verify no owned listeners remain. Keep Docker Engine

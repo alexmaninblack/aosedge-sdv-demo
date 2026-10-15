@@ -28,7 +28,7 @@ is prescribed; service-local compatibility/recovery still requires proof.
 - [Credential placement profile](credential-placement.v1.json): private
   sessions using the unchanged native resource mount mechanism.
 - [Placement and sequence](../../docs/architecture/demo-control-service-inputs.md).
-- [Ordered migration](../../docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+- [Ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 The old seven-field schemaVersion 1 runtime input is not a fallback for new
 readers. This does not remove the decoder for historical product messages.

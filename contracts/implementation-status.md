@@ -3,8 +3,9 @@
 
 # Protocol and executable-contract status
 
-Reviewed against Kit028 / Setup042 / Factory .41 and the candidate source lock
-on 7 October 2026. Contract versions, product wire versions, functional
+Reviewed 15 October 2026 against current source and the selected preview.
+The [launcher catalog](../workspace/launcher-catalog.json) and
+[current baseline](../docs/qualification/current-baseline.md) bind exact media/proof. Contract versions, product wire versions, functional
 profiles, allocated Cloud releases and the demo tag are different namespaces.
 This map documents implemented behavior; it does not silently regenerate
 digest-pinned historical profiles or claim every design fixture tests the live
@@ -19,7 +20,7 @@ distribution/input families: [preparation](portable-preparation-inputs/README.md
 [installation](distribution-installation/README.md). They preserve the same
 runtime/publication owners; they do not create a second orchestrator.
 
-Kit028 implements complete-media assembly, offline verified installation,
+The installed product implements complete-media assembly, offline verified installation,
 private-instance selection/leases, explicit backend-image import, Cloud access
 and enrollment/recovery, exact Subject selection and native Presenter launch.
 The [installed-state](distribution-installation/installed-state.md),
@@ -52,12 +53,12 @@ target-host interruption/repair gate. See the [current baseline](../docs/qualifi
 | [QM advisory](qm-advisory-profile/README.md) | Typed JSON leaf request/status and readiness, exact endpoints, freshness/replay/lease | Brake V3 and Tire V1; package release remains unchanged in provenance. Short genuine readiness interruptions are not hidden |
 | [Function observation](service-function-observation/README.md) | Closed v3 producer/backend/Presenter chain with epoch/sequence ordering | Deployed; legacy Tire status remains readable. Delayed status cannot replace newer source state |
 | [Local hosting](local-demo-hosting/README.md) | Separate backend containers and stores; host Demo Control/Presenter and native panels | Original three-container dashboard/helper topology is not the current Studio implementation; local isolated HTTP is not production authentication |
-| [Run state/cleanup](demo-run-state/README.md) | Bounded operation journal, fresh Test overlay, peer-preserving Finish | Apply Test-only and lifecycle amendments; no Studio Park/Resume. Kit028/.41 ignition is separate, guarded and same-identity |
-| [External connectivity](vehicle-external-connectivity/README.md) | Independent VM vehicle/external planes and explicit link state | Kit028/.41 scripted OFF/ON passed. Cloud Online, outbox drained and UI freshness are separate milestones; no SLA or dual-vehicle matrix inferred |
+| [Run state/cleanup](demo-run-state/README.md) | Bounded operation journal, fresh Test overlay, peer-preserving Finish | Apply Test-only and lifecycle amendments; no Studio Park/Resume. Current ignition is separate, guarded and same-identity; ordinary retained Stop/Start is also implemented |
+| [External connectivity](vehicle-external-connectivity/README.md) | Independent VM vehicle/external planes and explicit link state | Current API/UI OFF/ON profiles passed. Cloud Online, outbox drained and UI freshness are separate milestones; no SLA or dual-vehicle matrix inferred |
 | [Tenant quota proof](service-tenant-quota-proof/README.md) | Native package quotas and real controller/instance resource observations | Fixed Tire CPU-load endpoint/worker demonstration is **not implemented**; do not render planned proof as PASS |
 | [Shared evidence](shared-evidence-correlation/README.md) | Native identity, source/decision/receipt times, original retries and v3 ordering | Public/legacy digest wording is amended by ADR 0015; a reconnect timestamp is not a synchronization watermark or latency KPI |
 | [Software dashboard](software-delivery-dashboard/README.md) | Cloud lifecycle/resource projections and integrated function views | Coverage catalogue and formal CPU verdict/dossier design are not proof that every coverage item has a live implementation |
-| [E2E stage evidence](e2e-stage-evidence/README.md) | Atomic operations/reconciliation plus dated qualification receipts | 98 installed scripted steps passed for Kit028; full native/two-cycle acceptance is not established; legacy golden stage maps retain their design scope |
+| [E2E stage evidence](e2e-stage-evidence/README.md) | Atomic operations/reconciliation plus dated qualification receipts | Current 118 API/42 visible UI and separate native Setup profiles passed; full dossier/expanded-scope acceptance is not established; legacy golden stage maps retain their design scope |
 
 ## Current wire authorities and amendment precedence
 

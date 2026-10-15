@@ -65,7 +65,7 @@ the referenced legacy records and all unrelated requirements. Use the
 [current input contract](../../architecture/demo-control-service-inputs.md);
 application version comes from the package, not public Unit metadata.
 Implementation and live gates remain in the
-[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Studio Test scope amendment — 2026-09-09
 
@@ -368,17 +368,15 @@ demo-run history.
 
 ## Current Implementation Baseline
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Shared CLI/Presenter and lifecycle implementation | Create, detached simulator reuse, provision/strict attach, sequential FOTA/SOTA, Cloud/backend observations, resource charts, per-service Reset and confirmed peer-preserving Finish are implemented. Guarded Presenter-owned ignition recovery restores the same identity in Safe Stop, no Autopilot. |
-| Evidence and remaining obligations | Studio Park/Resume is retired. Kit028 installed scripted proof does not close full native E2E; host sleep/wake, fixed CPU proof and production-promotion scope remain separate. |
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
 ## Testability Boundary
 
@@ -574,7 +572,7 @@ the real supported APIs and launchers.
 
 - ID: `REQ-DEMO-010`
 - Local CLI demo scope amendment (operator accepted 2026-09-05):
-  [per-Unit VISS mTLS is deferred](../../architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
+  [per-Unit VISS mTLS is deferred](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
   The strict authenticated-peer clause below remains the future target;
   source exclusivity, confirmed handover, server TLS verification and honest
   readiness remain required for both logical demo roles.
@@ -859,13 +857,13 @@ proof; they do not replace these isolated decisions and failure branches.
 
 ## Open D4 Gates
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented workflow | Shared CLI/Presenter lifecycle, selected Cloud/roles, unsigned catalogues, session signing, serial Test updates, exact source attachment, operation registry, Reset, offline switch and confirmed Finish exist. |
 | Implemented presentation | Measured window placement/z-order, backend popups/charts, resource/freshness views and native control are implemented. Current status authority is defined in the operator guide, not the old mockup. |
-| Kit028 / Factory41 acceptance | Installed scripted V1→V2→V3, OFF/ON and ignition passed; the exact Test was subsequently retired. Native UI, moving SOTA, secure token entry, interruption/repair and the broader failure/negative matrix remain open. |
+| Current runtime and Setup proof | 118 API and 42 visible browser UI checks plus actual native driving input passed, including moving QM updates and retained Stop/Start. Separate native new-certificate first use passed with existing accounts. Installation interruption/repair and broader negative matrices remain separate. |
 | Recovery limits | Guarded same-identity controller ignition is implemented; cold externalOFF ignition and host laptop sleep/wake are not qualified. Park/Resume is retired from Studio. |
 | Unimplemented qualification feature | Fixed Tire CPU control/worker and the full resource-isolation dossier remain open. Existing Cloud charts do not prove CPU stress isolation. |
 | Scope and contract maintenance | The current milestone is Test-only; Production is preserved. Legacy dual-Unit contract annotations and the Tire cleanup executable-schema drift must not drive destructive current-Test behavior. |

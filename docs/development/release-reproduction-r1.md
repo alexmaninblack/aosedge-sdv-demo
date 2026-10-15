@@ -3,6 +3,8 @@
 
 # R1 Release Inventory and Reproduction Readiness
 
+> Historical locked-release dependency. This exact path is required by the immutable predecessor definition. It is not the selected operator package or current setup guide; use the current baseline and root README.
+
 - Status: R1 complete; Google Drive and product version policy accepted
 - Version: 1.3
 - Prepared: 2026-10-07

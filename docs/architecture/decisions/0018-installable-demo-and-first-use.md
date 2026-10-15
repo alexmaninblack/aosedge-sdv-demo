@@ -3,9 +3,10 @@
 
 # ADR 0018: Installable Demo and First-use Boundary
 
-- Status: Accepted direction; staged implementation and qualification incomplete
+- Status: Accepted and implemented for the engineering preview; remaining distribution/qualification gates explicit
 - Version: 1.2
 - Prepared: 2026-09-27
+- Implementation review: 2026-10-15
 - Owner: Demo Solution Team
 - Change class: C for installed-state/first-use integration; the first delivery
   slice is an offline, non-activating installation tool
@@ -21,12 +22,14 @@ installation, one authenticated OEM/SP Connect action, bounded missing-SP
 repair without Test deletion, paired token enrollment with official registration
 handoff, and a signed per-user persistent launcher. Reuse all existing owners;
 no new lifecycle/readiness store. The [native contract](../../../contracts/distribution-installation/native-setup.md)
-defines the exact paths and operations. Implementation and native qualification
-are pending; this decision does not close runtime or distribution gates.
+defines the exact paths and operations. Integrated installation/access/open
+is implemented. Current native issuance/connection for existing accounts and
+separate runtime API/UI profiles passed; broader gates follow the current
+baseline. This decision alone does not close a qualification or distribution gate.
 
 Deliver a macOS DMG with an application and first-use wizard, supported by
-versioned components. The first implementation accepts a complete local kit;
-download hosting and its authorization are not selected or purchased. The
+versioned components. Setup consumes the complete matching local kit; the
+launcher now obtains the reviewed public DMG from its selected delivery locator. The
 operator does not build Unreal, CARLA, Python, the host UI or vehicle services.
 Docker Desktop is an explicit separately installed prerequisite with its own
 operator acceptance and licensing; do not silently install or reconfigure it.
@@ -107,15 +110,18 @@ redistribution gates close. Persistent launcher installation, unified onboarding
 and the guided scenario are accepted direction but later implementation slices;
 do not claim that wrapping today's Setup completes those deliverables.
 
-## Current implementation — 7 October 2026
+<a id="current-implementation--7-october-2026"></a>
 
-Kit028 / Setup042 implements complete local DMG delivery, installed private
-state, explicit backend preparation, Cloud access/enrollment/recovery and
-Presenter launch using existing owners. The staged paragraphs below preserve
-the order and non-claims of each original increment. They are not today's
-“not implemented” list. The [current baseline](../../qualification/current-baseline.md)
-records 98 installed scripted steps, incomplete native acceptance and the
-still-unimplemented simplified wizard/returning-stopped-controller path.
+## Current implementation — 15 October 2026
+
+The selected preview implements complete DMG delivery, private state,
+integrated Setup, backend-image preparation, Cloud connection/enrollment/recovery
+and Presenter launch through existing owners. The current Presenter also
+provides Stop demo and keep data / Start controller for a retained Test.
+The [current baseline](../../qualification/current-baseline.md) separates
+118 API/42 visible UI, native Setup issuance, public consumer and remaining
+installation/recovery/distribution gates. The original staged paragraphs below
+describe historical allocation, not today's missing-feature list.
 
 ## Staged allocation and non-claims
 
@@ -131,7 +137,7 @@ branch until that cascade and its tests are complete.
 The subsequent [installed-state slice](../../../contracts/distribution-installation/installed-state.md)
 has completed that canonical path-separation cascade and its isolated Kit 005
 proof. It adds explicit engineering instance selection, not native activation
-or onboarding. The [evidence and remaining gates](../../qualification/installed-state-2026-09-27.md)
+or onboarding. The [evidence and remaining gates](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installed-state-2026-09-27.md)
 distinguish these outcomes from the first transaction slice above.
 
 The [version-selection/recovery detail](../../../contracts/distribution-installation/version-selection.md)

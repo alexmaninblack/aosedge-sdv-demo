@@ -1,106 +1,46 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Development Map
+# Development map
 
-This page helps a contributor decide where a change belongs before editing
-code. The architectural component, lifecycle owner and repository boundary
-must agree.
+Start with the [developer route](../getting-started/reproduce-demo.md) or
+[Contributing](../../CONTRIBUTING.md). The launcher prepares tools, pinned
+sources/inputs and the engineering installer. Public developer inputs need no
+Google login; fresh-host source reproduction remains a separate gate.
 
-Start with the [developer build guide](../getting-started/reproduce-demo.md)
-or [contribution guide](../../CONTRIBUTING.md). The automated developer chain
-and private input delivery are implemented; fresh-environment and live
-qualification remain open. The [full-source route](../getting-started/full-source-build.md)
-has separate unresolved prerequisites. Specialist command options and dated
-proof remain in [R2 commands and evidence](release-reproduction-r2.md), with
-the original [R1 inventory](release-reproduction-r1.md) retained for provenance.
-The [public artifact preparation record](public-artifact-preparation.md) tracks
-the actual notice/source materials and remaining gates for anonymous delivery.
+## Choose the owner
 
-## Choose the Change Boundary
+| Change | Owning repository / boundary |
+| --- | --- |
+| CARLA physics, maps or simulator build | Maintained CARLA/Unreal sources; licensed dependency lifecycle |
+| Vehicle Gateway, VISS, native Driving Control and maneuvers | carla-ego-runtime |
+| ARM64 controller image (Factory), KUKSA/IAM integration and VDP | aos-vehicle-platform; platform/FOTA lifecycle |
+| Brake analytics / backend | brake-health-service / brake-health-cloud |
+| Tire analytics / backend | tire-health-service / tire-health-cloud |
+| Setup, Presenter, Demo Control and cross-component contracts | aosedge-sdv-demo |
 
-| If the change concerns | Primary repository | Lifecycle |
-| --- | --- | --- |
-| CARLA physics, maps, native simulator build | `CarlaSim` | vehicle simulation baseline |
-| Vehicle control, CARLA sampling, VSS/VISS, engineering dashboard or deterministic scenario | `carla-ego-runtime` | Vehicle Gateway/demo tooling |
-| Factory-image integration, native IAM/PKCS#11 seam, KUKSA trust with documented compatibility patches and removable current-release `CMP-KAC` (`authorization/aos-kuksa-compat/`) | `aos-vehicle-platform` | Platform Team / pre-SOP factory and system integration |
-| Vehicle Data Provider runtime, signal/advisory contract or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / post-SOP FOTA |
-| Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
-| Tire Health condition estimation, bounded reporting and inspection advisory | `tire-health-service` | Function Team 2 / independent SOTA |
-| Brake Health backend and its API | `brake-health-cloud` | Function Team 1 Cloud product |
-| Tire Health backend and its API | `tire-health-cloud` | Function Team 2 Cloud product |
-| Integrated Presenter backend cards/popups and Cloud resource charts | `aosedge-sdv-demo` | shared operator presentation; backend APIs retain team ownership |
-| Software Delivery Dashboard, demo orchestration, cross-component contract or end-to-end qualification | `aosedge-sdv-demo` | solution integration |
-| Unreal Engine compatibility required by CARLA | restricted Unreal fork | maintained Apple Silicon dependency branch |
+See the [component map](../architecture/product-map.md) and
+[repository boundaries](../architecture/repository-boundaries.md) for exact
+responsibilities. A UI or service change normally reuses the prebuilt CARLA
+simulator and controller image; it is not a reason to rebuild Unreal or Yocto.
 
-Backends and function dashboards are separate from their in-vehicle SOTA
-containers. Team-owned backend APIs and standalone fixture dashboards stay in
-their Cloud repositories. The implemented integrated Presenter is owned by the
-solution repository; its popups are not evidence that the standalone fixture
-dashboards have become live integrations.
+## Current references
 
-## Read Before Changing an Interface
+- [Add or change a scenario](add-demo-scenario.md).
+- [Release campaign and publication](release-campaign.md).
+- [M1 qualification scenario runner](../../scripts/qualification/README.md).
+- [Reusable simulator dependency](reusable-simulation-inputs.md).
+- [Public artifacts, notices and remaining redistribution review](public-artifact-preparation.md).
+- [Retained specialist commands and measured build evidence](release-reproduction-r2.md).
+- [Implemented architecture](../architecture/current-implementation.md) and
+  [protocol status](../../contracts/implementation-status.md).
+- [Requirements](../requirements/README.md) and [executable contracts](../../contracts/README.md).
 
-1. Locate the component and interface ID in the
-   [Component Register](../requirements/component-decomposition-and-interface-register.md).
-2. Trace its parent obligations in
-   [System Requirements](../requirements/system-requirements-and-traceability.md).
-3. Check the relevant runtime and lifecycle sequence in
-   [Architecture Flows](../architecture/demo-scenario-architecture-flows.md).
-4. Confirm that the change still fits
-   [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-   and [Demo Scenario 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md).
+The earlier [R1 definition inventory](release-reproduction-r1.md) remains only
+because the immutable predecessor release definition requires that path.
+It is explicitly historical, not another current build guide.
 
-If the proposed behavior does not fit, change and review the owning design
-document first. A downstream implementation must not silently redefine an
-upstream architectural decision.
-
-## Implementation Rule
-
-For the shared CLI/UI orchestrator, start with the
-[Demo Control draft](../architecture/demo-control.md) and the
-[package README](../../apps/demo-orchestrator/README.md). Its early read-only
-milestone is historical; the [current workflow](../operations/current-demo-workflow.md)
-describes implemented lifecycle/actions. Draft proposals still do not authorize
-new lifecycle changes. Use the dated amendments and accepted work packet.
-
-Keep source, tests and component-specific usage documentation in the owning
-repository. Update this solution repository when a change affects:
-
-- a cross-component contract or component state;
-- the accepted workspace revision;
-- the audience-visible demo flow;
-- orchestration or operator instructions;
-- qualification evidence or a known limitation.
-
-The current branch policy and commit expectations are defined in the
-[development workflow](../governance/development-workflow.md).
-
-## Validation Rule
-
-Validate at the narrowest useful boundary first, then at each affected
-interface, and finally through the relevant end-to-end scenario. Record exact
-versions and sanitized evidence. Never commit secrets, provisioned overlays,
-raw Cloud logs, customer material or machine-specific absolute paths.
-
-For a new audience-visible behavior, use
-[Add or Change a Demo Scenario](add-demo-scenario.md).
-
-Before commit, run the deterministic documentation and repository gates:
-
-```sh
-./scripts/docs-check
-python3 -m unittest discover -s tests -p 'test_*.py'
-```
-
-The documentation gate checks navigation, anchors, stable identifiers,
-canonical metadata, readable package traceability and stale artifacts. The
-cross-repository boundary gate additionally requires clean sibling checkouts
-and the pinned REUSE validator. CI runs it automatically. To reproduce it
-manually, provide both required inputs:
-
-```sh
-./scripts/qualify-repository-boundaries \
-  --workspace-root .. \
-  --reuse-command /path/to/reuse
-```
+Use the contribution guide's offline checks for source/document changes.
+Builds, signatures, live M1 scenarios and public promotion require their own
+scope. No development reference implicitly starts a simulator, modifies Cloud
+or grants new access.

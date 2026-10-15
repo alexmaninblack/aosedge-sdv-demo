@@ -3,6 +3,8 @@
 
 # Kit028 / Setup042 source return point
 
+> Historical locked-release dependency. This exact path is required by the immutable predecessor definition. It is not the selected operator package or current setup guide; use the current baseline and root README.
+
 - Status: review candidate; not a completed native E2E release
 - Version: 1.0
 - Prepared: 5 October 2026

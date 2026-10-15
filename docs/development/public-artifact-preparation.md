@@ -11,7 +11,7 @@
 The owner authorized preparing the materials needed to distribute the five
 developer dependency archives anonymously. This follows the
 [public-delivery contract](../../contracts/release-reproduction/README.md#anonymous-developer-input-delivery)
-and the [activation preflight](../planning/repository-change-journal.md#2026-october-10-public-artifact-activation-preflight).
+and the [activation preflight](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/repository-change-journal.md#2026-october-10-public-artifact-activation-preflight).
 The owner subsequently confirmed public reading of the entire prepared eight-file
 folder after the remaining licensing questions were disclosed. The current
 launcher can use its inputs without Google authentication. This is not a new

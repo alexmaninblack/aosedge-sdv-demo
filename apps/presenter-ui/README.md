@@ -1,11 +1,12 @@
 # Presenter UI
 
-## Presenter operator-experience branch — 11 October 2026
+## Current Presenter
 
-This revision is isolated on `codex/presenter-human-friendly`, for testing before
-integration into main. The [authorized work packet](../../docs/planning/active/work-packets/presenter-human-friendly.md)
-defines its scope. It does not replace the accepted installed kit or claim live
-M1 qualification. The implementation and test evidence are recorded there.
+The operator-experience changes are integrated into main and the selected
+engineering preview. The [current baseline](../../docs/qualification/current-baseline.md)
+and [release report](../../docs/qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
+record exact source/media and current API/visible UI/native Setup evidence.
+A source checkout or HTML mockup alone is not qualification.
 
 The accepted visual/interaction reference is [Studio 2.8](../../docs/demo/mockups/aosedge-demo-interaction-mockup-2-8.html), qualified by the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 The original mockup is unchanged. Live state comes from existing Demo Control operations, not mockup timers.
@@ -64,7 +65,7 @@ simulation path is not used by Presenter actions.
   node/service/Subject/instance/partition identity. CPU is DMIPS; memory/disk and traffic accounting are bytes, formatted
   without inventing a rate. Missing units/values are not guessed. Missing/stale is not zero, absent, Offline or success.
 - Team backends use the existing same-origin Demo Control backend read. Products are current-Test scoped and versioned. Real vehicle-derived
-  products/advisories are recorded in the Kit028 installed journey; historical
+  products/advisories are recorded in the current M1 runtime campaign; historical
   synthetic .33 receipts and fixture mode are separate, never live evidence.
 - Native telemetry observes vehicle data only. It reads the existing advisory
   contract, rejects unknown values, and does not consume synthetic backend data.
@@ -132,8 +133,8 @@ to stop a busy or uncertain server. `workspace close` closes only Presenter.
 Fixtures never submit external actions and are not live qualification evidence.
 Without a fixture selector, an unavailable local backend stays unavailable.
 
-See the [delivery plan](../../docs/planning/active/demo-studio-delivery-plan.md)
-and [implementation receipt](../../docs/qualification/studio-2-8-implementation-2026-09-13.md).
+See the [delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md)
+and [implementation receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/studio-2-8-implementation-2026-09-13.md).
 The [current baseline](../../docs/qualification/current-baseline.md) separates
 98 passed installed scripted steps from the incomplete native journey. Reset
 Driver Advisory is on each backend's main card; independent result history is

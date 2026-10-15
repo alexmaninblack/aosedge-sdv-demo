@@ -42,7 +42,7 @@ the referenced legacy records and all unrelated requirements. Use the
 [current input contract](../../architecture/demo-control-service-inputs.md);
 application version comes from the package, not public Unit metadata.
 Implementation and live gates remain in the
-[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose
 
@@ -267,17 +267,15 @@ source/Unit/run correlation supplied to it.
 
 ## Current Implementation Baseline
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Backend, query and reset implementation | brake-health-cloud owns durable HTTP/SQLite ACK, deduplication, window detail, products, v3 function observations, SSE notification, Reset and current-Test cleanup. The integrated Presenter consumes these APIs; the standalone dashboard remains a fixture shell. |
-| Evidence and remaining obligations | Real delivery and peer-preserving cleanup have scoped evidence; production ingestion authentication and all native-log/negative scenarios are not implied. |
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
 ## Accepted Technology and Implementation Decomposition
 
@@ -857,7 +855,7 @@ five-path packet and authorized its source-only offline implementation.
 
 ## Open Issues for D4
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

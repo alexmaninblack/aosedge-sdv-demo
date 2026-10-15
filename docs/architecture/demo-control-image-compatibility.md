@@ -4,7 +4,7 @@
 # Demo Control: image-bound component support
 
 Status: P1 catalog reader and producer metadata increment, 10 September 2026.
-Scope: the [accepted catalog compatibility change](../planning/active/demo-studio-delivery-plan.md#p1-fix-shared-operations-once),
+Scope: the [accepted catalog compatibility change](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p1-fix-shared-operations-once),
 not SOTA execution, service permissions or a new image qualification.
 
 Image presence, architecture and firmware version alone do not establish VDP

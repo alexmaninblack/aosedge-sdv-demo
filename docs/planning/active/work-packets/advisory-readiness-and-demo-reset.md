@@ -11,7 +11,7 @@ unaccepted writes retry with current state after one second. KUKSA RPC and
 entry errors and VISS responses/timeouts are checked. No credentials, schema,
 freshness limit, model threshold, reset behavior or UI masking changes; no
 CM/SM/IAM or Factory rebuild is required. Source and live qualification are
-tracked separately in [renewal evidence](../../../qualification/advisory-readiness-renewal-2026-09-20.md).
+tracked separately in [renewal evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/advisory-readiness-renewal-2026-09-20.md).
 
 18 September preserved-Test follow-up: diagnostic Brake 59.0.0 distinguishes
 upstream missing-data aborts from completed-but-unqualified Autopilot episodes.
@@ -21,12 +21,12 @@ Stop; Autopilot is restored. Identical periodic snapshots are ignored without
 freshness renewal, and the bounded live window shows no previous non-monotonic
 reconnect. Brief missing-input episodes remain under investigation; no new
 complete Brake end-to-end pass is claimed. See
-[driving-gap diagnosis](../../../qualification/brake-driving-gap-2026-09-18.md).
+[driving-gap diagnosis](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/brake-driving-gap-2026-09-18.md).
 
 17 September successor checkpoint: Factory .35 completed the authorized
 clean staging Test cycle by 05:32 UTC. Platform build source is pinned to
 `bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74`. Build and qualification results
-are tracked in [Factory .35 execution evidence](../../../qualification/factory-35-e2e-2026-09-17.md).
+are tracked in [Factory .35 execution evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-35-e2e-2026-09-17.md).
 VDP V1/V2/V3, Brake V1/V2/V3, Tire V1, real KUKSA/backend results, both native
 warnings, independent Reset/CLEAR/renewed warnings, Offline/reconnect,
 first-attempt packaged Park/Resume and final UI retirement all passed.
@@ -63,7 +63,7 @@ CM/SM startup-reconciliation fix on this preserved Test: diagnose the native
 stop request, prove the smallest reversible correction, and repeat the UI
 restart gate. Cloud, Production, Safe Stop policy and retained identity remain
 unchanged. No transaction may be manually removed or bypassed.
-See [execution evidence](../../../qualification/advisory-readiness-reset-2026-09-16.md).
+See [execution evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/advisory-readiness-reset-2026-09-16.md).
 
 ## Boundary and order
 

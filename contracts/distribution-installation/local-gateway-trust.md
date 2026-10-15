@@ -39,7 +39,7 @@ Only that exact dashboard-only state is exempt from the guest restore check:
 Unit/Node or Cloud identity, guest-role fingerprints, onboarding/assignment intent,
 a Current Vehicle or a nonzero assignment generation still require the existing
 complete matching binding. No identity is synthesized and no admission gate is
-opened by this distinction. The [30 September proof](../../docs/qualification/installer-first-use-2026-09-30.md#preprovisioning-resume-correction)
+opened by this distinction. The [30 September proof](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installer-first-use-2026-09-30.md#preprovisioning-resume-correction)
 records the source correction and its deployment boundary.
 
 The private key stays on the host, outside Git, Factory, component packages,
@@ -74,12 +74,12 @@ not evidence of automatic first-use in Kit 009. Never patch immutable installed
 bytes or bypass retained-run version-switch guards. Export/verify the source
 change in the next immutable candidate for normal first-use qualification.
 
-The [28 September receipt](../../docs/qualification/installed-gateway-trust-2026-09-28.md)
+The [28 September receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installed-gateway-trust-2026-09-28.md)
 records source tests, Kit 010 direct installed-code proof and the preserved
 Test's live transport checks. These do not close automatic UI first-use,
 native installer launch, complete Cloud E2E or clean-Mac qualification.
 
-The [30 September continuation](../../docs/qualification/installer-first-use-2026-09-30.md)
+The [30 September continuation](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installer-first-use-2026-09-30.md)
 subsequently proves automatic initialization in ordinary installed Start
 simulator and same-identity mutual-TLS onboarding, live service operation and
 full-power-cycle recovery on Kit 020. Clean-Mac qualification remains open.

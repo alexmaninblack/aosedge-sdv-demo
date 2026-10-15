@@ -1,27 +1,33 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Architecture Documentation
+# Architecture documentation
 
-Start with the [product and component map](product-map.md) for the simulated
-and real parts, update lifecycles and source owners. It needs no sibling checkout.
+Start with the [component map](product-map.md) and
+[README overview diagram](../../README.md#how-the-lab-fits-together).
+They distinguish the simulated vehicle, real AosEdge software, ARM64 virtual
+controller, Factory base image, local backends and remote Aos Cloud.
 
-For `Kit028 / Setup042 / Factory .41`, start with the [implemented architecture and traceability](current-implementation.md). It maps the accepted design and later amendments to source, contracts and dated proof; it does not promote untested requirements.
+For implemented behavior and exact acceptance, use
+[implemented architecture](current-implementation.md) and the
+[current baseline](../qualification/current-baseline.md). They are separate
+from expanded design obligations.
 
-[High-Level Architecture 1.8](high-level-architecture.md) is the accepted
-current architecture. It incorporates the accepted authorization compatibility
-boundary, independent OEM Release Authority and Platform FOTA Safe Stop
-boundary; High-Level Architecture 1.4 remains historical traceability only.
+- [High-Level Architecture 1.8](high-level-architecture.md): accepted boundaries,
+  authority and invariants, with later amendments taking precedence.
+- [Architecture Flows 2.2](demo-scenario-architecture-flows.md): manufacturing,
+  provisioning, component/service evolution, offline operation and retirement.
+- [Repository boundaries](repository-boundaries.md): component ownership.
+- [Demo Control](demo-control.md): current shared orchestration and state owners.
+- [Native service inputs](demo-control-service-inputs.md): accepted public/private runtime contract.
+- [Backend ownership](demo-control-backends.md): current container, context and cleanup boundaries.
+- [Cloud observations](demo-control-cloud-observation.md): bounded authoritative software/resource reads.
+- [Component publication](demo-control-component-publication.md): request, acceptance, processing and reconciliation stages.
+- [Image compatibility](demo-control-image-compatibility.md): exact controller-image/profile guards.
+- [Service observations](demo-control-service-observation.md): read-only owner-bound catalog/status projections.
+- [Architecture decisions](decisions/README.md): current rationale and explicit supersession.
+- [Editable diagrams and exports](diagrams/README.md): design diagrams, not a claim of full implementation.
 
-- [High-Level Architecture 1.8 — accepted](high-level-architecture.md)
-- [Demo Scenario Architecture Flows 2.2 — accepted](demo-scenario-architecture-flows.md)
-  — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 2.1 to
-  High-Level Architecture 1.8, including the independent Tire Health stage.
-- [Repository and component boundaries](repository-boundaries.md)
-- [Demo Control — implementation design and history](demo-control.md)
-  — shared CLI/UI orchestration, current Test workflow and dated status/lifecycle amendments.
-- [Service identity, data and tokens using native Aos facilities — accepted](decisions/0015-use-native-aos-service-runtime-inputs.md)
-  — approved Brake/Tire protocol and file placement without new SM code;
-  implementation status is tracked in the delivery plan.
-- [Architecture decisions](decisions/)
-- [Diagram sources and exports](diagrams/)
+A document version is not a demo release number. The launcher catalog and
+immutable delivery descriptor select media; old Factory/Kit numbers never
+override that selection.

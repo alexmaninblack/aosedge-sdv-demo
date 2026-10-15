@@ -265,6 +265,6 @@ plans and fresh-clone evidence remain available through Git history.
 
 - [ADR 0001: initial repository and artifact boundaries](0001-repository-and-artifact-boundaries.md)
 - [ADR 0005: KUKSA vehicle-data boundary](0005-kuksa-vehicle-data-boundary.md)
-- [ADR 0010: Aos–KUKSA Credential Broker](0010-aos-kuksa-credential-broker.md)
+- [ADR 0010: Aos–KUKSA Credential Broker](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - [ADR 0013: Current-release KUKSA authorization compatibility](0013-current-release-kuksa-authorization-compatibility.md)
 - [Licensing and copyright policy](../../governance/licensing-and-copyright-policy.md)

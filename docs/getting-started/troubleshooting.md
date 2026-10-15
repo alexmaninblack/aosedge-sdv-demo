@@ -18,8 +18,8 @@ everything or delete state as the first response.
 | Cloud access failure | Confirm the intended Production or Staging domain, OEM/associated SP and exact access route. Existing certificates determine the domain; new enrollment uses the selected environment. Missing objects or an occupied Test are distinct from failed authentication. |
 | Uncertain token submission | Use **Inspect saved attempt**. Do not replay the one-time token blindly or replace working credentials. |
 | macOS requests access | Grant the specific normal consent to the signed app. Window placement uses Accessibility; installation does not require blanket Full Disk Access. |
-| Presenter opens without a controller | **Open SDV Lab** opens Presenter only. Use Create Controller for a new Test, creating the ARM64 virtual controller from its Factory image. CARLA and Driving Control follow the operator sequence. Native power-on of a stopped retained controller remains a limitation, not a passed returning-user flow. |
-| Presenter closed, but the demo still consumes resources | **Close Presenter (keep demo running)** closes its windows only. Use the engineering owner for a complete non-destructive shutdown; do not treat **Finish demo** as a generic Close button. |
+| Presenter opens without a controller | **Open SDV Lab** opens Presenter only. Use **Create controller** for a new Test, or **Demo controls → Runtime → Start controller** for a stopped retained Test. CARLA and Driving Control follow the readiness guide. Do not recreate an existing Test to start it. |
+| Presenter closed, but the demo still consumes resources | **Close Presenter (keep demo running)** closes its window only. Use **Demo controls → Runtime → Stop demo and keep data** for a non-destructive stop. **Delete Test & start over** is not a generic Close button. |
 
 Follow the [installation steps](installed-preview-cloud-first-use.md) and
 [operator sequence](../operations/current-demo-workflow.md).
@@ -59,7 +59,7 @@ Follow the [installation steps](installed-preview-cloud-first-use.md) and
 | Built but readiness is false | `CHAIN_BUILT_NOT_QUALIFIED` is expected before qualification. Source-ready, input-ready and qualified are separate. |
 
 Use the [developer guide](reproduce-demo.md) and
-[recovery reference](../development/release-reproduction-r2.md#storage-and-recovery).
+[recovery reference](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/development/release-reproduction-r2.md#storage-and-recovery).
 Do not repeat a full transfer merely to refresh status.
 
 ## Report an issue and stop safely

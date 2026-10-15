@@ -3,7 +3,7 @@
 
 # Requirements Documentation
 
-The [current implementation matrix](../architecture/current-implementation.md) and [protocol audit](../../contracts/implementation-status.md) cover the implemented Kit028 / Setup042 / Factory .41. Normative requirements remain obligations, not assertions that every qualification case has passed.
+The [current implementation matrix](../architecture/current-implementation.md) and [protocol audit](../../contracts/implementation-status.md) cover the currently selected engineering preview and its exact evidence. Normative requirements remain obligations, not assertions that every qualification case has passed.
 
 - [System Requirements and Traceability 2.2 — accepted](system-requirements-and-traceability.md)
   — system obligations, coverage of all Architecture Flows gaps, verification

@@ -12,13 +12,13 @@ correction uses native Cloud for Presenter software state and exact installed
 artifact/profile binding. Automatic service-local compatibility reevaluation
 must be proved through existing inputs without a Cloud dependency; a new
 projection or guest timer is not prescribed. Follow the
-[current packet](../planning/active/work-packets/versioned-service-observability.md).
+[current packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
 No new native manager behavior or implicit guest polling from Presenter is
 authorized. The .33/permissions-blocked status below is dated history: .35's
-[17 September record](../qualification/factory-35-e2e-2026-09-17.md) supplies
+[17 September record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-35-e2e-2026-09-17.md) supplies
 later scoped real-data evidence; it does not qualify this new amendment.
 
-- Status: Accepted contract; implemented with scoped real KUKSA/renewal and .39 ignition/offline proof; full acceptance separate
+- Status: Accepted contract; implemented with current scoped real KUKSA/renewal, ignition/offline and visible UI proof; full acceptance separate
 - Version: 2.2 (implementation-status clarification; no schema change)
 - Prepared: 2026-09-11
 - Owner: Demo Control / OEM Platform
@@ -28,19 +28,14 @@ This is the replacement for the former seven-field input and SM token-owner
 patch design. Historical observations remain in the dated qualification
 checkpoints, not as competing instructions here.
 
-## Implementation checkpoint — 13 September 2026
+## Current implementation and qualification
 
-[Factory .33 E2E](../qualification/factory-33-e2e-2026-09-13.md) proves packaged
-public resources, cold input reconstruction, native retained-service recovery,
-service replacement while driving and explicitly synthetic backend delivery.
-No manual warm preparation, resource activation or transient manager patch was
-needed after cold restart. N4/N5 engineering integration is demonstrated in that
-scope; the permission-backed KAC/KUKSA/TLS/renewal and real advisory path is not.
-See [OPEN-01 and OPEN-02](../qualification/factory-33-consolidation-audit-2026-09-13.md#open-issues-and-exact-closure-conditions).
-
-The approved generic native service-teardown/CM-reconciliation fixes in .33
-are separate from this input design. They do not add a custom container
-launcher, token-owner patch, fixed UID or alternative identity authority.
+The [current baseline](../qualification/current-baseline.md) and
+[implemented architecture](current-implementation.md) bind current real
+KUKSA/input/renewal, offline, advisory and restart evidence. Earlier synthetic
+or permissions-blocked source checkpoints do not describe today's capability.
+The accepted native-input schema, permissions and private-path rules below
+are unchanged; formal negative matrices remain separately required.
 
 ## Package, public inputs and native identity
 
@@ -206,7 +201,7 @@ delivery plan. Acceptance does not itself mark N4/N5/N6 complete.
 
 ## Migration and remaining evidence
 
-[The delivery plan](../planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
+[The delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
 owns the ordered work and its actual status. Product-message migration must
 cover the service digest **and** Brake's modelArtifactSha256 alias of it.
 Retain modelConfigSha256 and the VDP compatibility digest. Do not invent a

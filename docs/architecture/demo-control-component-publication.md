@@ -4,7 +4,7 @@
 # Demo Control: verification-Test component publication
 
 P2 source increment, 10 September 2026. Implements the publication portion of
-the [accepted delivery plan](../planning/active/demo-studio-delivery-plan.md#p2-make-cloud-observations-and-publication-results-truthful).
+the [accepted delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p2-make-cloud-observations-and-publication-results-truthful).
 No live upload, delivery, runtime start or P3 qualification is claimed here.
 
 ## Commands and stages

@@ -3,6 +3,8 @@
 
 # M1 live installed journey
 
+> Historical locked-release dependency. This exact path is required by the immutable predecessor definition. It is not the selected operator package or current setup guide; use the current baseline and root README.
+
 - Date: 2026-10-03
 - Updated: 2026-10-04
 - Status: Kit 028 scripted installed sequence passed all 98 checks; native and release acceptance remain open. Earlier failures are retained below.
@@ -11,7 +13,7 @@
 - New installed E2E candidate: Runtime Kit 028, signed Setup 042, Factory .41; corrected VM/host binding and its own scripted sequence passed. Kit 027 installed but was rejected before Test creation.
 - Host: dedicated M1 Pro, 16 GiB RAM, internal installation, macOS 27.0.1
 - Scope: staging only, existing authorized OEM and SP accounts
-- Parent: [Scripted journey](scripted-journey-2026-10-02.md)
+- Parent: [Scripted journey](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/scripted-journey-2026-10-02.md)
 
 ## Access and execution boundary
 
@@ -289,7 +291,7 @@ VLAN 1443. The current-boot audit query returned 68 records without truncation:
 11 denials in the previously classified auditctl/auditd socket, SSH directory
 search and getty capability categories. No Aos-manager-specific denial appears
 in that bounded observation. This is not an all-domain zero-AVC claim. See the
-[original baseline comparison](factory-37-mainline-build-2026-09-23.md#classified-baseline-observations-not-a-zero-warning-claim).
+[original baseline comparison](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-37-mainline-build-2026-09-23.md#classified-baseline-observations-not-a-zero-warning-claim).
 The initial diagnostic used an unsupported/failing journal grep form; querying
 the audit transport and filtering locally produced the evidence without changing
 the guest or weakening policy.

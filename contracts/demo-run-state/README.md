@@ -39,7 +39,7 @@ symlink or hard link to a mutable build result. M0 and R0 verify its digest;
 the demo never modifies or removes it. A provisioned overlay is never copied
 or reused as a next-run source.
 
-The [2026-09-05 local creation amendment](../../docs/architecture/demo-control.md#agreed-cli-surface)
+The [2026-09-05 local creation amendment](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#agreed-cli-surface)
 preserves the selected source format and bytes: raw images are copied to
 .local/factory/oem-demo-factory.img; qcow2 retains the original .qcow2 path.
 Both overlays explicitly bind the selected format/path and original SHA-256.
@@ -82,7 +82,7 @@ removal and Unit/Node absence with independent visibility. WebSocket rejection
 is not represented as TLS certificate revocation. These commands retain local
 disks, access and journal; fresh manufacture still requires separately completed
 cleanup. No full R0 or repeatability claim follows. See the
-[bounded live record](../../docs/qualification/democtl-unit-lifecycle.md).
+[bounded live record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/democtl-unit-lifecycle.md).
 
 Version 1.5.0 adds the separately authorized cleanup of a Cloud-retired CLI-only
 run. All current Cloud identities must already be deleted with recorded

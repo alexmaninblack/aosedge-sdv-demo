@@ -68,8 +68,8 @@ Factory ownership, KAC/IAM authority and service isolation remain unchanged.
 The historical .21 allocation and original diagram below are not the current
 image selector or a claim of byte-identical upstream KUKSA.
 
-The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
-7 October 2026. The historical heading is retained for incoming links.
+Current package selection and qualification are owned by the launcher catalog and
+[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
 [Implemented architecture and traceability](current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review
@@ -213,7 +213,7 @@ outside the first-demo gate.
 
 Architecture 1.3 preserves the component and lifecycle topology of 1.2 and
 corrects the Aos-to-KUKSA credential authority as amended in
-[ADR 0010](decisions/0010-aos-kuksa-credential-broker.md):
+[ADR 0010](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md):
 
 1. Aos Service Manager and IAM own per-instance `AOS_SECRET` creation,
    registration, lookup and invalidation;
@@ -262,7 +262,7 @@ provisional Function Team 2 candidate, as accepted in
     each owning team makes its engineering release decision, an OEM identity
     authorizes deployment to OEM Units, and AosCloud remains the lifecycle
     system of record and execution control plane.
-12. adopting [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md):
+12. adopting [ADR 0010](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md):
     upstream Eclipse KUKSA remains unchanged, while the Vehicle Data Platform
     Component owns the thin Aos–KUKSA Credential Broker used to derive
     short-lived KUKSA JWTs from Aos IAM service-instance identity.
@@ -1094,31 +1094,20 @@ dependency.
 
 ## Current Baseline and Target Delta
 
-| Area | Current accepted behavior | Architecture 1.6 target |
-| --- | --- | --- |
-| CARLA and ego runtime | Vehicle state, control, VSS normalization | Preserve unchanged behavior |
-| VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped QM advisory Set path and Gateway status; Gateway remains the authoritative deny-by-default boundary for motion and safety-critical operations |
-| Engineering dashboard | Independent VISS subscriber for live telemetry | Add advisory request and Gateway reception status |
-| Vehicle Data Platform Component | Inbound VISS-to-KUKSA implementation and qualification evidence exist | Provide one shared, versioned OEM-trusted FOTA component with inbound telemetry and separately governed outbound advisory directions; exclude Service JWT issuance, dynamic Provider IAM/JWT and untrusted-Provider isolation from the first demo |
-| Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | `6.1.1-maninblack.21` is the accepted immutable Factory baseline: one shared IAM configuration with the native Permission Handler enabled, unmodified KUKSA, removable current-release helper, per-Unit signer/verifier preparation, selected provider-specific empty-slot runtime, clean offline/online qualification and no VDP payload, functional Service or reusable identity/secret | Preserve `.21` byte identity as the M0 source; complete the separate controlled reproducibility dossier and build/deliver VDP only as post-SOP component FOTA without modifying the Factory image |
-| KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
-| Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
-| Tire Health service | Not implemented | Estimate tire condition locally, send bounded summaries/events and request a typed inspection advisory |
-| Service Provider separation | AosCloud lifecycle mechanisms exist; the two target services are not yet accepted as independent deployments | Independent Service Provider identities for publication, team-owned engineering acceptance, independent OEM Release Authority authorizations, artifacts, dependencies, updates, removal, and recovery |
-| Cross-lifecycle dependency admission | Service-to-layer and component-to-component dependencies exist, but the current released Cloud/API does not expose a Service-to-FOTA-component admission rule | Natively reject an incompatible SOTA request in AosCloud before rollout creation or Unit transfer; deferred until the roadmap feature ships and is qualified |
-| OEM Software Delivery Dashboard | Not implemented; the AosCloud UI and APIs remain authoritative | Provide a stateless view of exact artifact/metadata digests, requested permissions, actual targets, evidence, owning-team acceptance, active OEM Release Authority context, validation, rollout and Unit state; own shared-header meaning and team navigation from the same browser read model; expose explicit Release Authority authorization only after prerequisites match, without a parallel state store or automatic approval policy |
-| Native operational logs | AosEdge supports Cloud-requested system, service-instance and crash logs; VDP diagnostics originate in its native systemd journal and VDP owns no log store | Present selected system/VDP evidence in the OEM Software Delivery Dashboard and each Service-owned service/crash result in its matching Function Dashboard through role-scoped AosCloud APIs; retain no second archive and state that retention policy is not exposed by the current API |
-| Validation and Production instances | Separate VM roles exist, while the demo has one visible CARLA/Vehicle Gateway/VISS source | Instantiate the same logical Domain Controller architecture twice and implement sequential exclusive live Validation attach/detach, deterministic reset and Production attach/detach without claiming two simultaneous vehicles; defer telemetry replay |
-| Driver HMI | Not implemented | Remains out of scope |
-| Functional backends | Scenario-level targets | Two separate backends receive derived Brake Health and Tire Health data without entering local decisions or software lifecycle control |
+The [implemented architecture](current-implementation.md) is the current
+as-built matrix; the [baseline](../qualification/current-baseline.md) binds
+qualification to exact media and profiles. Do not use old Factory .21,
+read-only-VISS, unimplemented-service or prototype-dashboard snapshots as the
+current inventory.
 
-The target writable VISS path must not weaken the current read-only guarantee
-for any other signal. A request outside the explicit typed advisory
-contract remains rejected.
+Expanded requirements below retain formal acceptance, role/provider separation,
+native dependency admission, calibration and dossier obligations beyond the
+implemented single-Test demonstration. Later accepted one-associated-SP,
+Test-only, native-input and lifecycle amendments have precedence.
 
 ## Architectural Invariants
 
-Architecture 1.6 is aligned only while all of the following remain true:
+The expanded architecture is aligned only while all of the following remain true:
 
 1. CARLA represents the physical vehicle; `carla-ego-runtime` represents the
    Vehicle Gateway ECU; AosVM represents a separate Domain Controller ECU.

@@ -210,8 +210,8 @@ The downloader recognizes only its bounded expected form for the same file and
 follows the normal download confirmation, without a browser or cookies. It
 does not bypass malware/abuse denials. Unexpected HTML, sign-in redirects,
 wrong ranges, changed bytes and quota errors fail explicitly without login
-loops or alternate copies. Google documents temporary download limits and
-recommends [dedicated hosting for large distributions](https://support.google.com/drive/answer/2423534?hl=en).
+loops or alternate copies. For provider-side access/download problems, see
+[Google Drive troubleshooting](https://support.google.com/drive/answer/2456903?hl=en).
 
 ## Private maintainer route
 

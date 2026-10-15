@@ -11,7 +11,7 @@ Historical golden schemas/digests are not rewritten as part of this audit.
 
 The 5 September server-TLS-only local exception is historical. The current
 Test workflow uses strict selected-Unit mTLS and separate safety/observer roles;
-scoped proof is in the [Factory39 ignition receipt](../../docs/qualification/factory-39-ignition-2026-09-24.md).
+scoped proof is in the [Factory39 ignition receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-ignition-2026-09-24.md).
 Legacy engineering exception support is not the normal Studio trust mode and
 must not be represented as strict-mTLS qualification. The original dual-role
 contract remains broader than the current Test-only milestone.

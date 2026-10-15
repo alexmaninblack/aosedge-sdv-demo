@@ -39,5 +39,5 @@ security checks to make progress.
   an installed Demo Control-owned instance.
 - [Design and requirements](../architecture/README.md) explain the system
   contract. [Qualification](../qualification/README.md) contains dated evidence.
-- [Historical local setup preview](local-setup-preview.md) is retained for
+- [Historical local setup preview](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/getting-started/local-setup-preview.md) is retained for
   reference, not as a current installation procedure.

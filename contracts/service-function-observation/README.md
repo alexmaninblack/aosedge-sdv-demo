@@ -13,7 +13,7 @@ Accepted semantics: decisions 1A and 2A, 18 September 2026. The
 [v3 executable contract](v3-contract.md), closed schema, producers, backend
 consumers and Presenter selectors are implemented and have scoped live
 evidence. Remaining acceptance and freshness observations are recorded in the
-[work packet](../../docs/planning/active/work-packets/versioned-service-observability.md).
+[work packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
 
 ## Authority and axes
 

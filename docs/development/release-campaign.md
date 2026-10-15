@@ -3,7 +3,7 @@
 
 # Automated demo release campaign
 
-The accepted [release packet](../planning/active/work-packets/consolidated-release-automation.md)
+The accepted [release packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/consolidated-release-automation.md)
 coordinates source acceptance and operator delivery through one maintainer entry.
 The campaign is distinct from the A/B/C operator/developer launcher and from a
 vehicle lifecycle journal. Its ordered adapters retain their normal ownership,

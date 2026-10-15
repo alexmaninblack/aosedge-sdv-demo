@@ -13,7 +13,7 @@ actual input and independently observed effects, not an SSH launch receipt.
 
 New campaigns use one complete scenario entry. The agent launches it and
 investigates failures; routine stages and clicks do not wait for conversation.
-The [native controls campaign](../../docs/qualification/native-controls-campaign.md)
+The [native controls campaign](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/native-controls-campaign.md)
 combines preflight, scoped normal preparation, real M1 UI execution, independent
 result checks, timings, bounded failure evidence and verified final cleanup:
 
@@ -29,7 +29,7 @@ not routine agent-managed campaign steps. The policy is in
 
 ## Native semantic runner pilot
 
-The [approved pilot](../../docs/planning/active/work-packets/native-ui-runner-pilot.md)
+The [approved pilot](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/native-ui-runner-pilot.md)
 uses stable Accessibility IDs and fresh screen frames rather than stored click
 coordinates. A separate signed GUI-session client on M1 posts genuine mouse
 down/up events to five buttons in the exact production Driving Control view.
@@ -324,7 +324,7 @@ Reports distinguish these scenarios from native Setup/WKWebView/layout,
 first assignment, moving SOTA, offline/ignition and clean installation/repair.
 Those separate gates cannot be inferred from a browser pass; `fullE2E` remains
 `NOT_COMPLETE`. Actual M1 outcomes are recorded in the
-[branch qualification receipt](../../docs/qualification/presenter-human-friendly-2026-10-11.md).
+[branch qualification receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-human-friendly-2026-10-11.md).
 
 ### Targeted VDP profile transition diagnosis
 
@@ -694,7 +694,7 @@ not part of automatic cleanup. The API journey has no automatic Finish wrapper;
 moving-SOTA uses the separately scoped visible UI scenario described above.
 Full E2E stays `NOT_COMPLETE` regardless
 of successful scripted steps until the separate acceptance evidence is closed.
-See the [runner qualification record](../../docs/qualification/scripted-journey-2026-10-02.md)
+See the [runner qualification record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/scripted-journey-2026-10-02.md)
 for actual unit and M1 execution results.
 
 ## One command engineering campaign

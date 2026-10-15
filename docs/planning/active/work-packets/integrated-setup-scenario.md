@@ -3,10 +3,10 @@
 
 # Integrated Setup user scenario
 
-- Status: Implemented scenario; existing-access native acceptance passed; new-access gates open
+- Status: Implemented scenario; existing-access and new-certificate native profiles passed; broader gates explicit
 - Date: 2026-10-11
-- Parent: [Integrated Setup work packet](integrated-setup.md)
-- Live qualification: Aos Cloud staging only
+- Parent: [Integrated Setup work packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/integrated-setup.md)
+- Current evidence: Production-environment Test on M1; earlier staging evidence remains historical
 
 The operator receives one complete DMG, installs SDV Lab, connects one OEM and
 one associated Service Provider, then opens Presenter. Setup hides packaging
@@ -129,8 +129,10 @@ restarting shared infrastructure. Preserve a retained run and permit only the
 bounded missing-SP repair described above. Reopening must not recopy verified
 programs or replay uncertain enrollment, imports or Cloud writes.
 
-Opening Presenter is not proof that a stopped controller has powered on. That
-returning-runtime gate remains explicitly separate. **Stop** preserves a Test;
+Opening Presenter does not automatically power on a stopped controller.
+Presenter now exposes Start controller for the retained Test/backends; ordinary
+Stop/Start passed the visible UI campaign. Broader interruption/recovery gates
+remain separate. **Stop** preserves a Test;
 **Finish demo** is the separately confirmed irreversible retirement operation.
 Setup itself never performs Finish. At the end of qualification, gracefully
 stop owned consumers and verify exit, keeping shared Docker Engine and durable

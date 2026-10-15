@@ -81,17 +81,15 @@ as the generic workload-authorization model.
 
 ## Current Implementation Baseline
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Prepared and delivered VDP family | Common current runtime is packaged as profile-bound V1/V2/V3 (7/15/23 telemetry paths); V3 adds only typed advisory. Prepared unsigned content is signed per selected OEM environment. KAC stays outside FOTA. Selected-Unit mTLS and real KUKSA processing are implemented. |
-| Evidence and remaining obligations | .39 retained VDP117/V3 recovers through ignition and works offline. Earlier serial families are dated evidence, not full .39 serial acceptance. Historical109 crash cause remains unresolved/not reproduced. |
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
 ## Testability Boundary
 
@@ -435,12 +433,12 @@ signing, Cloud upload, VM restart, provisioning or Unit mutation.
 
 ## Open Design and Qualification Gates
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented profiles and trust | Common-runtime V1/V2/V3 packages, selected-Unit mTLS, real KUKSA provider and typed V3 return channel are implemented. The server-authenticated-only prototype is historical. |
-| Current-image qualification | Kit028/.41 scripted V1→V2→V3 progression passed; installed native profile labels were observed for VDP136/V3. Complete native, Safe Stop/update/recovery negative and broader peer/dual-Unit matrices remain open. VDP-TIMEOUT-01 is deferred. |
+| Current-image qualification | Current serial V1/V2/V3 Safe Stop FOTA and exact visible installed-profile checks passed in the M1 API/UI campaign. Broader Safe Stop/update/recovery negatives and peer/dual-Unit matrices remain separate. VDP-TIMEOUT-01 is deferred. |
 | Diagnostics | VDP109 SIGSEGV has no captured cause; later common-runtime checks did not reproduce it. Temporary core capture is removed, not silently left enabled. |
 | Native admission | Service-to-FOTA pre-transfer dependency admission remains deferred; present this separately from working IAM/KUKSA Service permissions. |
 

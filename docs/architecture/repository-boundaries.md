@@ -3,19 +3,22 @@
 
 # Architecture and Repository Ownership
 
-The current end-to-end architecture review candidate, including shared platform FOTA,
-independent SOTA lifecycles for two peer OEM functional teams, bidirectional
-KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
-boundaries, is proposed in
-[High-Level Architecture 1.8](high-level-architecture.md). High-Level
-Architecture 1.4 remains the accepted baseline until the complete class-C
-cascade is reviewed.
+The accepted boundary is [High-Level Architecture 1.8](high-level-architecture.md),
+with later Test-only, native-input, signing and lifecycle amendments. HLA 1.4
+is not the current baseline. The [implemented architecture](current-implementation.md)
+and [current release evidence](../qualification/current-baseline.md) distinguish
+expanded design obligations from the installed first-demo scope.
+
+The current lab uses one OEM and one associated SP for two independent service
+teams. Profile/team names below do not require two separate SP accounts.
+The ARM64 virtual controller is created from a clean Linux/AosEdge Factory
+image; a separate Linux Builder produces that image.
 
 ## Runtime Boundary
 
 ```mermaid
 flowchart LR
-    subgraph macOS["macOS development host"]
+    subgraph macOS["Mac lab host"]
         CARLA["CARLA simulator"]
         VISS["carla-ego-runtime / VISS 3.1"]
         CARLA --> VISS
@@ -25,7 +28,7 @@ flowchart LR
         IAM["Aos Service Manager / IAM<br/>active Service authority"]
         PROVIDER["Vehicle Data Platform Component<br/>provider / OEM FOTA"]
         HELPER["Platform-controlled Service credential boundary<br/>current-release removable helper"]
-        KUKSA["unmodified Eclipse KUKSA Databroker"]
+        KUKSA["Eclipse KUKSA Databroker"]
         SERVICE1["Brake Health service / SOTA 1"]
         SERVICE2["Tire Health service / SOTA 2"]
         PROVIDER -->|"kuksa.val.v1"| KUKSA
@@ -44,6 +47,10 @@ CARLA and VISS run on macOS. The provider, KUKSA Databroker, Service Manager
 runtime, SELinux boundary, and independently deployed functional services run
 in AosVM. The provider is not part of CARLA and neither service connects to
 VISS directly.
+
+The retained controller image includes documented KUKSA compatibility and
+source-timestamp corrections. The diagram specifies ownership/data flow,
+not byte identity with unmodified upstream binaries.
 
 In a production vehicle, CAN, SOME/IP, DDS, or another OEM provider replaces
 the simulation-specific VISS provider. KUKSA and the versioned VSS contract

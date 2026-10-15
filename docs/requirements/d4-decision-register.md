@@ -16,8 +16,9 @@
 
 ## Current implementation view — 24 September 2026
 
-The current candidate is **Kit028 / Setup042 / Factory .41** (7 October 2026).
-The historical heading is retained for incoming links.
+Current package selection and qualification are owned by the
+[current baseline](../qualification/current-baseline.md), reviewed 15 October 2026.
+The historical heading remains only for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review
@@ -31,7 +32,8 @@ The later [ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-an
 removes operator Park/Resume. Its subsequent accepted storage correction and
 24 September ignition amendment supersede the original no-patch/restart-loss
 statement. Factory41/Kit028 has installed scripted retention/recovery evidence,
-not full native acceptance or P8.
+not blanket acceptance of every native/negative case or P8; current scoped
+API/UI/native Setup evidence is linked from the current baseline.
 The [protocol map](../../contracts/implementation-status.md) distinguishes
 implemented protocols, amended legacy profiles and outstanding test/design scope.
 
@@ -39,7 +41,7 @@ implemented protocols, amended legacy profiles and outstanding test/design scope
 
 [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
 is accepted. The [runtime-input contract](../architecture/demo-control-service-inputs.md)
-and [migration sequence](../planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
+and [migration sequence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
 are the current replacement mapping for these parts of the earlier decisions:
 
 | Earlier obligation | Accepted replacement |
@@ -402,7 +404,7 @@ the requested mode or newly requested context.
 ### D4-005 Decision Record — Exclusive Live-Source Assignment
 
 - Local CLI demo amendment, accepted by the operator on 2026-09-05:
-  [defer per-Unit VISS mTLS](../architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
+  [defer per-Unit VISS mTLS](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
   Both logical demo VM roles may use the explicit server-authenticated local
   profile. CARLA does not identify Cloud Units; the Orchestrator must still
   enforce zero-or-one connected VM and confirmed detach/reset. The strict
@@ -2799,7 +2801,7 @@ signing, Cloud/Unit/VM mutation or deployment.
 
 D4-021.1 fixes one Git-excluded qualified local Factory Image at
 `.local/factory/oem-demo-factory.qcow2` (or format-preserving .img for raw,
-per the 2026-09-05 [local creation amendment](../architecture/demo-control.md#agreed-cli-surface))
+per the 2026-09-05 [local creation amendment](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#agreed-cli-surface))
 with its manifest, mode `0444`, no
 symlink/hard-link relationship to mutable build output and digest verification
 at M0 and R0. M0 creates exactly two mode-`0600` copy-on-write overlays at

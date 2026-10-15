@@ -7,7 +7,7 @@
 - Version: 1.0
 - Prepared: 2026-09-26
 - Owner: Demo Solution Team
-- Parent: [distribution Stage 2](../../docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
+- Parent: [distribution Stage 2](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
 
 ## Cloud worker selection
 

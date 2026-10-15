@@ -3,6 +3,19 @@
 
 # M1 cleanup and installed demo testing on 14 October 2026
 
+## Current outcome — 15 October 2026
+
+The [corrected Production runtime campaign](#corrected-immutable-candidate-complete-production-api-and-visible-ui-pass)
+passed 118 API and 42 visible browser UI checks with required native driving
+input. A [separate native Setup profile](#native-setup-with-no-ready-certificates-pass-on-15-october)
+then passed certificate issuance/connection for existing accounts.
+The [release report](release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
+records subsequent main/tag/public-delivery completion. Earlier failure and
+pending-status statements below belong to their original candidate/checkpoint;
+they are not today's selected-release status and are not erased by later passes.
+
+## Chronological record — beginning 14 October
+
 The M1 was cleaned and the unchanged engineering DMG was installed again.
 All 118 API steps passed. The continuous visible UI campaign passed 40 stages
 and failed its restart preservation check. A separate diagnostic restart and

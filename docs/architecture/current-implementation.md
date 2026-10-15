@@ -56,8 +56,9 @@ The first-use topology is one OEM and one associated SP with independent Brake
 and Tire identities. Cloud reads and backend-image preparation are explicit
 steps. Open demo opens Presenter; it does not create or start a controller.
 Integrated Install / Connect / Open is implemented; native issuance/connection
-with existing accounts passed on M1 Production. New-account registration and
-the full returning-stopped-instance experience are not closed by that proof.
+with existing accounts passed on M1 Production. Ordinary retained-Test
+Stop/Start is implemented and passed the separate visible UI campaign.
+New-account registration and broader interruption/recovery cases remain separate.
 See the [native Setup contract](../../contracts/distribution-installation/native-setup.md).
 
 ## Runtime and authority
@@ -173,7 +174,7 @@ Load-sensitive readiness and VDP-TIMEOUT-01 remain explicitly deferred.
 
 The [current baseline](../qualification/current-baseline.md) and selected release
 report supply current acceptance boundaries. The
-[7 October audit register](../qualification/documentation-reconciliation-2026-10-07.md)
+[7 October audit register](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/documentation-reconciliation-2026-10-07.md)
 retains that review's dated findings. The
 [protocol map](../../contracts/implementation-status.md) records legacy
 machine-readable packages that need a separately versioned synchronization;

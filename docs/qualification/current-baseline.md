@@ -3,147 +3,77 @@
 
 # Current demo baseline
 
-- Status: engineering preview; current selection and exact profiles are linked below
-- Version: 2.1
+- Status: engineering preview; scoped qualification, not general-public release acceptance
+- Version: 3.0
 - Prepared: 2026-10-15
 - Owner: SDV Lab integration
-- Current source checkpoint: use the selected operator version in the launcher catalog
 
-The current operator selection is owned by the
-[launcher catalog](../../workspace/launcher-catalog.json), not this historical
-table. See the [release campaign report](release-automation-2026-10-13.md)
-for public delivery and [production M1 results](m1-clean-install-e2e-2026-10-14.md)
-for the exact 118-step API, 42-stage visible UI and new-certificate native Setup
-profiles. Their scope and unchanged-runtime reuse are explicit.
+## Current selection
 
-The historical installed baseline retained below is **Kit028 / Setup042 / Factory .41**.
-`demo-v1.1 / Factory .39` remains a historical return point, not the current
-installer. HLA 1.8 is a document version, not a demo release number.
-This page reconciles retained evidence; it is not a fresh observation of a
-running Mac, VM or Cloud Unit.
+The [launcher catalog](../../workspace/launcher-catalog.json) and its immutable
+operator descriptor select option A's exact DMG, identity, download and status.
+The [developer selection](../../workspace/current-developer-build.json) separately
+binds option B's producer plan. Product version, functional profile, Cloud build
+number and document version are different namespaces.
 
-The later source-Factory `1.2.0-rc.1` build candidate has separate media and
-build/delivery evidence, not inherited installed qualification. Use
-[release selection](../getting-started/release-status.md) to choose between
-them. This page retains the exact Kit028 installed evidence and original hashes.
+The [release report](release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
+records the published successor, main/tag identities and anonymous M1 consumer.
+The [M1 report](m1-clean-install-e2e-2026-10-14.md#corrected-immutable-candidate-complete-production-api-and-visible-ui-pass)
+records exact runtime qualification; its
+[native Setup continuation](m1-clean-install-e2e-2026-10-14.md#native-setup-with-no-ready-certificates-pass-on-15-october)
+binds the corrected Setup separately. Documentation changes do not advance
+artifact pins or inherit another candidate's passes.
+
+## Qualified current profiles
+
+| Profile | Recorded result and scope |
+| --- | --- |
+| Installed runtime API | 118/118 checks passed on M1 internal storage using Production Aos Cloud and a Test vehicle |
+| Visible product UI | 42/42 browser stages and required actual native driving input passed, with Presenter/CARLA/Driving Control visible |
+| Native Setup without ready certificates | Empty fields, fresh M1-generated OEM/SP keys, issuance using existing accounts, Production connection and Presenter opening passed; unchanged installation-helper evidence was reused |
+| Public option A consumer | Anonymous download, complete checksum/signature, Setup handoff, installed reuse/open and cleanup passed; reused the installed certificate instance, not a second fresh enrollment |
+
+Runtime proofs include serial VDP V1/V2/V3 Safe Stop FOTA, Brake V1/V2/V3,
+Tire V1, real products/advisories, moving QM updates, independent Reset/history,
+five-minute offline local operation and delivery recovery, ignition,
+Stop/Start preservation, layout and final closure. Earlier failures remain
+explicit in the report; a later pass does not erase their original receipts.
+
+## Implemented system and ordinary return
+
+The [architecture map](../architecture/current-implementation.md) and
+[protocol status](../../contracts/implementation-status.md) describe the real
+platform, simulated vehicle and accepted amendments. The Factory image is a
+clean ARM64 Linux/AosEdge base; VDP and services are delivered afterward.
+Aos Cloud environment selection is independent of Test/Production vehicle roles.
+
+Open SDV Lab opens Presenter. For a stopped retained Test, use **Start
+controller**, then follow simulator/connection readiness. **Stop demo and keep
+data** preserves its identity, installed software, VM disk, models and history.
+Closing Presenter alone keeps the demo running. **Delete Test & start over**
+is a separate destructive operation. Shared Docker Engine is not a demo owner.
+
+## Remaining acceptance limits
+
+- Apple Development signing is not Developer ID/notarized general-public distribution.
+- New-company/account registration and every clean-macOS consent path are not qualified.
+- Target-host installation interruption/repair/update/removal and broader recovery/negative matrices remain candidate-specific gates; ordinary tested Stop/Start is not host sleep/wake.
+- Full-source fresh Builder/CARLA/Unreal closure and R4 fresh-host developer reproduction remain separate.
+- Formal stimulus/model calibration, fixed Tire CPU-load isolation, expanded dual-role/provider proof and a full acceptance dossier are not supplied by sampled functional results.
+- Legacy executable-contract drift remains explicitly mapped, not silently re-versioned.
+- Cold externalOFF ignition, nonempty-outbox power loss and laptop sleep/wake remain unqualified.
+- Load-sensitive readiness and VDP-TIMEOUT-01 remain deferred.
+- The short reported false-Offline fluctuation was not reproduced/classified by bounded observation; a passing campaign alone is not its root-cause analysis.
 
 <a id="immutable-factory"></a>
-
-## Historical immutable Factory media
-
-| Item | Historical Kit028 candidate |
-| --- | --- |
-| Complete media | `AosEdge-SDV-Lab-Kit028-Setup042.dmg` |
-| Media size | 14,150,764,550 bytes |
-| Media SHA-256 | `27c4dbcac02c5cefcd3f20c75d7e51e3d54ec9f631bbc48e8d58839ea8e67236` |
-| Runtime kit manifest SHA-256 | `1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef` |
-| Factory | `6.1.1-maninblack.41/main-qemuarm64.img` |
-| Factory SHA-256 | `361c187374469f4a97b3b9c74cb755ce432bc5287fb19ccd2f6bfb9c3eb46769` |
-| Setup signing | Local Apple Development; not notarized |
-| Installed topology | One Test, one OEM, one associated SP; independent Brake and Tire services |
-
-The [source return point](kit028-setup042-source-publication-2026-10-05.md)
-and [source lock](../../workspace/checkpoints/installer-kit-028-source-lock.json)
-bind the cross-repository commits and original build receipts. The
-[Factory checkpoint](../../workspace/checkpoints/factory-41-candidate.json)
-owns image provenance. A source tag restores source, not private credentials,
-images, release ledgers or provisioned state. Artifact receipts remain immutable.
-
-## Qualified behavior and later corrections
-
-The [candidate checkpoint](../../workspace/checkpoints/installer-kit-028-candidate.json)
-and [M1 journey](m1-live-journey-2026-10-03.md) record **98 passed installed
-scripted steps on 4 October**. They cover the installed product owners, not
-a claim that all those steps were performed through the native UI.
-
-- Sequential VDP releases 134/135/136 (V1/V2/V3), Brake 112/113/114
-  (V1/V2/V3), then Tire 60 (V1), with real products and advisory observations.
-- Independent Reset Driver Advisory with retained history, and Return to road.
-- External OFF for 302.807 seconds, continued local operation, and queued
-  delivery after ON.
-- Same-identity ignition and new products from both services after boot.
-- Normal shutdown with no owned processes/listeners; Docker Engine preserved.
-- Partial native proof: Open demo, correct three-window placement, Connect
-  into stationary Manual, both backend inputs receiving, retained advisories
-  and observed Autopilot movement. This is not a full native journey.
-
-These allocated release numbers identify that run, not inputs to reuse in a
-new run. Demo Control allocates new numbers and publishes one version at a
-time. Historical candidate successes are not carried forward automatically.
-
-Factory .41 includes retained AosCore corrections and source-timestamp
-preservation in KUKSA VAL v1. Current service sources include input/credential
-renewal continuity and Tire persistence recovery. Tire packaging requests
-600 DMIPS through native signed metadata; the fixed-load isolation experiment
-is still not implemented. See [implemented architecture](../architecture/current-implementation.md)
-and [protocol status](../../contracts/implementation-status.md).
-
 <a id="current-qualification-limitation"></a>
 
-## Historical Kit028 qualification limitation
+## Historical checkpoints
 
-**Full E2E: NOT_COMPLETE for Kit028.** Four gates remained open for that
-specific candidate; neither its missing gates nor its passes transfer to a
-later package:
-
-1. Moving-SOTA qualification on this candidate.
-2. Native secure-token field entry (API/worker enrollment is not that UI proof).
-3. Complete native operator journey.
-4. Installation interruption and repair on the target host.
-
-Opening Presenter does not power on a previously stopped retained controller.
-The 4 October native review needed separately recorded engineering restoration;
-there is no native Power on action in the current Studio lifecycle. Do not
-describe that restoration as native first-use or cold-resume acceptance.
-
-## Continuing exclusions
-
-Load-sensitive brief readiness transitions and **VDP-TIMEOUT-01** are explicitly
-deferred, not repaired by changing freshness limits. **D4-023** fixed CPU-load
-worker/control, complete calibration/negative matrices, nonempty-outbox power
-loss and broader production/dual-provider qualification remain separate.
-Host laptop sleep/wake and external-SSD tests are excluded from this M1
-internal-disk campaign; controller ignition does not qualify laptop sleep/wake.
-
-## Current boundaries
-
-The complete DMG contains Setup and its matching Runtime Kit. It is an
-engineering preview, not a notarized public
-release. The [installation guide](../getting-started/installed-preview-cloud-first-use.md)
-describes actual buttons and prerequisites. Operators do not compile Unreal
-or CARLA. Developers use the [source reproduction guide](../getting-started/reproduce-demo.md).
-
-The last recorded M1 disposition on 4 October is **ready for manual installation**:
-the owned Test was retired through normal lifecycle cleanup, old installations
-were removed, and the verified DMG was delivered without launching Setup.
-The earlier successful Test is therefore not still running. Credentials,
-compact evidence and development rollback were preserved. This dated record
-does not assert the machine's state today.
-
-This documentation revision changes no runtime, Cloud object, published release,
-artifact, security policy or qualification verdict. Video material is excluded.
-
-## Historical source audit — 23 September
-
-The [demo-v1.0 return point](demo-v1.0-return-point.md) and
-[publication/cleanup receipt](demo-v1.0-publication-cleanup-2026-09-23.md)
-retain that source and storage history. The later
-[demo-v1.1 return point](demo-v1.1-return-point.md) retains Factory .39,
-its [ignition](factory-39-ignition-2026-09-24.md),
-[offline](factory-39-offline-2026-09-24.md) and
-[cleanup](factory-39-cleanup-2026-09-24.md) evidence. Those inventory statements
-apply to their dates, not to the current kit.
-
-## Dated operational summary — 20 September
-
-See the [timing/UI E2E record](presenter-ui-timing-e2e-2026-09-20.md) and
-[UI amendments checkpoint](ui-amendments-checkpoint-cleanup-2026-09-20.md).
-They preserve observations and exclusions without becoming current setup steps.
-
-## Historical qualification checkpoints through 19 September
-
-The [qualification index](README.md) retains dated reports, including
-[Factory .36 E2E](factory-36-e2e-2026-09-19.md). Old `Online`, `current`,
-`next` and `not started` statements are checkpoint-local. Use this page for
-the selected candidate and the [active distribution plan](../planning/active/installable-distribution-and-reproducibility.md)
-for remaining work.
+Kit028 / Setup042, demo-v1.1 / Factory39 and their then-open gates do not
+select the current package. The immutable Factory41 provenance remains in its
+[checkpoint](../../workspace/checkpoints/factory-41-candidate.json).
+The [original baseline](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/current-baseline.md)
+preserves the earlier hashes and limits. Other retired documents are listed in
+the [retirement inventory](../../workspace/checkpoints/documentation-retirement-20261015.json).
+This page is a source/evidence summary, not a fresh observation of running hosts.

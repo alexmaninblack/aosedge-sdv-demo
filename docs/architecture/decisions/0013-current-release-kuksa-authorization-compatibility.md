@@ -7,7 +7,7 @@
 - Date: 2026-08-22
 - Accepted: 2026-08-26
 - Change class: C — authority, trust boundary, component ownership and interfaces
-- Supersedes: [ADR 0010](0010-aos-kuksa-credential-broker.md)
+- Supersedes: [ADR 0010](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Security input: [ADR 0012](0012-authorize-running-workloads-not-software-artifacts.md)
 
 ## Context
@@ -211,8 +211,10 @@ and does not invent a provisional native API.
 
 ## Remaining Implementation Gates
 
-This accepted ADR does not authorize implementation. Before implementation,
-the component package and qualification plan must still provide:
+The helper and Factory integration are implemented. The
+[current implementation map](../current-implementation.md) records owning
+source and scoped native permission/renewal/offline proof. This ADR alone
+grants no deployment authority. Full acceptance must retain:
 
 - executable evidence that the Provider path remains fixed OEM-trusted
   platform integration and cannot be obtained through a Service JWT.

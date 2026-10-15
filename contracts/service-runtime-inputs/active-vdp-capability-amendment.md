@@ -7,7 +7,7 @@ Accepted: 18 September 2026, decision 2A, subsequently corrected by the
 operator-approved Cloud-first approach on the same date. A mandatory new guest
 evidence file/timer is superseded; compatibility outcomes remain required.
 Implementation and any necessary executable schema revision follow the
-[work packet](../../docs/planning/active/work-packets/versioned-service-observability.md).
+[work packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
 
 ## P2 boundary clarification — option A accepted, 18 September 2026
 
@@ -26,7 +26,7 @@ cannot identify the active profile, the operator selected A:
   Missing initial inputs must be handled by the authorized service recovery
   work, not by fabricated metadata, widened trust or a Cloud dependency.
 
-See the [proof and decision](../../docs/qualification/service-renewal-and-local-capability-2026-09-18.md).
+See the [proof and decision](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/service-renewal-and-local-capability-2026-09-18.md).
 This clarification selects the mechanism; it does not claim early-install,
 FOTA or reconnect implementation/qualification is complete.
 

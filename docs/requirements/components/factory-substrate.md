@@ -118,22 +118,17 @@ required when manufacturing a fresh Unit from the accepted Factory Image.
 
 ## Current Implementation Baseline
 
-The original unmodified-KUKSA/.21 descriptions above retain their design-review
-scope. Factory .41 uses the documented scope-path and source-timestamp patches;
-it is not byte-identical upstream KUKSA. No service gains permission authority
-or owns these Factory corrections.
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Current Factory41 substrate | Mainline-derived AosCore with retained corrections, KUKSA/KAC, empty provider slot, Safe Stop runtime, private native resource projection and boot recovery integration are built. The immutable digest is in the Factory41 checkpoint; retained Production remains separate. |
-| Evidence and remaining obligations | .39 build/smoke, ignition and offline evidence exist; manifest remains BUILT_NOT_LIVE_QUALIFIED. Same-source reproducibility/full P8 are not inferred. |
+Factory .41 retains documented KUKSA scope/source-timestamp corrections; it is not byte-identical unmodified upstream KUKSA. The immutable base is distinct from later VDP FOTA and functional SOTA deliveries.
 
 ## Testability Boundary
 
@@ -529,7 +524,7 @@ build tree is not acceptance evidence.
 
 ## Open Issues
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

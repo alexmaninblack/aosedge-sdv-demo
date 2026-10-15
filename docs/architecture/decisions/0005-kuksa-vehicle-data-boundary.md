@@ -82,7 +82,7 @@ The qualification described by this ADR used separately issued, path-scoped
 KUKSA JWTs because the baseline had no Aos IAM integration. That remains valid
 historical evidence, but it is not the target architecture.
 
-[ADR 0010](0010-aos-kuksa-credential-broker.md) superseded the former AOS-5
+[ADR 0010](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md) superseded the former AOS-5
 standalone Authorization Adapter plan for the 1.3/1.4 architecture. Proposed
 [ADR 0013](0013-current-release-kuksa-authorization-compatibility.md) now
 corrects that later ownership without changing this ADR's CARLA/VISS/KUKSA
@@ -138,5 +138,5 @@ The lifecycle-based repository decision and migration gate are defined by
 - [KUKSA authorization model at the pinned Databroker revision](https://github.com/eclipse-kuksa/kuksa-databroker/blob/30e5c13abc496d0b39aaa6c25acebb088b9902e3/doc/authorization.md)
 - [AosEdge service configuration](https://docs.aosedge.tech/docs/reference/file-formats/service-config)
 - [ADR 0006: lifecycle-based repository ownership](0006-lifecycle-based-repository-ownership.md)
-- [ADR 0010: Aos–KUKSA Credential Broker](0010-aos-kuksa-credential-broker.md)
+- [ADR 0010: Aos–KUKSA Credential Broker](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - [ADR 0013: Current-release KUKSA authorization compatibility](0013-current-release-kuksa-authorization-compatibility.md)

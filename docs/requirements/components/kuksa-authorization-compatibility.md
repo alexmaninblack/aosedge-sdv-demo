@@ -22,17 +22,15 @@ Implementation-status annotations retained from the original D3 review are histo
 
 ## Current Implementation Baseline
 
-Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
-See [current architecture/traceability](../../architecture/current-implementation.md),
-[protocol status](../../../contracts/implementation-status.md) and
-[qualification limits](../../qualification/current-baseline.md).
-These are implementation/proof states, not changes to stable requirement IDs
-or blanket acceptance of every requirement in this package.
-
-| Boundary | Current state |
-| --- | --- |
-| Factory-installed removable compatibility helper | The platform KAC helper implements fixed-resource Unix exchange, native IAM permission lookup, protected Unit signer/public verifier, private service token sessions and local renewal. No service-selected claims or external Cloud renewal dependency. |
-| Evidence and remaining obligations | Real local subscriptions/renewal and .39 OFF/ON passed. Cold externalOFF authorization is not qualified; native replacement and production HSM/security claims remain outside current proof. |
+Reviewed 15 October 2026 against the selected engineering preview.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence; the
+[cross-package implementation matrix](../../architecture/current-implementation.md)
+identifies owning code and proof, and the
+[protocol map](../../../contracts/implementation-status.md) records amendments
+and executable-profile drift. These are the current status authorities, not
+the original D3 allocation annotations below. Requirements, stable IDs and
+unfulfilled verification obligations are unchanged.
 
 ## Native service input amendment — 2026-09-11
 
@@ -44,7 +42,7 @@ the referenced legacy records and all unrelated requirements. Use the
 [current input contract](../../architecture/demo-control-service-inputs.md);
 application version comes from the package, not public Unit metadata.
 Implementation and live gates remain in the
-[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose and Boundary
 
@@ -174,7 +172,7 @@ D4-010.1 lifecycle for the current compatibility helper:
 
 ## Accepted Filesystem, SELinux and PKCS#11 Boundary
 
-[`IMP-03-KAC-006`](../../planning/active/work-packets/p0-platform-readiness.md#imp-03-kac-006)
+[`IMP-03-KAC-006`](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/p0-platform-readiness.md#imp-03-kac-006)
 freezes the smallest current-demo integration boundary:
 
 - PKCS#11 module `kuksa-jwt` uses RSA-2048, one self-signed key and exact
@@ -498,12 +496,12 @@ integration and end-to-end obligations.
 
 ## Open D4 Gates
 
-Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Design and implementation | All accepted D4-027 decisions have source/Factory implementations: fixed-resource IAM lookup, strict wire validation, per-Unit trust, private service tokens and bounded renewal. It is not an unbuilt future package. |
-| Current proof | Real native permissions and local renewal work in the Kit028/.41 chain, including externalOFF; original source timestamps are preserved rather than refreshed on cached values. This is not blanket proof of every malformed permission, clock, overload or identity-rotation case. |
+| Current proof | Real native permissions and local renewal work in the current installed runtime, including externalOFF; original source timestamps are preserved rather than refreshed on cached values. This is not blanket proof of every malformed permission, clock, overload or identity-rotation case. |
 | Remaining qualification | Complete the negative/time/overload/resource and full repeatability matrices. Native permission-key 256-character build bound is distinct from the larger protocol path bound; do not claim every syntactically valid path is supported. |
 | Provider scope | Provider authority stays in the separate trusted OEM one-shot/systemd credential path. Dynamic Provider IAM and malicious-Provider containment remain outside the accepted first-demo claim. |
 

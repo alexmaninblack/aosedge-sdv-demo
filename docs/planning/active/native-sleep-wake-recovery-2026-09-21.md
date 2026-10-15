@@ -5,9 +5,8 @@
 
 - Date: 21 September 2026
 - Status: Accepted planning item; automatic recovery is **not implemented or qualified**.
-- Immediate authorization: restore the current local simulation and Driving Control;
-  preserve the Test VM, Cloud identity, installed releases and service data. Then
-  return to the separately maintained private video project.
+- Current scope: deferred accepted planning only. Historical one-session restoration
+  authority is not a standing permission to change a live environment.
 
 ## Observed failure
 

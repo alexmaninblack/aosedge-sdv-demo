@@ -46,8 +46,8 @@ The current Factory's documented scope-path/source-timestamp compatibility
 patches are an explicit as-built exception, not service-owned authority.
 See the [implementation map](../architecture/current-implementation.md).
 
-The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
-7 October 2026. The historical heading is retained for incoming links.
+Current package selection and qualification are owned by the launcher catalog and
+[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review

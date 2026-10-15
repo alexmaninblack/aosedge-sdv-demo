@@ -13,7 +13,7 @@ specified here still performs none of those later actions.
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team / integration distribution tooling
 - Decision: [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
-- Parent: [Stage 3](../../docs/planning/active/installable-distribution-and-reproducibility.md#stage-3-implement-installation-and-first-use-setup)
+- Parent: [Stage 3](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-3-implement-installation-and-first-use-setup)
 
 ## Authority and trust
 
@@ -105,5 +105,5 @@ Actual Kit 004 transfer/installation proof is required after deterministic tests
 using an exclusive disposable SSD store and preserving all live owners. Keep
 compact receipts and distinguish clone allocation from logical byte count.
 
-The [27 September qualification receipt](../../docs/qualification/offline-installation-2026-09-27.md)
+The [27 September qualification receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/offline-installation-2026-09-27.md)
 records the passed first-install/repeat proof and explicit remaining gates.
