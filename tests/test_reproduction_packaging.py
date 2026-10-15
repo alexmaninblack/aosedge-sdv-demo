@@ -31,6 +31,8 @@ class PreparationTests(StorageFixture, unittest.TestCase):
                    return_value=(self.base, [], {'sha256': 'c'*64}, self.factory))
         self.stage = self.patch('reproduction.packaging.stage_inputs')
         self.patch('reproduction.packaging.runtime_object')
+        self.runtime_pin = {'revision': 'f'*40, 'tree': '1'*40, 'modules': {}}
+        self.patch('reproduction.packaging.reviewed_runtime_pin', return_value=self.runtime_pin)
         self.command = self.patch('reproduction.packaging.run_command', side_effect=self.owner)
 
     def owner(self, args, **kwargs):
@@ -55,6 +57,7 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         self.fixture()
         key = self.build()
         self.assertEqual(self.state['builds'][key]['inputs']['platform'], self.state['sources']['vehicle-platform'])
+        self.assertEqual(self.state['builds'][key]['inputs']['runtimePin'], self.runtime_pin)
         self.assertEqual(self.build(), key)
         self.assertEqual(self.stage.call_count, 1)
         del self.state['builds'][key]

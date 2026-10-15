@@ -75,6 +75,10 @@ enum SetupFault: Error { case protocolFailure }
 
 enum CloudFeedbackTarget { case pair, enrollment, subjects }
 
+func enrollmentCloudDomain(_ selectedEnvironment: Int) -> String {
+    selectedEnvironment == 1 ? "aoscloud.io" : "aws-stage.epmp-aos.projects.epam.com"
+}
+
 func cloudFeedbackTarget(_ action: String) -> CloudFeedbackTarget? {
     if action.hasPrefix("cloud-enrollment-") { return .enrollment }
     if action.hasPrefix("cloud-subjects-") { return .subjects }
@@ -496,7 +500,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         guard !busy else { return }
         generation = UUID(); checked = nil; installed = false; cloudObserved = false
         enrollmentObservation = nil; enrollmentToken.stringValue = ""; enrollmentSPToken.stringValue = ""; enrollmentReconciled.state = .off
-        enrollmentDomain.stringValue = enrollmentEnvironment.indexOfSelectedItem == 1 ? "aoscloud.io" : "aws-stage.epmp-aos.projects.epam.com"
+        enrollmentDomain.stringValue = enrollmentCloudDomain(enrollmentEnvironment.indexOfSelectedItem)
         progress.doubleValue = 0
         status.stringValue = "Check your selected folders before installing."
         status.textColor = .labelColor
@@ -641,7 +645,9 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
 
     @objc private func resetEnrollment() {
-        enrollmentObservation = nil; enrollmentToken.stringValue = ""; enrollmentReconciled.state = .off
+        enrollmentObservation = nil; enrollmentToken.stringValue = ""; enrollmentSPToken.stringValue = ""
+        enrollmentReconciled.state = .off
+        enrollmentDomain.stringValue = enrollmentCloudDomain(enrollmentEnvironment.indexOfSelectedItem)
         enrollmentDetail.stringValue = "Inspect the saved state for this role and domain. A token is never stored or retried automatically."
         refresh()
     }
@@ -760,7 +766,7 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if launchAction || backendAction || action == "setup-status" || action == "install-launcher" {
             request = ["action": action, "state": state.stringValue]
         } else if action == "cloud-enrollment-pair" {
-            request = ["action": action, "state": state.stringValue, "domain": enrollmentDomain.stringValue,
+            request = ["action": action, "state": state.stringValue, "domain": enrollmentCloudDomain(enrollmentEnvironment.indexOfSelectedItem),
                        "oemToken": enrollmentToken.stringValue, "spToken": enrollmentSPToken.stringValue]
         } else if enrollmentAction {
             request = ["action": action, "state": state.stringValue, "domain": enrollmentDomain.stringValue, "role": enrollmentRole.indexOfSelectedItem == 0 ? "oem" : "sp"]
@@ -1072,6 +1078,8 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
 }
 
 func selfTest() throws {
+    precondition(enrollmentCloudDomain(0) == "aws-stage.epmp-aos.projects.epam.com")
+    precondition(enrollmentCloudDomain(1) == "aoscloud.io")
     let mediaApp = URL(fileURLWithPath: "/Volumes/SDV Lab/AosEdge SDV Lab Setup.app")
     var discoveries: [String] = []
     let kit = bundledKitURL(app: mediaApp, exists: { discoveries.append($0.path); return true })

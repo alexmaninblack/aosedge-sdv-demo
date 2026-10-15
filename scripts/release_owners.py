@@ -143,7 +143,9 @@ class Owners:
         sys.path.insert(0,str(ROOT/'scripts/qualification'))
         import remote_harness as h
         transport, _ = h.configuration(Path(self.config['remoteConfig']))
-        facts = h.probe(transport)
+        from release_automation import read
+        journey=read(Path(self.config['operatorJourney']))
+        facts = h.probe(transport,cloud_domain=journey.get('cloudDomain','aws-stage.epmp-aos.projects.epam.com'))
         require(facts['internal'] == 'true' and facts['stagingHttp'] in (200,301,302,303,307,308),
                 'M1_INTERNAL_STORAGE_OR_STAGING_UNAVAILABLE')
         return {k:facts[k] for k in ('arch','os','console','freeKiB','demoProcesses','busyPorts')}
@@ -264,10 +266,33 @@ class Owners:
         require(pin == selected['sourcePin'], 'QUALIFICATION_SCENARIO_CHANGED')
         now=self.remote()
         require(now['demoProcesses'] == 0 and now['busyPorts'] == 0, 'M1_NOT_QUIESCENT')
+        first_use=self.first_use()
         return dict(outcome='PASS', evidence='REUSED_EXACT_PRODUCT_AND_SCENARIO', browserStages=42,
-            candidate=campaign['candidate'], test=campaign['test'], currentOwnersClosed=True,
+            candidate=campaign['candidate'], test=None if first_use else campaign['test'],
+            qualifiedTest=campaign['test'], currentOwnersClosed=True,
             evidenceDigests={k:sha(Path(selected[k])) for k in ('campaign','browser','closure')},
-            firstUse='NOT_RUN', fullE2E='NOT_COMPLETE')
+            firstUse='PASS' if first_use else 'NOT_RUN', firstUseEvidence=first_use,
+            fullE2E='NOT_COMPLETE')
+
+    def first_use(self):
+        path=self.config['evidence'].get('firstUse')
+        if not path:return None
+        value=metadata(path)
+        require(value.get('outcome')=='PASS' and value.get('code')=='FIRST_USE_ACCEPTED'
+            and value.get('candidate')==self.config['candidate']['manifestSha256']
+            and value.get('tokensPersisted') is False and value.get('workingKeysCopied') is False,
+            'NATIVE_FIRST_USE_NOT_ACCEPTED')
+        stages={r['stage']:r for r in value.get('stages',[]) if r.get('status')=='PASS'}
+        require(set(stages)=={'retire-and-park','native-launch','native-first-use','independent-effects','closure'},
+            'NATIVE_FIRST_USE_INCOMPLETE')
+        facts=stages['independent-effects']['facts'];closed=stages['closure']['facts']
+        require(facts.get('newOemAndSpCertificates') is True and facts.get('noTestCreated') is True
+            and facts.get('cloudStage')=='READY' and facts.get('presenterObserved') is True
+            and closed.get('ownedDemoProcesses')==0 and closed.get('ownedDemoListeners')==0
+            and closed.get('mediaDetached') is True,'NATIVE_FIRST_USE_EFFECTS_UNCONFIRMED')
+        source=stages['native-launch']['facts']['nativeSource']
+        require(source==sha(ROOT/'scripts/qualification/native/SetupFirstUse.swift'),'NATIVE_FIRST_USE_SOURCE_CHANGED')
+        return dict(sha256=sha(Path(path)),candidate=value['candidate'],domain=facts['domain'])
 
     def stage(self, name):
         methods={'freeze':self.freeze,'source-gates':self.source_gates,

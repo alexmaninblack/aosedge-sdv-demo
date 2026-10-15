@@ -109,10 +109,13 @@ class ReaderRouteTests(unittest.TestCase):
         self.assertEqual(self.check().returncode, 0)
 
     def test_release_identity_matches_descriptor(self):
-        descriptor = json.loads((ROOT / 'workspace/releases/1.2.0-rc.1-source-factory-delivery.json').read_text())
+        catalog = json.loads((ROOT / 'workspace/launcher-catalog.json').read_text())
+        descriptor = json.loads((ROOT / catalog['operatorDescriptor']).read_text())
         guide = (ROOT / 'docs/getting-started/release-status.md').read_text()
-        self.assertIn(descriptor['sha256'], guide)
-        self.assertIn(f"{descriptor['bytes']:,}", guide)
+        self.assertIn('launcher-catalog.json', guide)
+        self.assertEqual(descriptor['sha256'], catalog['operator']['sha256'])
+        self.assertEqual(descriptor['bytes'], catalog['operator']['bytes'])
+        self.assertEqual(descriptor['manifestSha256'], catalog['operator']['manifestSha256'])
         self.assertFalse(descriptor['notarized'])
 
     def test_build_guide_shell_syntax_and_flags(self):

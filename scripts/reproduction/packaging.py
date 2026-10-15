@@ -207,6 +207,23 @@ def runtime_object(storage, state, pin, acquire, progress):
             'Prepared platform revision changed')
 
 
+def reviewed_runtime_pin():
+    """The frozen producer owns runtime selection, not the retained archive.
+
+    Factory and VDP profile bases remain reusable binary inputs. Their older
+    manifest must not select the runtime Git object for a newer composition.
+    """
+    import sys
+    source = str(ROOT / 'apps/demo-orchestrator/src')
+    previous = list(sys.path)
+    try:
+        sys.path.insert(0, source)
+        from aosedge_demo_orchestrator.component_build import advisory_runtime_pin
+        return advisory_runtime_pin()
+    finally:
+        sys.path[:] = previous
+
+
 def preparation(storage, state, kit, python, progress, prepare_dependencies=False, factory_inputs=None):
     require(storage.profile == 'developer', 'Preparation currently requires developer profile')
     verify_sources(storage, state)
@@ -219,7 +236,7 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
     if source_selection:
         factory = source_selection[0]['factory']
         rows = [row for row in rows if not row['path'].startswith('factory/')]
-    runtime_pin = read_json(source / PREPARATION_MANIFEST)['runtimePin']
+    runtime_pin = reviewed_runtime_pin()
     runtime_object(storage, state, runtime_pin, prepare_dependencies, progress)
     python = Path(python).absolute()
     require(python.is_file(), 'Declared build Python is unavailable')

@@ -65,7 +65,7 @@ def candidate_source(owner, published):
     git(ROOT,'commit','-m','Prepare checked public Presenter preview for option A')
     intent['target']=git(ROOT,'rev-parse','HEAD');intent['launcherSha256']=sha(ROOT/'scripts/aosedge-sdv-lab.sh')
     atomic(intent_path,intent)
-    git(ROOT,'push','origin','HEAD:refs/heads/codex/release-automation')
+    git(ROOT,'push','origin','HEAD:refs/heads/codex/release-'+owner.config['version'])
     return intent
 
 
@@ -127,14 +127,15 @@ print(json.dumps(dict(displayAssertion='OWNED_TEMPORARY' if ACTION=='start' else
 def consumer_preflight(owner):
     """Read-only target check, usable before source gates or payload transfer."""
     h,j,transport,config=connection(owner)
-    test=read(Path(owner.config['evidence']['campaign']))['test']
+    first_use=owner.first_use()
+    test=None if first_use else read(Path(owner.config['evidence']['campaign']))['test']
     # Exact current desktop/read-only owner check before a costly consumer download.
     request=dict(config=config,kind='observe',args={},phase='observe',requestId=str(uuid4()),expectedRun=test)
     program=j.WORKER.read_text()+'\nREQUEST='+repr(request)+'''
 with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
  worker=Worker(REQUEST)
  with worker.imports():
-  worker.binding();closed=wait_for_exit(timeout=1);engine=docker_info()
+  worker.binding(allow_empty=REQUEST['expectedRun'] is None);closed=wait_for_exit(timeout=1);engine=docker_info()
   require(engine is not None and engine['runningContainers']==0,'IDLE_SHARED_DOCKER_REQUIRED')
   from aosedge_demo_orchestrator.host_runtime import selected
   runtime=selected(worker.state)

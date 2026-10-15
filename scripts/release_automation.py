@@ -96,10 +96,13 @@ def configuration(path):
             all(re.fullmatch('[a-f0-9]{64}', value['candidate'][k]) for k in
                 ('dmgSha256', 'manifestSha256')), 'CANDIDATE_INVALID')
     safe(value['candidate']['directory'])
-    require(set(value['evidence']) == {'campaign', 'closure', 'browser', 'sourcePin'} and
+    require({'campaign', 'closure', 'browser', 'sourcePin'} <= set(value['evidence'])
+            <= {'campaign', 'closure', 'browser', 'sourcePin', 'firstUse'} and
             re.fullmatch('[a-f0-9]{64}', value['evidence']['sourcePin']), 'EVIDENCE_INVALID')
     for key in ('campaign', 'closure', 'browser'):
         safe(value['evidence'][key])
+    if 'firstUse' in value['evidence']:
+        safe(value['evidence']['firstUse'])
     require(isinstance(value['delivery'],dict),'DELIVERY_SELECTION_INVALID')
     if value['delivery'].get('provider')=='dropbox':
         require(set(value['delivery']) in ({'provider','downloadURL'},{'provider','downloadURL','attempt'}),
