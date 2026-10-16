@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.27
+- Version: 1.28
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -549,7 +549,12 @@ Only a complete five-package report can supply the successor source catalog;
 partial publication does not change reader selection.
 
 The successor record has a distinct immutable ID and canonical pin; old launcher
-pins and Drive compatibility objects remain unchanged. Archive names, source
+pins remain unchanged in their original sources. The five public Drive archive
+copies were retired only after checking the current routes, explicit local inputs
+used by frozen producers, replacement identities and anonymous Dropbox access.
+Historical bootstraps needing the obsolete Drive index must be replaced with
+the current launcher. The source/notice companion, DMGs and local caches are
+preserved. Archive names, source
 identities, extracted-input/cache keys, producer plan, controller image and DMG
 remain unchanged. Current public readers never fallback to private Google
 credentials or the previous provider. This is delivery qualification, not a

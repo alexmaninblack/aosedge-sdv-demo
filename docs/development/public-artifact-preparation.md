@@ -12,8 +12,9 @@ Operator DMG delivery is independently selected by the
 All five build dependency archives are delivered from Dropbox: standalone CARLA,
 native host support, Gateway SDK, the controller image and vehicle bases. The
 [public companion folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
-retains supplementary source/notices and compatibility copies for older pinned
-launchers; it is not the current build-input delivery route. The current
+retains supplementary source/notices; it is not the current build-input delivery
+route. The five superseded Drive dependency archives have been retired after
+verifying the Dropbox replacements and current-product independence. The current
 [dependency catalog](../../workspace/dependencies/catalog.json) is maintained with
 the source; it selects Dropbox archives independently of an installer.
 Public test access is authorized; that is not blanket redistribution clearance
@@ -93,9 +94,11 @@ Only after every package passes, `public-links.json` and `report.json` are
 completed in the private records directory. Review those links into a successor
 catalog record with `transport: dropbox-public`, preserving package names,
 sizes, SHA-256 and both lock digests. Keep current catalogs out of upload
-journals and never commit the private profile or session identifiers. The old
-Drive copies remain for already-pinned consumers; current acquisition does not
-fallback to them. This transport migration does not upgrade frozen build owners.
+journals and never commit the private profile or session identifiers. Current
+acquisition does not fall back to Drive. Download the current launcher rather
+than reusing a historical bootstrap that requires the retired Drive archives.
+Frozen build owners receive verified local inputs and do not require those
+remote copies; their source, receipts and caches are not rewritten.
 
 These controls are optional release-owner maintenance, not route B prerequisites.
 Prepare public catalog records from an existing verified receipt and approved
