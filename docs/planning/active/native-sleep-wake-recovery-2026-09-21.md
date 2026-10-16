@@ -8,15 +8,12 @@
 - Current scope: deferred accepted planning only. Historical one-session restoration
   authority is not a standing permission to change a live environment.
 
-## Observed failure
+## Failure boundary
 
-The Mac entered clamshell sleep at 05:29:03 UTC. At 05:39:04.980 UTC the
-controller reported `std::exception` at its CARLA `world.tick` call. Its cleanup
-destroyed the vehicle and sensors. The runner then closed Driving Control at
-05:39:06.123 UTC. Unreal and the Test VM remained running. The source journal's
-older RUNNING value did not represent a live controller. This is an actual
-process/session failure, not merely a hidden window. The precise lower-level
-CARLA exception is not available; the timing correlates with host sleep/wake.
+Host sleep can terminate the CARLA source session while the simulator and VM
+remain alive, leaving stale RUNNING state. Recovery must reconcile actual
+owners and fresh data, not interpret an old journal as a live source.
+Controller ignition is a separate implemented behavior.
 
 ## Accepted direction
 
@@ -62,24 +59,6 @@ engineering operation, not a supported automatic behavior.
 5. Only then mark the feature implemented and run the existing continuous-demo
    regression. Do not claim that the one-off recovery qualifies this feature.
 
-## Immediate recovery completed — 21 September, 06:46 UTC
-
-The normal `simulation stop --target test` reconciled the absent controller;
-it honestly reported physical stop NOT_OBSERVED. `simulation start --target test`
-created a new source run, then `vehicle initialize test` attached the preserved
-Test in stationary Manual using its existing mTLS identities.
-
-- New source run: `4ae4afe0-3313-47df-a099-610298b3ec92`, assignment generation 22.
-- Test VM process remained PID 25577; its local identity and Cloud Unit were
-  unchanged. No provisioning, release publication, model Reset or VM restart.
-- Guest reported `VDP data READY; source LIVE; reason NONE`, active VDP and
-  zero VDP restarts; the Gateway admitted the selected Unit through mTLS.
-- The native panel was visually checked: Test LIVE, Manual, STOPPED, 0.0 km/h,
-  Brake 100%, Brake/Tire Monitoring. CARLA visibly showed the vehicle on the road.
-- External Network remained ON, confirmed by the existing connectivity status
-  command. This is packet-filter evidence, not a claim about Cloud status.
-- Existing workspace restoration reported expected window bounds and VERIFIED
-  z-order. No automatic sleep/wake logic was changed or qualified.
-
-The operator may explicitly select Manual or Autopilot to continue. Historical
-recordings and service data were not reset or deleted during this recovery.
+The [original failure and one-session recovery](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/planning/active/native-sleep-wake-recovery-2026-09-21.md)
+remain in Git. The old PIDs, session identities and manual outcome do not qualify
+automatic recovery or create a standing permission.

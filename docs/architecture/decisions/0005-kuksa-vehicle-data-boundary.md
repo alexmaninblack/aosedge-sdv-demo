@@ -83,7 +83,7 @@ KUKSA JWTs because the baseline had no Aos IAM integration. That remains valid
 historical evidence, but it is not the target architecture.
 
 [ADR 0010](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md) superseded the former AOS-5
-standalone Authorization Adapter plan for the 1.3/1.4 architecture. Proposed
+standalone Authorization Adapter plan for the 1.3/1.4 architecture. Accepted
 [ADR 0013](0013-current-release-kuksa-authorization-compatibility.md) now
 corrects that later ownership without changing this ADR's CARLA/VISS/KUKSA
 data boundary: upstream KUKSA remains unchanged and factory-installed outside
@@ -125,9 +125,9 @@ The lifecycle-based repository decision and migration gate are defined by
 - A dedicated CARLA-to-KUKSA provider and a private host-to-guest path are
   required.
 - The official demo service needs ARM64 and dependency-layer qualification.
-- The historical prototype-token flow must be replaced by the proposed ADR
-  0013 current-release compatibility flow before the target integration is
-  accepted.
+- The historical prototype-token flow must be replaced by the accepted ADR
+  0013 current-release compatibility flow. Current implementation and image-bound
+  proof follow the [implementation map](../current-implementation.md).
 - The provider must expose data age and failure state without replacing stale
   values with fabricated zeroes.
 

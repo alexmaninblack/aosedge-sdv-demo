@@ -13,7 +13,7 @@ the original [art-direction and generation record](https://github.com/alexmaninb
 remains in Git. Alternative concept boards, duplicate icons, old screenshots
 and standalone HTML prototypes are no longer part of the source checkout.
 The [public visual inventory](../../../workspace/public-visual-assets.json)
-retains exact content checks for the shipped assets and architecture reference.
+retains exact content checks for the shipped assets.
 
 Do not commit customer or partner presentation screenshots, private
 correspondence, credentials, proprietary material, or files from the local

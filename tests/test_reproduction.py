@@ -192,7 +192,11 @@ class VolumeProbeTests(unittest.TestCase):
             run.assert_not_called()
 
     def test_data_firmlink_does_not_require_lexical_mount_ancestor(self):
-        with tempfile.TemporaryDirectory() as directory:
+        # This tiny metadata-only fixture models an INTERNAL firmlink. Keeping
+        # its lexical path outside /Volumes is part of that premise even when
+        # the caller puts ordinary unit scratch on an external SSD.
+        system_tmp = '/private/tmp' if Path('/private/tmp').is_dir() else '/tmp'
+        with tempfile.TemporaryDirectory(dir=system_tmp) as directory:
             root = Path(directory).resolve()
             mount, users = root/'Data', root/'Users'
             mount.mkdir(); users.mkdir()

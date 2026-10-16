@@ -28,6 +28,8 @@ class RecipeTests(StorageFixture, unittest.TestCase):
         tracked.update(('LICENSE', 'scripts/validate-release-definition', 'scripts/host/aosvm-dns-bridge',
                         'workspace/gateway-build-sdk.lock.json',
                         'workspace/repositories.json', 'workspace/distribution-stage0-inventory.json',
+                        'workspace/build-definition.json', 'workspace/build-definition.schema.json',
+                        'workspace/current-developer-build.json', 'workspace/launcher-catalog.json',
                         'config/aosvm-single-node-unitconfig.json'))
         return tracked
 

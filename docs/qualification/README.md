@@ -24,13 +24,13 @@ apply only to the exact source, media and profile identified by their receipt.
 - [D4-003 stimulus calibration plan](d4-003-stimulus-calibration-plan.md):
   an outstanding accepted verification obligation, not a passed calibration.
 
-## Preserved locked-release dependencies
+## Provenance without historical report dependencies
 
-Two historical reports remain because the unchanged release definition requires
-these exact paths: [Kit028 M1 journey](m1-live-journey-2026-10-03.md) and
-[Kit028 source publication](kit028-setup042-source-publication-2026-10-05.md).
-They are not current installation instructions or evidence for different bytes.
-The earlier definition inventory is similarly retained in development docs.
+The [current build definition](../../workspace/build-definition.json) records
+the original Kit028 journey, source-publication report and R1 inventory by
+immutable Git revision/path and SHA-256. They are not current instructions,
+runtime proof for different bytes or files required in this checkout.
+The compatibility source, payload and dependency identities remain unchanged.
 
 Other superseded reports were removed from the current tree. Their original
 contents and hashes are recorded by the

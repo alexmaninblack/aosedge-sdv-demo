@@ -1,0 +1,36 @@
+{
+  "$schema": "build-definition.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 2,
+  "kind": "current-build-definition",
+  "id": "sdv-lab-current",
+  "compatibilityBase": {
+    "path": "workspace/releases/kit028-setup042.json",
+    "sha256": "5951852da7158a63802c1045fe0f37719f90d549b2e70f5f7ab63c5c9841ad13",
+    "definitionDigest": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598"
+  },
+  "developerSelection": "workspace/current-developer-build.json",
+  "operatorSelection": "workspace/launcher-catalog.json",
+  "documentation": [
+    "docs/getting-started/reproduce-demo.md",
+    "docs/development/release-reproduction-r2.md",
+    "docs/qualification/current-baseline.md"
+  ],
+  "historicalEvidence": [
+    {
+      "revision": "cc75541f255f3d2fb0fd670053687ebe406c37ee",
+      "path": "docs/development/release-reproduction-r1.md",
+      "sha256": "f3b254039d282c5f76277e69af0d6fd23d2643e58efe2c577b40211dc71612d4"
+    },
+    {
+      "revision": "cc75541f255f3d2fb0fd670053687ebe406c37ee",
+      "path": "docs/qualification/m1-live-journey-2026-10-03.md",
+      "sha256": "a5379dfddd9fa9b147b7eb4f4345358001578f70f0564352ae24d434bbbfc327"
+    },
+    {
+      "revision": "cc75541f255f3d2fb0fd670053687ebe406c37ee",
+      "path": "docs/qualification/kit028-setup042-source-publication-2026-10-05.md",
+      "sha256": "4bb9e07e66e74d332f8aa8884527bf860891b6c00974d63e65536ae401e87b21"
+    }
+  ]
+}

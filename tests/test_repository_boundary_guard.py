@@ -38,9 +38,10 @@ class PublicSourceGuardTests(unittest.TestCase):
             with patch.dict(SCAN.__globals__, _tracked_files=lambda unused: [path]):
                 SCAN(root)
 
-    def test_reviewed_inventory_matches_all_23_product_visual_files(self):
+    def test_reviewed_inventory_matches_all_22_product_visual_files(self):
         entries = GUARD["_visual_assets"](ROOT)
-        self.assertEqual(len(entries), 23)
+        self.assertEqual(len(entries), 22)
+        self.assertTrue(all(name.startswith('apps/presenter-ui/') for name in entries))
         for name, digest in entries.items():
             with self.subTest(name=name):
                 self.assertEqual(hashlib.sha256((ROOT / name).read_bytes()).hexdigest(), digest)

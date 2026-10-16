@@ -110,8 +110,8 @@ def _visual_assets(repository: Path) -> dict[str, str]:
     _require(isinstance(value, dict) and value.get("schemaVersion") == 1,
              "invalid public visual inventory schema")
     files = value.get("files")
-    _require(isinstance(files, dict) and len(files) == 23,
-             "public visual inventory must contain the 23 retained product assets")
+    _require(isinstance(files, dict) and len(files) == 22,
+             "public visual inventory must contain the 22 retained product assets")
     for name, sha in files.items():
         path = PurePosixPath(name)
         _require(not path.is_absolute() and ".." not in path.parts

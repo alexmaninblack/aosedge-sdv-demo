@@ -17,8 +17,6 @@ owned by the [baseline](../qualification/current-baseline.md), not a plan's date
   scenario-first execution, private test access, bounded diagnostics and cleanup.
 - [Integrated Setup scenario](active/work-packets/integrated-setup-scenario.md):
   accepted Install / Connect / Open behavior and transaction boundaries.
-- [Advisory readiness and independent Reset](active/work-packets/advisory-readiness-and-demo-reset.md):
-  accepted protocol behavior, not a new model-reset authorization.
 - [Host sleep/wake recovery](active/native-sleep-wake-recovery-2026-09-21.md):
   still an unimplemented/unqualified planning item, separate from controller ignition.
 - [Current roadmap](roadmap.md): consolidated remaining gates.
@@ -27,6 +25,10 @@ Presenter, integrated Setup, semantic native/browser runners, the unified
 launcher and engineering-preview main/tag/publication flow are implemented.
 The current M1 runtime API/UI and separate native certificate first-use
 profiles passed. Do not reintroduce their completed gates as pending work.
+
+Implemented readiness and independent Reset rules are maintained in the
+[advisory contract](../../contracts/qm-advisory-profile/readiness-and-reset.md),
+not in an active execution packet.
 
 Closed P0/P1 implementation packets, prior migration/storage plans and old
 experiment journals have been removed. Accepted obligations remain in

@@ -25,15 +25,45 @@ loader.exec_module(gate)
 
 
 class ReleaseDefinitionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.directory = tempfile.TemporaryDirectory()
+        cls.legacy_root = Path(cls.directory.name)
+        value = gate.read_json(ROOT / gate.LEGACY_DEFAULT)
+        cls.copy_legacy_fixture(cls.legacy_root, value)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.directory.cleanup()
+
+    @staticmethod
+    def copy_legacy_fixture(root, value):
+        paths = {row['path'] for row in value['authorities']}
+        paths.update(value['evidence'])
+        paths.update(v for k, v in value['documentation'].items() if k != 'version')
+        paths.update(t['evidence'] for t in value['toolchains'])
+        paths.update(r['path'] for c in value['components'] for r in c['recipes'] if r['source'] == 'integration')
+        paths.update([str(gate.SCHEMA), '.github/workflows/repository-boundaries.yml'])
+        retired = {row['path'] for row in gate.read_json(ROOT / gate.DEFAULT)['historicalEvidence']}
+        for relative in paths:
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if relative in retired:
+                # v1 tests require presence only; this is explicitly fixture
+                # prose, never product evidence or a reconstructed old report.
+                target.write_text('Fixture-only historical evidence presence.\n')
+            else:
+                shutil.copyfile(ROOT / relative, target)
+
     def setUp(self):
-        self.value = gate.read_json(ROOT / gate.DEFAULT)
+        self.value = gate.read_json(ROOT / gate.LEGACY_DEFAULT)
 
     def rejects(self, match):
         with self.assertRaisesRegex(gate.DefinitionError, match):
-            gate.validate(self.value)
+            gate.validate(self.value, self.legacy_root)
 
     def test_real_definition_passes_without_sibling_or_runtime_inputs(self):
-        self.assertEqual(gate.validate(self.value)['id'], 'kit028-setup042')
+        self.assertEqual(gate.validate(self.value, self.legacy_root)['id'], 'kit028-setup042')
 
     def test_unknown_field_fails(self):
         self.value['ready'] = True
@@ -328,18 +358,9 @@ class ReleaseDefinitionTests(unittest.TestCase):
                     gate.git_metadata(Path(temporary), 'cat-file', '-t', 'a' * 40)
 
     def test_root_only_copy_passes_and_ci_pin_drift_fails(self):
-        paths = {row['path'] for row in self.value['authorities']}
-        paths.update(self.value['evidence'])
-        paths.update(v for k, v in self.value['documentation'].items() if k != 'version')
-        paths.update(t['evidence'] for t in self.value['toolchains'])
-        paths.update(r['path'] for c in self.value['components'] for r in c['recipes'] if r['source'] == 'integration')
-        paths.update([str(gate.SCHEMA), '.github/workflows/repository-boundaries.yml'])
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for relative in paths:
-                target = root / relative
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(ROOT / relative, target)
+            self.copy_legacy_fixture(root, self.value)
             gate.validate(self.value, root)
             path = root / '.github/workflows/repository-boundaries.yml'
             pin = next(s['revision'] for s in self.value['sources'] if s['id'] == 'vehicle-gateway')

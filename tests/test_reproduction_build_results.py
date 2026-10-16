@@ -99,14 +99,15 @@ class SealedResultsTests(StorageFixture, unittest.TestCase):
             verify.assert_not_called()
 
     def test_schema_two_requires_exact_policy_and_schema_one_unchanged(self):
-        plan = chain.read_plan(self.release)
+        legacy_plan = core.ROOT / chain.PLAN
+        plan = chain.read_plan(self.release, legacy_plan)
         self.assertEqual(plan['schemaVersion'], 1)
         plan.update(schemaVersion=2, resultPolicy='seal-developer-results-v1')
         with patch.object(chain, 'read_json', return_value=plan):
-            self.assertEqual(chain.read_plan(self.release), plan)
+            self.assertEqual(chain.read_plan(self.release, legacy_plan), plan)
             plan['resultPolicy'] = 'trust-everything'
             with self.assertRaises(core.LabError):
-                chain.read_plan(self.release)
+                chain.read_plan(self.release, legacy_plan)
 
     def test_policy_forwarded_only_to_downstream_owners(self):
         options = dict(python='python', kit_inputs='kit', signing_identity='A'*40,

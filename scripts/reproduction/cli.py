@@ -26,6 +26,8 @@ def progress(event, detail):
 def plan(release, profile, build_plan=None):
     ordered = chain.read_plan(release, build_plan) if profile == 'developer' else None
     return {'release': release.value['id'], 'definitionDigest': release.key, 'profile': profile,
+            'currentDefinition': {'id': release.definition['id'],
+                                  'schemaVersion': release.definition['schemaVersion']},
             'sources': list(release.selected_sources(profile)), 'buildOrder': release.graph(profile),
             'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime', *package_chain.MANIFESTS, *media.TARGETS] if profile == 'developer' else [],
             'serviceProfiles': {'brake-service': ['v1', 'v2', 'v3'], 'tire-service': ['v1']},

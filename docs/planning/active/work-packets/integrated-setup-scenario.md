@@ -138,22 +138,13 @@ Setup itself never performs Finish. At the end of qualification, gracefully
 stop owned consumers and verify exit, keeping shared Docker Engine and durable
 run data.
 
-## Implementation and acceptance order
+## Acceptance and remaining boundaries
 
-1. Amend requirements, ADR 0018, native and Cloud first-use contracts with this
-   scenario; retain old low-level actions for compatibility and diagnostics.
-2. Implement the one-action local worker, read-only installed status, simplified
-   native step presentation and persistent signed launcher.
-3. Implement authenticated one-action Cloud connection, exact prerequisite
-   preparation, bounded retained-Test SP repair and paired token onboarding.
-4. Implement repeat launch and accurate error/continuation presentation.
-5. Run automated positive, negative, interruption, idempotent, owner-conflict,
-   redaction and protocol tests; compile native self-tests before packaging.
-6. Build one matching signed candidate on SSD using retained Factory/CARLA.
-   Test fresh and returning user paths on M1; record scripted and native results
-   separately. Update guide and qualification record, then commit/push source.
+This scenario is implemented. The [current baseline](../../../qualification/current-baseline.md)
+and [native Setup profile](../../../qualification/m1-clean-install-e2e-2026-10-14.md#native-setup-with-no-ready-certificates-pass-on-15-october)
+record exact proof and reuse boundaries. New-account registration, macOS consent,
+notarization and broader interruption/repair/update/removal remain separate;
+a Setup success banner does not close them.
 
-Completion requires actual results for default install, existing pair, paired
-token recovery, retained-Test SP repair, media ejection and repeat opening.
-Unmeasured new-account signup, distribution notarization and cold controller
-resume must remain explicit open gates, not implied by a Setup success banner.
+The [original execution order](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/planning/active/work-packets/integrated-setup-scenario.md)
+is retained in Git, not as another pending implementation checklist.

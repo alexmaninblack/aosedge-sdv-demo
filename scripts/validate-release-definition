@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
-"""Read-only R1 definition gate; not a downloader, builder or runtime owner."""
+"""Read-only current build-definition gate; never downloads, builds or starts runtime."""
 
 from __future__ import annotations
 
@@ -16,7 +16,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT = Path('workspace/releases/kit028-setup042.json')
+DEFAULT = Path('workspace/build-definition.json')
+LEGACY_DEFAULT = Path('workspace/releases/kit028-setup042.json')
+CURRENT_SCHEMA = Path('workspace/build-definition.schema.json')
 SCHEMA = Path('workspace/releases/release.schema.json')
 LIMIT = 8 * 1024 * 1024  # Metadata only; never rehash the multi-GB payload here.
 PROFILES = {'operator', 'developer', 'full-source'}
@@ -128,7 +130,8 @@ def unique(values, label):
     require(len(values) == len(set(values)), f'{label}: duplicate reference')
 
 
-def validate(value, root=ROOT):
+def validate_inputs(value, root=ROOT):
+    """Validate every frozen source, payload, authority and dependency binding."""
     schema_check(value, read_json(root / SCHEMA))
     authorities = indexed(value['authorities'], 'path', 'authorities')
     for path, entry in authorities.items():
@@ -233,10 +236,97 @@ def validate(value, root=ROOT):
                 f'UI {name} toolchain mismatch')
     for gate in value['gates']:
         unique(gate['profiles'], gate['id'])
+    return value
+
+
+def validate(value, root=ROOT):
+    """Original v1 contract, including its original on-disk evidence rule."""
+    validate_inputs(value, root)
     for path in [*value['evidence'], *[v for k, v in value['documentation'].items() if k != 'version'],
                  *[t['evidence'] for t in value['toolchains']]]:
         require(safe_path(root, path).is_file(), f'Missing documentation/evidence: {path}')
     return value
+
+
+def resolve(value, root=ROOT):
+    """Resolve v2 current selection; keep the v1 build/cache identity unchanged.
+
+    Historical prose is provenance, not a current build prerequisite. Its
+    immutable Git references are explicit and can be inspected independently;
+    this does not reuse their qualification for the selected operator media.
+    """
+    require(isinstance(value, dict), 'Definition must be an object')
+    if value.get('schemaVersion') == 1:
+        return validate(value, root)
+    schema_check(value, read_json(root / CURRENT_SCHEMA))
+    base = value['compatibilityBase']
+    raw = read_bytes(safe_path(root, base['path']))
+    require(hashlib.sha256(raw).hexdigest() == base['sha256'], 'Compatibility definition file changed')
+    original = read_json(safe_path(root, base['path']))
+    canonical = json.dumps(original, sort_keys=True, separators=(',', ':')).encode()
+    require(hashlib.sha256(canonical).hexdigest() == base['definitionDigest'],
+            'Compatibility build identity changed')
+    validate_inputs(original, root)
+    selection = read_json(safe_path(root, value['developerSelection']))
+    require(isinstance(selection, dict) and set(selection) == {'schemaVersion', 'path', 'sha256'} and
+            type(selection['schemaVersion']) is int and selection['schemaVersion'] == 1 and
+            isinstance(selection['path'], str) and
+            isinstance(selection['sha256'], str) and re.fullmatch('[a-f0-9]{64}', selection['sha256']),
+            'Invalid developer selection')
+    plan_path = safe_path(root, selection['path'])
+    require(Path(selection['path']).parent == Path('workspace/releases') and
+            Path(selection['path']).suffix == '.json', 'Invalid developer plan path')
+    require(hashlib.sha256(read_bytes(plan_path)).hexdigest() == selection['sha256'], 'Developer plan pin mismatch')
+    plan = read_json(plan_path)
+    require(isinstance(plan, dict) and type(plan.get('schemaVersion')) is int and plan['schemaVersion'] in (2, 3) and plan.get('baseDefinitionSha256') == base['definitionDigest']
+            and plan.get('resultPolicy') == 'seal-developer-results-v1', 'Developer plan base or result policy mismatch')
+    catalog = read_json(safe_path(root, value['operatorSelection']))
+    require(isinstance(catalog, dict) and catalog.get('product') == 'aosedge-sdv-lab'
+            and type(catalog.get('schemaVersion')) is int and catalog['schemaVersion'] == 1
+            and isinstance(catalog.get('operatorDescriptor'), str) and isinstance(catalog.get('operator'), dict),
+            'Invalid operator selection')
+    delivery = read_json(safe_path(root, catalog['operatorDescriptor']))
+    for field in ('productVersion', 'status', 'file', 'bytes', 'sha256', 'manifestSha256', 'notarized'):
+        require(isinstance(delivery, dict) and field in delivery and field in catalog['operator']
+                and delivery[field] == catalog['operator'][field], 'Operator descriptor mismatch: ' + field)
+    unique(value['documentation'], 'current documentation')
+    for path in value['documentation']:
+        require(safe_path(root, path).is_file(), 'Missing current documentation: ' + path)
+    evidence = indexed(value['historicalEvidence'], 'path', 'historical evidence')
+    original_paths = {path for path in original['evidence'] if path.endswith('.md')}
+    original_paths.add(original['documentation']['inventory'])
+    require(set(evidence) == original_paths, 'Historical evidence references incomplete')
+    for row in evidence.values():
+        safe_path(root, row['path'])  # lexical/path safety only; no old prose dependency
+    for name, path in original['documentation'].items():
+        if name not in {'version', 'inventory'}:
+            require(safe_path(root, path).is_file(), 'Missing maintained documentation: ' + path)
+    for entry in original['toolchains']:
+        require(safe_path(root, entry['evidence']).is_file(), 'Missing toolchain evidence')
+    return original
+
+
+def verify_historical_evidence(selected, root=ROOT):
+    """Optional bounded local-object proof; never fetch or restore old reports."""
+    require(selected.get('schemaVersion') == 2, 'Historical reference proof requires the current definition')
+    resolve(selected, root)
+    env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
+    env.update(GIT_NO_LAZY_FETCH='1', GIT_TERMINAL_PROMPT='0',
+               GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull)
+    for row in selected['historicalEvidence']:
+        require(git_metadata(root, 'cat-file', '-t', row['revision']) == 'commit', 'Historical revision is not a commit')
+        object_ = row['revision'] + ':' + row['path']
+        require(git_metadata(root, 'cat-file', '-t', object_) == 'blob', 'Historical evidence is not a file')
+        size = git_metadata(root, 'cat-file', '-s', object_)
+        require(size.isdecimal() and int(size) <= LIMIT, 'Historical evidence exceeds metadata limit')
+        try:
+            result = subprocess.run(['git', '--no-pager', '-C', str(root), 'cat-file', 'blob', object_],
+                capture_output=True, env=env, timeout=10)
+        except (OSError, subprocess.TimeoutExpired):
+            raise DefinitionError('Historical object inspection unavailable') from None
+        require(result.returncode == 0 and len(result.stdout) == int(size) and
+                hashlib.sha256(result.stdout).hexdigest() == row['sha256'], 'Historical evidence digest mismatch')
+    return len(selected['historicalEvidence'])
 
 
 def verify_kit(value, kit):
@@ -311,10 +401,15 @@ def main(argv=None):
     parser.add_argument('--kit-root', type=Path, help='Optional existing kit; read six small manifests only')
     parser.add_argument('--source-workspace', type=Path, help='Optional existing sibling sources; inspect pinned Git objects without fetching or changing checkouts')
     parser.add_argument('--profile', help='Require reproduction readiness; unresolved candidate exits 2')
+    parser.add_argument('--historical-evidence', action='store_true', help='Verify declared old report hashes using existing local Git objects only')
     args = parser.parse_args(argv)
     try:
-        value = validate(read_json(args.manifest))
-        print(f'DEFINITION_VALID: {value["id"]}; 3 profiles, {len(value["components"])} components')
+        selected = read_json(args.manifest)
+        value = resolve(selected)
+        print(f'DEFINITION_VALID: {selected["id"]}; 3 profiles, {len(value["components"])} components')
+        if args.historical_evidence:
+            count = verify_historical_evidence(selected)
+            print(f'HISTORICAL_REFERENCES_MATCH: {count} immutable reports; not current runtime qualification')
         if args.kit_root:
             count = verify_kit(value, args.kit_root)
             print(f'KIT_METADATA_MATCH: {count} manifests; payloads and runtime NOT checked')

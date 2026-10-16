@@ -25,7 +25,7 @@ selected release and its exact evidence. The
 records current main/tag publication, M1 Production runtime checks, separate
 native Setup first use and anonymous delivery. Kit028 / Setup042 and
 demo-v1.1 / Factory .39 are historical; the
-[Kit028 return point](../qualification/kit028-setup042-source-publication-2026-10-05.md)
+[Kit028 return point](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/qualification/kit028-setup042-source-publication-2026-10-05.md)
 preserves its exact sources. The retained Factory .41
 embeds mainline-derived AosCore with explicit retained patches, KUKSA and the
 removable KAC helper. It is not unmodified current upstream mainline.

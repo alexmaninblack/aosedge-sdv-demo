@@ -1,7 +1,7 @@
 {
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
-  "purpose": "Exact current Presenter assets and architecture reference; historical mockup copies are retired. Additions require source-publication review.",
+  "purpose": "Exact current Presenter assets; historical mockup copies and the old architecture export are retired. Additions require source-publication review.",
   "files": {
     "apps/presenter-ui/src/assets/icons/connectivity-available.png": "6edfa16c1fc8394904b7ac4c2134e243cf6f6ab131e354a2c087a7c26d3cdb75",
     "apps/presenter-ui/src/assets/icons/end-reset-demo.png": "2b456c1a6f3d37bb81b3f6f6b91675517431b8bf91e87ef3951055e3b2ad73f0",
@@ -24,7 +24,6 @@
     "apps/presenter-ui/src/assets/icons/service-quota-isolation.png": "dced757b521fdc142f9ebb0551f1754f873a4a0e04d8fc3666ac54b4f0447722",
     "apps/presenter-ui/src/assets/icons/vehicle-safe-stop.png": "f8aec1880ef5a21e1408bb09ce01f30043a52a7a9a7b5e1155f33a776ba8c2fb",
     "apps/presenter-ui/src/assets/icons/vehicle-signals-vss.png": "fc7943b56261304d5ca3fa4554c10227b585953682f749b24a67d4e2c2ecd71b",
-    "apps/presenter-ui/src/assets/studio/automotive-b2.png": "09c7384ccc6d9dd681b61de2dd8a795ec004b0029721e3e6c5c83bd331aa87a8",
-    "docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.png": "12c40bb03cfaf7b4a360804b7d22dd66d6040ee7232d90e4680a053a908e366c"
+    "apps/presenter-ui/src/assets/studio/automotive-b2.png": "09c7384ccc6d9dd681b61de2dd8a795ec004b0029721e3e6c5c83bd331aa87a8"
   }
 }

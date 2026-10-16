@@ -107,7 +107,8 @@ class Release:
         gate = load_gate()
         self.path = path or ROOT / gate.DEFAULT
         try:
-            self.value = gate.validate(gate.read_json(self.path))
+            self.definition = gate.read_json(self.path)
+            self.value = gate.resolve(self.definition)
         except gate.DefinitionError as exc:
             raise LabError(str(exc)) from exc
         self.key = digest(self.value)

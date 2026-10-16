@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """File-level packaging recipe inputs, without importing or running an owner."""
 import ast
+import json
 from pathlib import Path
 
 from .core import require, regular
@@ -116,6 +117,17 @@ def paths(root, tracked, target):
     chosen.update('scripts/reproduction/'+name+'.py' for name in
                   ('core', 'sources', 'artifacts', 'cloud', 'packaging', 'recipes', *ADAPTERS[target]))
     chosen.add('scripts/validate-release-definition')
+    chosen.update(('workspace/build-definition.json', 'workspace/build-definition.schema.json'))
+    # These selectors are mutable current authorities; their selected records
+    # must enter the source fingerprint rather than remain undeclared reads.
+    for relative, field in [('workspace/current-developer-build.json', 'path'),
+                            ('workspace/launcher-catalog.json', 'operatorDescriptor')]:
+        chosen.add(relative)
+        selected = json.loads(regular(root / relative).read_bytes())[field]
+        path = Path(selected)
+        require(not path.is_absolute() and '..' not in path.parts and
+                path.parent == Path('workspace/releases'), 'Unsafe current definition input')
+        chosen.add(selected)
     chosen.add('scripts/distribution/build_scratch.py')
     chosen.add('workspace/releases/release.schema.json')
     if target in ('host-runtime', 'backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):

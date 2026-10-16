@@ -21,6 +21,8 @@ envelopes, authority, freshness, replay/rate limits and clear/expiry behavior.
   1.0.1 replaced retired `D4-009` authorization with `D4-027`.
 - [Request schema](qm-advisory-request.schema.json)
 - [Gateway Status schema](qm-advisory-status.schema.json)
+- [Readiness and independent Reset](readiness-and-reset.md) — maintained
+  display/command amendment; no change to the frozen wire profiles.
 
 The first implementation transports one canonical UTF-8 JSON object in one
 VSS `string` leaf. This preserves atomic message semantics through the current

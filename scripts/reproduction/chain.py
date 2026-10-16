@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Ordered invocation of exact build owners; no runtime or release promotion."""
 import ast
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -24,6 +25,20 @@ DEPENDENCIES = {
 
 
 def read_plan(release, path=None):
+    if path is None and getattr(release, 'definition', {}).get('schemaVersion') == 2:
+        selected = read_json(ROOT / release.definition['developerSelection'])
+        require(isinstance(selected, dict) and set(selected) == {'schemaVersion', 'path', 'sha256'}
+                and type(selected['schemaVersion']) is int and selected['schemaVersion'] == 1
+                and isinstance(selected['path'], str) and isinstance(selected['sha256'], str)
+                and re.fullmatch('[a-f0-9]{64}', selected['sha256']), 'Invalid current developer selection')
+        relative = Path(selected['path'])
+        require(not relative.is_absolute() and '..' not in relative.parts and
+                relative.parent == Path('workspace/releases') and relative.suffix == '.json',
+                'Unsafe current developer plan path')
+        path = no_links(ROOT / relative)
+        require(path.is_file() and path.stat().st_size <= 8 * 1024 * 1024 and
+                hashlib.sha256(path.read_bytes()).hexdigest() == selected['sha256'],
+                'Current developer plan pin mismatch')
     value = read_json(path or ROOT/PLAN)
     developer = isinstance(value, dict) and value.get('schemaVersion') in (2,3)
     native = isinstance(value,dict) and value.get('schemaVersion') == 3

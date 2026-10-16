@@ -27,7 +27,8 @@ class PlanTests(unittest.TestCase):
     def test_plan_is_complete_ordered_and_has_exact_owners(self):
         value = chain.read_plan(core.Release())
         self.assertEqual([r['id'] for r in value['steps']], list(chain.DEPENDENCIES))
-        self.assertEqual(len(set(value['producers'].values())), 5)
+        selected = core.read_json(core.ROOT / 'workspace/current-developer-build.json')
+        self.assertEqual(value['producers'], core.read_json(core.ROOT / selected['path'])['producers'])
         self.assertEqual(chain.ancestors(value, 'preparation'), {'brake-v1','brake-v2','brake-v3','tire-v1'})
         self.assertEqual(chain.ancestors(value, 'dmg'), set(chain.DEPENDENCIES)-{'dmg'})
 

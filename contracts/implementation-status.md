@@ -72,7 +72,7 @@ target-host interruption/repair gate. See the [current baseline](../docs/qualifi
 - Advisory: [QM profile](qm-advisory-profile/qm-advisory-profile.v1.json) and
   [readiness](qm-advisory-profile/advisory-readiness.v1.json). Authority and
   lease checks remain independent from telemetry source-age budgets.
-- Reset: [accepted bounded protocol](../docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md)
+- Reset: [accepted bounded protocol](qm-advisory-profile/readiness-and-reset.md)
   implemented by each backend and service; only the selected current Test
   producer is affected, with durable command/application outcomes.
 - Runtime compatibility: [accepted option A](service-runtime-inputs/active-vdp-capability-amendment.md)

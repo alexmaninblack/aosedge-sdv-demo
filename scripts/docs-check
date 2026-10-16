@@ -912,13 +912,9 @@ def check_external_links(urls: set[str]) -> list[Issue]:
         return [issue for issue in executor.map(probe, sorted(urls)) if issue is not None]
 
 
-# These exact paths are executable dependencies of the unchanged release
-# definition. Historical contents are not current navigation or status claims.
-LOCKED_EVIDENCE = frozenset({
-    "docs/development/release-reproduction-r1.md",
-    "docs/qualification/m1-live-journey-2026-10-03.md",
-    "docs/qualification/kit028-setup042-source-publication-2026-10-05.md",
-})
+# Current schema-2 selection keeps old report references in Git, not exemptions
+# from inspection of the maintained working-tree documentation.
+LOCKED_EVIDENCE = frozenset()
 
 
 def workspace_documentation(root: Path) -> tuple[dict[Path, str], tuple[WorkspaceRepository, ...], list[Issue]]:

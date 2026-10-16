@@ -57,4 +57,4 @@ affected checks after review; changed candidates use new evidence bindings.
 Native consent, first-user input and layout remain a final distinct UI gate.
 Local deterministic tests precede one incremental candidate build where product
 code changed. Installed results must identify that new candidate; tests of
-source or the older r5 DMG cannot qualify the new code.
+source or a preceding DMG cannot qualify the new code.

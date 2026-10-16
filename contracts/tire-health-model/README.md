@@ -86,7 +86,7 @@ The operator-authorized demo-reset exception clears the current indication
 without fabricating a GOOD assessment. It resets model/capture to NOT_EVALUATED,
 retains sequence, epoch, history and outbox, and requires a correlated Gateway
 CLEARED acknowledgement. This is demo control, not a repair claim. The closed
-[reset protocol](../../docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md)
+[reset protocol](../qm-advisory-profile/readiness-and-reset.md)
 defines current-Test scope and bounded execution.
 
 Model state and the derived-message outbox survive ordinary Service and VM

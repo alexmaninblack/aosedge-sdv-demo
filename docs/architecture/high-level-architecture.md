@@ -109,10 +109,12 @@ This target amendment is not a claim of a changed or qualified Factory image.
 
 ## Visual Authoring Source
 
-The reviewed visual source is preserved together with its matching export:
+The historical expanded-design source and matching export are preserved at
+their reviewed Git revision. For the installed topology use the
+[current implementation map](current-implementation.md).
 
-- [Draw.io source](diagrams/aosedge-demo-hla-authoring-reference.drawio);
-- [PNG export](diagrams/aosedge-demo-hla-authoring-reference.png).
+- [Draw.io source](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.drawio);
+- [PNG export](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.png).
 
 The Draw.io file is the primary visual architecture source. Its PNG export and
 the Mermaid rendering below are reviewable derivatives and must be regenerated

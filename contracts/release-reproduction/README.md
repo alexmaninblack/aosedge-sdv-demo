@@ -3,20 +3,53 @@
 
 # Release Definition and Reproduction Contract
 
-- Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.24
+- Status: current definition v2; engineering build/delivery implemented; fresh reproduction remains unqualified
+- Version: 1.25
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
 
-One release definition selects the source roles, portable input manifests,
-artifact identities and profile boundaries. A consistent definition is not a
-downloadable, reproducible or qualified release. The current definition resolves
-Kit028 / Setup042 / Factory .41 without asking the reader to follow older kits.
+The [current build definition](../../workspace/build-definition.json), schema 2,
+selects maintained documentation and the independent operator/developer
+authorities. A consistent definition is not a qualified release. The operator
+catalog selects the actual DMG; the developer selector pins the producer plan.
+
+## Current selection and compatibility identity
+
+Default validation and build tools resolve the current definition. It verifies
+the complete original source, payload, toolchain, authority and dependency
+closure, the base file SHA-256 and its canonical definition digest. The exact
+compatibility base remains unchanged because published archives, frozen
+producers, prepared workspaces and build receipts use that identity. Returning
+the same compatibility value/key is deliberate reuse, not relabeling a new
+artifact or rewriting an old receipt.
+
+The default developer plan is the exact hash-pinned current developer selection,
+not the earlier schema-1 chain. The old chain remains an explicit compatibility
+input. No producer revision is advanced by this migration; changing a selected
+file without updating its reviewed pin fails before execution.
+
+Current documentation is checked at its maintained paths. Original R1/Kit028
+prose is represented by exact immutable Git revision/path and SHA-256, not
+required as obsolete files in the checkout. Ordinary validation needs no Git
+history or network and makes no claim that those old results qualify current
+media. `--historical-evidence` independently verifies the declared hashes using
+bounded existing local Git blobs; it never fetches or restores reports.
+
+The explicit v1 validator retains its original schema and on-disk evidence
+contract for an original source snapshot. The new current resolver does not
+turn a failed v1 snapshot into a pass. Its separate schema replaces obsolete
+prose prerequisites with current documentation while retaining every build-input
+integrity check. Profile readiness remains blocked; this metadata migration
+does not alter A/B pins, compiled product bytes, signing, Cloud or permissions.
+
+The sections below specify the retained compatibility inputs and the accepted
+build/transport behavior. Historical candidate IDs describe their input domain,
+not a second selection of the current installer.
 
 ## Authority and immutable inputs
 
-The [resolved candidate](../../workspace/releases/kit028-setup042.json) follows
+The [immutable compatibility candidate](../../workspace/releases/kit028-setup042.json) follows
 the [schema](../../workspace/releases/release.schema.json). It binds existing
 authority files by SHA-256 and cross-checks their selected values. It does not
 replace the component manifests or retroactively edit original build receipts.
@@ -278,7 +311,7 @@ Changing this definition creates a new Git revision. Changing any deployed
 artifact requires a new candidate identity and corresponding qualification;
 it must not relabel the retained bytes as rebuilt or fully tested.
 
-See the [R1 inventory and remaining gates](../../docs/development/release-reproduction-r1.md).
+See the [current build inputs and remaining gates](../../docs/development/release-reproduction-r2.md).
 
 ## One-run macOS developer workflow
 

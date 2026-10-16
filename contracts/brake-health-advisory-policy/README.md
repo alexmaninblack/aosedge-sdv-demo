@@ -23,7 +23,7 @@ An operator-authorized `Reset demo scenario` uses the durable reset-command UUID
 as the CLEAR decision ID, without creating an assessment or band-change event.
 It resets only demo model/capture state and preserves epoch, increasing sequence,
 history and outbox. Matching Gateway CLEARED is required for success. See the
-[reset protocol](../../docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md).
+[reset protocol](../qm-advisory-profile/readiness-and-reset.md).
 
 This accepted policy binds the accepted synthetic Brake Health assessment to the
 already accepted D4-008 Brake advisory endpoint. It adds no new actuator,

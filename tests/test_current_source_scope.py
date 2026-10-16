@@ -49,8 +49,13 @@ class CurrentSourceScopeTests(unittest.TestCase):
             self.assertFalse((ROOT / name).exists(), name)
         for name in ('docs/development/release-reproduction-r1.md',
                      'docs/qualification/m1-live-journey-2026-10-03.md',
-                     'docs/qualification/kit028-setup042-source-publication-2026-10-05.md'):
-            self.assertTrue((ROOT / name).is_file(), name)
+                     'docs/qualification/kit028-setup042-source-publication-2026-10-05.md',
+                     'docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md',
+                     'docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.drawio',
+                     'docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.png'):
+            self.assertFalse((ROOT / name).exists(), name)
+        self.assertTrue((ROOT / 'workspace/build-definition.json').is_file())
+        self.assertTrue((ROOT / 'contracts/qm-advisory-profile/readiness-and-reset.md').is_file())
 
 
 if __name__ == '__main__':
