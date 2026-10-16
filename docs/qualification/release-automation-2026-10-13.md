@@ -9,7 +9,7 @@ anonymous operator consumer retain their separate exact-candidate boundaries.
 ## Successor published on 15 October: 1.2.0-rc.2
 
 All seven release stages passed and option A now selects the immutable
-[rc.2 delivery descriptor](../../workspace/releases/1.2.0-rc.2-presenter-preview-dropbox-delivery.json).
+[rc.2 delivery descriptor](../../workspace/releases/delivery.json).
 The preceding rc.1 descriptor and media remain unchanged for explicit rollback.
 
 | Release item | Accepted identity |

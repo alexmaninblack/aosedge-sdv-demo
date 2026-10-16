@@ -58,7 +58,7 @@ class FactoryRecipeTests(unittest.TestCase):
                 factory.recipe()
 
     def test_changed_checkpoint_version_is_not_silently_selected(self):
-        with patch.object(factory, 'read_json', return_value={'factory': {'version': '42'}}):
+        with patch.object(factory, 'read_json', return_value={'prebuilt':{'factory': {'version': '42'}}}):
             with self.assertRaisesRegex(LabError, 'version changed'):
                 factory.recipe()
 

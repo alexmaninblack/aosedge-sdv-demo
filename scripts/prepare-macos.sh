@@ -5,9 +5,9 @@
 # Sourceable by offline fixtures; execution always goes through main().
 
 SDV_PREP_VERSION=6
-SDV_CATALOG_RECORD=c4c5639edc09ddc363784b8fcf3c97fb5b5ff99b4815e8421bb2858b657d0da5
-SDV_PUBLIC_CATALOG_URL='https://drive.google.com/uc?id=11euQ35OM6BpmLHCT5ognHyukoi9lNq1v&export=download'
-SDV_PUBLIC_CATALOG_RECORD=74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450
+SDV_CATALOG_RECORD=8bc3770364fe532486f8d304476b0f8887a32dfd8b7cf7713cee6f87737c1f75
+SDV_PUBLIC_CATALOG_URL=https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json
+SDV_PUBLIC_CATALOG_RECORD=b3995c24c20922f51df25cd9d2076b7bf6a78a0478003ecf0d6ad734d7b436be
 # Bootstrap projection of the source-owned requirements; parity is tested.
 SDV_MACOS_MIN=26
 SDV_PYTHON_MINOR=3.12
@@ -647,26 +647,8 @@ import urllib.parse
 import urllib.request
 import public_drive
 
-PIN = {
-    'releaseId': '1.2.0-rc.1-source-factory-r1',
-    'recordSha256': 'c4c5639edc09ddc363784b8fcf3c97fb5b5ff99b4815e8421bb2858b657d0da5',
-    'lockDigests': {
-        'buildInputs': 'f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0',
-        'simulation': '18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e'},
-    'sourceFiles': {
-        'workspace/dependencies/carla-macos-arm64-r1.lock.json': '37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f',
-        'workspace/dependencies/developer-factory41-r1.lock.json': '734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f',
-        'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json': '8ef497219dcbd11d06201330b6f429e07cdb6d672c66bbaad6ede8731334cfd6',
-        'workspace/releases/1.2.0-rc.1-source-factory-delivery.json': '33cc8b296bfe76be301b33a170789539a3154dec7a8ad62a3333fff8e9a3ebdc',
-        'workspace/releases/kit028-setup042.json': '5951852da7158a63802c1045fe0f37719f90d549b2e70f5f7ab63c5c9841ad13'},
-}
-# Owner-authorized public test distribution, separate from historical private
-# objects. Access activation is not license clearance or release qualification.
-PUBLIC_PIN = {
-    'url': 'https://drive.google.com/uc?id=11euQ35OM6BpmLHCT5ognHyukoi9lNq1v&export=download',
-    'releaseId': '1.2.0-rc.1-source-factory-r1-public',
-    'recordSha256': '74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450',
-}
+PIN = {'releaseId': 'sdv-lab-inputs', 'recordSha256': '8bc3770364fe532486f8d304476b0f8887a32dfd8b7cf7713cee6f87737c1f75', 'lockDigests': {'buildInputs': 'f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0', 'simulation': '18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e'}, 'sourceFiles': {'workspace/build-definition.json': 'e961bad8e5d155aa872f36c2eebf34c1885591a8212fc51ecf9110404d92971e', 'workspace/releases/build-plan.json': 'c55f8c7447ca48e6f1c2a05fedacbea39f2e0ef85e254552a3d29b9c6fe4813d', 'workspace/inputs/build-policy.json': '11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc', 'workspace/inputs/cache-compatibility.json': 'a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a', 'workspace/inputs/controller-images.lock.json': 'e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47', 'workspace/inputs/product-inputs.schema.json': 'f8c7982c48cc1860fed65d4da3bbc6a924ebddd636229f5c04a2f60cec7cf9b9', 'workspace/inputs/runtime-inputs.lock.json': 'd2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d', 'workspace/inputs/service-inputs.lock.json': 'beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae', 'workspace/inputs/sources.lock.json': '019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068', 'workspace/dependencies/carla-macos-arm64-r1.lock.json': '37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f', 'workspace/dependencies/developer-factory41-r1.lock.json': '734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f'}}
+PUBLIC_PIN = {'url': 'https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json', 'releaseId': 'sdv-lab-inputs-public', 'recordSha256': 'b3995c24c20922f51df25cd9d2076b7bf6a78a0478003ecf0d6ad734d7b436be'}
 ROLES = {'buildInputs': {'vehicle-bases', 'factory-image'},
          'simulation': {'carla-runtime', 'host-support', 'gateway-sdk'}}
 LIMIT = 1024 * 1024
@@ -776,13 +758,31 @@ def select_record(catalog, public=False):
 def public_ready():
     require(PUBLIC_PIN['url'] and re.fullmatch('[a-f0-9]{64}', PUBLIC_PIN['recordSha256']),
             'Public release inputs have not been published yet. The release owner must publish the reviewed catalog and enable its source pin. No Google account or JSON path is required from you.')
-    public_drive.link(PUBLIC_PIN['url'])
+    if not PUBLIC_PIN['url'].startswith('https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/'):
+        public_drive.link(PUBLIC_PIN['url'])
+
+
+def public_catalog(client):
+    url = PUBLIC_PIN['url']
+    if not url.startswith('https://raw.githubusercontent.com/'):
+        return client.catalog(url, LIMIT)
+    require(url == 'https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json',
+            'Unsupported source catalog URL.')
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), public_drive.NoRedirect())
+    try:
+        with opener.open(urllib.request.Request(url, headers={'Accept-Encoding':'identity'}), timeout=20) as response:
+            require(response.status == 200, 'Source catalog response differs.')
+            raw = response.read(LIMIT + 1)
+    except (OSError, urllib.error.URLError):
+        raise CatalogError('Source dependency catalog unavailable; no different release was substituted.') from None
+    require(0 < len(raw) <= LIMIT, 'Source catalog size invalid.')
+    return raw
 
 
 def public_discover():
     public_ready()
     client = public_drive.Client()
-    record = select_record(json_bytes(client.catalog(PUBLIC_PIN['url'], LIMIT)), public=True)
+    record = select_record(json_bytes(public_catalog(client)), public=True)
     for row in record['dependencyGroups'].values():
         for role, url in row['binding']['files'].items():
             client.probe(url, row['packages'][role])

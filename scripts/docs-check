@@ -137,7 +137,7 @@ def markdown_documents(root: Path) -> dict[Path, str]:
     paths = list(root.glob("*.md"))
     excluded = {".git", ".venv", "node_modules", "build", "dist", "out",
                 "__pycache__", "artifacts", ".local", ".cache"}
-    for area in ("docs", "contracts", "apps", "scripts", "components", "tests"):
+    for area in ("docs", "contracts", "apps", "scripts", "components", "tests", "workspace"):
         for directory, children, files in os.walk(root / area):
             children[:] = sorted(name for name in children if name not in excluded)
             paths.extend(Path(directory) / name for name in sorted(files) if name.endswith(".md"))

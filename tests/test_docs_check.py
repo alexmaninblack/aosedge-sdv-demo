@@ -37,7 +37,7 @@ class DocumentationCheckTests(unittest.TestCase):
         shutil.copy2(ROOT / "CONTRIBUTING.md", root / "CONTRIBUTING.md")
         shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", root / "THIRD_PARTY_NOTICES.md")
         shutil.copy2(ROOT / "LICENSE", root / "LICENSE")
-        (root / "workspace").mkdir()
+        shutil.copytree(ROOT / "workspace", root / "workspace")
         shutil.copy2(ROOT / "workspace" / "repositories.json", root / "workspace" / "repositories.json")
         shutil.copytree(ROOT / "contracts", root / "contracts")
         shutil.copytree(ROOT / "docs", root / "docs", ignore=shutil.ignore_patterns(".DS_Store"))

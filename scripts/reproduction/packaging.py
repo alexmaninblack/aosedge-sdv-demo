@@ -13,9 +13,9 @@ from . import services
 from .artifacts import sha256
 from . import recipes
 
-SERVICE_CHECKPOINT = 'workspace/checkpoints/reproduction-services-20261008.json'
-FACTORY_CHECKPOINT = 'workspace/checkpoints/factory-41-candidate.json'
-SOURCE_FACTORY_CHECKPOINT = 'workspace/checkpoints/factory-41-source-20261008.json'
+SERVICE_CHECKPOINT = 'workspace/inputs/service-inputs.lock.json'
+FACTORY_CHECKPOINT = 'workspace/inputs/controller-images.lock.json'
+SOURCE_FACTORY_CHECKPOINT = 'workspace/inputs/controller-images.lock.json'
 PREPARATION_MANIFEST = 'vehicle-input-manifest.json'
 
 
@@ -76,7 +76,7 @@ def retained_preparation(storage, kit):
     require(manifest.get('schemaVersion') == 1 and
             manifest.get('status') == 'ASSEMBLED_PREPARATION_INPUTS_NOT_UPLOAD_READY',
             'Retained preparation manifest invalid')
-    factory = read_json(ROOT / FACTORY_CHECKPOINT)['factory']
+    factory = read_json(ROOT / FACTORY_CHECKPOINT)['prebuilt']['factory']
     require(manifest['factory'] == factory, 'Retained Factory differs from source checkpoint')
     names = ['firmware/QEMU_EFI.fd', 'factory/' + factory['version'] + '/manifest.json',
              'factory/' + factory['version'] + '/' + factory['image']]
@@ -127,7 +127,7 @@ def stamp(path):
 def source_factory(storage, root):
     """Select only the independently pinned source build, never adopt a receipt."""
     require(storage_volume(root)['uuid'] == storage.volume['uuid'], 'Factory inputs must be on the bound volume')
-    pin = read_json(ROOT / SOURCE_FACTORY_CHECKPOINT)
+    pin = read_json(ROOT / SOURCE_FACTORY_CHECKPOINT)['rebuilt']
     factory = pin['factory']
     manifest_path = matches(Path(root) / safe_relative(pin['manifest']['path']), pin['manifest'])
     manifest = read_json(manifest_path)
@@ -279,7 +279,7 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
             worker = ROOT / 'scripts/reproduction/preparation_worker.py'
             result = run_command(['/usr/bin/sandbox-exec', '-f', policy, python, '-I', '-B', worker,
                 ROOT, storage.path('sources/vehicle-platform'), scratch, output,
-                SOURCE_FACTORY_CHECKPOINT if source_selection else FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
+                SOURCE_FACTORY_CHECKPOINT + '#rebuilt' if source_selection else FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
                 env=storage.environment(), cwd=scratch, timeout=300)
             output.parent.joinpath(key + '.log').write_bytes((result.stdout + result.stderr)[-2**20:])
             require(result.returncode == 0, 'Preparation owner failed; inspect retained workspace log')

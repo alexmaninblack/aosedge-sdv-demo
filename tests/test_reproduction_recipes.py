@@ -22,7 +22,7 @@ class RecipeTests(StorageFixture, unittest.TestCase):
     def roots(self):
         # Works in the root-only Git archive as well as a maintained checkout.
         roots = ('scripts/reproduction', 'scripts/distribution', recipes.APP,
-                 'contracts', 'workspace/releases', 'workspace/checkpoints')
+                 'contracts', 'workspace/releases', 'workspace/inputs')
         tracked = {p.relative_to(core.ROOT).as_posix() for name in roots
                    for p in (core.ROOT/name).rglob('*') if p.is_file()}
         tracked.update(('LICENSE', 'scripts/validate-release-definition', 'scripts/host/aosvm-dns-bridge',

@@ -25,7 +25,7 @@ CONTRACTS = (
     'tire-health-model/tire-health-product-profile.v1.json',
 )
 MAX_SMALL = 256 * 2**20
-DEFAULT_FACTORY_CHECKPOINT = 'workspace/checkpoints/demo-v1.1.json'
+DEFAULT_FACTORY_CHECKPOINT = 'workspace/inputs/controller-images.lock.json'
 
 
 def require(condition, message):
@@ -107,8 +107,11 @@ def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoi
     pins = service_pins(integration, inventory, service_checkpoint)
     # Build-time source checkpoint only: never rewrite the historical return
     # point or adopt a Factory from an adjacent self-generated receipt.
-    checkpoint = json.loads(read(integration, factory_checkpoint))
-    factory = checkpoint['factory']
+    checkpoint_path, _, role = factory_checkpoint.partition('#')
+    require(role in ('', 'prebuilt', 'rebuilt'), 'Unknown controller input role')
+    checkpoint = json.loads(read(integration, checkpoint_path))
+    selected = checkpoint[role or 'prebuilt'] if 'prebuilt' in checkpoint else checkpoint
+    factory = selected['factory']
     require(isinstance(factory, dict) and
             re.fullmatch(r'6\.1\.1-maninblack\.[0-9]+', str(factory.get('version', ''))) and
             factory.get('image') == 'main-qemuarm64.img' and factory.get('format') == 'raw' and

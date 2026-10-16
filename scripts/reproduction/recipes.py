@@ -129,7 +129,7 @@ def paths(root, tracked, target):
                 path.parent == Path('workspace/releases'), 'Unsafe current definition input')
         chosen.add(selected)
     chosen.add('scripts/distribution/build_scratch.py')
-    chosen.add('workspace/releases/release.schema.json')
+    chosen.update(name for name in tracked if name.startswith('workspace/inputs/'))
     if target in ('host-runtime', 'backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
         chosen.add('scripts/reproduction/host.py')
         chosen.add('scripts/reproduction/native_sources.py')
@@ -140,15 +140,13 @@ def paths(root, tracked, target):
     if target in ('backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
         chosen.add('scripts/reproduction/build_results.py')
         chosen.update(('scripts/reproduction/package_chain.py', 'scripts/reproduction/containers.py'))
-        chosen.add('workspace/releases/1.2.0-rc.1-packaging.json')
-        chosen.add('workspace/releases/kit028-setup042.json')
         # candidate_inputs validates every declared group, not just the output group.
         chosen.update('contracts/'+name for name in LOCKS)
     if target == 'preparation':
         chosen.update(('scripts/reproduction/services.py',
-                       'workspace/checkpoints/reproduction-services-20261008.json',
-                       'workspace/checkpoints/factory-41-candidate.json',
-                       'workspace/checkpoints/factory-41-source-20261008.json',
+                       'workspace/inputs/service-inputs.lock.json',
+                       'workspace/inputs/controller-images.lock.json',
+                       'workspace/inputs/controller-images.lock.json',
                        'workspace/distribution-stage0-inventory.json', 'LICENSE'))
         chosen.update('contracts/'+name for name in CONTRACTS)
     if target == 'vm-runtime':
@@ -160,7 +158,6 @@ def paths(root, tracked, target):
                        'contracts/qm-advisory-profile/advisory-readiness.v1.json'))
         chosen.update('contracts/'+name for name in CONTRACTS)
     if target in ('setup', 'dmg'):
-        chosen.add('workspace/releases/1.2.0-rc.1-setup.json')
         # Kept even for successor mode: release() remains an imported fallback guard.
         chosen.add(DIST+'/setup_release.json')
     if target == 'setup':

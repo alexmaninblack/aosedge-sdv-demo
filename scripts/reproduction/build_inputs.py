@@ -46,7 +46,7 @@ def rows_valid(role, rows):
 def ancestry(release):
     return {'definitionDigest': release.key,
             'simulationLockSha256': artifacts.sha256(sim.LOCK),
-            'factoryCheckpointSha256': artifacts.sha256(ROOT/packaging.SOURCE_FACTORY_CHECKPOINT),
+            'factoryCheckpointSha256': read_json(ROOT/'workspace/inputs/cache-compatibility.json')['sourceControllerCheckpointSha256'],
             'retainedManifests': {r['id']: r for r in release.value['inputs']
                                   if r['id'] in ('preparation-inputs', 'vm-runtime')}}
 

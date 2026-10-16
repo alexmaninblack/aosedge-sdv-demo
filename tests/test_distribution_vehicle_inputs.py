@@ -34,7 +34,7 @@ class VehicleInputsTests(unittest.TestCase):
         self.put(self.firmware, b'firmware')
         self.factory = dict(version='6.1.1-maninblack.39', image='main-qemuarm64.img', format='raw',
                             sizeBytes=7, sha256=digest(b'factory'), sourceRevision='a' * 40)
-        self.put(self.integration / 'workspace/checkpoints/demo-v1.1.json', {'factory': self.factory})
+        self.put(self.integration / module.DEFAULT_FACTORY_CHECKPOINT, {'factory': self.factory})
         self.factory_dir = self.artifacts / 'factory-images' / self.factory['version']
         self.put(self.factory_dir / 'manifest.json', {'factoryImage': dict(version=self.factory['version'],
             architecture='main-qemuarm64', path=self.factory['image'], byteLength=7, sha256=self.factory['sha256'], format='raw'),
@@ -178,8 +178,8 @@ class VehicleInputsTests(unittest.TestCase):
 
     def test_reviewed_reproduction_checkpoint_matches_selected_component_sources(self):
         root = SCRIPTS.parents[1]
-        pins = module.service_pins(root, {}, 'workspace/checkpoints/reproduction-services-20261008.json')
-        release = json.loads((root / 'workspace/releases/kit028-setup042.json').read_text())
+        pins = module.service_pins(root, {}, 'workspace/inputs/service-inputs.lock.json')
+        release = json.loads((root / 'workspace/inputs/sources.lock.json').read_text())
         sources = {row['id']: row['revision'] for row in release['sources']}
         for pin in pins:
             owner = 'functional-service' if pin['team'] == 'brake' else 'tire-health-service'

@@ -111,7 +111,9 @@ class Release:
             self.value = gate.resolve(self.definition)
         except gate.DefinitionError as exc:
             raise LabError(str(exc)) from exc
-        self.key = digest(self.value)
+        compatibility = gate.cache_identity(self.definition)
+        self.key = compatibility['definitionDigest']
+        self.cache_id = compatibility['storageReleaseId']
         self.sources = {s['id']: s for s in self.value['sources']}
         self.components = {c['id']: c for c in self.value['components']}
 
@@ -262,7 +264,7 @@ class Storage:
         self.release, self.profile = release, profile
         release.selected_sources(profile)
         self.volume = storage_volume(self.root)
-        self.binding = {'schemaVersion': 1, 'release': release.key, 'releaseId': release.value['id'],
+        self.binding = {'schemaVersion': 1, 'release': release.key, 'releaseId': getattr(release, 'cache_id', release.value['id']),
                         'profile': profile, 'volumeUUID': self.volume['uuid']}
         self.state_path = self.root / 'preparation.json'
 

@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""Project current metadata pins only. Never builds, downloads or edits receipts."""
+import argparse
+import ast
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+ROOT=Path(__file__).resolve().parents[1]
+def canonical(v):return hashlib.sha256(json.dumps(v,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--write',action='store_true');parser.add_argument('--check',action='store_true');args=parser.parse_args()
+    changes={}
+    def read(p):return changes.get(p,(ROOT/p).read_bytes())
+    def value(p):return json.loads(read(p))
+    def save(p,v):changes[p]=(json.dumps(v,indent=2,ensure_ascii=False)+'\n').encode()
+    selected=value('workspace/build-definition.json')
+    cache=value(selected['inputs']['cache'])
+    closure={path:hashlib.sha256(read(path)).hexdigest() for role,path in selected['inputs'].items() if role!='cache'}
+    if closure!=cache['inputClosure']:raise SystemExit('Input semantics changed: review a successor cache namespace; no automatic rebinding.')
+    for row in selected['authorities']:row['sha256']=hashlib.sha256(read(row['path'])).hexdigest()
+    save('workspace/build-definition.json',selected)
+    selector=value('workspace/current-developer-build.json');selector['sha256']=hashlib.sha256(read(selector['path'])).hexdigest();save('workspace/current-developer-build.json',selector)
+    path='scripts/developer_catalog.py';text=read(path).decode();tree=ast.parse(text)
+    assignments={n.targets[0].id:n for n in tree.body if isinstance(n,ast.Assign) and isinstance(n.targets[0],ast.Name)}
+    pin=ast.literal_eval(assignments['PIN'].value);public=ast.literal_eval(assignments['PUBLIC_PIN'].value)
+    pin['sourceFiles']={p:hashlib.sha256(read(p)).hexdigest() for p in pin['sourceFiles']}
+    catalog=value('workspace/dependencies/catalog.json');record=catalog['releases'][0];record['sourceFiles']=pin['sourceFiles'];save('workspace/dependencies/catalog.json',catalog)
+    public['recordSha256']=canonical(record);pin['recordSha256']=canonical({**record,'id':pin['releaseId']})
+    for name,v in [('PIN',pin),('PUBLIC_PIN',public)]:text=re.sub('^'+name+r' = .*$',lambda _:name+' = '+repr(v),text,flags=re.M)
+    changes[path]=text.encode()
+    changed={p:b for p,b in changes.items() if (ROOT/p).read_bytes()!=b}
+    if not args.write and changed:raise SystemExit('Workspace metadata projections differ: run --write and review.')
+    if args.write:
+        for p,b in changed.items():(ROOT/p).write_bytes(b)
+    print('Workspace input/catalog pins: PASS')
+if __name__=='__main__':main()

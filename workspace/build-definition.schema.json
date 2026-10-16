@@ -1,38 +1,99 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
-  "title": "Current build selection with immutable compatibility inputs",
+  "title": "Standalone SDV Lab build selection",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schemaVersion", "kind", "id", "compatibilityBase", "developerSelection", "operatorSelection", "documentation", "historicalEvidence"],
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "id",
+    "developerSelection",
+    "operatorSelection",
+    "inputs",
+    "authorities",
+    "documentation"
+  ],
   "properties": {
-    "$comment": {"type": "string"},
-    "$schema": {"const": "build-definition.schema.json"},
-    "schemaVersion": {"type": "integer", "const": 2},
-    "kind": {"const": "current-build-definition"},
-    "id": {"const": "sdv-lab-current"},
-    "compatibilityBase": {
-      "type": "object", "additionalProperties": false,
-      "required": ["path", "sha256", "definitionDigest"],
+    "$schema": {
+      "const": "build-definition.schema.json"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 3
+    },
+    "kind": {
+      "const": "current-build-definition"
+    },
+    "id": {
+      "const": "sdv-lab-current"
+    },
+    "developerSelection": {
+      "const": "workspace/current-developer-build.json"
+    },
+    "operatorSelection": {
+      "const": "workspace/launcher-catalog.json"
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources",
+        "runtime",
+        "controllers",
+        "services",
+        "policy",
+        "cache"
+      ],
       "properties": {
-        "path": {"const": "workspace/releases/kit028-setup042.json"},
-        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-        "definitionDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        "sources": {
+          "const": "workspace/inputs/sources.lock.json"
+        },
+        "runtime": {
+          "const": "workspace/inputs/runtime-inputs.lock.json"
+        },
+        "controllers": {
+          "const": "workspace/inputs/controller-images.lock.json"
+        },
+        "services": {
+          "const": "workspace/inputs/service-inputs.lock.json"
+        },
+        "policy": {
+          "const": "workspace/inputs/build-policy.json"
+        },
+        "cache": {
+          "const": "workspace/inputs/cache-compatibility.json"
+        }
       }
     },
-    "developerSelection": {"const": "workspace/current-developer-build.json"},
-    "operatorSelection": {"const": "workspace/launcher-catalog.json"},
-    "documentation": {"type": "array", "minItems": 3, "items": {"type": "string", "pattern": "^docs/[A-Za-z0-9_./-]+\\.md$"}},
-    "historicalEvidence": {
-      "type": "array", "minItems": 3,
+    "authorities": {
+      "type": "array",
+      "minItems": 16,
       "items": {
-        "type": "object", "additionalProperties": false,
-        "required": ["revision", "path", "sha256"],
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
         "properties": {
-          "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
-          "path": {"type": "string", "pattern": "^docs/[A-Za-z0-9_./-]+\\.md$"},
-          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
         }
+      }
+    },
+    "documentation": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "pattern": "^docs/[A-Za-z0-9_./-]+\\.md$"
       }
     }
   }

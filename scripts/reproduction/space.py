@@ -83,8 +83,7 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
         plan = chain.read_plan(storage.release, build_plan)
         # Frozen base/input definitions still underpin the current product.
         # Superseded public build attempts are Git history, not runtime inputs.
-        reviewed = [chain.read_plan(storage.release), chain.read_plan(storage.release,
-                    ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json')]
+        reviewed = [chain.read_plan(storage.release)]
         current = current_reviewed_plan(storage.release)
         if current is not None:
             reviewed.append(current)

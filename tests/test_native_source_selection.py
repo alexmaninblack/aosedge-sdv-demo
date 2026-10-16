@@ -54,6 +54,7 @@ class SelectionTests(unittest.TestCase):
             self.assertEqual(chain.read_plan(self.release,p)['nativeSources'],self.selection)
     def test_old_schema_cannot_sneak_in_native_override(self):
         value=json.loads((chain.ROOT/chain.PLAN).read_bytes())
+        value['schemaVersion']=2
         value['nativeSources']=self.selection
         with tempfile.TemporaryDirectory() as directory:
             p=Path(directory).resolve()/'plan.json';p.write_text(json.dumps(value))

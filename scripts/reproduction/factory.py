@@ -18,11 +18,11 @@ from .core import ROOT, Release, Storage, LabError, read_json, require, atomic_j
 TEMPLATE = 'manifests/r6-1/aos-vm-project.pinned.yaml'
 TEMPLATE_SHA256 = 'b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e'
 HISTORICAL_PLATFORM = 'a12c0aa7f8a680b35407776b12bcc025970abc73'
-FACTORY_CHECKPOINT = 'workspace/checkpoints/factory-41-candidate.json'
+FACTORY_CHECKPOINT = 'workspace/inputs/controller-images.lock.json'
 
 
 def recipe(root=ROOT):
-    factory = read_json(root / FACTORY_CHECKPOINT)['factory']
+    factory = read_json(root / FACTORY_CHECKPOINT)['prebuilt']['factory']
     require(factory['version'] == '6.1.1-maninblack.41', 'Factory checkpoint version changed')
     template = (root / TEMPLATE).read_bytes()
     require(hashlib.sha256(template).hexdigest() == TEMPLATE_SHA256, 'Historical Factory template changed')

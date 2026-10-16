@@ -19,20 +19,10 @@ class CurrentSourceScopeTests(unittest.TestCase):
         for name in ('build-demo-interaction-mockup', 'build-mockup-2-10.cjs'):
             self.assertFalse((ROOT / 'scripts' / name).exists())
 
-    def test_retained_checkpoints_are_executable_input_authorities(self):
-        self.assertEqual({p.name for p in (ROOT / 'workspace/checkpoints').glob('*.json')}, {
-            'demo-v1.1.json', 'factory-41-candidate.json', 'factory-41-source-20261008.json',
-            'installer-kit-028-candidate.json', 'installer-kit-028-source-lock.json',
-            'reproduction-services-20261008.json'})
-
-    def test_retained_release_records_cover_current_selectors_and_adapters(self):
-        self.assertEqual({p.name for p in (ROOT / 'workspace/releases').glob('*.json')}, {
-            'kit028-setup042.json', 'release.schema.json',
-            '1.2.0-rc.1-public-build-chain-r7.json', '1.2.0-rc.1-build-chain.json',
-            '1.2.0-rc.1-packaging.json', '1.2.0-rc.1-setup.json',
-            '1.2.0-rc.1-source-factory-build-chain.json',
-            '1.2.0-rc.1-source-factory-delivery.json',
-            '1.2.0-rc.2-presenter-preview-dropbox-delivery.json'})
+    def test_only_current_workspace_records_remain(self):
+        self.assertFalse((ROOT/'workspace/checkpoints').exists())
+        self.assertEqual({p.name for p in (ROOT/'workspace/releases').glob('*.json')},
+                         {'build-plan.json','delivery.json'})
 
     def test_current_catalog_and_developer_pin_still_resolve(self):
         catalog = json.loads((ROOT / 'workspace/launcher-catalog.json').read_bytes())

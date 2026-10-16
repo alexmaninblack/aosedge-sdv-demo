@@ -9,7 +9,7 @@
 - Updated: 2026-10-15
 - Owner: SDV Lab integration
 - Current selection: [launcher catalog](../../workspace/launcher-catalog.json) and its immutable delivery descriptor
-- Historical source: [Kit028 / Setup042 source lock](../../workspace/checkpoints/installer-kit-028-source-lock.json)
+- Source inputs: [current source lock](../../workspace/inputs/sources.lock.json)
 
 ## Reading the design chain
 

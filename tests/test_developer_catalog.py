@@ -214,10 +214,7 @@ class CatalogSourceTests(unittest.TestCase):
     def test_catalog_append_repeat_preserves_history_and_refuses_mutation(self):
         owner = runpy.run_path(str(ROOT/'scripts/preparation-catalog'))
         create = owner['create']
-        old = {'buildPlan': 'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json',
-               'descriptorPath': 'workspace/releases/1.2.0-rc.1-source-factory-delivery.json',
-               'productVersion': '1.2.0-rc.1', 'dependencyGroups': {}}
-        old['descriptorCanonicalJsonSha256'] = catalog.digest(json.loads((ROOT/old['descriptorPath']).read_text()))
+        old = {'productVersion':'1.2.0-rc.1','dependencyGroups':{}}
         for group, name in (('buildInputs', 'developer-factory41-r1'), ('simulation', 'carla-macos-arm64-r1')):
             path = 'workspace/dependencies/'+name+'.lock.json'
             lock = json.loads((ROOT/path).read_text())
@@ -311,3 +308,19 @@ class PublicCatalogTests(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+
+class CurrentDependencyCatalogTests(unittest.TestCase):
+    def test_source_owned_catalog_matches_current_pins_without_network(self):
+        value=json.loads((ROOT/'workspace/dependencies/catalog.json').read_text())
+        row=catalog.select_record(value,public=True)
+        self.assertEqual(row['sourceFiles'],catalog.PIN['sourceFiles'])
+        for path in row['sourceFiles']:
+            self.assertNotIn('/checkpoints/',path)
+            self.assertNotIn('source-factory-delivery',path)
+        self.assertEqual(sum(len(r['packages']) for r in row['dependencyGroups'].values()),5)
+    def test_untrusted_raw_catalog_endpoint_is_not_contacted(self):
+        with mock.patch.dict(catalog.PUBLIC_PIN,{'url':'https://raw.githubusercontent.com/other/repository/main/catalog.json'}), \
+             mock.patch.object(catalog.urllib.request,'build_opener') as opener:
+            with self.assertRaises(catalog.CatalogError):catalog.public_catalog(mock.Mock())
+            opener.assert_not_called()

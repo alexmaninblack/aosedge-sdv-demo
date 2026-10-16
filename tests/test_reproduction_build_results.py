@@ -101,7 +101,8 @@ class SealedResultsTests(StorageFixture, unittest.TestCase):
     def test_schema_two_requires_exact_policy_and_schema_one_unchanged(self):
         legacy_plan = core.ROOT / chain.PLAN
         plan = chain.read_plan(self.release, legacy_plan)
-        self.assertEqual(plan['schemaVersion'], 1)
+        self.assertEqual(plan['schemaVersion'], 3)
+        plan.pop('nativeSources')
         plan.update(schemaVersion=2, resultPolicy='seal-developer-results-v1')
         with patch.object(chain, 'read_json', return_value=plan):
             self.assertEqual(chain.read_plan(self.release, legacy_plan), plan)

@@ -17,14 +17,20 @@ from release_publication import descriptor, remote_main
 
 
 def project(owner, published):
-    """Append-only delivery record; generate only the existing selected graph."""
+    """Project the current descriptor; immutable releases remain in receipts/Git."""
     expected=descriptor(owner)
-    suffix='-dropbox' if published.get('provider')=='dropbox' else ''
-    relative='workspace/releases/'+owner.config['version']+'-presenter-preview'+suffix+'-delivery.json'
+    relative='workspace/releases/delivery.json'
     path=ROOT/relative
     raw=(json.dumps(expected,indent=2)+'\n').encode()
-    require(not path.exists() or path.read_bytes()==raw,'IMMUTABLE_DESCRIPTOR_COLLISION')
     catalog=json.loads((ROOT/'workspace/launcher-catalog.json').read_bytes())
+    if path.exists() and path.read_bytes()!=raw:
+        try:previous=json.loads(path.read_bytes())
+        except (ValueError, OSError):require(False,'IMMUTABLE_DESCRIPTOR_COLLISION')
+        require(catalog.get('operatorDescriptor')==relative and
+                all(catalog['operator'].get(k)==previous.get(k) for k in
+                    ('productVersion','status','file','bytes','sha256','manifestSha256','notarized')),
+                'CURRENT_DESCRIPTOR_SELECTION_CHANGED')
+        require(previous['productVersion']!=expected['productVersion'],'IMMUTABLE_DESCRIPTOR_COLLISION')
     catalog['catalogRevision']+=1;catalog['operatorDescriptor']=relative
     for key in ('productVersion','status','file','bytes','sha256','manifestSha256','notarized'):
         catalog['operator'][key]=expected[key]

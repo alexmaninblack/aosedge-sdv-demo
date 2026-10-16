@@ -7,7 +7,7 @@
   "integrationImplementation": "862d48b158e0f0980f80bb40eb0837453e21788e",
   "integrationDocumentationAtEntry": "0d132125f8c88776b173060dc0cbc414332bcc45",
   "dependencyPins": "repositories.json",
-  "factoryAndCorePins": "checkpoints/demo-v1.1.json",
+  "factoryAndCorePins": "inputs/controller-images.lock.json",
   "additionalSimulatorInput": {
     "owner": "Vehicle Simulation",
     "repository": "https://bitbucket.org/carla-simulator/carla-content.git",

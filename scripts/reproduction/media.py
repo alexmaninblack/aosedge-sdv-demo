@@ -9,7 +9,7 @@ from .sources import verify_sources
 from . import packaging, package_chain, host
 
 TARGETS = ('setup', 'dmg')
-RELEASE = 'workspace/releases/1.2.0-rc.1-setup.json'
+RELEASE = None
 
 
 def verify(output, inputs):
@@ -41,8 +41,9 @@ def assemble(storage, state, target, python, signing_identity, progress,
     storage.check(additional=(76 if target == 'dmg' else 2)*GIB, reserve=90*GIB)
     from .cloud import relative
     require((input_checkpoint is None) == (release_checkpoint is None), 'Select both group and Setup checkpoints')
-    checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else package_chain.CHECKPOINT
-    release_path = str(relative(release_checkpoint)) if release_checkpoint is not None else RELEASE
+    require(developer_results or input_checkpoint is not None, 'Select verified developer results or explicit reviewed media checkpoints')
+    checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else '-'
+    release_path = str(relative(release_checkpoint)) if release_checkpoint is not None else '-'
     extras = (checkpoint_path, release_path) if input_checkpoint is not None else ()
     trees, revision = packaging.producer(storage, target, extras)
     trusted = None if developer_results else read_json(ROOT/release_path)

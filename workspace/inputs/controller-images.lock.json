@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "prebuilt": {
+    "factory": {
+      "version": "6.1.1-maninblack.41",
+      "image": "main-qemuarm64.img",
+      "format": "raw",
+      "sizeBytes": 6997147648,
+      "sha256": "361c187374469f4a97b3b9c74cb755ce432bc5287fb19ccd2f6bfb9c3eb46769",
+      "sourceRevision": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+      "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
+      "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.41/manifest.json"
+    },
+    "qualificationToolsRevision": "30ae66148255830b7e29cc82e2cd251d065bb894"
+  },
+  "rebuilt": {
+    "factory": {
+      "version": "6.1.1-maninblack.41",
+      "image": "main-qemuarm64.img",
+      "format": "raw",
+      "sizeBytes": 6997147648,
+      "sha256": "e7c9e3b20c08a91f9072014ece0861d8ae34787ef14d4ef9b50693c062439d57",
+      "sourceRevision": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+      "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
+      "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.41/manifest.json"
+    },
+    "manifest": {
+      "path": "factory-images/6.1.1-maninblack.41/manifest.json",
+      "bytes": 10408,
+      "sha256": "952ef0bb94d1a48d85173331b6f73df52a0da549a9799843ff39e4df6c1f777e"
+    },
+    "qualificationToolsRevision": "78f837a85e79f1285e0720d9c3adbda6b3eef718"
+  }
+}

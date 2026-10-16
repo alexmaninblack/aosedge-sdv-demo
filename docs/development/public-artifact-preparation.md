@@ -10,7 +10,9 @@ Operator DMG delivery is independently selected by the
 [launcher catalog](../../workspace/launcher-catalog.json) and release descriptor.
 
 The [public companion folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
-contains dependency archives, the catalog and supplementary source/notices.
+contains dependency archives and supplementary source/notices. The current
+[dependency catalog](../../workspace/dependencies/catalog.json) is maintained with
+the source; it selects those existing archives independently of an installer.
 Public test access is authorized; that is not blanket redistribution clearance
 or fresh-source-build qualification. The underlying byte/source locks remain
 immutable even when delivery locations change.
@@ -77,10 +79,13 @@ python3 -B scripts/sync-launcher-pins --check
 
 The catalog generator's `--public-links` preserves byte/source pins and emits
 a distinct immutable public record; it neither uploads nor widens permissions.
-Publish the small stable `release-index.json`, review its URL/record digest
-into `PUBLIC_PIN` in `scripts/developer_catalog.py`, then regenerate the
-standalone preparation script and launcher together. Downloaded old launchers
-retain their old pins; they are not updated in place.
+Maintain the small source-owned `workspace/dependencies/catalog.json`. Review
+its package URLs against the unchanged lock identities, then run
+`scripts/sync-workspace-inputs --write`, `scripts/sync-preparation-catalog` and
+`scripts/sync-launcher-pins --write`. Commit the metadata and projections together.
+The launcher authenticates the selected record by its embedded digest; GitHub
+is a locator, not a substitute for that pin. Old launchers retain their pins.
+Metadata-only migration does not upload or re-download the packages.
 
 For explicit private-input maintenance only, `scripts/prepare-macos.sh
 --private-inputs` uses the reader's authorized Google account;

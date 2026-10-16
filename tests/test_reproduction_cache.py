@@ -159,7 +159,7 @@ class CatalogueTests(StorageFixture, unittest.TestCase):
     def test_expected_rows_only_and_deduplicated(self):
         self.fixture(); self.write([self.row, {**self.row,'file':'alias.whl'}])
         rows = cache.catalogue(self.storage)
-        self.assertEqual(len(rows), 3)  # two declared release artifacts plus one wheel digest
+        self.assertEqual(len(rows), 3)  # current DMG, required retained artifact and one wheel digest
         self.assertEqual(len(rows['a'*64]['names']), 2)
         self.assertEqual(self.check.call_args.args[1]['revision'], self.release.sources['integration']['revision'])
         self.assertEqual(self.check.call_args.args[2]['GIT_OPTIONAL_LOCKS'], '0')
@@ -277,7 +277,7 @@ class SpaceTests(StorageFixture, unittest.TestCase):
 
     def test_source_factory_plan_is_supported_without_changing_its_pins(self):
         self.fixture()
-        plan = core.ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json'
+        plan = core.ROOT/'workspace/releases/build-plan.json'
         before = plan.read_bytes()
         value = space.report(self.storage, self.state, build_plan=plan)
         self.assertEqual(plan.read_bytes(), before)
@@ -285,7 +285,7 @@ class SpaceTests(StorageFixture, unittest.TestCase):
 
     def test_current_plan_preserves_steps_and_frozen_source_definition(self):
         self.fixture()
-        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json')
+        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/build-plan.json')
         new = space.current_reviewed_plan(self.release)
         # Native UI source ownership is explicit in the successor; order,
         # dependencies and functional profiles remain the same.

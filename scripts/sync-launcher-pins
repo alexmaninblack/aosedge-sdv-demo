@@ -57,7 +57,7 @@ def projection():
 
 def authorities():
     catalog = json.loads((ROOT / FILES['catalog']).read_bytes())
-    selected=catalog.get('operatorDescriptor','workspace/releases/1.2.0-rc.1-source-factory-delivery.json')
+    selected=catalog['operatorDescriptor']
     path=Path(selected)
     if path.parent!=Path('workspace/releases') or path.suffix!='.json' or '..' in path.parts:
         raise ValueError('Invalid operator descriptor selection')

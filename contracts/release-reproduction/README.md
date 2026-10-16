@@ -3,73 +3,45 @@
 
 # Release Definition and Reproduction Contract
 
-- Status: current definition v2; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.25
+- Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
+- Version: 1.26
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
 
-The [current build definition](../../workspace/build-definition.json), schema 2,
-selects maintained documentation and the independent operator/developer
-authorities. A consistent definition is not a qualified release. The operator
-catalog selects the actual DMG; the developer selector pins the producer plan.
+The [current build definition](../../workspace/build-definition.json), schema 3,
+is standalone. It binds source/input locks, the component policy, maintained
+instructions and independent build/delivery selections. A consistent definition
+is not a qualified release and does not advance any artifact pin.
 
 ## Current selection and compatibility identity
 
-Default validation and build tools resolve the current definition. It verifies
-the complete original source, payload, toolchain, authority and dependency
-closure, the base file SHA-256 and its canonical definition digest. The exact
-compatibility base remains unchanged because published archives, frozen
-producers, prepared workspaces and build receipts use that identity. Returning
-the same compatibility value/key is deliberate reuse, not relabeling a new
-artifact or rewriting an old receipt.
+Default validation needs no old release file, obsolete report, Git history or
+network. Exact Git source/build revisions, access boundaries, runtime manifest
+hashes, CI pins, toolchains and the complete acyclic component graph remain
+checked. Unknown, missing, changed, linked and unsafe inputs fail closed.
 
-The default developer plan is the exact hash-pinned current developer selection,
-not the earlier schema-1 chain. The old chain remains an explicit compatibility
-input. No producer revision is advanced by this migration; changing a selected
-file without updating its reviewed pin fails before execution.
-
-Current documentation is checked at its maintained paths. Original R1/Kit028
-prose is represented by exact immutable Git revision/path and SHA-256, not
-required as obsolete files in the checkout. Ordinary validation needs no Git
-history or network and makes no claim that those old results qualify current
-media. `--historical-evidence` independently verifies the declared hashes using
-bounded existing local Git blobs; it never fetches or restores reports.
-
-The explicit v1 validator retains its original schema and on-disk evidence
-contract for an original source snapshot. The new current resolver does not
-turn a failed v1 snapshot into a pass. Its separate schema replaces obsolete
-prose prerequisites with current documentation while retaining every build-input
-integrity check. Profile readiness remains blocked; this metadata migration
-does not alter A/B pins, compiled product bytes, signing, Cloud or permissions.
-
-The sections below specify the retained compatibility inputs and the accepted
-build/transport behavior. Historical candidate IDs describe their input domain,
-not a second selection of the current installer.
+The [cache compatibility record](../../workspace/inputs/cache-compatibility.json)
+retains the original cache/prepared-storage namespace and controller export
+provenance for unchanged material inputs. It is not product versioning, current
+qualification or permission to alter an old receipt. Its complete input closure
+must match; automatic semantic rebinding is forbidden. Frozen producer checkouts
+keep their original source and receipts; current maintenance does not edit them.
 
 ## Authority and immutable inputs
 
-The [immutable compatibility candidate](../../workspace/releases/kit028-setup042.json) follows
-the [schema](../../workspace/releases/release.schema.json). It binds existing
-authority files by SHA-256 and cross-checks their selected values. It does not
-replace the component manifests or retroactively edit original build receipts.
-The integration tag selects a commit; the definition never hashes its own
-commit. A later signed external receipt must bind released outputs to that
-commit and its complete input set.
+The [source lock](../../workspace/inputs/sources.lock.json) binds exact source and
+original build revisions. [Runtime inputs](../../workspace/inputs/runtime-inputs.lock.json)
+bind the retained manifests and their original provenance; an original dirty
+build does not become clean through this migration. [Controller image identities](../../workspace/inputs/controller-images.lock.json)
+separate prebuilt and independently rebuilt images. [Service inputs](../../workspace/inputs/service-inputs.lock.json)
+retain all four exact binary profile identities.
 
-Source roles are exact commits, not branch requirements. In this candidate the
-application source publication and Factory build tools are two explicit roles
-of the same repository. R2 must resolve them automatically as separate clean
-checkouts. Consolidation, branch merging and worktree removal are not required.
-Published source, original build revision and current documentation revision
-are distinct. The original Kit028 build contained uncommitted inputs; source
-hash correspondence is not a clean or byte-identical rebuild claim.
-
-`workspace/repositories.json`, the Kit028 source lock, five portable locks,
-Setup's application pin and CI checkout pins must agree. The old
-`components/baseline.lock.json` and `components/r6-1-source.lock.json` describe
-earlier work, not replacement inputs for this candidate. The Stage 0 inventory
-supplies historical observations only, not current toolchain qualification.
+The [workspace map](../../workspace/README.md) lists these roles and projections.
+The public catalog now describes dependency packages independently from old DMG
+and full-build receipts. Actual archive names, bytes, manifests and hashes stay
+unchanged. Current filenames describe roles; revisions and versions live inside
+records. Source-only validation is not new runtime or rebuild acceptance.
 
 ## Profiles and dependency closure
 
@@ -276,7 +248,7 @@ Fresh Factory outputs require new evidence and independently reviewed downstream
 packaging identities. Preparation alone does not prove a completed image build.
 
 `build --target preparation --factory-inputs <result-root>` explicitly selects
-the [October 8 source image checkpoint](../../workspace/checkpoints/factory-41-source-20261008.json).
+the [October 8 source image checkpoint](../../workspace/inputs/controller-images.lock.json).
 The result directory must be on the bound volume. Its independently pinned
 manifest, exact source/tool revisions, native/package/image results and immutable
 image size are verified; the canonical assembler hashes the image at transfer.
@@ -430,7 +402,7 @@ uses the October 10 anonymous extension below. Old records and source pins are
 preserved, not reinterpreted as public permissions.
 
 The October 9 owner-approved amendment replaces ordinary manual binding-path
-questions. The stable filename is `release-index.json` in the authorized
+questions. For optional private-input maintenance the stable filename is `release-index.json` in the authorized
 `AosEdge SDV Lab Artifacts` folder. Versioning is internal: integer
 `schemaVersion` for format, positive `catalogRevision` for catalog updates,
 and immutable release records with unique `id` and `productVersion`.
@@ -493,7 +465,7 @@ OAuth, Google CLI installation, account questions or a private transport fallbac
 
 The public distribution folder is separate from historical/private artifacts.
 Publication requires explicit owner authorization, read-only link sharing and
-a reviewed persistent `release-index.json` locator. On October 10 the owner
+a hash-pinned source-owned `workspace/dependencies/catalog.json` locator. On October 10 the owner
 explicitly authorized public reading of the prepared eight-file folder for the
 launcher walkthrough, after disclosure that the Unreal/Apple/SDK redistribution
 review remains unresolved. This bounded test-publication amendment activates
@@ -734,24 +706,13 @@ string alone. The native closure owner preserves entitlements, relocates loads,
 removes build rpaths and verifies local signatures. Separate version/help-only
 probes deny network and Homebrew reads; they start no simulator, VM or listener.
 
-A new source-reviewed
-[packaging checkpoint](../../workspace/releases/1.2.0-rc.1-packaging.json)
-selects successor group manifests. It preserves the historical definition and
-five source locks. Build-time `--input-checkpoint` selects this file explicitly;
-there is no runtime pin adoption. Export retains every contract/protocol field
-and substitutes only those independently reviewed manifest pins. VM assembly
-requires both host/preparation pins; application assembly requires all five,
-including the VM-to-host binding. An incomplete checkpoint cannot produce a
-complete application. Adapter evidence stays outside installed payloads.
-Backend assembly reuses the verified untagged OCI export without an Engine call.
-Setup must subsequently bind the new application digest independently; none of
-these commands creates a release tag, installs, provisions or publishes.
-For successor Setup builds, both the reviewed group checkpoint and a separate
-source-reviewed application release pin are required. Embedded contract pins
-must equal those in the selected verified kit. Only the embedded build copy of
-`setup_release.json` changes; the historical source pin stays intact. Complete
-media assembly checks that same independent source pin against the signed Setup.
-Omitting the explicit successor parameters retains the historical build behavior.
+The current ordered build seals independently verified upstream group manifests
+and the application digest for that invocation. Low-level packaging can also
+accept explicit source-reviewed checkpoints; it has no hidden old-checkpoint
+default. All contract fields and VM-to-host bindings remain enforced. Missing,
+changed or incomplete pins cannot produce a complete application. Low-level
+media requires either verified developer results or both explicit group and
+Setup pins. No command silently adopts an adjacent result.
 `setup` requires an explicitly selected authorized signing identity; it has no
 automatic ad-hoc fallback. `dmg` reuses the verified Setup built for that same
 application and independent source pin. Neither target launches Setup or the
@@ -777,12 +738,12 @@ They reject changed, linked, incomplete or mixed historical/developer inputs.
 Setup embeds the sealed group locks and application digest before signing.
 Installation still requires exact manifests and payload hashes; it has no
 developer trust fallback. A developer result is not a published or qualified
-release. Schema-1 plans and ordinary source-reviewed checkpoint arguments retain
-their existing behavior. Historical pins and frozen producer sources are not
+release. Explicit source-reviewed checkpoint arguments remain supported; old automatic
+plan and output defaults are not shipped in the current tree. Historical pins and frozen producer sources are not
 rewritten. Repeats verify and reuse exact results without acquiring inputs again.
 
-The historical schema-1 `build --target all` route invokes 17 developer steps from the source-reviewed
-[ordered producer plan](../../workspace/releases/1.2.0-rc.1-build-chain.json).
+The current `build --target all` route invokes 17 developer steps from the source-reviewed
+[ordered producer plan](../../workspace/releases/build-plan.json).
 This plan extends the accepted separate build-tools roles: it binds the base
 definition, exact integration-repository commits and dependency order. It does
 not modify component pins, input manifests, the independent Setup pin or trust

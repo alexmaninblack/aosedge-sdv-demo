@@ -12,7 +12,7 @@ from .core import ROOT, LabError, require, read_json, atomic_json, digest, no_li
 from .sources import git, check_source, verify_sources
 from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media
 
-PLAN = 'workspace/releases/1.2.0-rc.1-build-chain.json'
+PLAN = 'workspace/releases/build-plan.json'
 DEPENDENCIES = {
     'presenter': (), 'cloud-sdk': (), 'brake-backend': (), 'tire-backend': (),
     'backend-export': ('brake-backend', 'tire-backend'),
@@ -25,7 +25,7 @@ DEPENDENCIES = {
 
 
 def read_plan(release, path=None):
-    if path is None and getattr(release, 'definition', {}).get('schemaVersion') == 2:
+    if path is None and getattr(release, 'definition', {}).get('schemaVersion') == 3:
         selected = read_json(ROOT / release.definition['developerSelection'])
         require(isinstance(selected, dict) and set(selected) == {'schemaVersion', 'path', 'sha256'}
                 and type(selected['schemaVersion']) is int and selected['schemaVersion'] == 1
@@ -46,7 +46,8 @@ def read_plan(release, path=None):
         'baseDefinitionSha256', 'repository', 'producers', 'steps'} | ({'resultPolicy'} if developer else set()) | ({'nativeSources'} if native else set())
         and type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2, 3)
         and (not developer or value['resultPolicy'] == 'seal-developer-results-v1')
-        and value['productVersion'] == '1.2.0-rc.1' and value['baseDefinitionSha256'] == release.key,
+        and isinstance(value['productVersion'], str) and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?', value['productVersion'])
+        and value['baseDefinitionSha256'] == release.key,
         'Build chain differs from selected definition')
     require(value['repository'] == release.sources['integration']['repository'], 'Producer repository differs')
     if native:

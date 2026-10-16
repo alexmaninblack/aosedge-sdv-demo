@@ -1,36 +1,87 @@
 {
   "$schema": "build-definition.schema.json",
-  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "kind": "current-build-definition",
   "id": "sdv-lab-current",
-  "compatibilityBase": {
-    "path": "workspace/releases/kit028-setup042.json",
-    "sha256": "5951852da7158a63802c1045fe0f37719f90d549b2e70f5f7ab63c5c9841ad13",
-    "definitionDigest": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598"
-  },
   "developerSelection": "workspace/current-developer-build.json",
   "operatorSelection": "workspace/launcher-catalog.json",
+  "inputs": {
+    "sources": "workspace/inputs/sources.lock.json",
+    "runtime": "workspace/inputs/runtime-inputs.lock.json",
+    "controllers": "workspace/inputs/controller-images.lock.json",
+    "services": "workspace/inputs/service-inputs.lock.json",
+    "policy": "workspace/inputs/build-policy.json",
+    "cache": "workspace/inputs/cache-compatibility.json"
+  },
+  "authorities": [
+    {
+      "path": "workspace/repositories.json",
+      "sha256": "80b4ae374f1a415ca532a702a0855a5c59b1897108ed5fc98cd5f3d42b4fcfed"
+    },
+    {
+      "path": "workspace/cloud-worker-wheels.lock.json",
+      "sha256": "47a91441b93f3f1e922c71ae423a7b16db5a39ffced206e71003fbffc6a7501f"
+    },
+    {
+      "path": "workspace/gateway-build-sdk.lock.json",
+      "sha256": "a70bf7ffa8dd69c80b2c1c975dc8ba4ffa5cbf2c6b718794a22e1eced91c8b74"
+    },
+    {
+      "path": "apps/presenter-ui/package.json",
+      "sha256": "1248b0c896286eb27f809f7495435fcb3637673213ea542acfa938ce869b11a8"
+    },
+    {
+      "path": "apps/presenter-ui/package-lock.json",
+      "sha256": "fcb9e6114b021dfa02f93a76d453f2ca06980c780947dbe38ac9a5d378a7364c"
+    },
+    {
+      "path": "contracts/portable-host-launch/host-runtime.lock.json",
+      "sha256": "cf2e70da60e6af2d1d0d6000a5fb56b550b1a668278e2e4849b9d2a9245dbb11"
+    },
+    {
+      "path": "contracts/portable-preparation-inputs/vehicle-inputs.lock.json",
+      "sha256": "bb21b00f9d2682cdcdd663b981b3a18b5e77c45fc7f8bd86cdd79074795d0772"
+    },
+    {
+      "path": "contracts/portable-vm-launch/vm-runtime.lock.json",
+      "sha256": "15b8bd838d31ce825644fbf8cea5ccbe6b37f4ee8c5c2d6fd0127999e6438873"
+    },
+    {
+      "path": "contracts/portable-cloud-backend-inputs/cloud-runtime.lock.json",
+      "sha256": "5948205958fc62a514d6ab1e170416462c8cd16c9c2d62dcecd44daf4cacd8f4"
+    },
+    {
+      "path": "contracts/portable-cloud-backend-inputs/backend-inputs.lock.json",
+      "sha256": "499a0d97266dd6dbce4bda071381e14b0e5c2b4bb36b67f4edad3fd32659b4dc"
+    },
+    {
+      "path": "workspace/inputs/controller-images.lock.json",
+      "sha256": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47"
+    },
+    {
+      "path": "workspace/inputs/service-inputs.lock.json",
+      "sha256": "beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae"
+    },
+    {
+      "path": "workspace/inputs/sources.lock.json",
+      "sha256": "019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068"
+    },
+    {
+      "path": "workspace/inputs/runtime-inputs.lock.json",
+      "sha256": "d2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d"
+    },
+    {
+      "path": "workspace/inputs/build-policy.json",
+      "sha256": "11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc"
+    },
+    {
+      "path": "workspace/inputs/cache-compatibility.json",
+      "sha256": "a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a"
+    }
+  ],
   "documentation": [
     "docs/getting-started/reproduce-demo.md",
     "docs/development/release-reproduction-r2.md",
     "docs/qualification/current-baseline.md"
-  ],
-  "historicalEvidence": [
-    {
-      "revision": "cc75541f255f3d2fb0fd670053687ebe406c37ee",
-      "path": "docs/development/release-reproduction-r1.md",
-      "sha256": "f3b254039d282c5f76277e69af0d6fd23d2643e58efe2c577b40211dc71612d4"
-    },
-    {
-      "revision": "cc75541f255f3d2fb0fd670053687ebe406c37ee",
-      "path": "docs/qualification/m1-live-journey-2026-10-03.md",
-      "sha256": "a5379dfddd9fa9b147b7eb4f4345358001578f70f0564352ae24d434bbbfc327"
-    },
-    {
-      "revision": "cc75541f255f3d2fb0fd670053687ebe406c37ee",
-      "path": "docs/qualification/kit028-setup042-source-publication-2026-10-05.md",
-      "sha256": "4bb9e07e66e74d332f8aa8884527bf860891b6c00974d63e65536ae401e87b21"
-    }
   ]
 }

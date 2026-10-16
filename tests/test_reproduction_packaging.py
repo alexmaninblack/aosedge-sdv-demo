@@ -204,7 +204,7 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         self.assertEqual(self.build(), old)
         owners = [call.args[0] for call in self.command.call_args_list
                   if str(call.args[0][0]) == '/usr/bin/sandbox-exec']
-        self.assertEqual(owners[-1][-2], packaging.SOURCE_FACTORY_CHECKPOINT)
+        self.assertEqual(owners[-1][-2], packaging.SOURCE_FACTORY_CHECKPOINT + '#rebuilt')
 
     def source_fixture(self):
         root = self.base/'factory-result'
@@ -228,7 +228,7 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         self.patch('reproduction.packaging.ROOT', self.base)
         checkpoint = self.base/packaging.SOURCE_FACTORY_CHECKPOINT
         checkpoint.parent.mkdir(parents=True)
-        core.atomic_json(checkpoint, pin)
+        core.atomic_json(checkpoint, {'rebuilt':pin})
         self.patch('reproduction.packaging.storage_volume', return_value=self.storage.volume)
         return root, manifest, image, pin
 
@@ -254,7 +254,7 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         value['build']['imageQa'] = 'FAIL'
         core.atomic_json(manifest, value)
         pin['manifest'].update(bytes=manifest.stat().st_size, sha256=sha256(manifest))
-        core.atomic_json(self.base/packaging.SOURCE_FACTORY_CHECKPOINT, pin)
+        core.atomic_json(self.base/packaging.SOURCE_FACTORY_CHECKPOINT, {'rebuilt':pin})
         with self.assertRaisesRegex(core.LabError, 'evidence differs'):
             packaging.source_factory(self.storage, root)
 

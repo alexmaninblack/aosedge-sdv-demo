@@ -23,18 +23,7 @@ def create(receipt_path, output, previous=None, public_links=None):
     output = no_links(output)
     require(not output.is_relative_to(ROOT), 'Private catalog output must remain outside the public checkout')
     old = read_json(receipt_path)
-    plan_path = old['buildPlan']
-    require(plan_path == 'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json',
-            'Review support for a different producer plan before publishing its preparation record')
-    plan = read_json(ROOT / plan_path)
-    descriptor_path = old['descriptorPath']
-    require(descriptor_path == 'workspace/releases/1.2.0-rc.1-source-factory-delivery.json',
-            'Unexpected delivery descriptor')
-    descriptor = read_json(ROOT / descriptor_path)
-    require(digest(descriptor) == old['descriptorCanonicalJsonSha256']
-            and old['productVersion'] == descriptor['productVersion'] == plan['productVersion'],
-            'Historical descriptor correspondence failed')
-    paths = [plan_path, descriptor_path, 'workspace/releases/kit028-setup042.json']
+    paths = list(__import__('developer_catalog').PIN['sourceFiles'])
     groups = {}
     for group, path in (
             ('buildInputs', 'workspace/dependencies/developer-factory41-r1.lock.json'),
@@ -65,7 +54,7 @@ def create(receipt_path, output, previous=None, public_links=None):
                 raise LabError(str(error)) from None
             row['binding'] = value
     entry = {
-        'id': old['productVersion'] + '-source-factory-r1' + ('-public' if public_links is not None else ''),
+        'id': 'sdv-lab-inputs' + ('-public' if public_links is not None else ''),
         'productVersion': old['productVersion'],
         'status': 'ENGINEERING_CANDIDATE_NOT_QUALIFIED',
         'sourceFiles': {p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths},

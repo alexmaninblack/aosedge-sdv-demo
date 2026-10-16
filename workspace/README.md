@@ -3,37 +3,43 @@
 
 # Product and build definitions
 
-Start with [build-definition.json](build-definition.json). Its schema version
-is internal; it is a current build selection, not a new installer release.
+Start with [build-definition.json](build-definition.json). Schema versions describe
+metadata, not installer releases. Validation requires no Git history or network.
 
 | Purpose | Authority |
 | --- | --- |
-| Install the selected demo (A) | [Launcher catalog](launcher-catalog.json), which selects an immutable operator descriptor |
-| Build the demo and installer (B) | [Developer selection](current-developer-build.json), which pins the reviewed producer plan |
-| Prepared simulator and controller image | [Simulator lock](dependencies/carla-macos-arm64-r1.lock.json) and [controller/input lock](dependencies/developer-factory41-r1.lock.json) |
-| Source roles and original portable inputs | The exact compatibility base selected by the current build definition |
-| Input/image/package verification | Retained records under `checkpoints/` and `releases/` consumed by existing adapters |
+| Install and run (A) | [Launcher catalog](launcher-catalog.json) and [delivery descriptor](releases/delivery.json) |
+| Build the demo (B) | [Developer selector](current-developer-build.json) and [producer plan](releases/build-plan.json) |
+| Source revisions and access | [Source lock](inputs/sources.lock.json) |
+| Runtime manifest identities | [Runtime inputs](inputs/runtime-inputs.lock.json) |
+| Prebuilt and independently rebuilt controller images | [Controller images](inputs/controller-images.lock.json); these have distinct digests |
+| Reviewed service binaries | [Service inputs](inputs/service-inputs.lock.json) |
+| Component graph and build profiles | [Build policy](inputs/build-policy.json) |
+| Public package discovery | [Dependency catalog](dependencies/catalog.json); payloads remain on Google Drive |
+| Exact existing cache/prepared-workspace namespace | [Cache compatibility](inputs/cache-compatibility.json) |
 
-The current definition verifies the unchanged compatibility base, its source,
-artifact and dependency closure, both independent selections and maintained
-documentation. Historical prose is referenced by immutable Git revision/path
-and SHA-256; it is not restored or required in the current source tree.
+Names describe roles. Versions and immutable revisions remain inside records.
+The two files in `releases/` select build and delivery independently; neither
+folder is an archive of attempts. Historical checkpoints remain in Git history,
+not as prerequisites in a clean checkout.
 
-The compatibility base keeps existing cache, prepared-workspace, producer and
-archive identities. Old dates and kit numbers in these machine inputs do not
-select an old operator DMG. They are not spare builds or an archive directory.
-The source-role map also retains legacy host-launch fields consumed by existing
-adapters; ordinary installed use does not require Unreal Editor.
-
-From the integration checkout, inspect without building:
+The cache compatibility record preserves exact existing namespaces and retained
+input provenance without rewriting receipts, relabeling artifacts or inheriting
+qualification. Its old storage label is not the current product identity. A
+changed input closure requires an explicitly reviewed successor namespace; the
+projection tool refuses automatic rebinding. Frozen producer checkouts retain
+their own historical files and are not rewritten during source maintenance.
 
 ```sh
 python3 -B scripts/validate-release-definition
-python3 -B scripts/validate-release-definition --historical-evidence
+python3 -B scripts/sync-workspace-inputs --check
+python3 -B scripts/sync-preparation-catalog --check
+python3 -B scripts/sync-launcher-pins --check
 ```
 
-The second command additionally needs the declared local Git objects; it never
-fetches or writes old reports. Ordinary validation works from a root-only source
-archive without those objects. Neither command qualifies a build or release.
-See the [reproduction contract](../contracts/release-reproduction/README.md)
-and [current product baseline](../docs/qualification/current-baseline.md).
+After an authorized metadata edit, use `scripts/sync-workspace-inputs --write`,
+then `scripts/sync-preparation-catalog` and `scripts/sync-launcher-pins --write`.
+Review all projections. These commands never build or publish. Existing package
+names and bytes stay unchanged; consumers still check their exact manifests and
+hashes. See the [reproduction contract](../contracts/release-reproduction/README.md)
+and [current baseline](../docs/qualification/current-baseline.md).

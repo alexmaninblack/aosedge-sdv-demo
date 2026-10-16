@@ -17,13 +17,17 @@ class MediaTests(StorageFixture, unittest.TestCase):
         self.kit = self.base/'kit'
         self.kit.mkdir()
         (self.kit/'application-manifest.json').write_text('{}')
+        core.atomic_json(self.base/'fixture-groups.json', {'fixture':True})
         self.patch('reproduction.media.verify_sources')
         self.patch('reproduction.packaging.producer', return_value=({'recipe':'a'*40}, 'b'*40))
         self.patch('reproduction.package_chain.upstream', return_value=('a'*64, self.kit))
+        for name in ('media.py','media_worker.py'):
+            p=self.base/'scripts/reproduction'/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes((core.ROOT/'scripts/reproduction'/name).read_bytes())
+        self.patch('reproduction.media.ROOT',self.base)
         original = media.read_json
         self.patch('reproduction.media.read_json', side_effect=lambda path:
             {'schemaVersion':1, 'label':'fixture', 'manifestSha256':sha256(self.kit/'application-manifest.json')}
-            if str(path).endswith(media.RELEASE) else original(path))
+            if str(path).endswith('fixture-release.json') else original(path))
         self.command = self.patch('reproduction.media.run_command', side_effect=self.owner)
 
     def owner(self, args, **kwargs):
@@ -33,7 +37,7 @@ class MediaTests(StorageFixture, unittest.TestCase):
         return SimpleNamespace(returncode=0, stdout=b'{}', stderr=b'')
 
     def build(self, target='setup', signer='A'*40):
-        return media.assemble(self.storage, self.state, target, sys.executable, signer, lambda *args: None)
+        return media.assemble(self.storage, self.state, target, sys.executable, signer, lambda *args: None, 'fixture-groups.json', 'fixture-release.json')
 
     def test_first_repeat_and_dmg_reuses_exact_signed_setup(self):
         self.fixture()

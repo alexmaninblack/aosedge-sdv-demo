@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "integration",
+      "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
+      "revision": "638fc8d18b1ee66f10a253fd51ab4238582ba843",
+      "buildRevision": "22ee79e0e21709de34803c6db20047847138eba0",
+      "access": "public-git"
+    },
+    {
+      "id": "factory-tools",
+      "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
+      "revision": "30ae66148255830b7e29cc82e2cd251d065bb894",
+      "buildRevision": "30ae66148255830b7e29cc82e2cd251d065bb894",
+      "access": "public-git"
+    },
+    {
+      "id": "vehicle-platform",
+      "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+      "revision": "92a2138813983cb1c029fd3e61bd90b68241af63",
+      "buildRevision": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+      "access": "public-git"
+    },
+    {
+      "id": "functional-service",
+      "repository": "https://github.com/alexmaninblack/brake-health-service.git",
+      "revision": "5aa652fda603e7621043961331e58236b19204e9",
+      "buildRevision": "5aa652fda603e7621043961331e58236b19204e9",
+      "access": "public-git"
+    },
+    {
+      "id": "tire-health-service",
+      "repository": "https://github.com/alexmaninblack/tire-health-service.git",
+      "revision": "f0a0f6edadb51aa338775d157aa3bde28f5b76f4",
+      "buildRevision": "f0a0f6edadb51aa338775d157aa3bde28f5b76f4",
+      "access": "public-git"
+    },
+    {
+      "id": "vehicle-gateway",
+      "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
+      "revision": "2e3d1164d491dac25e212f59315057deca0bf3d8",
+      "buildRevision": "4e384798c95298a706709775c6fb33367edd00c6",
+      "access": "public-git"
+    },
+    {
+      "id": "carla",
+      "repository": "https://github.com/alexmaninblack/carla.git",
+      "revision": "eb09b82464076596ee47e42b3f5f9b48f9ff5b30",
+      "buildRevision": "eb09b82464076596ee47e42b3f5f9b48f9ff5b30",
+      "access": "public-git"
+    },
+    {
+      "id": "unreal-engine",
+      "repository": "https://github.com/alexmaninblack/UnrealEngine.git",
+      "revision": "9b705d6d2db5b769ab34edb04f3ca2bb8b960014",
+      "buildRevision": "9b705d6d2db5b769ab34edb04f3ca2bb8b960014",
+      "access": "epic-entitlement"
+    },
+    {
+      "id": "brake-health-cloud",
+      "repository": "https://github.com/alexmaninblack/brake-health-cloud.git",
+      "revision": "7c64adf7b3d99535ecc7c8cbe468bc527cbcdc12",
+      "buildRevision": "42395715103d9f512c2586a2c9b98c3975c06ab7",
+      "access": "public-git"
+    },
+    {
+      "id": "tire-health-cloud",
+      "repository": "https://github.com/alexmaninblack/tire-health-cloud.git",
+      "revision": "ea2d6deec9b704cb866d362eaefc9d87356ddeb5",
+      "buildRevision": "47cfa632a80c89a7eaab0c501fe437c4ae2cb180",
+      "access": "public-git"
+    }
+  ]
+}

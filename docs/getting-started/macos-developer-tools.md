@@ -107,7 +107,7 @@ See the [launcher reference](unified-macos-launcher.md) for all options.
 
 ## Automatic input selection
 
-The wizard reads the pinned public `release-index.json`; it does not search
+The wizard reads the hash-pinned source-owned `workspace/dependencies/catalog.json`; it does not search
 your Drive. Versions and dependency identities are inside JSON, not inferred
 from filenames or timestamps. No compatible record, changed checksum or
 denied access stops with a specific error instead of asking for a manual

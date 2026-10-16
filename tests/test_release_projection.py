@@ -35,3 +35,19 @@ class ProjectionTests(unittest.TestCase):
                 (root/relative).write_bytes(b'foreign immutable record')
                 with self.assertRaisesRegex(CampaignError,'IMMUTABLE_DESCRIPTOR'):
                     operator.project(owner,dict(fileId='file_123456789'))
+
+    def test_stable_descriptor_path_and_same_version_collision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve();(root/'workspace/releases').mkdir(parents=True)
+            old=dict(productVersion='1.2.0-rc.2',status='ENGINEERING_CANDIDATE_NOT_QUALIFIED',
+                     file='current.dmg',bytes=123,sha256='a'*64,manifestSha256='b'*64,notarized=False)
+            path=root/'workspace/releases/delivery.json';path.write_text(json.dumps(old))
+            catalog=dict(catalogRevision=1,operatorDescriptor='workspace/releases/delivery.json',operator=old)
+            (root/'workspace/launcher-catalog.json').write_text(json.dumps(catalog))
+            owner=SimpleNamespace(config=dict(version='1.2.0-rc.2'))
+            with patch.object(operator,'ROOT',root),patch.object(operator,'descriptor',return_value={**old,'sha256':'c'*64}):
+                with self.assertRaisesRegex(CampaignError,'IMMUTABLE_DESCRIPTOR'):operator.project(owner,dict(fileId='file_123456789'))
+            with patch.object(operator,'ROOT',root),patch.object(operator,'descriptor',return_value={**old,'productVersion':'1.2.0-rc.3'}):
+                relative,_,_=operator.project(owner,dict(fileId='file_123456789'))
+                self.assertEqual(relative,'workspace/releases/delivery.json')
+            self.assertEqual(json.loads(path.read_text()),old)

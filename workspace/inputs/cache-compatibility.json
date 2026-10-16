@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "definitionDigest": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
+  "storageReleaseId": "kit028-setup042",
+  "inputClosure": {
+    "workspace/inputs/controller-images.lock.json": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47",
+    "workspace/inputs/service-inputs.lock.json": "beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae",
+    "workspace/inputs/sources.lock.json": "019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068",
+    "workspace/inputs/runtime-inputs.lock.json": "d2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d",
+    "workspace/inputs/build-policy.json": "11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc"
+  },
+  "sourceControllerCheckpointSha256": "870948a9c30da401d4c164f8e4eba4e0c3f97d59c2b01ce82055c434bf47ba80",
+  "scope": "Cache/prepared-input namespace only. Not product identity, qualification or permission to alter old receipts."
+}

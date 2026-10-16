@@ -10,7 +10,7 @@ from .cloud import matches, relative
 from .sources import verify_sources
 from . import packaging, host, cloud, containers
 
-CHECKPOINT = 'workspace/releases/1.2.0-rc.1-packaging.json'
+CHECKPOINT = None
 MANIFESTS = {'vm-runtime': 'vm-runtime-manifest.json', 'backend-inputs': 'backend-image-manifest.json',
              'application': 'application-manifest.json'}
 GROUP_TARGETS = {'host-runtime': 'host-runtime', 'preparation-inputs': 'preparation',
@@ -58,7 +58,8 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
             'Cannot mix developer results and reviewed checkpoints')
     verify_sources(storage, state)
     storage.check(additional=(40 if target == 'application' else 1)*GIB, reserve=90*GIB)
-    checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else CHECKPOINT
+    require(developer_results or input_checkpoint is not None, 'Select verified developer results or an explicit reviewed input checkpoint')
+    checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else '-'
     extras = (checkpoint_path,) if input_checkpoint is not None else ()
     trees, revision = packaging.producer(storage, target, extras)
     checkpoint = None if developer_results else read_json(ROOT/checkpoint_path)

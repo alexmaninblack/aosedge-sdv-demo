@@ -14,9 +14,13 @@ from reproduction.artifacts import sha256
 class PackageChainTests(StorageFixture, unittest.TestCase):
     def fixture(self):
         self.storage.environment()
+        core.atomic_json(self.base/'fixture-inputs.json', {'manifests':{g:{'sha256':'a'*64} for g in module.GROUP_TARGETS}})
+        for n in ('package_chain.py','package_worker.py'):
+            p=self.base/'scripts/reproduction'/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes((core.ROOT/'scripts/reproduction'/n).read_bytes())
+        self.patch('reproduction.package_chain.ROOT',self.base)
         self.patch('reproduction.package_chain.verify_sources')
         self.patch('reproduction.packaging.producer', return_value=({'recipe': 'a'*40}, 'b'*40))
-        self.patch('reproduction.package_chain.upstream', side_effect=lambda s, state, role: (role, self.base/role))
+        self.patch('reproduction.package_chain.upstream', side_effect=lambda s, state, role, pin=None: (role, self.base/role))
         self.command = self.patch('reproduction.package_chain.run_command', side_effect=self.owner)
 
     def owner(self, args, **kwargs):
@@ -28,7 +32,7 @@ class PackageChainTests(StorageFixture, unittest.TestCase):
         return SimpleNamespace(returncode=0, stdout=b'{}', stderr=b'')
 
     def build(self, target='backend-inputs'):
-        return module.assemble(self.storage, self.state, target, self.base, sys.executable, lambda *args: None)
+        return module.assemble(self.storage, self.state, target, self.base, sys.executable, lambda *args: None, 'fixture-inputs.json')
 
     def test_first_repeat_and_interrupted_outer_state_recovery(self):
         self.fixture()
@@ -91,7 +95,7 @@ class PackageChainTests(StorageFixture, unittest.TestCase):
 
     def test_explicit_checkpoint_passed_to_owner_and_fingerprinted(self):
         self.fixture()
-        original = core.read_json(core.ROOT/module.CHECKPOINT)
+        original = {'manifests':{g:{'sha256':'a'*64} for g in module.GROUP_TARGETS}}
         for name in ('package_chain.py', 'package_worker.py'):
             destination = self.base/'scripts/reproduction'/name
             destination.parent.mkdir(parents=True, exist_ok=True)

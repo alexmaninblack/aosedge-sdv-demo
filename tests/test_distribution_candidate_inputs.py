@@ -18,13 +18,15 @@ class CandidateInputTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
-        self.checkpoint = 'workspace/releases/1.2.0-rc.1-packaging.json'
-        for name in ('workspace/releases/kit028-setup042.json', self.checkpoint,
+        self.checkpoint = 'workspace/releases/reviewed-fixture.json'
+        for name in ('workspace/build-definition.json','workspace/inputs/cache-compatibility.json','workspace/inputs/sources.lock.json',
                      *('contracts/'+p for p in module.LOCKS.values())):
-            path = self.root/name
-            path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(ROOT/name, path)
-        self.value = json.loads((self.root/self.checkpoint).read_bytes())
+            path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,path)
+        self.value={'schemaVersion':1,'kind':'reviewed-packaging-inputs','productVersion':'1.2.0-rc.1',
+                    'baseDefinitionSha256':json.loads((ROOT/'workspace/inputs/cache-compatibility.json').read_text())['definitionDigest'],
+                    'manifests':{group:json.loads((ROOT/'contracts'/p).read_text())['manifest'] for group,p in module.LOCKS.items()}}
+        (self.root/self.checkpoint).parent.mkdir(parents=True,exist_ok=True)
+        self.save()
 
     def save(self):
         (self.root/self.checkpoint).write_text(json.dumps(self.value))
@@ -73,11 +75,19 @@ class CandidateInputTests(unittest.TestCase):
     def test_link_and_escape_rejected(self):
         path = self.root/self.checkpoint
         path.unlink()
-        path.symlink_to(ROOT/self.checkpoint)
+        path.symlink_to(ROOT/'workspace/releases/build-plan.json')
         with self.assertRaisesRegex(module.BundleError, 'symlink'):
             module.pins(self.root, self.checkpoint, ('host-runtime',))
         with self.assertRaisesRegex(module.BundleError, 'Unsafe relative'):
             module.pins(self.root, '../escape', ('host-runtime',))
+
+    def test_changed_input_authority_cannot_be_accepted_by_a_matching_checkpoint(self):
+        path=self.root/'workspace/inputs/cache-compatibility.json'
+        value=json.loads(path.read_text());value['definitionDigest']='0'*64
+        path.write_text(json.dumps(value))
+        self.value['baseDefinitionSha256']='0'*64;self.save()
+        with self.assertRaisesRegex(module.BundleError,'authority digest'):
+            module.pins(self.root,self.checkpoint,('host-runtime',))
 
     def test_setup_independent_pin_validation(self):
         name = 'workspace/releases/setup-fixture.json'

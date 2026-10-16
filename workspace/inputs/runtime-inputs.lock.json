@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "inputs": [
+    {
+      "id": "host-runtime",
+      "lock": "contracts/portable-host-launch/host-runtime.lock.json",
+      "path": "host-runtime-manifest.json",
+      "bytes": 3825784,
+      "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/host-runtime/host-runtime-manifest.json"
+    },
+    {
+      "id": "preparation-inputs",
+      "lock": "contracts/portable-preparation-inputs/vehicle-inputs.lock.json",
+      "path": "vehicle-input-manifest.json",
+      "bytes": 51532,
+      "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/preparation-inputs/vehicle-input-manifest.json"
+    },
+    {
+      "id": "vm-runtime",
+      "lock": "contracts/portable-vm-launch/vm-runtime.lock.json",
+      "path": "vm-runtime-manifest.json",
+      "bytes": 1369,
+      "sha256": "b825aaee0ce34b5f72c93104d49728e90eb32a8ca0630cc9cc9b62a601f4d205",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/vm-runtime/vm-runtime-manifest.json"
+    },
+    {
+      "id": "cloud-runtime",
+      "lock": "contracts/portable-cloud-backend-inputs/cloud-runtime.lock.json",
+      "path": "cloud-runtime-manifest.json",
+      "bytes": 604355,
+      "sha256": "46fe0adf22a6843f9d7c4162208f38caf194ca19e98e1089e3fb931ed2a5bb46",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/cloud-runtime/cloud-runtime-manifest.json"
+    },
+    {
+      "id": "backend-inputs",
+      "lock": "contracts/portable-cloud-backend-inputs/backend-inputs.lock.json",
+      "path": "backend-image-manifest.json",
+      "bytes": 986,
+      "sha256": "7d0d9b01feab0ce22a6d5e566cb90fab92431f3526c4f46706f99a7b10b422ed",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/backend-inputs/backend-image-manifest.json"
+    }
+  ],
+  "application": {
+    "kitPath": "application-manifest.json",
+    "bytes": 19594,
+    "sha256": "1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef",
+    "inputLogicalBytes": 28453262020,
+    "originalBuildHadUncommittedSources": true
+  },
+  "artifacts": {
+    "applicationManifest": {
+      "sha256": "1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef"
+    },
+    "hostManifest": {
+      "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2"
+    },
+    "preparationManifest": {
+      "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47"
+    },
+    "vmManifest": {
+      "sha256": "b825aaee0ce34b5f72c93104d49728e90eb32a8ca0630cc9cc9b62a601f4d205"
+    },
+    "backendManifest": {
+      "sha256": "7d0d9b01feab0ce22a6d5e566cb90fab92431f3526c4f46706f99a7b10b422ed"
+    },
+    "factory": {
+      "version": "6.1.1-maninblack.41",
+      "name": "main-qemuarm64.img",
+      "bytes": 6997147648,
+      "sha256": "361c187374469f4a97b3b9c74cb755ce432bc5287fb19ccd2f6bfb9c3eb46769"
+    },
+    "dmg": {
+      "name": "AosEdge-SDV-Lab-1.2.0-rc.2.dmg",
+      "bytes": 14159474231,
+      "sha256": "71063a5d05ce9287feb0964d661b8408343aa85a58b4c3baaed8c0fd14664270",
+      "digestEvidence": "Selected immutable operator descriptor; payload and qualification unchanged."
+    }
+  }
+}

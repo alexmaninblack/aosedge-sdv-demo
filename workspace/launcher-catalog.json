@@ -30,5 +30,5 @@
       "fullSourceReady": false
     }
   },
-  "operatorDescriptor": "workspace/releases/1.2.0-rc.2-presenter-preview-dropbox-delivery.json"
+  "operatorDescriptor": "workspace/releases/delivery.json"
 }
