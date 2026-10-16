@@ -21,143 +21,82 @@
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
-## Installed workstation entry flow
+## Purpose and flow profiles
+
+This document connects HLA 1.8, Scenario 2.1 and the component requirements.
+It specifies software/data/decision/evidence movement, not a second lifecycle
+authority. The current installed profile is one Test, one OEM and one associated
+SP; the detailed VU/PU promotion and two-SP flows are the expanded accepted
+profile. [UI-STUDIO-026](../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
+defines which presentation/targeting rules apply to installed Test use. Stable
+AF/requirement IDs and unchanged authority/safety obligations remain intact.
+
+The progression is M0 (Factory output) → M1 (provision once) → G0 (empty
+provisioned substrate) → G1 (VDP V1) → G2 (Brake V1 capture) → G3 (VDP/Brake V2
+analysis) → G4 (VDP/Brake V3 advisory) → T1 (independent Tire V1) → R0 (retire).
+Tire uses VDP V3, not Brake's service or backend. R0 is lab identity retirement,
+not a reverse OTA rollout. Dual-Unit reset applies to the expanded profile;
+installed Finish targets only its owned Test.
 
 <a id="af-dist-entry"></a>
+## Installed workstation entry flow
 
 `AF-DIST-ENTRY`: verify/install immutable version → explicitly validate private
-instance and schema → select separate program, input and writable roots →
-report missing access/dependencies → enter existing Demo Control operations
-only after their normal guards. Unknown instance/volume/schema, conflicting
-paths or missing packaged input stops the sequence without fallback, Cloud
-mutation, credential adoption or a ready claim. The engineering selection does
-not replace a running installation. See the
-[installed-state contract](../../contracts/distribution-installation/installed-state.md).
-Native activation and compatible update/rollback have separate later gates.
+instance/schema and separate roots → report missing dependencies/access → enter
+the existing Demo Control operations under their normal guards. Unknown
+volume/schema, conflicting paths or missing input stops without fallback,
+credential adoption, Cloud mutation or fabricated readiness. Installation is
+not provisioning; opening windows creates no vehicle journal.
 
-The installed single-Test Finish path follows the same Test-only authority:
-stop owned runtime, reconcile exact Subjects, deprovision/delete the exact
-Test, freshly verify Cloud absence, clean only its backend data, then dispose
-owned local files and the journal last. Cloud service/Subject objects and
-published versions survive; subsequent first use explicitly reselects exact
-unbound references. No synthetic Production peer or new reference store is
-introduced. See the [run-state cleanup amendment](../../contracts/demo-run-state/README.md).
+The [installed-state](../../contracts/distribution-installation/installed-state.md),
+[selection/recovery](../../contracts/distribution-installation/version-selection.md)
+and [native Setup](../../contracts/distribution-installation/native-setup.md)
+contracts own transaction, revalidation and shared package/instance leases.
+Explicit selection requires the observed revision and compatible idle state;
+it cannot overwrite a live version, implicitly Finish, decrement releases or
+roll back Cloud. Program-only repair preserves the original and run data.
 
-For managed engineering packages, the [selection/recovery detail](../../contracts/distribution-installation/version-selection.md)
-inserts explicit compatible manifest selection before runtime entry. Selection
-requires the observed revision and an idle instance/store; runtime entry leases
-both instance and package and re-reads the selection. Retained current-run data
-blocks this first update slice without deletion or implicit Finish. Program-only
-repair verifies a replacement and preserves the original, without rolling back
-Cloud, state or release numbers. Native/live qualification is still separate.
+Explicit simulator start initializes or validates its private host Gateway
+identity before spawn. Managed SSH enrollment transfers only its public anchor
+to the guest; read-only status and installation never create it. Unit admission
+and client CA remain separate. See [local Gateway trust](../../contracts/distribution-installation/local-gateway-trust.md).
 
-The [native setup detail](../../contracts/distribution-installation/native-setup.md)
-exposes the first part of this flow as folder choice → read-only check → verified
-installation → separate local-data preparation. Changed fields invalidate the
-check; mutations revalidate the volume and selection revision. The window stays
-responsive and distinguishes installed, selected and ready. Secure enrollment
-and first launch remain downstream gates rather than implied success.
-
-Accepted 28 September local-trust amendment: explicit installed simulator start
-initializes or validates the private per-instance Gateway server identity before
-native spawning. The existing managed SSH enrollment delivers only its public
-server anchor to the guest; the server key stays on the host. Read-only status,
-Cloud checks and installation never initialize it. Client CA/Unit admission,
-system trust, Cloud credentials and source-selection guards are unchanged. See
-the [local Gateway trust contract](../../contracts/distribution-installation/local-gateway-trust.md).
+Single-Test Finish stops owned runtime, reconciles exact Subjects, retires the
+exact Unit, verifies absence, cleans only its backend data and disposes local
+working files/journal last. Published versions and service/Subject objects
+survive; next use explicitly selects exact unbound references. Stop/Start is
+non-destructive and is not Finish. See [run state](../../contracts/demo-run-state/README.md).
 
 <a id="current-implementation-view--24-september-2026"></a>
-## Current implementation view
+## Runtime input and observation sequence
 
-The later [portable Prepare slice](../../contracts/portable-preparation-inputs/README.md)
-inserts locked artifact validation before the existing catalogue-read/version-
-allocation sequence. It selects no new Cloud target, creates no new lifecycle
-state and leaves the post-preparation signing, publication and vehicle flows
-below unchanged. Invalid packaged inputs cannot trigger a developer build or
-consume a release number. The later [host launch contract](../../contracts/portable-host-launch/README.md)
-adds locked prebuilt-input selection before the existing SourceDriver and
-WorkspaceService startup paths, not a new lifecycle/session owner. Detached
-CARLA/local dashboard startup is distinct from provisioned guest attachment;
-package selection does not authorize or imply a Cloud/Unit connection.
-The [portable VM input slice](../../contracts/portable-vm-launch/README.md)
-validates packaged image/native/helper inputs before existing create/start
-operations. It adds no owner, port or VM lifecycle; a selected command mismatch
-with a running legacy process blocks until the explicit owner handoff. Source,
-provisioning, FOTA/SOTA and recovery sequences below retain their authority.
-The [Cloud/backend selector slice](../../contracts/portable-cloud-backend-inputs/README.md)
-adds local SDK integrity before existing worker dispatch and immutable image
-selection before existing backend start/activation. It creates no Cloud attempt
-on local validation failure. Background observation remains asynchronous; an
-existing run keeps its backend identity. No implicit image import or engine
-start is inserted into navigation, observation or runtime start.
+Verified [preparation inputs](../../contracts/portable-preparation-inputs/README.md)
+precede version allocation; invalid inputs consume no release. Verified
+[host](../../contracts/portable-host-launch/README.md),
+[VM](../../contracts/portable-vm-launch/README.md) and
+[Cloud/backend inputs](../../contracts/portable-cloud-backend-inputs/README.md)
+precede their existing owner operations. They introduce no new owner/port,
+Cloud attempt on validation failure, navigation-triggered image import or
+implicit Docker Engine launch. Detached source start and Unit attachment remain
+distinct. A conflicting legacy process requires explicit owner handoff.
 
-Current package selection and qualification are owned by the launcher catalog and
-[current baseline](../qualification/current-baseline.md).
-[Implemented architecture and traceability](current-implementation.md) maps
-the accepted requirements, amendments, protocols, component owners and proof.
-Full acceptance still requires the explicitly outstanding tests; this view
-does not change stable IDs or grant deployment authority.
+[ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md) and the
+[input sequence](demo-control-service-inputs.md) govern both services: package
+release plus native instance identity; atomically maintained public Unit/VDP
+and trust inputs; bootstrap-private credential session before KUKSA subscription.
+Publication may precede provisioning; loaded resources/public inputs gate
+launch, not publication. Final OCI digest discovery gates neither. Restore
+volatile inputs before retained assignments launch after reboot; do not reset
+models or add a Cloud dependency to local analytics. Old queued records keep
+their own provenance.
 
-## Native service inputs amendment — 2026-09-11
-
-Apply [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md) and
-the [service-input sequence](demo-control-service-inputs.md) to both service
-launch flows. Publication may precede Provision. Public inputs and loaded
-resources gate launch, not publication; final OCI digest discovery gates neither.
-Bootstrap establishes a private token session using native permissions before
-analytics subscribes. Committed VDP changes refresh public files atomically;
-queued product records retain their original provenance.
-
-Cloud reports lifecycle/version/resources, and the product backend reports
-functional results independently. On reboot, restore /run inputs before SM
-automatically launches retained assignments. Do not add a new daemon, reset
-model/producer state or wait for Cloud connectivity to run local analytics.
-Audience-visible Create/Publish/Deploy flows are unchanged.
-
-## Studio Test scope amendment — 2026-09-09
-
-[UI-STUDIO-026](../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
-is the accepted current Test interaction amendment and includes the explicit
-replacement map. For this milestone, it supersedes conflicting two-vehicle,
-dedicated-demo-Fleet, terminal-only, mandatory-approval, independent-concurrent
-writer and routine-history-retention provisions below. Keep original stable IDs
-and their unchanged authority/product/safety obligations; Production remains
-future scope rather than a prerequisite for Test. D4-012.1 and D4-026's earlier
-presentation/order provisions must not be applied as simultaneous requirements
-against that amendment. Backend context cardinality and cleanup selectors still
-need the identified P1 executable-contract/handler migration. This scoped
-amendment does not authorize implementation, live calls or deletion.
-
-
-## Purpose
-
-This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.8, the audience-visible Demo Scenario 2.1, and the
-next component-requirements package.
-
-It defines how software, data, decisions, evidence, and ownership move through
-the complete canonical demonstration lifecycle:
-
-```text
-M0 manufacturing
-  -> M1 end-of-line provisioning
-  -> G0 provisioned SOP substrate
-  -> G1 Vehicle Data Platform Component v1
-  -> G2 Brake Health Service v1 event-window acquisition
-  -> G3 VDP Component v2 + edge-analytics Service v2
-  -> G4 bidirectional VDP Component v3 + Service v3
-  -> T1 independent Tire Health Service v1.0
-  -> R0 retirement of the current demo run
-```
-
-`M0` and `M1` describe manufacturing and onboarding, `G0–G4` describe the
-accepted substrate and Brake Health software graphs, `T1` adds one mature
-Tire Health Service v1.0 SOTA 2 product, and `R0` retires the complete current
-run. `T1` follows `G4` in the presentation because it uses the accepted VDP v3
-contract; it does not depend on Function Team 1 or repeat the three-version
-Brake Health evolution. The next-run reset retires the two
-current Units and discards their provisioned overlays; it is not a reverse OTA
-rollout.
+Cloud supplies lifecycle/version/resources; each backend supplies function
+results; Gateway supplies native advisory status. These are independent facts.
+Current proof belongs to the [baseline](../qualification/current-baseline.md)
+and [implementation map](current-implementation.md), not old allocation dates.
+Both backend handlers implement Test context/cleanup; remaining executable
+legacy schema differences are explicitly tracked in the
+[protocol map](../../contracts/implementation-status.md).
 
 ## Source Precedence and Change Control
 
@@ -197,32 +136,33 @@ not change.
 | `SCENE` | Deterministic obstacle/braking scenario, explicit free-drive/brake-event world context, manual takeover, safe stop, actor cleanup, and accelerated/pre-aged tire degradation stimulus | `carla-ego-runtime` tooling | Brake Event core current; complete context-transition matrix and `T1` stimulus target |
 | `CONTROL` | Vehicle Control UI and separate control channel | `carla-ego-runtime` | Current |
 | `GATEWAY` | Vehicle Gateway ECU behavior, CARLA sampling, VSS normalization | `carla-ego-runtime` | Current |
-| `VISS` | TLS VISS 3.1 server | `carla-ego-runtime` | Get/Subscribe current; narrowly scoped Set target |
-| `GW-ADV` | Typed maintenance-advisory handler and factual Gateway status | `carla-ego-runtime` | Target |
-| `ENG-DASH` | Engineering Telematics Dashboard | `carla-ego-runtime` | Vehicle telemetry current; advisory/status extension target |
-| `FACTORY` | Immutable OEM Demo Factory Image with one IAM configuration containing `enablePermissionsHandler: true`, factory-installed unmodified KUKSA, the separately packaged current-release helper, no pre-populated Service authority/secret state, and non-secret signer/verifier preparation wiring but no key, JWT or shared production verifier | Platform Team | Accepted `.21` Factory baseline; VDP slot empty |
-| `RUNTIME` | Preinstalled provider-specific empty-slot component runtime | Platform Team / `aos-vehicle-platform` | Integrated and Factory-qualified in `.21`; live VDP FOTA remains a later artifact gate |
+| `VISS` | TLS VISS 3.1 server | `carla-ego-runtime` | Implemented Get/Subscribe and allowlisted typed Set |
+| `GW-ADV` | Typed maintenance-advisory handler and factual Gateway status | `carla-ego-runtime` | Implemented two-target QM boundary; full negative matrix separately scoped |
+| `ENG-DASH` | Engineering Telematics Dashboard | `carla-ego-runtime` | Implemented native telemetry/advisory observer; Terminal is an engineering surface |
+| `FACTORY` | Immutable OEM Demo Factory Image with one IAM configuration containing `enablePermissionsHandler: true`, factory-installed KUKSA under the accepted compatibility boundary, the separately packaged current-release helper, no pre-populated Service authority/secret state, and non-secret signer/verifier preparation wiring but no key, JWT or shared production verifier | Platform Team | Selected by controller input lock; immutable empty-slot base, proof in current baseline |
+| `RUNTIME` | Preinstalled provider-specific empty-slot component runtime | Platform Team / `aos-vehicle-platform` | Factory-installed; scoped serial Safe Stop FOTA proof in current baseline |
 | `AOS-CORE` | Identity, desired state, Service Manager, security, update support | AosCore in AosVM | Current on existing provisioned Units |
-| `KUKSA` | Unmodified Eclipse Databroker and stable factory-installed resource-server boundary in the Domain Controller | SOP substrate plus Platform Team contract/trust configuration | Factory substrate, verifier preparation and strict TLS/JWT access qualified in `.21`; VDP publication remains absent until component FOTA |
-| `KAC` | Transitional current-release KUKSA authorization compatibility helper (`CMP-KAC`): fixed-resource Service bootstrap, Aos IAM lookup, bounded JWT derivation and private volatile delivery | Platform Team / `aos-vehicle-platform`, outside VDP and SOTA payloads | Implemented and Factory-qualified in `.21`; removable after a released native AosCore contract is qualified |
-| `VU` | Validation Unit, a fresh Domain Controller instance | Demo lifecycle | Target per-run role |
-| `PU` | Production Unit, a separate fresh Domain Controller instance representing one already-produced vehicle after validation | Demo lifecycle | Target per-run role |
-| `VDP` | Vehicle Data Platform Component payload: inbound/outbound providers, validation, signal selection, advisory allowlist and versioned KUKSA data contract | Platform Team, FOTA lifecycle | v1-v3 source integrated through `f565251`; prepared artifacts, publication and installation absent; Provider is trusted OEM platform integration and Service JWT issuance is excluded |
-| `BHS` | Brake Health service and versioned local model | Function Team 1 / Service Provider 1, SOTA 1 | Service scaffold exists; accepted v1-v3 behavior is target |
-| `TIRE` | Tire Health in-vehicle service | Function Team 2 / Service Provider 2, SOTA 2 | Selected in ADR 0008; detailed design and implementation are target |
-| `BRAKE-BE` | Brake Health functional backend | Function Team 1 | Target |
-| `BRAKE-DASH` | Brake Health Function Dashboard over Function Backend plus SP1-owned AosCloud service/crash-log records | Function Team 1 | Target |
-| `TIRE-BE` | Tire Health backend | Function Team 2 | Target |
-| `TIRE-DASH` | Tire Health Function Dashboard over Function Backend plus SP2-owned AosCloud service/crash-log records | Function Team 2 | Target |
+| `KUKSA` | Eclipse Databroker and stable factory-installed resource-server boundary in the Domain Controller | SOP substrate plus Platform Team contract/trust configuration | Factory-installed resource server with documented compatibility patches |
+| `KAC` | Transitional current-release KUKSA authorization compatibility helper (`CMP-KAC`): fixed-resource Service bootstrap, Aos IAM lookup, bounded JWT derivation and private volatile delivery | Platform Team / `aos-vehicle-platform`, outside VDP and SOTA payloads | Implemented removable helper; exact proof/exclusions in current baseline |
+| `VU` | Validation Unit, a fresh Domain Controller instance | Demo lifecycle | Installed Test role; fresh identity per new run |
+| `PU` | Production Unit, a separate fresh Domain Controller instance representing one already-produced vehicle after validation | Demo lifecycle | Expanded-profile role, not a first-install prerequisite |
+| `VDP` | Vehicle Data Platform Component payload: inbound/outbound providers, validation, signal selection, advisory allowlist and versioned KUKSA data contract | Platform Team, FOTA lifecycle | Functional V1/V2/V3 implemented; independently prepared/published/installed, no Service JWT issuance |
+| `BHS` | Brake Health service and versioned local model | Function Team 1 / Service Provider 1, SOTA 1 | Functional V1/V2/V3 implemented; scoped capture/model/advisory proof |
+| `TIRE` | Tire Health in-vehicle service | Function Team 2 / Service Provider 2, SOTA 2 | Functional V1 implemented; fixed-load proof and full calibration remain separate |
+| `BRAKE-BE` | Brake Health functional backend | Function Team 1 | Implemented independent durable backend/API |
+| `BRAKE-DASH` | Brake Health Function Dashboard over Function Backend plus SP1-owned AosCloud service/crash-log records | Function Team 1 | Integrated Presenter view; standalone shell is not the live audience UI |
+| `TIRE-BE` | Tire Health backend | Function Team 2 | Implemented independent durable backend/API; legacy cleanup schema separately tracked |
+| `TIRE-DASH` | Tire Health Function Dashboard over Function Backend plus SP2-owned AosCloud service/crash-log records | Function Team 2 | Integrated Presenter view; no implemented fixed-load endpoint claimed |
 | `AOS-CLOUD` | Lifecycle system of record and execution control plane: provisioning, desired/reported actual state, batches, campaigns, recorded approvals, audit and FOTA/SOTA delivery | AosCloud | Current platform; exact demo operations require qualification |
-| `SW-DASH` | Stateless OEM Software Delivery Dashboard over AosCloud APIs; includes a Platform Releases view that delegates protected sign/publish of prebuilt VDP candidates, shows lifecycle/decision plus OEM-scoped system/VDP log evidence, and invokes only explicitly confirmed OEM-authorized Unit actions | Demo solution | Target |
-| `ORCH` | Demo-session, overlay, Unit binding, sequential live-source handover, and retirement orchestration without lifecycle-state or approval ownership | `aosedge-sdv-demo` | Target |
+| `SW-DASH` | Stateless OEM Software Delivery Dashboard over AosCloud APIs; includes a Platform Releases view that delegates protected sign/publish of prebuilt VDP candidates, shows lifecycle/decision plus OEM-scoped system/VDP log evidence, and invokes only explicitly confirmed OEM-authorized Unit actions | Demo solution | Implemented integrated Presenter under Test scope; expanded promotion remains separate |
+| `ORCH` | Demo-session, overlay, Unit binding, sequential live-source handover, and retirement orchestration without lifecycle-state or approval ownership | `aosedge-sdv-demo` | Implemented shared owner; Stop/Start and Finish are distinct |
 
 The catalogue distinguishes an implemented component from an accepted demo
 capability. Existing provisioned VMs, signed candidates, and local build
 artifacts are engineering evidence; they do not substitute for the fresh
 prebuilt immutable candidates and clean
 manufacturing and deployment sequence described here.
+
 
 ## State and Presence Model
 
@@ -1869,9 +1809,9 @@ owning team's release decision.
 
 ## Consolidated Gap Register
 
-| Gap ID | Short name | Flow | Unresolved design or proof | Requirements owner |
+| Gap ID | Short name | Flow | Accepted obligation / proof boundary (not current backlog status) | Requirements owner |
 | --- | --- | --- | --- | --- |
-| <a id="gap-af-01"></a>`GAP-AF-01` | Clean factory baseline | `M0` | **Resolved 2026-08-30:** accepted `.21` immutable image, empty VDP slot, clean unprovisioned/online qualification and no reusable identity | Platform Team |
+| <a id="gap-af-01"></a>`GAP-AF-01` | Clean factory baseline | `M0` | Immutable image, empty VDP slot, clean unprovisioned/online behavior and no reusable identity; selected image/evidence come from the current baseline | Platform Team |
 | <a id="gap-af-02"></a>`GAP-AF-02` | Unique overlay identities | `M0/M1` | Prove unique first-boot and provisioned identities for two overlays | Platform Team + demo orchestration |
 | <a id="gap-af-03"></a>`GAP-AF-03` | Provisioning and retirement qualification | `M1/R0` | Live-qualify the D4-015 sequence: offline-only deprovision, post-`204` re-read, old-credential rejection, exact `system_uid` Unit Set removal, Unit deletion, Unit-owned Node disappearance, authorization-masked `404`, uncertainty reconciliation and audit retention | AosCloud integration |
 | <a id="gap-af-04"></a>`GAP-AF-04` | One source, two Unit roles | `G0/X-SOURCE` | Implement and qualify sequential exclusive live VU attach/run/detach, deterministic reset and PU attach/run/detach; defer telemetry replay | Demo architecture |
@@ -1885,7 +1825,7 @@ owning team's release decision.
 | <a id="gap-af-21"></a>`GAP-AF-21` | Tire condition model and stimulus | `T1` | Freeze the native input subset, explicit accelerated/pre-aged degradation stimulus, persistent state, condition bands, thresholds, bounded payload and hidden qualification oracle | Function Team 2 + CARLA scenario |
 | <a id="gap-af-22"></a>`GAP-AF-22` | Tire advisory contract | `T1` | Define and prove the typed KUKSA-to-VISS-to-Gateway Tire Health advisory and factual status without vehicle-motion or production-HMI authority | Platform Team + Function Team 2 + Gateway |
 | <a id="gap-af-23"></a>`GAP-AF-23` | Tire Health Cloud product | `T1` | Implement independent Tire Health backend/dashboard and offline/idempotent ingestion of bounded summaries/events | Function Team 2 |
-| <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA Service access | all | Factory substrate resolved in `.21`: native handler, unmodified KUKSA, removable `CMP-KAC`, protected per-Unit signer/verifier preparation and bounded process/SELinux envelope passed. Service-instance bootstrap and packaged VDP/Service integration remain later artifact/e2e qualification; stronger native trustworthy-time/invalidation remains deferred to platform migration | Platform Team / `aos-vehicle-platform` |
+| <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA Service access | all | Native handler, KUKSA resource-server boundary, removable `CMP-KAC`, protected per-Unit signer/verifier and bounded process/SELinux envelope; scoped real bootstrap/renewal/offline proof is mapped in the current baseline, not blanket final-matrix acceptance. Stronger native time/invalidation remains platform-migration scope | Platform Team / `aos-vehicle-platform` |
 | <a id="gap-af-16"></a>`GAP-AF-16` | Native log API qualification | all | Implement D4-014 role routing and qualify exact Unit/Node/time identifiers, OEM `unit-logs` and SP1/SP2 `service-logs` permissions/ownership, create-array and verbatim lifecycle states, file/archive bounds, delete effect, online/offline/reconnect behavior, allowlisted redaction and bounded temporary removal. State that current API exposes no retention policy; make no vehicle-performance claim | Operational observability + OEM and both Function Dashboards |
 | <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard and release authorization | all | Implement a stateless Software Delivery Dashboard with prepared candidate catalogues and D4-010.3 sign/publish delegation pre-bound to `platform-oem`, `brake-sp1` or `tire-sp2`; preserve exact artifact/metadata digests, requested permissions, target, required evidence/freshness, owning-team acceptance, active SP/OEM role, blocked reasons, final confirmation and independent Cloud re-read without browser-held credentials, caller-selected profile/path/URL, parallel state/evidence cache, blind retry or automatic approval policy | Demo solution + Platform/Function Team pipelines + AosCloud integration |
 | <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles and Unit IDs; reconcile persistent Unit Sets to empty at R0; assign new identities to the correct sets at the next M1; and define external-data retention/cleanup boundaries | Demo orchestration + AosCloud integration + functional teams |

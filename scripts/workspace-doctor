@@ -18,7 +18,7 @@ from typing import Any
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MANIFEST = REPOSITORY_ROOT / "workspace" / "repositories.json"
+DEFAULT_MANIFEST = REPOSITORY_ROOT / "workspace" / "repository-map.json"
 HEX_REVISION = re.compile(r"^[0-9a-f]{40}$")
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
@@ -67,6 +67,52 @@ def normalize_repository_url(value: str) -> str:
     if normalized.startswith("git@github.com:"):
         normalized = "https://github.com/" + normalized[len("git@github.com:") :]
     return normalized.lower()
+
+
+def load_current_map(path: Path) -> dict[str, Any]:
+    """Maintenance source inventory only; never a selected-build/release lock."""
+    require(path.is_file() and not path.is_symlink(), "unsafe repository map")
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            require(key not in result, "duplicate repository map field")
+            result[key] = value
+        return result
+    data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_pairs)
+    require(isinstance(data, dict) and
+            set(data) <= {"$comment", "schemaVersion", "kind", "workspace", "repositories"} and
+            type(data.get("schemaVersion")) is int and data["schemaVersion"] == 1 and
+            data.get("kind") == "maintenance-repository-map", "invalid maintenance repository map")
+    workspace = data.get("workspace")
+    require(isinstance(workspace, dict) and set(workspace) == {"solutionDirectory", "acceptedBranches"} and
+            SAFE_NAME.fullmatch(str(workspace.get("solutionDirectory", ""))) is not None and
+            workspace["solutionDirectory"] not in {".", ".."} and
+            not workspace["solutionDirectory"].startswith("-") and
+            workspace.get("acceptedBranches") == ["main"], "invalid maintenance workspace")
+    rows = data.get("repositories")
+    require(isinstance(rows, list) and bool(rows), "missing maintenance repositories")
+    ids, directories = set(), set()
+    fields = {"id", "directory", "role", "visibility", "repository", "remote",
+              "acceptedBranches", "allowedDirtyPaths", "optionalSourceDependency"}
+    for row in rows:
+        require(isinstance(row, dict) and set(row) == fields, "invalid maintenance repository fields")
+        for field in ("id", "directory", "remote"):
+            require(isinstance(row[field], str) and SAFE_NAME.fullmatch(row[field]) is not None and
+                    row[field] not in {".", ".."} and not row[field].startswith("-"), "unsafe repository name")
+        require(row["id"] not in ids and row["directory"] not in directories and
+                row["directory"] != workspace["solutionDirectory"], "duplicate maintenance repository")
+        ids.add(row["id"]); directories.add(row["directory"])
+        require(row["visibility"] in {"public", "private"} and isinstance(row["role"], str) and
+                bool(row["role"]) and isinstance(row["repository"], str) and
+                re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\.git", row["repository"]) and
+                row["acceptedBranches"] == ["main"] and row["allowedDirtyPaths"] == [] and
+                type(row["optionalSourceDependency"]) is bool, "invalid maintenance repository identity")
+        require(row["optionalSourceDependency"] == (row["id"] in {"carla", "unreal-engine"}),
+                "product repository cannot be optional")
+    require(ids == {"carla", "unreal-engine", "vehicle-gateway", "vehicle-platform",
+                    "functional-service", "brake-health-cloud", "tire-health-service",
+                    "tire-health-cloud"}, "incomplete maintenance repository map")
+    return data
 
 
 def load_manifest(path: Path) -> dict[str, Any]:
@@ -160,7 +206,13 @@ def check_repository(report: Report, workspace_root: Path, item: dict[str, Any],
         revision = run_git(repository, ["rev-parse", "HEAD"])
         branch = run_git(repository, ["branch", "--show-current"])
         remote_url = run_git(repository, ["remote", "get-url", item["remote"]])
-        if revision != item["acceptedRevision"]:
+        if "acceptedRevision" not in item:
+            tracking = run_git(repository, ["rev-parse", item["remote"] + "/main"])
+            if revision != tracking:
+                report.error(f"{identifier}: HEAD differs from locally recorded {item['remote']}/main")
+            else:
+                report.pass_(f"{identifier}: local main tracking matches {revision[:12]}")
+        elif revision != item["acceptedRevision"]:
             report.error(f"{identifier}: HEAD {revision} differs from accepted {item['acceptedRevision']}")
         else:
             report.pass_(f"{identifier}: accepted revision {revision[:12]}")
@@ -318,18 +370,28 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--home-root", type=Path, default=Path.home(), help=argparse.SUPPRESS)
     parser.add_argument("--allow-dirty", action="store_true", help="report unexpected dirty paths as warnings during an in-progress commit")
+    parser.add_argument("--include-source-dependencies", action="store_true",
+                        help="also inspect optional CARLA/Unreal source checkouts; never start/build them")
     args = parser.parse_args()
     report = Report()
     try:
-        data = load_manifest(args.manifest.resolve())
+        manifest_path = args.manifest.resolve()
+        current = manifest_path == DEFAULT_MANIFEST.resolve()
+        data = load_current_map(manifest_path) if current else load_manifest(manifest_path)
         workspace_root = args.workspace_root.resolve()
         home_root = args.home_root.resolve()
         require(workspace_root.is_dir(), f"workspace root is unavailable: {workspace_root}")
         check_solution(report, data, workspace_root, args.allow_dirty)
         for item in data["repositories"]:
+            if current and item["optionalSourceDependency"] and not args.include_source_dependencies:
+                report.pass_(f"{item['id']}: optional source dependency not required for maintenance")
+                continue
             check_repository(report, workspace_root, item, args.allow_dirty)
-        check_launchers(report, data, workspace_root, home_root)
-        check_old_paths(report, data, workspace_root, home_root)
+        if current:
+            report.pass_("source-only check; no fetch, runtime, Editor or legacy launcher prerequisite")
+        else:
+            check_launchers(report, data, workspace_root, home_root)
+            check_old_paths(report, data, workspace_root, home_root)
     except (DoctorError, json.JSONDecodeError, OSError) as error:
         report.error(str(error))
     print(f"Workspace doctor: {report.errors} error(s), {report.warnings} warning(s)")

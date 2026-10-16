@@ -1,0 +1,35 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vehicle-preparation-inputs",
+  "publicBinaryObservations": [
+    {
+      "component": "QEMU_EFI.fd",
+      "bytes": 2097152,
+      "sha256": "30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
+    }
+  ],
+  "unsignedVdpInputs": [
+    {
+      "version": "1.0.16",
+      "bytes": 6608410,
+      "sha256": "d6757035407968553f27fe7e93caae00bbab72bb13fc4f3527a37700e8f34fa1",
+      "digestVerified": true
+    },
+    {
+      "version": "2.0.0",
+      "bytes": 6617630,
+      "sha256": "8728a0779cb1665910f2953457a1140ccfcda07ee236f215836193ff0d6b1a90",
+      "digestVerified": true
+    },
+    {
+      "version": "3.0.0",
+      "bytes": 6620916,
+      "sha256": "746a38d76848f86ed6d4c4150893c95eb36cf044cf6f44c7a6f57506d72e7411",
+      "digestVerified": true
+    }
+  ],
+  "vdpPreparationSource": {
+    "commonAndAdvisoryRuntime": "fade0de2412efa71d739cf6e5d7e41308838f0b8"
+  }
+}

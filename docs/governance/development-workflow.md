@@ -53,11 +53,15 @@ work. Reproducing an existing candidate still selects its exact recorded
 commits: frozen release locks and producer pins are not rewritten merely to
 follow `main`. A current default branch is not a new qualified binary release.
 
-The hash-bound `workspace/repositories.json` retains the older candidate's
-branch metadata and exact source pins. The read-only workspace doctor accepts
-`main` alongside those historical names; revision, remote and dirty-tree checks
-are unchanged. Do not reseal historical release definitions just to rename a
-maintenance branch.
+The current `workspace/repository-map.json` records maintenance owners and
+optional heavy-source dependencies without release pins or launcher paths.
+The default read-only workspace doctor checks current main, remote identity and
+dirty state against locally recorded remote-tracking refs; it does not fetch
+or claim server freshness. CARLA/Unreal sources are optional unless explicitly
+requested. The hash-bound `workspace/repositories.json` remains an unchanged
+selected-build compatibility input. Inspect it only with an explicit
+`--manifest workspace/repositories.json`; do not reseal frozen definitions to
+make current source inspection pass.
 
 ## When to Reconsider
 

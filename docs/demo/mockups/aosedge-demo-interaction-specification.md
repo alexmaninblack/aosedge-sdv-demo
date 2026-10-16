@@ -24,62 +24,53 @@
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
 - UI traceability: [AosEdge Demo UI Traceability Register](aosedge-demo-ui-traceability-register.md)
 - Maintained UI implementation: [Presenter](../../../apps/presenter-ui/README.md)
-- UI implementation authorized: yes — 9 September 2026; the 13 September Studio convergence increment and remaining acceptance gates are recorded in the [current delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026).
+- Current implementation/proof: [baseline](../../qualification/current-baseline.md)
+- Editorial consolidation: 2026-10-16; stable UI IDs retained
+
+## Purpose and authority
+
+This specification defines visible interaction and factual state presentation,
+not vehicle behavior, Cloud authority, service protocols or a second state
+store. Upstream contracts win. The maintained Presenter and native Driving
+Control are the implementation; retired HTML simulations are not test evidence.
 
 <a id="ui-studio-026--current-test-studio-contract"></a>
-
 ## UI-STUDIO-026 — current Test Studio contract
 
-### Presenter operator experience October amendment
+The installed profile uses one Test, one OEM and one associated SP with separate
+Brake/Tire service identities. Presenter, CARLA and native Driving Control/
+Telemetry remain visibly composed. Backend/Cloud summaries and details are
+integrated cards/dialogs; Platform, Brake and Tire retain contextual release
+actions. Ordinary Stop/Start is non-destructive; Delete/Finish names the Test
+and consequence. No hidden Production VM, Fleet creation or automatic approval.
 
-The operator authorized the [Presenter operator experience packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/presenter-human-friendly.md)
-on 11 October 2026 for implementation and testing on a separate branch.
-Those changes are now integrated into main and the selected engineering preview.
-Its ordinary controls, contextual next-step guidance, compact
-confirmations, explicit non-destructive stop/start and clearly named Test
-deletion supersede conflicting earlier Studio presentation rules below.
-Existing operation ownership, Safe Stop, serial delivery, uncertain-response
-reconciliation and Production-role exclusion remain unchanged. Current exact
-API/UI/native Setup evidence and remaining gates are owned by the
-[baseline](../../qualification/current-baseline.md); earlier branch results
-are not blanket acceptance of every interaction requirement.
+### Applicability of stable interaction rules
 
-Accepted scope reconciliation: 9 September 2026. This section is the current
-interaction contract for the Test-only Studio B flow. It incorporates the
-[accepted questionnaire and subsequent amendments](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md).
-The accepted Vehicle summary/dialog, startup, readiness/reset and abnormal-
-Finish amendments were consolidated in the 2.10 design review; the operator
-authorized bounded application UI integration on 17 September. Those prototype
-files and their prototype-only tests are now retired from the current checkout.
-Their [review sources](https://github.com/alexmaninblack/aosedge-sdv-demo/tree/d14e837c4cca30d8d9ebe83df996974b92c46f3b/docs/demo/mockups)
-remain recoverable in Git. The maintained Presenter and its tests establish
-current implementation behavior; a simulated design artifact does not
-establish live qualification.
-The [2.8 corrective re-audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
-does not establish working Cloud or product integration. The user subsequently
-authorized implementation on 9 September; the current delivery plan owns
-implementation evidence and remaining acceptance gates. Mockup review alone
-does not close those gates.
+The numbered UI-INT/UI-AT sections retain common authority, safety, identity,
+product-evidence and security obligations. Their two-SP, dual-vehicle promotion,
+terminal-only and earlier linear-card presentation provisions describe the
+**expanded accepted profile**, not simultaneous installed-Test prerequisites.
+This explicit mapping keeps IDs traceable without requiring a review diary.
 
-### Applicability and replacement map
+| Earlier provision / owner | Current replacement | Disposition |
+|---|---|---|
+| Terminal engineering surface; D4-026.20 and UI-INT-003/078 surface rules | Separate CARLA window plus native Driving Control/Telemetry on the left; Studio on the right | Native accepted composition replaces terminal-only rendering; no CARLA embedding |
+| Fixed lifecycle/team workspace, five-stage release cards, UI-INT-004/008/010/079 | Persistent architecture actors with clickable components/services/Cloud/backend cards and contextual release actions | Studio B replaces the old navigation/cards; no additional Controller/Architecture tab |
+| Test-to-Production handover, two-vehicle setup and dedicated demo Fleet, D4-012.1 | Exactly one current Test controller in the configured Test verification set; Production visible but Deferred | No hidden Production VM, Fleet creation or Production rollout |
+| Per-release accept/approve/deploy stage | VDP publication is followed by delivery observation; first service Publish is followed by identity assignment; later service versions only Publish update | Verification recipients do not require batch approval; no version-specific Subject assignment |
+| Independent team progress implies simultaneous mutations | Preserve separate ownership, releases and peer service bindings; serialize operator mutations in this milestone | Parallel writer execution is deferred, not a new Cloud restriction |
+| Full error/log and cancellation UX | Truthful failure/uncertainty and safe refusal; no invented cancellation, rollback or automatic campaign halt | Expanded diagnostics and terminal failed-install recovery are later-phase work |
+| Required intermediate Pending observation | Confirm terminal expected version/instance directly if intermediate states were missed | Do not manufacture historical transitions |
+| Retain all run evidence/history | Stop/Start retains the Test; confirmed Finish removes owned run data | Formal qualification checkpoint is separate from routine demo retention; operator Park/Resume removed by ADR 0017 |
 
-### Resource units follow-up — 20 September 2026
+### Observation and resource facts
 
-The accepted [UI amendments](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/presenter-ui-amendments-2026-09-20.md)
-and their resource-review follow-up retain native Cloud resource authority.
-Disk usage is verified used bytes, formatted as B/KiB/MiB/GiB, with all four
-current controller partitions visible together and separate instance scope.
-Network reads show accumulated daily byte volumes, not transfer rates;
-retained samples keep their source-day context. Explain that local/private
-traffic is excluded and local backend delivery can coexist with zero metered
-service traffic. A public/test backend network remains deferred. Unknown units,
-missing samples, measured zero and conflicting aliases remain distinct.
-No guest collector, network change or service/VM rebuild is introduced.
-
-### Displayed-fact audit corrections — 19 September 2026
-
-The subsequent [flow/status re-audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-flow-reaudit-2026-09-19.md)
-and operator-approved U1–U5 corrections additionally require:
+Disk is verified used bytes, formatted B/KiB/MiB/GiB with all controller
+partitions and separate instance scope. Network is accumulated daily byte
+volume, not rate; preserve source day and explain exclusion of local/private
+traffic. Local backend delivery may coexist with zero metered traffic. Public
+backend network proof remains deferred. Unknown units, missing samples,
+measured zero and conflicting aliases stay distinct; no guest collector is added.
 
 - Conflicted product content is explicitly untrusted on the backend card and
   Overview. Keep the conflicting head inspectable in Records; neither a normal
@@ -95,14 +86,6 @@ and operator-approved U1–U5 corrections additionally require:
   within its eight-second browser limit. Each HTTP exchange/body remains capped
   at three seconds or the remaining budget, whichever is smaller. No ownership
   guard is removed and no request is retried.
-
-These are display/read-path corrections, not telemetry cadence requirements,
-changed service thresholds or live qualification. See the
-[correction record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
-
-The operator accepted all F1–F7, L1–L2 and O1–O7 in the
-[displayed-fact audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/presenter-ui-truth-audit-2026-09-19.md).
-These are bounded Presenter/read-path corrections, not new product authority:
 
 - Retained results keep their source and receipt dates. Backend/Cloud checked
   time is separately labelled; it never means a new vehicle event. A stale
@@ -128,43 +111,20 @@ These are bounded Presenter/read-path corrections, not new product authority:
   input paths. Show existing band/score/recommendation fields without raw-JSON
   navigation. Visible and accessible score labels both describe model estimates.
 
-The fixed workspace, miniature icons, existing actions, dialogs and retained
-2.10 mockup remain unchanged in ownership/flow. Local fixture qualification is
-not a new live version/offline/Finish acceptance pass.
-
-### Continuous lifecycle — 19 September 2026
-
-[ADR 0017](../../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
-supersedes operator Park/Resume and the same-run VM restart demonstration.
-Session offers Finish; a pause uses native Safe Stop while the controller stays
-running. Historical parked/partially resumed or established stopped runs offer
-confirmed Finish, not restart. Old-browser Park/Resume submissions are rejected.
-The retained 2.10 simulation still has those old controls; this is a documented
-parity difference, not authority to reintroduce them in the application.
-Continuous SOTA/offline/model continuity remains required. Native CM shared
-storage loss is a known upstream defect, not fixed by hiding restart controls.
-
 <a id="versioned-service-and-platform-clarity--18-september-2026"></a>
-
-### Versioned service and platform clarity — 18 September 2026
-
-Decisions 1A–6A in the [accepted audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/versioned-service-scenario-audit-2026-09-18.md)
-and the subsequent instruction to proceed authorize the
-[versioned-observability packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
-The 2.10 mockup stays a retained reference; these amendments are not a claim
-that its simulation or the running application already implements them.
+### Versions, readiness and vehicle evidence
 
 - Backend cards/dialogs distinguish input, episode activity, last product
   result and delivery freshness through their own backend's facts. Unknown
   is not healthy; installed and reset-poll contact are not telemetry proof.
-- Accepted Cloud-first correction: Presenter obtains installed/pending software,
+- Presenter obtains installed/pending software,
   runtime observations and resources from native Aos Cloud. Bind the exact
   installed artifact to its verified functional profile, not its release major.
   Service input/episode/results come from their backends; Cloud Running is not
   telemetry proof. No new guest timer or mandatory public-input revision is
   prescribed. Prove service-local compatibility/recovery using existing inputs
   without making analytics depend on Cloud or Presenter availability.
-- P2 option A, subsequently accepted: exact version/profile compatibility is
+- Exact version/profile compatibility is
   a Cloud/package-derived Presenter fact. Services report actual local input
   and capability readiness; missing telemetry is not a proved incompatible
   profile. No local active-profile interface is added. Keep Cloud compatibility,
@@ -189,52 +149,6 @@ that its simulation or the running application already implements them.
 - Keep the fixed native-left/Studio-right composition, existing dialogs and
   lifecycle actions. A warning is not guaranteed merely by launching a maneuver.
 
-### Retained 17 September visual amendment
-
-**17 September visual-only amendment:** the [2.9 Vehicle proposal](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/docs/demo/mockups/aosedge-demo-interaction-mockup-2-9.html)
-adds inline Brake/Tire backend summaries and a Cloud summary while retaining
-the architecture actors, B2 imagery, connectors and fixed native-left/Studio-right
-composition. Backend and Unit monitoring details use dialogs over Vehicle;
-separate read-only dashboard pages are no longer the intended navigation.
-Installed component/service detail clicks remain. Team release-authoring views
-remain separate and unchanged. At story completion, Finish demo replaces the
-redundant monitoring shortcut, retaining confirmation and all cleanup guards.
-No lifecycle, data authority, guest access or service protocol changes are
-authorized by this visual amendment. The checkpoint audit preceded the user's
-17 September integration instruction. Version-specific
-metrics, stale/missing data, modal polling and keyboard/fixed-screen fit must be
-qualified against real read models; mock values are never evidence. The operator
-subsequently authorized the complete 2.10 mockup consolidation only. It corrects
-the 2.9 proposal's disabled Tire Reset: Brake V3 and Tire V1 both implement the
-accepted independent reset contract. Prior artifacts remain unchanged.
-
-The implementation-first 2.10 follow-up uses the existing application as truth:
-Prepare → Sign & publish; current-release backend proof; producer-bound reset;
-Session Cloud/OEM/SP setup; independent partial/last-known observations; and
-Finish continuation only after Cloud Offline. Its [audit closure table](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/mockup-2-10-2026-09-17.md#implementation-first-audit-closure)
-records source references and simulation limits. The approved summary/modal
-visual changes are now the authorized UI integration target; completion is
-established by the implementation verification record, not by mockup tests.
-
-The earlier sections and their `UI-INT-*` / `UI-AT-*` anchors remain intact for
-traceability and future Production work. Their conflicting provisions are
-**superseded for this Test milestone**, not concurrent requirements:
-
-| Earlier provision / owner | Current replacement | Disposition |
-|---|---|---|
-| Terminal engineering surface; D4-026.20 and UI-INT-003/078 surface rules | Separate CARLA window plus native Driving Control/Telemetry on the left; Studio on the right | Native accepted composition replaces terminal-only rendering; no CARLA embedding |
-| Fixed lifecycle/team workspace, five-stage release cards, UI-INT-004/008/010/079 | Persistent architecture actors with clickable components/services/Cloud/backend cards and contextual release actions | Studio B replaces the old navigation/cards; no additional Controller/Architecture tab |
-| Test-to-Production handover, two-vehicle setup and dedicated demo Fleet, D4-012.1 | Exactly one current Test controller in the configured Test verification set; Production visible but Deferred | No hidden Production VM, Fleet creation or Production rollout |
-| Per-release accept/approve/deploy stage | VDP publication is followed by delivery observation; first service Publish is followed by identity assignment; later service versions only Publish update | Verification recipients do not require batch approval; no version-specific Subject assignment |
-| Independent team progress implies simultaneous mutations | Preserve separate ownership, releases and peer service bindings; serialize operator mutations in this milestone | Parallel writer execution is deferred, not a new Cloud restriction |
-| Full error/log and cancellation UX | Truthful failure/uncertainty and safe refusal; no invented cancellation, rollback or automatic campaign halt | Expanded diagnostics and terminal failed-install recovery are later-phase work |
-| Required intermediate Pending observation | Confirm terminal expected version/instance directly if intermediate states were missed | Do not manufacture historical transitions |
-| Retain all run evidence/history | Finish removes ordinary owned run data; pause with the VM running | Formal qualification checkpoint is separate from routine demo retention; operator Park/Resume removed by ADR 0017 |
-
-All unchanged authority, Safe Stop, identity, product-evidence and security
-boundaries in the earlier sections remain applicable. This amendment is not a
-waiver of platform requirements outside the bounded demo.
-
 ### State and action contract
 
 Release-profile selection is operator input, not an observation of controller
@@ -249,7 +163,6 @@ because an unavailable read omits the run identity.
    service slots remain empty; factory VDP metadata is not a Cloud observation.
 2. **Start simulator** starts/reuses CARLA, strict Gateway and native surfaces.
    The local dashboard works, but no Domain Controller is attached yet.
-   This 17 September operator amendment supersedes the pre-Provision connection.
    Presenter simulation Start/Stop explicitly use `--target test`, preserving
    any existing Production source gate.
 3. **Full story** shows Platform Prepare → Sign → Publish v1 before Provision.
@@ -297,23 +210,21 @@ because an unavailable read omits the run identity.
 9. **Offline** affects vehicle external access only. Local driving/telemetry and
    eligible local functions remain independent; durable queued product records
    upload once after reconnect. Host publication access is separately checked.
-10. **Pause/Finish/New cycle**: use native Safe Stop for a pause with the
-    controller running. Park/Resume are not supported operator actions
-    (ADR 0017); historical checkpoints remain readable. Finish before shutdown,
-    then create a fresh controller for the next run. An interrupted established
-    run offers confirmed Finish, not an automatic restart. Scoped cleanup:
-    quiesce producers, revoke
-    and delete the exact Unit, reset owned Subject/Set bindings, clear owned
-    product records, stop backends and remove working files. Preserve factory
-    image, permanent infrastructure, Subject, published releases and minimal
-    release-number continuity. Never reuse a retired overlay.
-    **14 September 2026 abnormal-Finish amendment:** Finish
+10. **Stop/Start and Finish**: Safe Stop pauses motion with the controller
+    running. Stop demo closes owned runtime without deleting the same Test,
+    credentials, models, history or release continuity; Start restores it under
+    current guards. Park/Resume remains rejected, including old-browser input.
+    Controller ignition recovery is separately guarded and stationary; host
+    sleep/wake is not implied. Finish is explicit destructive Test retirement:
+    quiesce producers, revoke/delete the exact Unit, clear owned Subject/Set
+    bindings and product records, stop backends and remove working files.
+    Preserve Factory, permanent infrastructure, Subjects, published releases and
+    release continuity. A retired overlay is never reused.
+    **Abnormal Finish:** Finish
     destroys Test without waiting for successful VDP/service installation,
     publication, CM readiness or a Safe Stop observation. Stop the local
     simulator, VM and backends before Cloud retirement. A stalled guest may
     be powered off through its exact owned QMP endpoint, only for Finish.
-    See the shared Demo Control
-    [retirement contract](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#finish-after-an-abnormal-run--authorized-14-september-2026).
     Retained Brake/Tire Subjects may be unused in a new run: their exact
     identities and absence of assigned/reported Units are verified after local
     shutdown, without inventing service assignments. Existing incomplete or
@@ -334,17 +245,13 @@ because an unavailable read omits the run identity.
     ordinary cleanup. Number allocation details do not appear as audience copy.
 
 <a id="accepted-subject-and-service-package-settings--9-september-2026"></a>
+### Subject and service package settings
 
-### Accepted Subject and service package settings — 9 September 2026
-
-The user initially accepted one retained dedicated Group Subject. The approved
-11 September amendment supersedes that allocation: use **two Group Subjects**,
-`is_group: true`, one for Brake and one for Tire, both bound only to current
-Test. Each contains only its logical service; releases reuse its identity.
-Service identities and SP ownership remain separate. Clear each Subject's owned
-Unit/service bindings at Retire, not the Subjects themselves. Do not reuse or alter
-a factory/NodeType Subject. User-state migration between vehicles is not part
-of this demo; local product queues/storage remain a separate requirement.
+Use two retained Group Subjects, `is_group: true`, one for Brake and one for Tire,
+both bound only to the current Test and containing only their own service.
+Releases reuse service identities. Finish clears owned bindings, not Subjects.
+Never reuse a factory/NodeType Subject. User-state migration between vehicles
+is outside this demo; local product storage/queues remain separate obligations.
 
 Both services require `instances.minInstances: 1` and `offlineTTL: P7D` in
 their service configuration. For the existing schemaVersion-2 bundle authoring
@@ -358,66 +265,22 @@ OEM assignment passes `service_ids:[service UUID]` only; Unit attachment passes
 number of instances. Observe the actual expected version/instance in Cloud;
 the requested minimum does not itself prove a running process.
 
-The [decision/evidence table](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md#subject-and-package-proposal)
-records the supporting documentation/API review. These decisions close the
-remaining configuration choices; they do not change a tenant setting, package
-or executable API schema and do not authorize live operations.
+### Verification boundary
 
-### Verification and implementation handoff
+Real API, visible UI and native first-use evidence is linked from the current
+baseline. Mockup tests cannot qualify Cloud, VM or algorithms. Unknown or
+unexecuted cases remain explicit. Prior prototype/audit chronology is available
+in [Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/demo/mockups/aosedge-demo-interaction-specification.md),
+not as an additional implementation plan.
 
-The [action audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-studio-action-audit.md) maps the current
-flow to existing and missing operations and records reproducible mock-only
-tests. The [delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#current-reconciled-sequence)
-is the current phase order. Normal/reload/offline/service/retire mockup tests
-precede implementation; real CLI E2E, scoped cleanup and a visually approved UI
-repeat from the same image SHA follow it. No simulation test qualifies the VM,
-Cloud tenant, service package or product algorithms.
+## Stable common and expanded-profile interaction rules
 
-## Purpose and Authority — retained 2.5 baseline
-
-This specification defines how a presenter and audience interact with the
-accepted demo through one composed full-screen workspace. It turns the I0
-linear mockup into a reviewable interaction contract before implementation.
-
-It is authoritative for presentation structure, visible interaction and UI
-state semantics only. It does not redefine vehicle behavior, component
-lifecycle, Cloud authority, permissions, dependencies, evidence or failure
-semantics owned by the linked architecture, scenarios, requirements and D4
-contracts. If a mockup or this specification conflicts with an upstream
-contract, the upstream contract wins and this document must be corrected.
-
-## Review Method
-
-The specification is reviewed section by section. A section moves from
-`PENDING` to `ACCEPTED` only after its visible behavior, authority boundary,
-failure behavior and traceability are agreed. Unaccepted sections do not
-authorize implementation.
-
-| Section | Scope | State |
-| --- | --- | --- |
-| 1 | Screen composition and global interaction invariants | `ACCEPTED` |
-| 2 | Team perspectives and independent state preservation | `ACCEPTED` |
-| 3 | Current Vehicle and Test-to-Production handover | `ACCEPTED` |
-| 4 | Platform, Brake and Tire linear release stories | `ACCEPTED` |
-| 5 | Action, authority and authoritative-result contract | `ACCEPTED` |
-| 6 | Details modal and disclosed information | `ACCEPTED` |
-| 7 | Blocked, waiting, uncertain, offline and recovery states | `ACCEPTED` |
-| 8 | CARLA, Controller, Engineering and Function-backend correlation | `ACCEPTED` |
-| 9 | Traceability and UI acceptance cases | `ACCEPTED` |
+Apply the profile mapping above to the following stable definitions. In
+particular a Production-role acceptance case is not proof from a Test hosted
+on the Production Cloud environment.
 
 ## 1. Screen Composition and Global Interaction Invariants
 
-- Review state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Accepted disposition: all five Section 1 acceptance questions approved as
-  recommended; amended on 2026-08-26 by `UI-INT-078` and D4-026.17 to fix
-  physical-workspace, shared-header and visible-surface ownership, and by
-  `UI-INT-079` and D4-026.18 to add the right-hand global lifecycle page; the
-  accepted mockup review further amended `UI-INT-004`, `UI-INT-008` and
-  `UI-INT-010` through D4-026.19 to keep team context fixed while only the
-  release/version story scrolls; amended on 2026-08-27 by D4-026.20 to keep
-  Engineering Telematics output text-only while allowing icons in the
-  surrounding presentation layer
 
 ### 1.1 Presentation environment
 
@@ -629,25 +492,16 @@ global page. Qualification status is informative and gates an official
 audience presentation according to D4-026.5; it does not authorize or execute
 M0, M1, a release or R0.
 
-### 1.2 Section 1 acceptance questions
+### 1.2 Composition acceptance criteria
 
-Section 1 is ready for review against these questions:
-
-1. Is one full-screen, single-display workspace the correct first-demo target?
-2. Is the approximately equal left/right split correct?
-3. Should CARLA use roughly 55% of the left region height, with Controller and
-   Engineering Telematics sharing the lower row equally?
-4. Should the Details modal remain confined to the right region as recommended?
-5. Are any additional globally persistent indicators required in the shared
-   header beyond demo title, current vehicle and the three team perspectives?
+Verify one full-screen single-display workspace, approximately equal left/right
+regions, CARLA above native controls/telemetry on the left and readable browser
+details on the right. Shared indicators name the demo, current vehicle and team
+perspective. Exact placement follows the measured current layout contract,
+not prototype coordinates.
 
 ## 2. Team Perspectives and Independent State Preservation
 
-- Review state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Accepted disposition: all six Section 2 decisions approved; the required
-  Level-B cascade is closed by D4-021.2/.3, Demo Run State 1.1.0,
-  `SYS-REL-012`, `REQ-DEMO-022` and `UT-DEMO-020`
 
 ### 2.1 Internal OEM producer teams
 
@@ -808,7 +662,7 @@ AosCloud read failure may affect multiple release cards, but it still does not
 change CARLA/Gateway evidence or vehicle external-connectivity state. Section 7
 defines the exact visible failure vocabulary and recovery actions.
 
-### 2.2 Section 2 acceptance record
+### 2.2 Section 2 acceptance criteria
 
 The review accepted all six decisions: exactly three producer perspectives;
 OEM Release Authority as a persistent non-selectable governance role outside
@@ -820,10 +674,6 @@ was accepted.
 
 ## 3. Current Vehicle and Test-to-Production Handover
 
-- Review state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Accepted disposition: global Current Vehicle, repeatable Test/Production
-  handover and OEM-runtime-enforced Safe Stop for Platform FOTA are approved
 
 ### 3.1 Audience vehicle terminology and global state
 
@@ -946,7 +796,7 @@ evaluates physical motion. Authorization may be recorded while the vehicle is
 moving; the OEM Component Runtime waits for Safe Stop before application. Test Vehicle Platform
 FOTA follows the same application rule before its validation drive.
 
-### 3.3 Section 3 acceptance record
+### 3.3 Section 3 acceptance criteria
 
 The review accepted the audience terms `Test Vehicle` and `Production
 Vehicle`, a single global Current Vehicle independent of team navigation,
@@ -958,10 +808,6 @@ that AosCloud evaluates physical vehicle motion were accepted.
 
 ## 4. Platform, Brake and Tire Linear Release Stories
 
-- Review state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Accepted disposition: Test Vehicle owns validation and producer acceptance;
-  Production Vehicle owns rollout and live operation only
 
 ### 4.1 Common audience release story
 
@@ -1122,7 +968,7 @@ releases ready`. Platform cards use `Enables Brake v2/v3`, while Brake cards use
 AosCloud/AosCore state plus the accepted Function evidence; it is not written
 back as Cloud lifecycle state.
 
-### 4.2 Section 4 acceptance record
+### 4.2 Section 4 acceptance criteria
 
 The review accepted the five-stage audience story, one-time publication,
 separate Test deployment authorization, Test-only validation and producer
@@ -1472,11 +1318,11 @@ authoritatively. For Platform FOTA, the presenter's explicit vehicle action is
 `Resume drive` or `Show released behavior`. Brake/Tire SOTA may continue in
 motion subject to every other gate.
 
-### 5.4 Section 5 acceptance record
+### 5.4 Section 5 acceptance criteria
 
-#### Accepted during Section 5 review — control-plane credential topology
+#### Control-plane credential topology — expanded profile
 
-The review accepts that neither the Demo UI nor the demo solution owns a Cloud
+The accepted contract is that neither the Demo UI nor the demo solution owns a Cloud
 identity. One OEM user certificate supports the fixed `platform-oem` and
 `oem-delivery` operation profiles, while Brake and Tire use two different
 Service Provider owner domains and two separate SP certificates. The UI actor
@@ -1484,9 +1330,9 @@ model remains distinct from certificate identity. This records no claim of
 cryptographic separation between Platform Team and OEM Release Authority in
 the first demo, and the Admin certificate is never part of the flow.
 
-#### Accepted during Section 5 review — one visible Production authorization per exact release
+#### Production authorization per exact release — expanded profile
 
-The review accepts one audience-visible `Authorize Production rollout`
+The accepted contract exposes one audience-visible `Authorize Production rollout`
 decision for each exact release card. Its protected confirmation exposes the exact accepted artifact,
 Fleet Validation Batch, Production Unit Set and bounded technical sequence.
 The backend may then execute Campaign create, authoritative read, target
@@ -1505,7 +1351,7 @@ dependent Service action becomes eligible.
 
 #### Accepted during Section 5 review — no audience `Apply update` action
 
-The review accepts that the first implementation exposes no separate
+The accepted contract is that the first implementation exposes no separate
 audience-facing `Apply update` button. After Test or Production authorization,
 the release card observes Cloud delivery and AosCore actual/readiness state.
 For Platform FOTA it shows native `ACTIVATING`, factual Gateway state and the
@@ -1894,9 +1740,9 @@ rollout`, the first viewport would read approximately:
 digests and sanitized object/evidence fingerprints. It would not show Unit
 UUIDs, certificates, tokens, raw Cloud responses or Brake backend payloads.
 
-### 6.10 Section 6 acceptance record
+### 6.10 Section 6 acceptance criteria
 
-The review accepts:
+Verify the accepted behavior:
 
 1. one read-only right-workspace Details modal with a human-first summary,
    collapsed technical disclosure and no lifecycle action;
@@ -2199,9 +2045,9 @@ required`, `Waiting for Safe Stop` or `Publication result uncertain`.
 | Tire CPU proof lacks current cgroup qualification evidence | `INCONCLUSIVE`, never `PASS` | Restore required evidence and start a newly confirmed proof |
 | Tire backend is unavailable | Tire perspective/source unavailable only | Recheck Tire source; Platform and Brake remain independently actionable |
 
-### 7.9 Section 7 acceptance record
+### 7.9 Section 7 acceptance criteria
 
-The review accepts:
+Verify the accepted behavior:
 
 1. three separately labelled authoritative-source, local-orchestration and
    evidence/acceptance state layers;
@@ -2494,25 +2340,15 @@ does not mark AosEdge Platform, CARLA, Engineering Telematics or another team
 failed. `Recheck current state` refreshes accepted owners but never reruns the
 vehicle exercise or resubmits a Function message.
 
-### 8.6 Section 8 acceptance questions
+### 8.6 Correlation acceptance criteria
 
-Section 8 was accepted against these questions:
-
-1. Is one Current Vehicle/release/live-exercise evidence context the correct
-   audience anchor?
-2. Does the four-link human-readable chain explain the demo without exposing
-   technical correlation first?
-3. Are the release-specific Platform, Brake and Tire evidence stories correct?
-4. Is the accepted split correct: deterministic stimuli for Test acceptance,
-   Autopilot/Manual for normal Production operation, and an explicit
-   deterministic Production exercise only when a guaranteed audience event is
-   needed, always with no replay and unlimited presenter repeats?
-5. Are the sanitized fingerprints and separate source timestamps sufficient
-   without introducing a demo-run ID or latency KPI?
-6. Does the offline view correctly distinguish local behavior, absent backend
-   events and delayed synchronized delivery?
-7. Does the handover rule preserve accepted Test evidence without mixing it
-   into current Production live evidence?
+Verify one current vehicle/release/exercise context, a readable four-link causal
+chain and release-specific Platform/Brake/Tire evidence. Keep sanitized event
+fingerprints and source timestamps separate from receipt time; introduce no
+latency KPI or fake run identity. Offline displays distinguish local results,
+absent backend delivery and delayed synchronization. In the expanded profile,
+Test/Production handover never mixes live evidence; deterministic exercises
+remain repeatable without replay, with Manual/Autopilot normal driving separate.
 
 ## 9. Traceability and UI Acceptance Cases
 
@@ -2800,9 +2636,9 @@ left surfaces, browser duplication of launcher preflight/layout restoration,
 manual qualification override and qualification treated as Cloud or release
 authority.
 
-### 9.12 Section 9 acceptance record
+### 9.12 Section 9 acceptance criteria
 
-The review accepts:
+Verify the accepted behavior:
 
 1. one bidirectional traceability row for every `UI-INT-001` through
    `UI-INT-079`, linked to actual upstream ownership and one or more cases;
@@ -2817,10 +2653,8 @@ The review accepts:
 6. automated rejection of missing/duplicate/orphan IDs, invalid local links or
    uncovered interaction rules.
 
-This acceptance completes Interaction Specification 2.5. D4-026.20 later
-clarifies the accepted icon vocabulary and native Terminal rendering boundary
-without adding an interaction rule or acceptance-case ID. It authorizes no UI
-implementation, mockup promotion, Cloud/helper operation, vehicle action,
-scenario execution, connectivity fault, log request, CPU proof or Unit
-mutation. The accepted clickable review mockup is reconciled to this
-specification; implementation remains separately unauthorized.
+The case definitions retain stable IDs and upstream authority. Current Test
+scope and native rendering follow UI-STUDIO-026 above; expanded promotion and
+resource proofs retain their separate acceptance boundary. Current implementation
+and executed cases are recorded by the baseline, not a retired clickable mockup.
+This specification itself authorizes no Cloud/helper mutation or vehicle action.

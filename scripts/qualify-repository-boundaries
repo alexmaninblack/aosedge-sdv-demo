@@ -299,7 +299,8 @@ def _run_project_gates(
     _run([str(integration / "scripts" / "docs-check")], integration)
     # The component lock may intentionally pin an older accepted release than
     # the current development checkouts. Validate the immutable lock here;
-    # workspace/repositories.json and workspace-doctor qualify current HEADs.
+    # The maintenance repository map/doctor inspect current source separately;
+    # repositories.json remains an exact frozen-build compatibility input.
     _run([str(integration / "scripts/validate-component-lock")], integration)
 
     reuse_env = dict(os.environ)

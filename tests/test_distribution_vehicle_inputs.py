@@ -86,7 +86,14 @@ class VehicleInputsTests(unittest.TestCase):
         path.write_bytes(json.dumps(raw).encode() if isinstance(raw, dict) else raw)
 
     def save_inventory(self):
-        self.put(self.integration / 'workspace/distribution-stage0-inventory.json', self.inventory)
+        definition = {k: self.inventory[k] for k in
+                      ('publicBinaryObservations', 'unsignedVdpInputs', 'vdpPreparationSource')}
+        definition.update(schemaVersion=1, kind='vehicle-preparation-inputs')
+        self.put(self.integration / module.VEHICLE_BUILD_INPUTS, definition)
+        self.put(self.integration / module.DEFAULT_SERVICE_CHECKPOINT,
+                 dict(schemaVersion=1, kind='reviewed-service-exports',
+                      serviceExports=[dict(r, architecture='linux/arm64')
+                                      for r in self.inventory['serviceExports']]))
 
     def collect(self):
         return module.collect(self.integration, self.platform, self.artifacts, self.firmware, self.api)
@@ -101,6 +108,38 @@ class VehicleInputsTests(unittest.TestCase):
         self.assertFalse(any('private' in name or 'package.sign' in name for name in files))
         self.assertIn('vdp/reviewed-runtime/python/provider/runtime.py', files)
 
+    def test_default_services_use_the_reviewed_lock_not_copied_observations(self):
+        self.inventory['serviceExports'] = []  # In-memory observations are not authority.
+        pins = module.service_pins(self.integration, self.inventory)
+        self.assertEqual(4, len(pins))
+        (self.integration / module.DEFAULT_SERVICE_CHECKPOINT).unlink()
+        with self.assertRaises(FileNotFoundError):
+            self.collect()
+
+    def test_vehicle_definition_rejects_legacy_unknown_duplicate_and_unsafe_firmware(self):
+        path = self.integration / module.VEHICLE_BUILD_INPUTS
+        original = json.loads(path.read_text())
+        for key, bad in [('schemaVersion', True), ('schemaVersion', 2),
+                         ('kind', 'observed-stage-zero'), ('observedHost', {})]:
+            self.put(path, dict(original, **{key: bad}))
+            with self.subTest(key=key), self.assertRaisesRegex(module.BundleError, 'definition schema'):
+                self.collect()
+        self.put(path, b'{"schemaVersion": 1, "schemaVersion": 1}')
+        with self.assertRaisesRegex(module.BundleError, 'Duplicate vehicle'):
+            self.collect()
+        for rows in ([], [original['publicBinaryObservations'][0]] * 2,
+                     [dict(original['publicBinaryObservations'][0], bytes=True)]):
+            self.put(path, dict(original, publicBinaryObservations=rows))
+            with self.assertRaisesRegex(module.BundleError, 'firmware identity'):
+                self.collect()
+
+    def test_current_vehicle_definition_has_no_host_history_or_copied_service_pins(self):
+        root = SCRIPTS.parents[1]
+        value = json.loads((root / module.VEHICLE_BUILD_INPUTS).read_text())
+        self.assertEqual({'$comment', 'schemaVersion', 'kind', 'publicBinaryObservations',
+                          'unsignedVdpInputs', 'vdpPreparationSource'}, set(value))
+        self.assertEqual(['QEMU_EFI.fd'], [r['component'] for r in value['publicBinaryObservations']])
+
     def test_missing_service_profile(self):
         self.inventory['serviceExports'].pop()
         self.save_inventory()
@@ -113,15 +152,15 @@ class VehicleInputsTests(unittest.TestCase):
         self.put(self.integration / name, dict(schemaVersion=1, kind='reviewed-service-exports', serviceExports=rows))
         return name
 
-    def test_explicit_service_checkpoint_preserves_historical_inventory(self):
+    def test_explicit_service_checkpoint_preserves_vehicle_definition(self):
         name = self.service_checkpoint()
         self.inventory['serviceExports'] = []
         self.save_inventory()
-        old = (self.integration / 'workspace/distribution-stage0-inventory.json').read_bytes()
+        old = (self.integration / module.VEHICLE_BUILD_INPUTS).read_bytes()
         _, _, identities = module.collect(self.integration, self.platform, self.artifacts, self.firmware,
             self.api, service_checkpoint=name)
         self.assertEqual(len(identities['serviceProfiles']), 4)
-        self.assertEqual((self.integration / 'workspace/distribution-stage0-inventory.json').read_bytes(), old)
+        self.assertEqual((self.integration / module.VEHICLE_BUILD_INPUTS).read_bytes(), old)
 
     def test_explicit_service_checkpoint_never_falls_back(self):
         for name, error in [('workspace/checkpoints/absent.json', FileNotFoundError),
@@ -164,7 +203,7 @@ class VehicleInputsTests(unittest.TestCase):
         with self.assertRaisesRegex(module.BundleError, 'Duplicate'):
             module.service_pins(self.integration, self.inventory, name)
         (self.integration / name).unlink()
-        (self.integration / name).symlink_to(self.integration / 'workspace/distribution-stage0-inventory.json')
+        (self.integration / name).symlink_to(self.integration / module.VEHICLE_BUILD_INPUTS)
         with self.assertRaisesRegex(module.BundleError, 'symlink'):
             module.service_pins(self.integration, self.inventory, name)
 

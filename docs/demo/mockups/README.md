@@ -1,7 +1,7 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# I0 Audience-Visible Interface Register and Mockup Gate
+# Audience-visible interface register
 
 - Status: accepted
 - Version: 0.18
@@ -18,38 +18,23 @@
   [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
 - Maintained implementation and tests: [Presenter UI](../../../apps/presenter-ui/README.md)
 
-## Current implementation and retained contracts
+## Purpose and applicability
 
-Use the [operator workflow](../../operations/current-demo-workflow.md),
-[implementation map](../../architecture/current-implementation.md) and
-[current baseline](../../qualification/current-baseline.md) for the live
-Presenter. Card Reset, real backend details, resources, serial releases,
-ordinary Stop/Start and native Driving Control are implemented.
+This register maps audience surfaces to owners, authoritative sources and
+stable I0/UI identifiers. It is not a gate waiting for a new mockup or an
+archive of prototypes. The [interaction specification](aosedge-demo-interaction-specification.md)
+owns current Test behavior and the explicit expanded-profile mapping; the
+[traceability register](aosedge-demo-ui-traceability-register.md) maps rules to
+acceptance cases. Current implementation/proof belongs to the
+[baseline](../../qualification/current-baseline.md).
 
-Versioned HTML prototypes, their duplicate artwork, generation helpers and
-prototype-only tests have been retired. Their [original review chronology](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/docs/demo/mockups/README.md)
-and source remain in Git. Regression coverage for the current product belongs
-to Presenter and Demo Control, not simulated prototype timers.
-The stable accepted I0 decisions below remain intact, subject to the later
-Test-only, one-associated-SP and lifecycle amendments. The three Markdown
-files in this directory remain because they own those requirements, stable
-identifiers and traceability; the directory is not a prototype archive.
-
-## Purpose
-
-This register is the first D5/I0 gate. It inventories every presenter- or
-audience-visible surface before UI implementation, separates navigation from
-authority and defines the minimum normal and failure states that low-fidelity
-mockups must cover.
-
-Mockups are derived views of accepted architecture, scenarios, requirements
-and contracts. They do not create lifecycle state, release authority, product
-behavior or a second specification.
-
-Earlier standalone files simulated Cloud, VM, CARLA and release state for
-design review. They were never a runtime implementation or proof of real
-integration. Review artifacts can be recovered at their published Git revision;
-they are not regenerated or shipped as part of the current product.
+Installed use is one Test and one associated SP, independent Brake/Tire services,
+integrated backend cards/dialogs, native Driving Control/Telemetry and ordinary
+Stop/Start. I0 decisions below retain shared authority/safety/evidence rules;
+dual-role promotion, two SP organizations, terminal-only rendering and old
+linear-card layout are expanded-profile provisions where replaced by
+UI-STUDIO-026. The fixed CPU proof remains an unclosed obligation, not an
+available feature. No retired HTML or prototype test ships with the product.
 
 ## <a id="i0-dec-001"></a>I0-DEC-001 Accepted — Linear Audience Interaction Model
 
@@ -571,60 +556,19 @@ The D4-026.6 core story remains
 30-minute narrative inside a 45-minute reserved audience slot. The UI may
 summarize mandatory checks but never skip, pre-approve or simulate them.
 
-## Existing Visual Baseline — Reuse, Do Not Redesign
+## Native vehicle evidence surfaces
 
-The current implementation was inspected before preparing wireframes. I0 shall
-reuse its visual language and interaction model rather than inventing a new
-vehicle-control or engineering-telemetry product.
+CARLA and native Driving Control/Telemetry remain separate visible windows,
+not browser embeddings. Native control owns Manual/Autopilot, prepared maneuvers,
+Safe Stop and separate Return to road. Model/advisory state is not reset by
+repositioning. The native telemetry observer reads Gateway/VISS and reports
+source freshness, drive context and typed advisory status independently of
+backend results or Cloud runtime state. Installed behavior is documented in the
+[operator workflow](../../operations/current-demo-workflow.md).
 
-Implementation references:
-[native control panel](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/tools/KeyboardControl.swift),
-[Terminal telemetry renderer](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/src/viss_client.cpp),
-[Brake Event operator behavior](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/brake-event-scenario.md).
-
-### Current macOS control panel
-
-The existing native window is titled `CARLA — Live Driving Control`. It uses a
-plain light-gray macOS surface with:
-
-- one prominent status banner at the top;
-- four large keycap-style arrow controls for throttle, brake and steering;
-- one full-width `START/RESTART SCRIPTED SCENARIO` action;
-- three bottom actions: green `MANUAL CONTROL`, blue `AUTOPILOT` and red
-  `SAFE STOP`;
-- purple status/action treatment for the scripted scenario;
-- compact keyboard shortcuts and the existing focus-loss safety explanation;
-- explicit connecting, switching, unavailable, scenario passed/failed and
-  connection-lost text instead of icons without labels.
-
-The first mockup may add a restrained session/stage/navigation region around
-this panel, but it shall not replace the current controls, labels, colors,
-keyboard behavior or safe-stop prominence.
-
-### Current Engineering Telematics Dashboard
-
-The implemented dashboard is a compact monospaced Terminal view headed
-`CARLA / VSS LIVE TELEMETRY`. It already shows:
-
-- verified VISS/TLS endpoint, connection and `LIVE/WAITING` data health;
-- simulation rate, dashboard delivery rate, local VISS latency and event count;
-- frame, simulation time, speed, longitudinal acceleration, steering, gear and
-  engine RPM;
-- text bars for accelerator and brake;
-- four-wheel `FL/FR/RL/RR` speed, angular speed, longitudinal slip and lateral
-  slip table;
-- GNSS position and last VISS event time.
-
-The first demo increment keeps this terminal/engineering character. It appends
-accepted drive-context, source/connectivity and Brake/Tire advisory sections;
-it does not replace the view with decorative gauges, geographic maps or a
-generic web analytics dashboard.
-
-Those appended sections remain text-only terminal output. They use stable
-monospaced labels and may use restrained ANSI color, but they do not embed
-bitmap icons or terminal inline images and are not re-rendered by the browser
-Representation Layer. An icon may label the surrounding composed panel only;
-it is outside the Terminal evidence surface.
+The earlier Terminal renderer is an engineering/expanded-profile surface, not
+the installed native UI. Presentation icons cannot alter evidence semantics;
+secrets, raw credentials and invented zeroes never become display content.
 
 ## Audience-Visible Surface Register
 
@@ -670,7 +614,7 @@ Dashed arrows describe local composition or presenter navigation only. The
 visual grouping and shared header do not make the launcher authoritative for
 surface content or make one product authoritative for another product's state.
 
-## Required Mockup States
+## Required interface states
 
 | Surface | Normal states | Mandatory non-happy-path states |
 | --- | --- | --- |
@@ -681,7 +625,7 @@ surface content or make one product authoritative for another product's state.
 | Tire Health Function Dashboard | Tire result/advisory, quota facts, load proof `READY/RUNNING/PASS` | VDP/data `NOT_READY`, backend offline/queued, `NOT_READY`, `INCONCLUSIVE`, `FAIL`, early stop, stale quota evidence |
 | Qualification Status panel | `QUALIFIED` exact baseline | `ABSENT`, `STALE`, `WITHDRAWN`, `NOT_QUALIFIED`; no manual green override |
 
-## Shared Low-Fidelity Rules
+## Shared presentation rules
 
 1. Every page names the current actor/role and authoritative source.
 2. Requested operation, authoritative external state and local orchestration
@@ -694,17 +638,15 @@ surface content or make one product authoritative for another product's state.
 6. The current lifecycle stage and current logical vehicle are consistently
    visible without exposing attach/detach plumbing as vehicle behavior.
 7. Optional drill-down never displaces the D4-026.6 core story.
-8. The first pass is monochrome/low fidelity. Visual polish follows only after
-   information architecture and state behavior are reviewed.
+8. Visual changes preserve accepted information architecture and truthful
+   state behavior; a polished simulation is not integration evidence.
 9. Existing launcher and Engineering Dashboard visual baselines are changed
    only where an accepted requirement adds information or behavior.
 
-## Current Review Status and Next Step
+## Maintenance and traceability
 
-The surface inventory, 15 I0 decisions, Interaction Specification 2.5,
-Presenter Launcher/workspace ownership and all 50 UI acceptance cases are
-accepted. The complete one-row-per-rule mapping is maintained in the
-[UI Traceability Register](aosedge-demo-ui-traceability-register.md). The
-accepted standalone HTML review mockup is reconciled to that contract,
-including fixed team context and version-only scrolling. Current implementation and scoped API/UI evidence are linked above.
-The old linear-flow HTML is a fixture, not the current product or deployment authority.
+Keep the stable surface and I0 IDs linked to the interaction specification and
+acceptance register. Maintain regression tests with Presenter and Demo Control,
+not prototype timers. Review chronology and retired mockups remain available in
+[Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/demo/mockups/README.md).
+An accepted interface obligation is not a claim of completed live qualification.

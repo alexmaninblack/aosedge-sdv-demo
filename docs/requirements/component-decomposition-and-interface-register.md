@@ -234,7 +234,7 @@ integration has not been qualified.
 | <a id="cmp-scene"></a>`CMP-SCENE` | Deterministic Scenario Controller | Repeatable obstacle/braking stimulus, explicit free-drive/brake-event context, context-aware mode transition/reset, actor cleanup, and accelerated/pre-aged tire-degradation stimulus | Demo vehicle tooling | `carla-ego-runtime` | `CURRENT / SCOPED`; Brake/Tire maneuvers implemented; full calibration matrix open |
 | <a id="cmp-control"></a>`CMP-CONTROL` | Vehicle Control UI | Manual/autopilot selection, throttle, brake, steering and safe-stop commands over the separate control channel | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT` |
 | <a id="cmp-gw"></a>`CMP-GW` | Vehicle Gateway Runtime | Complete CARLA hardware-profile accounting, control arbitration, applied-control feedback, signal normalization and Gateway health/state | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / EXTEND`; current signal path implemented; full hardware/actuator scope separate |
-| <a id="cmp-viss"></a>`CMP-VISS` | Vehicle Gateway VISS 3.1 Server | TLS-protected VSS Get/Subscribe and the future narrowly scoped advisory Set contract | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / SCOPED`; strict Test trust and typed advisory Set implemented |
+| <a id="cmp-viss"></a>`CMP-VISS` | Vehicle Gateway VISS 3.1 Server | TLS-protected VSS Get/Subscribe and the narrowly scoped typed advisory Set contract | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / SCOPED`; strict Test trust and typed advisory Set implemented |
 | <a id="cmp-gw-adv"></a>`CMP-GW-ADV` | Gateway QM-Channel Advisory Handler | Act as the final authoritative boundary for the QM-origin channel: validate typed non-safety Brake/Tire advisories, deny arbitrary VSS and motion/safety-critical operations, and publish factual reception/status without claiming driver display | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / SCOPED`; typed validation, lease and status implemented |
 | <a id="cmp-eng-dash"></a>`CMP-ENG-DASH` | Engineering Telematics Dashboard | Independent read-only engineering view of Gateway telemetry, drive-mode/world-context/reset facts and typed advisory/status evidence | Demo engineering tooling | `carla-ego-runtime` | `CURRENT / SCOPED`; combined native telemetry/control and advisory |
 
@@ -325,8 +325,9 @@ The same accepted artifact bytes and digest move from `VU` qualification to
 | `aosedge-sdv-demo` | `CMP-SW-DASH`, `CMP-ORCH`, cross-component contracts, qualification and system documentation | Solution integration; must not absorb component product source. |
 | AosEdge/AosCloud | `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, including native system/service/crash-log collection, Cloud delivery and storage | External platform dependency. |
 
-No repository is created, renamed or added to `workspace/repositories.json` by
-acceptance of this baseline.
+The [current repository map](../../workspace/repository-map.json) describes
+maintenance ownership. Accepted design alone creates no repository or source
+revision. Frozen selected-build pins remain separate and unchanged.
 
 ## Runtime Data Interface Register
 
@@ -830,235 +831,87 @@ Delivery Dashboard.
 
 ## Boundary Decision Status
 
-1. **Accepted 2026-08-18:** logical components, repositories, immutable
-   deployable artifacts and runtime deployments are separate concepts.
-   `CMP-FACTORY` is the build-time OEM Factory Baseline Assembly, the OEM Demo
-   Factory Image is its artifact, and `VU`/`PU` are deployments created from
-   that artifact.
-2. **Accepted 2026-08-18:** the existing `carla-ego-runtime` repository owns
-   deterministic scenario tooling, vehicle control, Gateway behavior, VISS,
-   advisory handling and the Engineering Telematics Dashboard.
-3. **Accepted 2026-08-18:** Function Team 2 owns the Tire Health product
-   selected by ADR 0008. Its in-vehicle SOTA 2 source belongs in the future
-   `tire-health-service` repository; backend and dashboard remain separate
-   Cloud-product components.
-4. **Accepted 2026-08-18:** each Function Team owns one Cloud-product
-   repository containing its backend and dashboard: `brake-health-cloud` and
-   `tire-health-cloud`. Each remains separate from the corresponding
-   in-vehicle SOTA repository.
-5. **Accepted 2026-08-18:** `CMP-SW-DASH` and `CMP-ORCH` remain stateless
-   solution components in `aosedge-sdv-demo`. Owning teams make engineering
-   release decisions, OEM identities authorize Cloud mutations, and
-   `CMP-AOS-CLOUD` stores and executes lifecycle state as defined by
-   [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
-6. **Amended 2026-08-22:** no separate log pipeline or external log-view
-   component is part of the demo. AosCore and AosCloud own native system,
-   service-instance, and crash-log collection, delivery, and authoritative
-   request/result storage. `CMP-SW-DASH` uses the Unit-log API under
-   `oem-delivery` only for system/VDP evidence; `CMP-BRAKE-DASH` and
-   `CMP-TIRE-DASH` use the Service-log API under separate SP1/SP2 operational
-   contexts only for their own service/crash evidence. All use explicitly
-   confirmed requests, keep no second archive and remove bounded temporary
-   downloads. Emitting teams own useful allowlisted redaction. The current API
-   exposes no retention policy; identifiers, permissions, lifecycle states,
-   delete effect and offline/reconnect behavior remain live qualification
-   requirements.
-7. **Amended 2026-08-19:** ADR 0010 removes the previously proposed separate
-   authorization-component concept and the duplicate local per-service OEM
-   policy store. The thin Aos–KUKSA Credential Broker is an internal
-   responsibility of `CMP-VDP`; Service Manager and Aos IAM own SOTA instance
-   identity, `AOS_SECRET` and registered permissions. Upstream `CMP-KUKSA`
-   remains unchanged and validates short-lived JWTs with the Platform Team's
-   per-Unit public verifier. D4-010.1 fixes one RSA/RS256 key and verifier per
-   provisioning lifecycle, no live rotation, and no `iss` enforcement claim;
-   the provider's separate platform identity remains a qualification gate.
-8. **Accepted 2026-08-19:** ADR 0011 classifies both functional services as
-   QM-domain maintenance/inspection applications. `CMP-VDP` validates outbound
-   advisories as defense in depth, while `CMP-GW-ADV` is the final
-   authoritative deny-by-default boundary for the QM-origin channel.
-9. **Accepted 2026-08-19:** `CMP-SW-DASH` must present exact artifact and
-   metadata digests, requested permissions, target, evidence status,
-   owning-team acceptance and active OEM role before exposing the final OEM
-   approval action. It owns neither the decision, evidence nor lifecycle
-   state, and passing tests never auto-approve.
-10. **Accepted 2026-08-19:** `CMP-BRAKE-DASH` may host separated `Release
-    Candidates` and `Vehicle Data` views. The former delegates explicit
-    sign/publish actions to the Function Team 1 pipeline; the latter reads the
-    Brake Health Backend. The Mac-local ARM64 container and common native
-    helper pre-bound to `brake-sp1` are deployment refinements, not new HLA
-    components or lifecycle authorities.
-11. **Accepted 2026-08-19:** `CMP-TIRE` is one mature Tire Health Service v1.0
-    candidate requiring accepted VDP Component v3. It does not repeat the
-    Brake Health v1-v3 product evolution. Its purpose is to prove a second
-    independent Function Team, Service Provider identity, functional data
-    product and SOTA lifecycle on the shared platform. Release sequencing,
-    evidence-backed OEM approval and service-side fail-closed readiness do not
-    claim or replace the deferred native AosCloud dependency-admission feature.
-12. **Accepted 2026-08-19:** `CMP-TIRE-DASH` hosts separated `Release
-    Candidates` and `Vehicle Data` views. It delegates confirmed publication to
-    the Function Team 2 pipeline and reads functional results from
-    `CMP-TIRE-BE`; it owns neither keys, OEM approval nor lifecycle state. The
-    Mac-local ARM64 container, dedicated persistent volume and native-helper
-    `tire-sp2` profile remain isolated from their Brake Health peers.
-13. **Accepted 2026-08-19:** `CMP-SW-DASH` adds a `Platform Releases` view for
-    exactly the prebuilt, content-frozen VDP v1-v3 candidates and delegates an
-    explicitly confirmed sign/publish request to the protected Platform Team
-    pipeline. The helper is an internal deployment refinement, not a new HLA
-    component, authority or repository. Private keys, source edits,
-    compilation, Yocto/rootfs/container builds, packaging/metadata generation,
-    model training, full qualification runs and repackaging remain outside the
-    browser and presentation flow; technical
-    publication remains distinct from later OEM-authorized Unit deployment
-    and promotion approval.
-14. **Accepted 2026-08-20:** the trusted `CMP-ORCH` macOS demo launcher starts
-    the native helper under the logged-in non-root user for one authenticated
-    demo session before starting the dashboard backend and browser. The helper
-    is not a persistent `launchd`/login service, exposes only allowlisted
-    operations, is supervised by the launcher and exits on orderly session end
-    or a bounded launcher-loss/orphan condition. This is an internal deployment
-    refinement of `CMP-ORCH` and `IF-DEMO-001`, not a new HLA component,
-    authority or repository.
-15. **Accepted 2026-08-20:** the sanitized coverage contract uses the explicit
-    evidence states `UNKNOWN`, `PARTIAL`, `PLANNED`, `DOCUMENTARY_ONLY`,
-    `ACCEPTED` and `STALE`. `ACCEPTED` requires a concrete evidence ID and
-    verification time bound to the exact subject version/digest, AosEdge
-    platform release and configuration digest. Any baseline mismatch converts
-    the presentation to `STALE` with a reason. Deferred native dependency
-    admission remains disabled and cannot be replaced by local dashboard
-    logic. This refines `CMP-SW-DASH` evidence presentation without adding a
-    component, authority or repository.
-16. **Accepted 2026-08-20:** the `CMP-SW-DASH` Platform Releases catalogue
-    contains exactly the prebuilt, tested and content-frozen VDP v1-v3
-    candidates. Each candidate binds its unsigned artifact/metadata digests to
-    the exact compatible OEM Demo Factory Image digest and component-runtime
-    version. The view preserves distinct prepared, signed and AosCloud
-    component-version identities and shows their verified mapping without
-    treating technical publication as Validation deployment or OEM promotion
-    approval. Mismatched bytes, baseline, evidence or identity block
-    publication without an in-demo build fallback. This adds no HLA component,
-    authority or repository.
-17. **Accepted 2026-08-20:** connectivity is separated into vehicle external,
-    presenter control-plane and simulated in-vehicle domains. Automotive
-    offline/reconnect claims apply only to the Unit's external connectivity;
-    the Mac Dashboard/Native Helper connection to AosCloud is an available
-    demo precondition whose loss blocks administrative operations without a
-    `Unit offline` label. `REQ-DEMO-019` retains `UNCERTAIN` only for defensive
-    reconciliation after a helper/process interruption or lost local result,
-    and requires an independent AosCloud re-read before `PUBLISHED`. This
-    refines `CMP-SW-DASH` and `IF-LC-005` without adding a component, authority
-    or repository.
-18. **Accepted 2026-08-20:** `CR-DEMO` 0.1 completes D3 design review for
-    `CMP-SW-DASH` and `CMP-ORCH` with eighteen active requirements and sixteen
-    defined unit-test obligations. Retired `REQ-DEMO-012` and `UT-DEMO-012`
-    remain traceable. The accepted package preserves the component graph,
-    interfaces, repository allocation and authority boundaries; it authorizes
-    D4 contract design only, not implementation or external operations.
-19. **Accepted 2026-08-20:** the only deliberate connectivity fault in the
-    first demo is one atomic loss of Production Unit external connectivity.
-    A single stateful control interrupts Unit-to-AosCloud and installed
-    service-to-functional-backend paths together; presenter-to-AosCloud and
-    simulated in-vehicle links remain available. `CR-CROSS` proves the shared
-    continuity/claim boundary and `CR-E2E` executes the fault; no separate
-    per-channel control, component, interface or runtime service is added.
-20. **Accepted 2026-08-20:** `CR-DEMO` 0.2 adds `REQ-DEMO-020` and
-    `UT-DEMO-018` for the single stateful `Vehicle External Connectivity`
-    control. The control applies and restores the complete dual-path fault
-    policy atomically, proves excluded paths remain available and rejects
-    partial state as success. `CR-DEMO` now contains nineteen active
-    requirements and seventeen active unit-test obligations; no lifecycle
-    authority or product component is added.
-21. **Accepted 2026-08-20:** the first audience-visible resource proof uses a
-    prepared bounded CPU-load profile inside the actual Tire Health service
-    instance. AosCore/Service Manager remains the sole in-vehicle enforcement
-    and monitoring authority and caps Tire at its independently approved
-    quota; Brake Health is the control tenant and must remain ready and process
-    the deterministic CARLA event while the shared platform remains healthy.
-    No project resource manager is introduced. Mac-local functional backends
-    and aggregate quota enforcement across multiple services owned by one
-    Service Provider are outside this proof. `CR-DEMO` 0.3 adds
-    `REQ-DEMO-021` and `UT-DEMO-019` and now contains twenty active
-    requirements and eighteen active unit-test obligations.
+This topic-based summary states the effective boundaries, not a sequence of
+past review deltas. Component/interface IDs and owning detailed requirements
+above remain authoritative. Acceptance is not implementation qualification.
 
-    D4-023.3 further assigns the single `Start CPU Isolation Proof` control to
-    the Tire Function Dashboard and Mac-local Tire backend. The actual Tire
-    instance obtains only fixed idempotent start/stop commands over its
-    existing outbound backend route, bound to current Unit, Service version,
-    artifact digest and fixed profile. The in-instance worker shares the
-    Aos-managed cgroup, has a 180-second absolute ceiling and never persists or
-    resumes across Service/VM restart. No SSH/exec/signal/admin fallback is
-    permitted, and Function Team status is not quota-enforcement evidence.
+### Platform and native authorization
 
-22. **Proposed 2026-08-22:** HLA 1.5 and ADR 0013 separate factory-installed
-    unmodified `CMP-KUKSA`, transitional `CMP-KAC` and FOTA-owned `CMP-VDP`.
-    Service JWT issuance moves to `CR-KAC`; Services use fixed-resource
-    bootstrap and then connect directly to KUKSA. The VDP is an OEM-qualified
-    trusted platform component, so former dynamic Provider-credential
-    requirements/interfaces are retired without claiming malicious-Provider
-    containment. Acceptance is pending the complete C3 review.
-23. **Accepted 2026-08-22:** D4-011 keeps the three artifact-publication
-    profiles and introduces one separate non-publication `oem-delivery`
-    operational context. Owning teams retain engineering acceptance;
-    `oem-delivery` performs the explicitly confirmed Verification Batch, Fleet
-    Validation, Campaign and Subject-service lifecycle mutations after
-    `/users/me/` role/effective-permission preflight. The Dashboard suppresses
-    duplicate clicks but claims no server idempotency and reconciles every
-    ambiguous response from authoritative AosCloud state. This refines
-    `CMP-SW-DASH` and `IF-LC-005`/`008`–`010` without adding an HLA component,
-    repository or lifecycle state authority.
-24. **Accepted 2026-08-22:** D4-015 refines lifecycle and retirement behavior
-    without adding a component or interface. `CR-AOS` owns qualification of
-    Subject-service removal, pre-Apply `RevertUpdate`, post-Apply signed
-    forward repair, offline-only deprovision, exact Unit Set removal, Unit
-    deletion and Unit-owned Node disappearance. `CR-DEMO` owns dependent-first
-    orchestration, post-mutation reconciliation and the no-blind-retry guard.
-    API v11 exposes no standalone Node-delete operation and none is invented.
-25. **Accepted 2026-08-22:** D4-016.1 freezes the existing `CMP-BHS` v1
-    acquisition behavior inside `CR-BHS`: six VDP v1 inputs, deterministic
-    10 Hz sampling, the `HARD_BRAKING_EPISODE_V1` trigger, fixed 3/10/2-second
-    window bounds, terminal states and the eight-window/4 MiB queue boundary.
-    D4-016.2 freezes the existing `IF-FUNC-001` v1 logical chunks/completion,
-    64 KiB canonical-message limit, hashes/idempotency and crash-safe
-    service-local filesystem spool. It adds no component, interface,
-    repository or database runtime. D4-017 proposes isolated local delivery
-    and exact durable backend acknowledgement. Production functional-backend
-    authentication remains Function Team 1-owned and outside the first demo.
-26. **Accepted 2026-08-25:** the Level-B interaction cascade preserves the
-    existing component graph, repositories, interfaces and authority model but
-    replaces the over-broad demo-wide external-mutation lock. `CMP-SW-DASH`
-    and `CMP-ORCH` now keep a bounded per-operation recovery registry and block
-    only exact overlapping release resources. Platform, Brake and Tire may
-    operate independently on disjoint resources; provisioning, identity
-    retirement, live-source handover/reset and R0 remain run-exclusive.
-27. **Accepted 2026-08-26:** D4-026.17 assigns the physical composed workspace
-    to `CMP-ORCH` and its trusted Presenter Launcher, while `CMP-SW-DASH` owns
-    the stateless shared-header meaning and team navigation from the existing
-    browser read model. `IF-DEMO-002` records this measured local composition,
-    visibility/readability and safe restoration contract. Surface owners keep
-    their content, and no new HLA component, repository, Cloud/vehicle/release
-    authority, browser embedding or second state store is introduced. The
-    exact macOS window mechanism remains implementation qualification under
-    `CR-DEMO` 0.9.
-28. **Accepted 2026-08-26:** D4-026.18 and `CR-DEMO` 1.0 assign the
-    title-selected global Demo Lifecycle page to the existing stateless
-    `CMP-SW-DASH` right-hand browser workspace. It composes bounded
-    Qualification Status, M0/M1/G0, current lifecycle/recovery and R0 while
-    fixed vehicle-evidence surfaces remain visible. It is not a fourth
-    producer, duplicates no native Presenter Launcher action and adds no HLA
-    component, interface, repository, Cloud authority or state store.
-29. **Accepted 2026-08-26:** D4-026.19, `CR-DEMO` 1.1 and `CR-E2E` 0.8
-    refine the existing `CMP-SW-DASH` right-hand team perspectives. The compact
-    team purpose, OEM Release Authority, current-state summaries and applicable
-    team evidence remain fixed while only the release/version region scrolls;
-    each producer perspective restores its own release scroll/focus. This
-    Level-A presentation change adds no component, interface, repository,
-    authority, lifecycle state or system requirement.
-30. **Accepted 2026-08-27:** D4-026.20 standardizes the existing browser-owned
-    presenter surfaces on the accepted lightweight icon vocabulary while the
-    native Engineering Telematics Dashboard remains a terminal and uses a
-    plain text label rather than injected HTML imagery. The change refines
-    only presentation of existing `CMP-SW-DASH`, `CMP-ORCH` and
-    `CMP-ENG-DASH` responsibilities; it adds no component, interface,
-    repository, authority, lifecycle state or system requirement.
+- Factory assembly, its immutable image and each deployed controller are
+  separate concepts. The image has an empty VDP slot, IAM permissions enabled
+  independently of provisioning, and no reusable identity or service secret.
+- Factory-installed KUKSA and separately packaged `CMP-KAC` are outside VDP.
+  Native IAM/Service Manager own instance identity and permissions; KAC derives
+  bounded JWTs from the fixed-resource exchange. The retired VDP-owned broker
+  is not an alternative. D4-027 and ADR 0013 own this contract.
+- Provider is trusted OEM integration, not an untrusted SOTA tenant. No dynamic
+  Provider credential or malicious-Provider isolation claim is introduced.
+- The current KUKSA compatibility patches are recorded in the implementation
+  map; the as-built image is not byte-identical upstream KUKSA.
+
+### Independent products and deployment authority
+
+- Gateway owns CARLA control/integration, VISS, typed advisory enforcement and
+  engineering telemetry. Brake/Tire consume KUKSA only and have no motion
+  authority. VDP validates outbound requests; Gateway is the final QM boundary.
+- `brake-health-service` and `tire-health-service` are existing separate SOTA
+  owners. Each has its own Cloud-product repository; backends do not belong in
+  the in-vehicle repositories. Tire V1 uses VDP V3 and does not repeat Brake's
+  V1/V2/V3 evolution. No native pre-transfer dependency admission is implied.
+- Teams own engineering acceptance/publication. OEM deployment authorization
+  and authoritative Aos Cloud execution remain separate. The installed Test
+  scope is UI-STUDIO-026; expanded two-SP/dual-role promotion retains its
+  accepted evidence-backed approval obligations. Passing tests never approves.
+- Prepared, signed, Cloud and installed identities remain distinct. Browser
+  publication uses only verified prebuilt content and role-bound native helpers;
+  no browser build, key handling, arbitrary command or repackaging fallback.
+  ADR 0015/0016 govern native inputs and destination-specific signing.
+- Before-Apply revert, after-Apply forward repair, dependent-first removal,
+  exact identity retirement and no-blind-retry belong to CR-AOS/CR-DEMO. No
+  standalone Node-delete API or project lifecycle authority is invented.
+
+### Connectivity, resources and evidence
+
+- Vehicle external, presenter administrative and in-vehicle networks are
+  separate. One atomic external-offline control affects Unit Cloud and service
+  backend routes together; it preserves excluded links. A partial fault is not
+  success and presenter Cloud loss is not a Unit-offline fact.
+- Services maintain bounded local models/outboxes through offline operation.
+  D4-016 owns Brake acquisition/chunk/spool limits; the accepted source-time
+  amendment, not an old frame-count example, governs current acquisition.
+  Backend production authentication remains outside the example-product claim.
+- Native AosCore alone enforces per-instance quotas. The accepted fixed Tire
+  CPU proof uses a bounded in-instance worker, exact fixed-profile command,
+  180-second ceiling and Brake control tenant, with no SSH/exec fallback. It
+  remains an unclosed proof, not an available UI feature inferred from a graph.
+- Native Unit/Service operational logs stay role-scoped with explicit request,
+  redaction, bounded temporary download and no second archive. Unqualified
+  retention/negative cases remain obligations, not silently accepted behavior.
+- Coverage states remain UNKNOWN/PARTIAL/PLANNED/DOCUMENTARY_ONLY/ACCEPTED/STALE.
+  ACCEPTED binds exact evidence, subject, platform/configuration and verification
+  time; baseline mismatch is STALE. Functional, install and advisory facts must
+  not be inferred from one another.
+
+### Orchestration and presentation
+
+- Existing `CMP-ORCH` and `CMP-SW-DASH` compose the session/read model without
+  owning Cloud state. Trusted helpers are session-scoped, allowlisted and
+  supervised; they are not permanent login services or new HLA components.
+- Physical window composition belongs to orchestration (`IF-DEMO-002`);
+  shared-header meaning, navigation and team context belong to Presenter.
+  CARLA/native controls remain separate visible surfaces. Integrated backend
+  cards/dialogs are the installed UI; terminal-only and five-stage mockup rules
+  belong to the expanded profile where not replaced by UI-STUDIO-026.
+- Platform/Brake/Tire ownership and release state remain independent. Installed
+  mutations are serialized; expanded disjoint-resource concurrency is not a
+  current prerequisite. Provisioning, retirement and live-source handover remain
+  run-exclusive; uncertain operations require reconciliation.
+- Stop/Start preserves the same Test and durable data; Finish is explicit
+  retirement. Park/Resume is not an operator action. Ignition and host sleep
+  have separate contracts and qualification boundaries.
+
+The [pre-consolidation register](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/requirements/component-decomposition-and-interface-register.md) preserves review
+chronology. Requirements and stable identifiers are not retired by this summary.
 
 ## Review provenance
 

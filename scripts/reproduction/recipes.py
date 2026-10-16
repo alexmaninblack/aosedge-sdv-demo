@@ -146,8 +146,7 @@ def paths(root, tracked, target):
         chosen.update(('scripts/reproduction/services.py',
                        'workspace/inputs/service-inputs.lock.json',
                        'workspace/inputs/controller-images.lock.json',
-                       'workspace/inputs/controller-images.lock.json',
-                       'workspace/distribution-stage0-inventory.json', 'LICENSE'))
+                       'workspace/inputs/vehicle-build-inputs.json', 'LICENSE'))
         chosen.update('contracts/'+name for name in CONTRACTS)
     if target == 'vm-runtime':
         chosen.update(('scripts/host/aosvm-dns-bridge', 'LICENSE'))

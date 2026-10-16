@@ -11,7 +11,8 @@
 - Change class: C — application provenance contract and credential-file boundary
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Delivery context: [Demo Studio delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md)
+- Current proof: [baseline](../../qualification/current-baseline.md)
+- Editorial consolidation: 2026-10-16; native-input schema unchanged
 
 ## 1. Accepted decision
 
@@ -20,10 +21,10 @@ resource mounts and storage. Adapt our Brake/Tire applications and protocols
 instead of extending Service Manager (SM) to supply application metadata or
 special-case ownership of a KUKSA token directory.
 
-The user approved this document and authorized the documentation cascade and
-implementation on 11 September 2026. Acceptance defines the target; it does
-not mean that executable contracts, applications or the VM already implement
-it. The delivery plan records the ordered migration and its actual evidence.
+Current implementations and scoped real-data/renewal/ignition/offline evidence
+are mapped in the [implementation view](../current-implementation.md). Acceptance
+does not close every negative/cold-start matrix or make an old source inspection
+a current implementation status.
 
 For this scope:
 
@@ -158,14 +159,10 @@ synchronization semantics and is not a generic private local file.
 
 ### Root mount and private directory are different objects
 
-The current resource mounts tmpfs with root mode 0700 but no instance owner.
-Our bootstrap requires that same directory to belong to its non-root UID.
-Native SM copies mount options; it does not resolve that conflict for us.
-
-Change our resource declaration, not SM: keep the existing per-container
-tmpfs destination and 64-KiB limit; retain `rw,nosuid,nodev,noexec`; change only
-the tmpfs root mode to 1777. This is a change to the container resource,
-not a `chmod` of a shared host directory.
+Use the existing per-container 64-KiB token tmpfs with root mode 1777 and
+`rw,nosuid,nodev,noexec`. Native SM applies the resource; the bootstrap creates
+its private session below it. No instance-owner patch, chmod of a shared host
+directory or fixed shared service UID is required.
 
 The existing service bootstrap then:
 
@@ -340,6 +337,6 @@ the valid read-only trust/resource findings remain applicable. The
 remains historical evidence of what was actually built, committed or tested.
 
 The accepted provenance tradeoff, token root/private-directory distinction
-and boot-ordering gate apply to the coordinated implementation. P5/P7/E2E
-remain open until their actual exit evidence exists; old checkpoint records
-are historical and are not rewritten as evidence of the new design.
+and boot-ordering gate apply to the coordinated implementation. Formal acceptance remains scoped to the actual evidence linked by the current
+baseline. Old implementation checkpoints are not current backlog status and
+are never rewritten as evidence for a successor.

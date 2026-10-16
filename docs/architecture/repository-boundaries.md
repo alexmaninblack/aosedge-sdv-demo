@@ -73,7 +73,7 @@ not become the source repository for those components. No Git submodule or
 private local checkout path is part of a public baseline.
 
 Both Function Teams' service and Cloud repositories are now present in the
-[machine-readable workspace contract](../../workspace/repositories.json).
+[machine-readable workspace contract](../../workspace/repository-map.json).
 Functional backends and dashboards remain separate products: each Function
 Team owns one Cloud-product repository, distinct from its in-vehicle SOTA
 repository. Current revisions and qualification boundaries are recorded in the

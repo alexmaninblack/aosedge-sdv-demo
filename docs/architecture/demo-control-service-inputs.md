@@ -3,39 +3,28 @@
 
 # Service runtime inputs
 
-## 18 September active-capability amendment
-
-The operator accepted [active VDP capability evidence](../../contracts/service-runtime-inputs/active-vdp-capability-amendment.md).
-The old strict five-field projection remains a legacy-compatible input; it
-does not identify the active functional profile. The accepted Cloud-first
-correction uses native Cloud for Presenter software state and exact installed
-artifact/profile binding. Automatic service-local compatibility reevaluation
-must be proved through existing inputs without a Cloud dependency; a new
-projection or guest timer is not prescribed. Follow the
-[current packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
-No new native manager behavior or implicit guest polling from Presenter is
-authorized. The .33/permissions-blocked status below is dated history: .35's
-[17 September record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-35-e2e-2026-09-17.md) supplies
-later scoped real-data evidence; it does not qualify this new amendment.
-
-- Status: Accepted contract; implemented with current scoped real KUKSA/renewal, ignition/offline and visible UI proof; full acceptance separate
-- Version: 2.2 (implementation-status clarification; no schema change)
-- Prepared: 2026-09-11
+- Status: Accepted contract; implementation evidence is separately scoped
+- Version: 2.2; editorial consolidation, no schema change
 - Owner: Demo Control / OEM Platform
 - Decision: [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
 
-This is the replacement for the former seven-field input and SM token-owner
-patch design. Historical observations remain in the dated qualification
-checkpoints, not as competing instructions here.
+## Purpose and authority
 
-## Current implementation and qualification
+This contract separates package provenance, public Unit/VDP/trust inputs,
+native workload identity and private short-lived credentials. None substitutes
+for another. Current scoped proof is mapped by the
+[implementation view](current-implementation.md) and
+[baseline](../qualification/current-baseline.md), not old permissions-blocked
+Factory observations.
 
-The [current baseline](../qualification/current-baseline.md) and
-[implemented architecture](current-implementation.md) bind current real
-KUKSA/input/renewal, offline, advisory and restart evidence. Earlier synthetic
-or permissions-blocked source checkpoints do not describe today's capability.
-The accepted native-input schema, permissions and private-path rules below
-are unchanged; formal negative matrices remain separately required.
+The [active-capability contract](../../contracts/service-runtime-inputs/active-vdp-capability-amendment.md)
+binds Presenter software state to native Cloud and the exact installed artifact's
+verified functional profile. The strict public projection below does not
+identify that active profile. Services evaluate actual local inputs without a
+Cloud/Presenter dependency; missing samples do not prove profile incompatibility.
+No new guest timer, polling interface or mandatory projection is prescribed.
+Legacy input/product decoders preserve their original schema and provenance;
+they are not competing current authoring instructions.
 
 ## Package, public inputs and native identity
 

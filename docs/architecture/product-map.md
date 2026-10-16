@@ -57,7 +57,7 @@ The two functions can belong to independent teams while sharing the one
 associated SP account selected for this first-demo topology. Accounts,
 repository ownership and service identities are different concepts.
 
-Component code stays with its owner. The [workspace manifest](../../workspace/repositories.json)
+Component code stays with its owner. The [workspace manifest](../../workspace/repository-map.json)
 records source references; release definitions and producer plans distinguish
 component code from packaging tools. Documentation-only commits do not
 silently advance a built artifact's source pin.

@@ -26,6 +26,8 @@ CONTRACTS = (
 )
 MAX_SMALL = 256 * 2**20
 DEFAULT_FACTORY_CHECKPOINT = 'workspace/inputs/controller-images.lock.json'
+DEFAULT_SERVICE_CHECKPOINT = 'workspace/inputs/service-inputs.lock.json'
+VEHICLE_BUILD_INPUTS = 'workspace/inputs/vehicle-build-inputs.json'
 
 
 def require(condition, message):
@@ -70,8 +72,8 @@ def service_inputs(artifacts, pin, product_files):
 def service_pins(integration, inventory, checkpoint=None):
     """Explicit source checkpoint, never adjacent receipts or automatic adoption."""
     if checkpoint is None:
-        pins = inventory['serviceExports']
-    else:
+        checkpoint = DEFAULT_SERVICE_CHECKPOINT
+    if checkpoint is not None:
         def unique_pairs(pairs):
             result = {}
             for key, value in pairs:
@@ -103,10 +105,31 @@ def service_pins(integration, inventory, checkpoint=None):
 
 def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT,
             service_checkpoint=None):
-    inventory = json.loads(read(integration, 'workspace/distribution-stage0-inventory.json'))
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            require(key not in result, 'Duplicate vehicle input field')
+            result[key] = value
+        return result
+    inventory = json.loads(read(integration, VEHICLE_BUILD_INPUTS), object_pairs_hook=unique_pairs)
+    require(isinstance(inventory, dict) and
+            set(inventory) <= {'$comment', 'schemaVersion', 'kind', 'publicBinaryObservations',
+                               'unsignedVdpInputs', 'vdpPreparationSource'} and
+            type(inventory.get('schemaVersion')) is int and inventory['schemaVersion'] == 1 and
+            inventory.get('kind') == 'vehicle-preparation-inputs' and
+            isinstance(inventory.get('unsignedVdpInputs'), list) and
+            isinstance(inventory.get('vdpPreparationSource'), dict),
+            'Vehicle input definition schema invalid')
+    firmware_rows = inventory.get('publicBinaryObservations')
+    require(isinstance(firmware_rows, list) and len(firmware_rows) == 1 and
+            isinstance(firmware_rows[0], dict) and
+            set(firmware_rows[0]) == {'component', 'bytes', 'sha256'} and
+            firmware_rows[0]['component'] == 'QEMU_EFI.fd' and
+            type(firmware_rows[0]['bytes']) is int and 0 < firmware_rows[0]['bytes'] <= 4*2**20 and
+            re.fullmatch('[a-f0-9]{64}', str(firmware_rows[0]['sha256'])),
+            'Vehicle firmware identity invalid')
     pins = service_pins(integration, inventory, service_checkpoint)
-    # Build-time source checkpoint only: never rewrite the historical return
-    # point or adopt a Factory from an adjacent self-generated receipt.
+    # Explicit build-time selection only; never adopt an adjacent build receipt.
     checkpoint_path, _, role = factory_checkpoint.partition('#')
     require(role in ('', 'prebuilt', 'rebuilt'), 'Unknown controller input role')
     checkpoint = json.loads(read(integration, checkpoint_path))

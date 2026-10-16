@@ -3,22 +3,19 @@
 
 # D4 Interface and Qualification Decision Register
 
-- Status: Review candidate
+- Status: Decision register; each record's decision and proof state governs
 - Version: 1.1
 - Prepared: 2026-08-22
-- Previous working baseline: Version 0.9
-- Original review inputs: HLA 1.7, Demo Scenarios 2.0, Architecture Flows 2.1,
-  System Requirements 2.1 and Component Register 2.1
-- Revalidated reading baseline (2026-10-07): HLA 1.8, Scenario 2.1,
-  Flows/System/Register 2.2 and current component packages; accepted dated
-  amendments retain precedence over original quota/lifecycle examples
+- Reading baseline: HLA 1.8, Scenario 2.1, Flows/System/Register 2.2 and
+  current component packages; installed and expanded profiles are distinguished
+- Editorial consolidation: 2026-10-16; stable decisions and unclosed proof retained
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
-## Current implementation view — 24 September 2026
+<a id="current-implementation-view--24-september-2026"></a>
+## Current implementation and scope
 
 Current package selection and qualification are owned by the
 [current baseline](../qualification/current-baseline.md), reviewed 15 October 2026.
-The historical heading remains only for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review
@@ -26,23 +23,19 @@ history, not a claim that today's services, permissions or UI are absent.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
-## Native service inputs replacement — 2026-09-11
+## Lifecycle and service-input compatibility
 
-The later [ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
-removes operator Park/Resume. Its subsequent accepted storage correction and
-24 September ignition amendment supersede the original no-patch/restart-loss
-statement. Factory41/Kit028 has installed scripted retention/recovery evidence,
-not blanket acceptance of every native/negative case or P8; current scoped
-API/UI/native Setup evidence is linked from the current baseline.
-The [protocol map](../../contracts/implementation-status.md) distinguishes
-implemented protocols, amended legacy profiles and outstanding test/design scope.
+[ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
+defines non-destructive Stop/Start, removal of Park/Resume and guarded ignition
+recovery. Current proof/exclusions belong to the baseline. The
+[protocol map](../../contracts/implementation-status.md) distinguishes current
+contracts, legacy decoders and outstanding design/verification scope.
 
 <a id="native-service-inputs-replacement--2026-09-11"></a>
 
 [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
 is accepted. The [runtime-input contract](../architecture/demo-control-service-inputs.md)
-and [migration sequence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
-are the current replacement mapping for these parts of the earlier decisions:
+defines the effective replacement mapping for retained legacy input shapes:
 
 | Earlier obligation | Accepted replacement |
 | --- | --- |
@@ -70,8 +63,9 @@ writer and routine-history-retention provisions below. Keep original stable IDs
 and their unchanged authority/product/safety obligations; Production remains
 future scope rather than a prerequisite for Test. D4-012.1 and D4-026's earlier
 presentation/order provisions must not be applied as simultaneous requirements
-against that amendment. Backend context cardinality and cleanup selectors still
-need the identified P1 executable-contract/handler migration. This scoped
+against that amendment. Both backend handlers implement Test context and cleanup. The retained Tire
+legacy executable profile/preview schema still needs synchronization; see the
+[protocol map](../../contracts/implementation-status.md). This scoped
 amendment does not authorize implementation, live calls or deletion.
 
 
@@ -198,27 +192,19 @@ Consequences:
   health and unchanged backing-image digest against the successor candidate;
 - retain production provider-store selection as deferred `D4-X03` work.
 
-#### D4-001 Qualification Resolution — Accepted Factory Baseline `.21`
+#### Factory selection and qualification
 
-The successor qualification completed on 2026-08-30. The current accepted OEM
-Demo Factory baseline is `6.1.1-maninblack.21`, built from
-`aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`
-(tree `164f907bf041dbc99df24d2ebe7b0e5d2bbaeab0`). Its immutable raw-image
-identity is `6,997,147,648` bytes with SHA-256
-`80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`;
-the frozen rootfs SHA-256 is
-`32290e8f45632b3993ef0dc61b23be8a508bfd4d94f97f6ab65c80cbbad8d00b`.
+This decision defines image acceptance, not a permanent `.21` selector. The
+[controller input lock](../../workspace/inputs/controller-images.lock.json)
+selects exact prebuilt/rebuilt bytes independently. The
+[baseline](../qualification/current-baseline.md) maps the delivered image to
+current evidence. Earlier `.11`/`.21` candidates are not current build inputs
+merely because they once closed a gate. The controlled same-source canonical
+reproducibility proof remains a separate obligation; editorial/source changes
+do not authorize rebuilding or relabeling an accepted image.
 
-Offline Enforcing qualification, clean unprovisioned gating, secret-negative
-and empty-VDP checks passed. One official SDK attempt then provisioned a fresh
-Unit, and the complete Factory KUKSA substrate reached the accepted normal-mode
-state with zero restarts, a successful first-create and idempotent Provider
-credential path, strict TLS/JWT `Vehicle.Speed: NotAvailable` and zero scoped
-AVCs. `.21` therefore supersedes `.11` as the current Factory candidate and
-working baseline. `.11` remains historical engineering evidence only. The
-controlled same-source reproducibility rebuild required by item 6 remains a
-separate final-dossier proof and does not authorize changing the accepted
-`.21` bytes.
+Exact former `.21` provenance is retained in the
+[decision history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/requirements/d4-decision-register.md).
 
 ### D4-002 Decision Record — Vehicle Hardware Capability Profile
 
@@ -719,69 +705,17 @@ Consequences:
 
 ### D4-009 Retired Decision Record — VDP-Owned Service Credential Contract
 
-- Decision state: `RETIRED`; superseded by [`D4-027`](#d4-027)
-- Accepted: 2026-08-21
-- Owners: Platform Team / Aos IAM and security owners
-- Authoritative clarification: Platform Team response reported by the demo
-  owner on 2026-08-21
+- Decision state: `RETIRED`; superseded by [D4-027](#d4-027)
+- Stable trace: this ID is not authority to implement a broker inside VDP.
 
-Read-only inspection of the pinned AosVM 6.1.0 / meta-aos 9.1.0 sources and
-the provisioned Units established the baseline facts: the current AosVM IAM
-configuration does not contain `enablePermissionsHandler`; provisioning and
-normal IAM use the same `/etc/aos/iam.cfg`; and provisioning does not rewrite
-that file or toggle the option. The Platform Team then clarified the intended
-contract: the permission handler shall be explicitly enabled in the IAM
-configuration and its enabled state is independent of whether the Unit is
-provisioned.
-
-The historical decision was:
-
-1. the next OEM Demo Factory Image shall be built with the single shared
-   `/etc/aos/iam.cfg` containing `enablePermissionsHandler: true`;
-2. provisioning shall not generate, rewrite or select a second IAM
-   configuration and no project-owned lifecycle switch shall be added;
-3. enabling the handler does not bake a service identity, permission record,
-   `AOS_SECRET` or reusable credential into the image: Service Manager and
-   Aos IAM still create and register that state for each running SOTA service
-   instance;
-4. the VDP Credential Broker shall authenticate only by calling
-   `GetPermissions(secret, "kuksa")`, map only the currently registered valid
-   `r`, `w` or `rw` paths into a short-lived KUKSA JWT, and keep no parallel
-   identity, allowlist or service-secret store;
-5. invalid or stale secrets, unknown modes, malformed paths, permissions
-   outside the installed VDP contract, IAM unavailability and removed service
-   permissions shall fail closed and shall not produce or renew a token; and
-6. image qualification shall prove the option is explicitly true in the
-   effective configuration used by both IAM modes, prove that no service
-   permission or secret is pre-populated in the unprovisioned image, and prove
-   positive and negative `RegisterInstance`/`GetPermissions` behavior through
-   the stock Service Manager/IAM lifecycle.
-
-Current disposition:
-
-- items 1–3 and the image-qualification part of item 6 remain valid inputs to
-  `D4-027` and `CR-FACTORY`;
-- items 4–5 are superseded because Service authorization is no longer owned by
-  VDP and callers no longer select paths or modes;
-- the helper now belongs to separately packaged `CMP-KAC`, accepts only the
-  instance credential plus fixed `kuksa` resource, and derives all JWT claims
-  from the current IAM result; and
-- no implementation may cite this retired record as authority for a broker
-  inside VDP.
-
-Historical consequences were:
-
-- the earlier two-configuration, provisioning-state-selected recommendation
-  is withdrawn;
-- the historical `.1`, `.2` and `.11` evidence remains useful but none of those
-  images is the accepted Factory Image while its effective configuration
-  leaves the permission handler disabled;
-- the correction belongs to the pre-SOP OEM Factory Baseline Assembly and
-  therefore requires the planned successor VM-image build; it is not a demo
-  provisioning step and is not delivered as the initial post-SOP FOTA; and
-- D4-010.1 owns the accepted per-Unit signing-key lifecycle; D4-010.3 owns the
-  separate role-bound artifact-publication credentials. Dynamic Provider
-  authorization is not a first-demo gate.
+The still-applicable factory obligation is one IAM configuration with
+`enablePermissionsHandler: true`, independent of provisioning and without
+baked service permissions/secrets. Native Service Manager/IAM own workload
+identity; separately packaged `CMP-KAC` owns the fixed-resource credential
+translation. D4-010.1 owns the per-Unit signer; D4-010.3 owns separate artifact
+publication profiles. Dynamic Provider authorization is not a first-demo gate.
+The superseded VDP ownership, old-image investigation and discarded alternatives
+are preserved only in [Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/requirements/d4-decision-register.md).
 
 ### D4-010.1 Decision Record — Per-Unit KUKSA Signer and Verifier
 
@@ -930,14 +864,14 @@ Consequences:
   implementation because the first demo trusts the OEM Platform Team VDP
   Provider and makes no generic native-workload authorization claim.
 
-### D4-027 Working Record — Current-Release KUKSA Authorization Compatibility
+### D4-027 Contract Summary — Current-Release KUKSA Authorization Compatibility
 
 - Decision state: `DECIDED — D4-027.1 THROUGH D4-027.8 ACCEPTED`
 - Owners: Platform Team / Aos IAM and security owners / both Function Teams
 - Architecture authority: [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Requirement package: [`CR-KAC`](components/kuksa-authorization-compatibility.md)
 
-Already accepted:
+The effective contract is:
 
 1. the shared IAM configuration contains `enablePermissionsHandler: true`
    independently of provisioning state;

@@ -9,6 +9,8 @@ import json
 import re
 import runpy
 import unittest
+import tempfile
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -40,6 +42,56 @@ class WorkspaceDoctorTests(unittest.TestCase):
             self.assertRegex(item["acceptedRevision"], r"^[0-9a-f]{40}$")
             self.assertTrue(item["repository"].startswith("https://github.com/"))
             self.assertIn(item["visibility"], {"public", "private"})
+
+    def test_current_map_is_default_and_has_no_release_or_launcher_claim(self):
+        api = runpy.run_path(str(DOCTOR))
+        current = ROOT / 'workspace/repository-map.json'
+        data = api['load_current_map'](current)
+        self.assertEqual(api['DEFAULT_MANIFEST'], current)
+        self.assertNotIn('launcherPaths', data)
+        self.assertTrue(all('acceptedRevision' not in r for r in data['repositories']))
+        self.assertEqual({'carla', 'unreal-engine'},
+                         {r['id'] for r in data['repositories'] if r['optionalSourceDependency']})
+
+    def test_current_map_rejects_missing_duplicate_unsafe_or_pinned_entries(self):
+        api = runpy.run_path(str(DOCTOR))
+        raw = (ROOT / 'workspace/repository-map.json').read_text()
+        cases = []
+        value = json.loads(raw); value['repositories'].pop(); cases.append(value)
+        value = json.loads(raw); value['repositories'][1] = value['repositories'][0]; cases.append(value)
+        for key, bad in [('directory', '..'), ('remote', '--upload-pack'),
+                         ('acceptedRevision', 'a'*40), ('optionalSourceDependency', True)]:
+            value = json.loads(raw); value['repositories'][2][key] = bad; cases.append(value)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'map.json'
+            for value in cases:
+                path.write_text(json.dumps(value))
+                with self.subTest(value=value), self.assertRaises(api['DoctorError']):
+                    api['load_current_map'](path)
+            path.write_text(raw[:-2] + ', "schemaVersion": 1}')
+            with self.assertRaises(api['DoctorError']):
+                api['load_current_map'](path)
+
+    def test_current_source_check_compares_tracking_not_frozen_release(self):
+        api = runpy.run_path(str(DOCTOR))
+        row = api['load_current_map'](ROOT / 'workspace/repository-map.json')['repositories'][2]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); repo = root / row['directory']; repo.mkdir(); (repo / '.git').mkdir()
+            def git(path, args):
+                return {('rev-parse', '--show-toplevel'): str(repo),
+                        ('rev-parse', 'HEAD'): 'b'*40,
+                        ('branch', '--show-current'): 'main',
+                        ('remote', 'get-url', 'origin'): row['repository'],
+                        ('rev-parse', 'origin/main'): 'b'*40}[tuple(args)]
+            namespace = api['check_repository'].__globals__
+            with patch.dict(namespace, run_git=git, dirty_paths=lambda p: []):
+                report = api['Report'](); api['check_repository'](report, root, row, False)
+                self.assertEqual(0, report.errors)
+            def behind(path, args):
+                return 'c'*40 if args == ['rev-parse', 'origin/main'] else git(path, args)
+            with patch.dict(namespace, run_git=behind, dirty_paths=lambda p: []):
+                report = api['Report'](); api['check_repository'](report, root, row, False)
+                self.assertEqual(1, report.errors)
 
     def test_contract_contains_no_personal_absolute_path(self) -> None:
         for path in (MANIFEST, SCHEMA, DOCTOR):

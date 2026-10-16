@@ -3,122 +3,75 @@
 
 # ADR 0017: Continuous Demo Lifecycle and Upstream Core
 
-- Status: Accepted by the operator
-- Date: 2026-09-19
-- Scope: current Test-only Demo Studio and its P7/P8 qualification
+- Status: Accepted by the operator, including storage/ignition and Stop/Start amendments
+- Owner: Demo Solution Team / Platform Team
+- Scope: Test lifecycle and retained native storage; editorial consolidation only
 
 ## Context
 
-The retained Test lost service model/outbox/function-observation storage during
-Park/Resume. Native CM retired old version records that share a version-less
-storage identity with the current version. The same removal is reachable from
-expired-version cleanup. The pinned upstream library reproduces both cases;
-source inspection of newer main still finds the unconditional removal.
-See the [upstream handoff](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/aoscore-shared-storage-handoff-2026-09-19.md)
-and [retained-Test evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/preserved-test-function-observation-2026-09-19.md).
-
-The operator prefers using native AosCore facilities without another demo-only
-CM patch. Removing a demonstration action does not fix the storage defect.
+Native CM version cleanup could delete storage still owned by another version
+of the same service instance. Hiding a UI action cannot fix that defect.
+Controller power cycling, stopping a local demonstration, destructive retirement
+and host sleep are separate operations and require separate contracts/proof.
 
 ## Decision
 
-### Accepted controller ignition recovery — 24 September 2026
-
-The operator authorized automatic restoration of the existing provisioned
-connection after controller ignition off/on, retaining Unit/Node/certificates
-and service state, stationary and without Autopilot. The authorized native
-storage/cold-component corrections and Presenter-owned guarded recovery are
-implemented in the v1.1 source / Factory39. See the
-[ignition receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-ignition-2026-09-24.md).
-This supersedes original item 3's blanket fresh-controller-only instruction
-for this qualified controller recovery, not the removal of Studio Park/Resume.
-
-Recovery requires the same identities, a new boot, external network ON and
-no conflicting/uncertain operation; it does not override explicit blocking,
-reprovision or blindly retry. Cold externalOFF and nonempty-outbox power loss
-remain unqualified. Laptop sleep/wake recovery remains the separate planned
-item below. Historical failure descriptions are not current .39 behavior.
-
-### Planned host sleep/wake tolerance — 21 September 2026
-
-The operator accepted the separate [native sleep/wake recovery plan](../../planning/active/native-sleep-wake-recovery-2026-09-21.md).
-It targets local simulation and panel recovery while preserving the running Test
-VM and service data. Once implemented and qualified, it will supersede the
-finish-before-lid-close guidance for ordinary host sleep, not for a full host
-shutdown. It does not reinstate VM Park/Resume or authorize automatic VM/CM
-restarts. This is an accepted future change, not current recovery qualification;
-the original lifecycle guidance below remains the implementation baseline.
-
-### Authorized storage correction — 19 September 2026
-
-After platform-team confirmation of the shared-storage defect, the operator
-explicitly authorized a minimal native correction and local regression proof,
-followed by a successor Factory build only if the local gates pass. This
-supersedes the storage-patch exclusion in item 1 below; the remaining lifecycle
-decisions, including removal of operator Park/Resume, are unchanged. Preserve
-storage while another version of the same instance still owns it; retain final
-owner cleanup. Do not restore or reset the damaged Test implicitly, change Cloud,
-or treat local tests as live restart/E2E qualification.
-
-The following list records the original accepted decision with that amendment.
-
-1. Do not implement or install a new native CM storage patch in this increment.
-   Prepare a reproducible upstream report. Keep the accepted Factory `.35`
-   unchanged; its existing, separately qualified deltas are not silently
-   reverted or described as stock mainline. Adopting another upstream baseline
-   requires a separate pinned-source and image qualification.
-2. Remove Park/Resume from the operator Session panel and reject those actions
-   at the Presenter command boundary, including requests from an older open
-   browser. Historical receipts remain readable. Existing CLI primitives stay
-   engineering-only, with an explicit storage-retention warning in help.
-3. For a pause, use native Safe Stop and leave the controller running. Finish
-   the run before shutting down the computer; create a fresh controller for the
-   next run. A historical parked/partially resumed run or an established stopped
-   controller offers confirmed Finish, not automatic same-run restart.
-4. Finish retains its exact ownership, confirmation, uncertainty and Cloud
-   retirement guards. Page entry never deletes anything. Preserve Factory,
-   infrastructure, published releases and release-number continuity.
-5. External network off/on, service upgrades, independent model Reset and
-   Return to road remain separate operations. None implies Park, VM restart,
-   model reset, relaxed conflict checks or fabricated observation generations.
+1. Preserve storage while another version of the same instance owns it; retain
+   final-owner cleanup. The authorized minimal native storage/cold-component
+   corrections belong in pinned source and the qualified Factory, not an
+   ad-hoc guest patch. Existing images and proof are not relabelled stock
+   upstream mainline. Local regression is not live restart qualification.
+2. Do not expose Studio Park/Resume. Reject old-browser requests at the command
+   boundary; retained CLI primitives are engineering-only and warn about their
+   storage-retention boundary. Historical receipts remain readable.
+3. Safe Stop pauses motion with the controller running. Ordinary Stop demo
+   closes owned runtime but retains the same Test, identity, disks, models,
+   histories and release continuity. Start restores that Test under current
+   guards; it is neither new provisioning nor reuse of a retired overlay.
+4. Controller ignition off/on can restore the existing provisioned connection
+   with the same Unit/Node/certificates and service state, stationary and without
+   Autopilot. Require a new boot, same source identity, external network ON and
+   no conflicting/uncertain operation. Never override an explicit block,
+   reprovision or blindly retry. Scoped ignition evidence is in the baseline;
+   cold externalOFF and nonempty-outbox power loss remain separate gates.
+5. Finish is explicit destructive retirement with ownership, confirmation and
+   uncertainty guards. Page entry deletes nothing. Preserve Factory,
+   infrastructure, published releases and release-number continuity. A failed
+   or interrupted Test is reconciled; it is not silently reset or replaced.
+6. External network off/on, service upgrades, independent model Reset and Return
+   to road are separate actions. None implies VM restart, model reset, relaxed
+   conflicts or fabricated observation generations.
+7. Host sleep/wake tolerance remains the separate
+   [accepted plan](../../planning/active/native-sleep-wake-recovery-2026-09-21.md),
+   not an implemented recovery claim or authorization for automatic CM/VM
+   restart. A parked work session still uses verified end-of-check shutdown.
 
 ## Qualification boundary
 
-P7/P8 qualify a **continuous clean demonstration**:
+The continuous demonstration verifies empty Factory → detached source → initial
+VDP publication → provision/Online → stationary attachment → Safe Stop FOTA,
+serial VDP V1/V2/V3 and Brake V1/V2/V3 plus Tire V1 and same-profile replacement.
+Prove actual products, continuity and provenance, not upload alone. QM SOTA
+does not inherit platform Safe Stop.
 
-- Create the empty Factory controller; start/reuse detached simulation;
-  publish initial VDP; Provision and observe Cloud Online; attach the same
-  source in stationary Manual; use explicit Safe Stop for component application.
-- Exercise VDP V1/V2/V3, Brake V1/V2/V3 and Tire V1 plus same-profile replacement.
-  Prove actual products, update continuity and old-record provenance, not merely
-  upload/installation. SOTA remains independent of the component Safe Stop gate.
-- Verify native advisory, independent Reset/CLEAR/renewed warnings, Manual and
-  Return to road, source interruption, external-offline local authorization and
-  analytics, stopped backend ingress and exact queued delivery after reconnect.
-- Finish/deprovision/delete the owned Test and return to empty Create state.
+Verify advisory, independent Reset/CLEAR/renewed warnings, Manual/Return to road,
+source interruption, offline-local authorization/analytics, stopped backend
+ingress and exact queued delivery after reconnect. Explicit Finish returns to
+empty Create state. Stop/Start, ignition, page/Presenter/backend recovery and
+negative/partial outcomes retain their own cases. Scoped proof does not close
+the entire crash/nonempty-outbox/long-retention matrix. Any unexpected storage
+loss fails the cycle and preserves evidence; never conceal it with retry or
+ledger editing.
 
-At the original 19 September decision, CM/VM restart retention was **known
-failing upstream**. The later authorized storage/cold-start corrections and
-24 September scoped .39 proof supersede that current-state claim; the full
-retention/failure matrix is not marked passed or removed as a requirement. Page reload, Presenter/backend recovery, service updates
-and negative/partial-result handling remain applicable tests.
+Build a successor Factory only for a proved factory-owned delta after its gates.
+UI/backend/service edits alone do not justify rebuilding. The
+[implementation map](../current-implementation.md) and
+[baseline](../../qualification/current-baseline.md) own current evidence.
 
-Periodic old-version cleanup can also execute during uninterrupted operation.
-Therefore no guarantee of indefinite storage retention follows from this
-decision. If it deletes state during the clean cycle, fail that cycle, preserve
-evidence and report it; do not conceal the failure with retries or ledger edits.
+## Provenance
 
-Build a successor Factory only for a proved factory-owned delta after its gates
-pass. UI/backend/service-package changes alone do not justify an image rebuild.
-The current damaged Test is diagnostic evidence, not a clean acceptance run.
-
-## Replacement map
-
-This decision supersedes the Park/Resume operator action and mandatory same-run
-restart stage in UI-STUDIO-026, the versioned-service audit and P7/P8 packet.
-Earlier dated qualifications remain historical evidence with their exclusions.
-The retained 2.10 mockup is not overwritten: its Park/Resume controls are a
-documented intentional difference pending a separately versioned mockup update.
-
-The current implementation/evidence status is in the
-[delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md).
+The superseded no-patch/fresh-controller-only instructions and defect
+investigation are preserved in
+[Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md),
+not alternative current lifecycle instructions. Stable UI/requirement IDs and
+the unclosed acceptance matrix are unchanged.

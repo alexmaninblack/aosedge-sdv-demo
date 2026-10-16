@@ -147,12 +147,12 @@ record and execution control plane.
 | `carla-ego-runtime` | Vehicle Gateway, control, VSS projection, VISS and Engineering Telematics Dashboard | Gateway tooling | Existing |
 | `aos-vehicle-platform` | Shared Vehicle Data Platform Component, factory-installed KUKSA integration, provider runtime, separately packaged current-release Service-authorization helper and trusted Provider-side connection configuration | Platform FOTA plus separately governed factory/system integration | Implemented within the retained controller image; formal acceptance remains separately scoped |
 | `brake-health-service` | Function Team 1 on-board Brake Health application and local inference | Service Provider 1 / SOTA 1 | Existing |
-| `tire-health-service` | Function Team 2 on-board tire-condition estimation, bounded reporting and inspection advisory | Service Provider 2 / SOTA 2 | **Proposed repository** |
-| `brake-health-cloud` | Function Team 1 backend and Function Dashboard | Function Team 1 Cloud product | Isolated source foundation `68fe61b` over governance baseline `6da2926`; data packet proposed/review required |
-| `tire-health-cloud` | Function Team 2 backend and Function Dashboard | Function Team 2 Cloud product | **Planned repository** |
+| `tire-health-service` | Function Team 2 on-board tire-condition estimation, bounded reporting and inspection advisory | Service Provider 2 / SOTA 2 | Existing; independent in-vehicle product |
+| `brake-health-cloud` | Function Team 1 backend and Function Dashboard | Function Team 1 Cloud product | Existing; durable product ingestion, queries, reset and cleanup implemented; proof is separately scoped |
+| `tire-health-cloud` | Function Team 2 backend and Function Dashboard | Function Team 2 Cloud product | Existing; separate functional backend |
 | `aosedge-sdv-demo` | Cross-repository orchestration, dashboards, system requirements and end-to-end qualification | Demo solution | Existing |
 
-The proposed Function Team 2 repository shall not own CARLA integration,
+The Function Team 2 service repository shall not own CARLA integration,
 VISS transport, platform signal publication, KUKSA authorization, VM
 provisioning, or AosCloud desired state. It consumes only an accepted,
 versioned KUKSA contract.
@@ -162,9 +162,12 @@ functional products. Each backend and its dashboard share one Cloud-product
 repository, `brake-health-cloud` or `tire-health-cloud`, and must not be placed
 inside either in-vehicle service repository.
 
-The proposed repository is not added to `workspace/repositories.json` until it
-exists and its initial accepted revision is available. This preserves the
-current workspace doctor's validity.
+Current repository existence is not acceptance of every allocated requirement.
+Use the [repository map](../../workspace/repository-map.json) for current source
+ownership and the immutable source locks for a selected build. The installed
+one-associated-SP Test profile does not merge the two products; two-SP/dual-role
+deployment and approval obligations below apply to the expanded profile defined
+by HLA and UI-STUDIO-026, not to every installed Test action.
 
 ## System Requirements
 
@@ -304,13 +307,11 @@ requirements after ADR 0008:
 
 #### Retired Security Requirement
 
-The former `SYS-SEC-002` required a second FOTA-managed per-Service OEM policy
-inside the VDP-owned broker. Architecture 1.3 removed that duplicate policy,
-and Architecture 1.5 subsequently moved current-release translation out of
-VDP. `SYS-SEC-005` is also retired because the first demo explicitly trusts the
-OEM-qualified VDP as platform integration rather than adding a dynamic
-Provider credential protocol. `SYS-SEC-006` is retired because its actor and
-authority boundary changed materially.
+Retired IDs remain resolvable for traceability; the table below supplies their
+effective replacements. Native IAM remains authoritative, translation belongs
+to separately packaged `CMP-KAC`, and the trusted OEM Provider is outside
+dynamic Service-credential authorization. Superseded broker proposals are not
+alternative current requirements.
 
 | Retired identifier | Replacement | Reason |
 | --- | --- | --- |
@@ -410,9 +411,9 @@ test.
 | [Vehicle Data Platform (`CR-VDP`)](component-decomposition-and-interface-register.md#cr-vdp) | `aos-vehicle-platform` | Component v1-v3, KUKSA data/advisory contract, defense-in-depth outbound policy and OEM-trusted Provider-side connection qualification; no Service JWT issuance |
 | [Current-release KUKSA authorization compatibility (`CR-KAC`)](component-decomposition-and-interface-register.md#cr-kac) | Platform Team / `aos-vehicle-platform` | Separately packaged removable helper, fixed-resource bootstrap, IAM mapping, protected signing, private volatile delivery, renewal/reboot/stop/removal lifecycle and native-migration deletion seam |
 | [Brake Health service (`CR-BHS`)](component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service` | v1 event-window recorder, v2 synthetic local assessment/derived messages, v3 advisory, bounded offline state and resource limits |
-| [Tire Health service (`CR-TIRE`)](component-decomposition-and-interface-register.md#cr-tire) | proposed `tire-health-service` | One mature v1.0 candidate on VDP v3: local persistent condition model, bounded summary/event, offline queue, inspection advisory, SOTA 2 metadata and resource limits |
+| [Tire Health service (`CR-TIRE`)](component-decomposition-and-interface-register.md#cr-tire) | `tire-health-service` | One mature v1.0 candidate on VDP v3: local persistent condition model, bounded summary/event, offline queue, inspection advisory, SOTA 2 metadata and resource limits |
 | [Aos lifecycle (`CR-AOS`)](component-decomposition-and-interface-register.md#cr-aos) | AosCore/AosCloud integration | Provisioning and retirement contracts, authoritative desired/reported actual and Unit Set state, recorded OEM-authorized approvals, FOTA/SOTA execution, targeting, native cross-lifecycle dependency admission, log transport and AosCore quota enforcement/monitoring qualification |
-| [Brake Health Cloud (`CR-BRAKE-CLOUD`)](component-decomposition-and-interface-register.md#cr-brake-cloud) | Function Team 1 | v1 window reconstruction, v2/v3 derived-message ingestion, idempotency, exact-Unit retention and Function Dashboard; Query/SSE/admin scope uses an injected exact current Test/Production Unit context sourced from the provisioning journal, with live wiring deferred and no invented Cloud state; event VDP provenance remains nullable/pending until exact assessment correlation; the proposed data packet excludes synchronization-complete, source-generation/run binding and Test/Production comparative-success claims pending D4-024 |
+| [Brake Health Cloud (`CR-BRAKE-CLOUD`)](component-decomposition-and-interface-register.md#cr-brake-cloud) | Function Team 1 | v1 window reconstruction, v2/v3 derived-message ingestion, idempotency, exact-Unit retention and Function Dashboard; Query/SSE/admin scope uses an injected exact current Test/Production Unit context sourced from the provisioning journal, with installed Test context and no invented Cloud state; event VDP provenance remains nullable/pending until exact assessment correlation; complete source-generation/correlation and expanded Test/Production comparative proof remain separately required by D4-024 |
 | [Tire Health Cloud (`CR-TIRE-CLOUD`)](component-decomposition-and-interface-register.md#cr-tire-cloud) | Function Team 2 | One prepared v1.0 candidate catalogue, protected delegated publication, Tire result ingestion/idempotency/retention, separated Function Dashboard views and isolated Mac-local ARM64 hosting without OEM lifecycle authority |
 | [Demo orchestration (`CR-DEMO`)](component-decomposition-and-interface-register.md#cr-demo) | `aosedge-sdv-demo` | Overlay lifecycle, Unit and Unit Set binding, stateless release workflow facilitation, per-operation resource-scoped conflict/recovery coordination, evidence-backed final-approval presentation, owner/role-visible Software Delivery Dashboard, bounded Tire load orchestration, ordered retirement, next-run provisioning and factory-digest verification |
 | [Cross-cutting concerns (`CR-CROSS`)](component-decomposition-and-interface-register.md#cr-cross) | Security and operational concerns across owners | Native Aos identity/permission lifecycle, KUKSA authorization compatibility, redaction, chronology, targeted vehicle external-connectivity continuity and AosCore-enforced service-tenant isolation; the helper is separate from `CR-VDP` |
@@ -426,7 +427,7 @@ system requirement and retained evidence identifier.
 ## Repository ownership
 
 The independent Tire repository exists and is listed in the
-[workspace map](../../workspace/repositories.json). Its current service/data,
+[workspace map](../../workspace/repository-map.json). Its current service/data,
 licensing, resource, compatibility and verification obligations remain in the
 [Tire package](components/tire-health-service.md). New component repositories
 follow [contribution and ownership rules](../../CONTRIBUTING.md), not a pending

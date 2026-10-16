@@ -22,90 +22,65 @@
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
-## Distribution entry sequence — 27 September 2026
+## Purpose and installed sequence
 
-Under [ADR 0018](../architecture/decisions/0018-installable-demo-and-first-use.md),
-first install the immutable runtime, then explicitly select a private data
-instance, configure access and verify prerequisites before M0. Installation
-does not mean that the controller exists, a Unit is provisioned or telemetry
-is flowing. The first-use topology has one OEM and one associated SP for both
-independent services; two SP organizations are not required. The existing
-sequential-version, FOTA Safe Stop, QM SOTA, offline and retirement story stays
-unchanged. Package replacement/removal never performs R0 or erases run history.
+This scenario explains what happens and what the audience sees as a complete,
+platform-integrated vehicle gains capabilities after SOP. It projects
+[HLA 1.8](../architecture/high-level-architecture.md), not an unfinished vehicle
+being made safe by later updates. Exact schemas and ownership belong to the
+[flows](../architecture/demo-scenario-architecture-flows.md) and requirements.
+
+The current installed profile is one OEM, one associated SP and one Test
+controller. Its normal sequence is:
+
+1. Install/select the immutable runtime, configure Cloud access and verify
+   prerequisites. Installation is not controller creation or provisioning.
+2. Create an empty ARM64 controller from the Factory image; start CARLA and
+   native Driving Control detached. Factory already integrates AosCore,
+   KUKSA, KAC and the OEM component runtime, not VDP or functional services.
+3. Prepare/sign/publish the first VDP profile, provision once, observe Online
+   and attach the same running simulator in stationary Manual.
+4. Apply platform FOTA under Safe Stop. Independently publish/assign the first
+   service and observe installation separately from functional evidence.
+5. Evolve VDP V1→V2→V3 and Brake V1→V2→V3, publishing and verifying one version
+   at a time. Tire V1 demonstrates an independent product on VDP V3.
+6. Exercise local advisory, independent model Reset, external offline/reconnect
+   and guarded controller ignition. Stop/Start preserves the Test; confirmed
+   Finish retires it. Reset does not erase history or repair a physical vehicle.
 
 <a id="current-implemented-story--demo-v11--factory39"></a>
-## Current implemented story — Kit028 / Setup042 / Factory41
+### Current implementation and proof
 
-The current Test-only story starts with an empty controller whose Factory
-already integrates AosCore, KUKSA, KAC and the OEM component runtime. CARLA and
-native control can run detached; attachment occurs after provisioning without
-restarting the simulator. VDP FOTA needs Safe Stop. QM Brake/Tire SOTA can evolve
-while driving, with release installation and functional results checked
-separately. Publish one successive version at a time.
+Use the [operator workflow](../operations/current-demo-workflow.md),
+[implementation matrix](../architecture/current-implementation.md) and
+[current baseline](../qualification/current-baseline.md). Moving QM SOTA and
+scoped API/visible UI/native Setup checks are now recorded there; a historical
+Kit number is not the current selector or blanket full-matrix qualification.
 
-Brake V1 captures bounded episodes, V2 estimates locally, V3 adds typed advisory;
-Tire V1 already provides its independent model/advisory. Reset Driver Advisory
-is not history deletion. externalOFF separates local work from backend delivery;
-controller ignition is a separate guarded resilience check, not routine
-Park/Resume. Kit028 passed the installed scripted serial sequence; moving SOTA
-and the complete native journey remain unqualified. See [workflow](../operations/current-demo-workflow.md) and
-[implementation matrix](../architecture/current-implementation.md).
-
-## Studio Test scope amendment — 2026-09-09
+### Profiles and stage applicability
 
 [UI-STUDIO-026](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
-is the accepted current Test interaction amendment and includes the explicit
-replacement map. For this milestone, it supersedes conflicting two-vehicle,
-dedicated-demo-Fleet, terminal-only, mandatory-approval, independent-concurrent
-writer and routine-history-retention provisions below. Keep original stable IDs
-and their unchanged authority/product/safety obligations; Production remains
-future scope rather than a prerequisite for Test. D4-012.1 and D4-026's earlier
-presentation/order provisions must not be applied as simultaneous requirements
-against that amendment. Both backend handlers now implement Test-only context
-and cleanup; the older Tire executable profile/preview schema still needs
-synchronization, as recorded in the [protocol map](../../contracts/implementation-status.md). This scoped
-amendment does not authorize implementation, live calls or deletion.
+defines the installed Test profile. The detailed VU/PU promotion sequence below
+is the **expanded accepted profile**, not instructions to create a second
+controller during first use. Its stable stage, requirement and interface IDs
+remain valid. Two SP organizations, dedicated Fleet objects, mandatory
+Production approval, terminal-only presentation and concurrent writers are
+not simultaneous installed-Test prerequisites. Backend handlers implement the
+Test context; remaining legacy schema differences are in the
+[protocol map](../../contracts/implementation-status.md).
 
+### Packaged inputs do not change the story
 
-## Purpose
-
-For the accepted installable-distribution work, prebuilt inputs replace source
-checkouts under the [portable Prepare contract](../../contracts/portable-preparation-inputs/README.md).
-The [portable host launch contract](../../contracts/portable-host-launch/README.md)
-likewise replaces developer build inputs, not the story: one stationary local
-CARLA/Driving Control source can start detached, and the existing provisioned
-Test attachment remains a separate operation. No installer or full portable
-vehicle-run acceptance is implied by the host-only engineering proof.
-The [portable VM input slice](../../contracts/portable-vm-launch/README.md)
-likewise replaces QEMU/firmware/helper input locations without changing the
-audience sequence, vehicle identity or safety gates. Its assembly/unit evidence
-is not a completed guest/UI demonstration.
-The [Cloud/backend input slice](../../contracts/portable-cloud-backend-inputs/README.md)
-also replaces development inputs, not audience actions or functional evidence.
-The selected backend image must already be available in the declared engine;
-no automatic import, build or engine launch is implied. Packaging a Cloud SDK
-does not configure credentials, authorize publication or establish connectivity.
-Audience actions and story remain unchanged: prepare unsigned content, sign and
-publish in the selected context, then observe actual installation and function.
-This input-location change does not merge FOTA with SOTA or imply readiness.
-
-The implemented first-install story begins with one empty Test controller,
-provisions it into Aos Cloud, evolves software after SOP, and retires its
-run identity/data. The original expanded VU/PU sequence below remains the
-longer-term design under the Test-scope amendment, not a second machine to
-create in the current operator flow.
-
-The post-SOP portion deliberately starts with a working vehicle rather than a
-broken or incomplete prototype. The vehicle drives, exposes telemetry through
-its Vehicle Gateway, and contains an operational Domain Controller with the
-AosEdge platform substrate. What is initially absent is the Vehicle Data
-Platform Component payload and all functional SOTA services.
-
-Scenario 2.1 defines what should happen and what an
-audience should see. It is the dynamic, stage-by-stage projection of the
-capability-superset model in High-Level Architecture 1.8. It does not yet
-select exact APIs, define every detailed interaction, or authorize
-implementation.
+[Preparation](../../contracts/portable-preparation-inputs/README.md),
+[host launch](../../contracts/portable-host-launch/README.md),
+[VM launch](../../contracts/portable-vm-launch/README.md) and
+[Cloud/backend inputs](../../contracts/portable-cloud-backend-inputs/README.md)
+replace developer input locations with verified prebuilt inputs. They add no
+new lifecycle owner or Cloud authority. Explicit backend-image preparation is
+separate from observation/start; navigation cannot import images or start an
+engine. Packaging an SDK configures no credential. Package replacement/removal
+does not perform R0 or erase run state. Assembly/unit evidence alone is not
+live integration acceptance.
 
 ## How to Read the Demonstration Lifecycle
 
@@ -165,9 +140,9 @@ The demonstration does not claim that no software ever changes after SOP. Its
 claim is that post-SOP functionality is added through the extension and
 lifecycle mechanisms intentionally built into the SOP platform.
 
-## Alignment With High-Level Architecture 1.5
+## Alignment With High-Level Architecture 1.8
 
-High-Level Architecture 1.5 shows every capability that the target logical
+High-Level Architecture 1.8 shows every capability that the target logical
 vehicle architecture can host. This scenario defines when those deployable
 capabilities are absent or present during `M0`, `M1`, `G0–G4`, `T1`, and `R0`.
 
@@ -413,7 +388,7 @@ time-critical local advisory path.
 
 ### Tire Health Function Dashboard — Independent SOTA 2 Product
 
-High-Level Architecture 1.5 assigns a separate backend and dashboard to
+High-Level Architecture 1.8 assigns a separate backend and dashboard to
 Function Team 2 / Service Provider 2. They become audience-visible at `T1`,
 after the `G0–G4` Brake Health progression. The dashboard presents the one
 prepared Tire Health Service v1.0 candidate and shows its estimated condition
@@ -525,7 +500,8 @@ runtime.
 That factory image contains:
 
 - the official AosCore baseline;
-- Service Manager, factory-installed unmodified KUKSA, security, and update
+- Service Manager, factory-installed KUKSA with the documented compatibility
+  patches, security, and update
   support;
 - the accepted `systemd-slot-component` runtime for the Vehicle Data Provider;
 - its launcher, health, systemd, OEM Component Runtime A/B working-storage,
@@ -556,14 +532,12 @@ identity before Cloud registration. The factory artifact must therefore retain
 the qualified first-boot identity-generation mechanism rather than embedding a
 fixed identity that would be duplicated by every overlay.
 
-The accepted `6.1.1-maninblack.21` image is the current immutable OEM Demo
-Factory baseline. It contains the qualified provider-specific empty-slot
-runtime and Factory KUKSA substrate but no VDP payload. Its offline
-unprovisioned and single-attempt online provisioning qualification passed;
-strict TLS/JWT reading returns `Vehicle.Speed: NotAvailable` exactly because
-the Factory slot is empty. Historical `.1`, `.2` and `.11` images remain
-engineering evidence only. No provisioned VM snapshot or Cloud Unit may be
-used as a manufacturing source.
+The [controller input lock](../../workspace/inputs/controller-images.lock.json)
+selects the immutable Factory image; the current baseline owns its evidence.
+No old image number in a design example overrides that selection. Empty-slot
+TLS/JWT access reports unavailable physical data until VDP is installed; this
+is not a service failure. A provisioned VM snapshot or Cloud Unit must never
+be used as a manufacturing source.
 
 The currently implemented runtime is specific to one Vehicle Data Provider
 component type. This demo may claim independent versioning of that shared
@@ -1241,7 +1215,7 @@ introduced.
   the AosCore tenant-isolation claim. Aggregate quota enforcement across
   several services owned by one Service Provider is also not claimed.
 
-The proposed [D4-019 Tire Cloud API](../../contracts/tire-cloud-api/README.md)
+The [D4-019 Tire Cloud API](../../contracts/tire-cloud-api/README.md)
 accepts derived results/readiness only and keeps its identity, database,
 volume and reset operation separate from Brake. The proposed
 [D4-020 local-hosting contract](../../contracts/local-demo-hosting/README.md)
@@ -1466,7 +1440,7 @@ destructive experiment.
     model, runs the full qualification suite, rebuilds or repackages them.
 11. Unit identities remain stable throughout `G0–T1`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
-12. High-Level Architecture 1.5 is a capability superset; `G0–G4` exercise
+12. High-Level Architecture 1.8 is a capability superset; `G0–G4` exercise
     Function Team 1 and `T1` adds Function Team 2 through its independent Tire
     Health SOTA 2 lifecycle.
 13. Function Team 1 and Function Team 2 remain independent AosCloud Service
