@@ -20,21 +20,12 @@
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 Cloud authority decision: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Purpose
 
@@ -163,13 +154,13 @@ dependency.
 | Requirement | Plain-language obligation | Verification levels | State |
 | --- | --- | --- | --- |
 | [Native identity and least privilege (`REQ-CROSS-001`)](#req-cross-001) | Preserve one Aos-authoritative service identity and exact KUKSA permissions | Unit, Contract, Integration | D3 design-reviewed |
-| [Per-Unit KUKSA trust lifecycle (`REQ-CROSS-002`)](#req-cross-002) | Protect one signer per Unit provisioning lifecycle, prepare only its public verifier and bound JWT issue/refresh/retirement | Unit, Component, Contract, Integration | Factory signer/verifier lifecycle implemented and qualified in `.21`; Service issue/refresh integration remains open |
+| [Per-Unit KUKSA trust lifecycle (`REQ-CROSS-002`)](#req-cross-002) | Protect one signer per Unit provisioning lifecycle, prepare only its public verifier and bound JWT issue/refresh/retirement | Unit, Component, Contract, Integration | D4 authorization boundary accepted; scoped proof follows the current baseline |
 | [Trusted Provider and Service-authority separation (`REQ-CROSS-010`)](#req-cross-010) | Keep trusted OEM Provider integration unreachable through functional Service credentials | Contract, Integration, Review | D3 design-reviewed |
-| [Role-bound protected artifact publication (`REQ-CROSS-011`)](#req-cross-011) | Keep Platform, Brake and Tire technical-publication credentials non-interchangeable and outside product/runtime boundaries | Unit, Contract, Integration, Audit | D4-010.3 decided; implementation open |
+| [Role-bound protected artifact publication (`REQ-CROSS-011`)](#req-cross-011) | Keep Platform, Brake and Tire technical-publication credentials non-interchangeable and outside product/runtime boundaries | Unit, Contract, Integration, Audit | D4-010.3 design accepted |
 | [End-to-end QM advisory containment (`REQ-CROSS-004`)](#req-cross-004) | Reject every unauthorized or unsafe advisory at layered boundaries | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Controlled native-log evidence (`REQ-CROSS-005`)](#req-cross-005) | Present role-separated OEM/SP logs without secrets, false retention or a second archive | Unit, Contract, Integration | D4-014 design accepted; live qualification open |
-| [Cross-surface run correlation (`REQ-CROSS-006`)](#req-cross-006) | Bind facts to the exact run, role, Unit and source without global history | Unit, Contract, Integration, End-to-end | D4-024 design reviewed; implementation/live qualification open |
-| [Separated on-board and Cloud chronology (`REQ-CROSS-007`)](#req-cross-007) | Preserve event, decision and synchronization times without a false latency claim | Unit, Contract, Integration, End-to-end | D4-024 design reviewed; implementation/live qualification open |
+| [Cross-surface run correlation (`REQ-CROSS-006`)](#req-cross-006) | Bind facts to the exact run, role, Unit and source without global history | Unit, Contract, Integration, End-to-end | D4-024 design reviewed; full matrix follows current gates |
+| [Separated on-board and Cloud chronology (`REQ-CROSS-007`)](#req-cross-007) | Preserve event, decision and synchronization times without a false latency claim | Unit, Contract, Integration, End-to-end | D4-024 design reviewed; full matrix follows current gates |
 | [Targeted vehicle external-connectivity continuity (`REQ-CROSS-008`)](#req-cross-008) | Keep the installed graph active while one atomic fault interrupts AosCloud and functional-backend paths, then reconnect and synchronize | Contract, Integration, End-to-end | D3 design-reviewed |
 | [AosCore service-tenant isolation (`REQ-CROSS-009`)](#req-cross-009) | Cap a prepared Tire CPU load at its own quota while Brake and the platform remain healthy | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
 
@@ -494,7 +485,7 @@ repositories and are composed by the cross-package contract/integration gate.
 
 ## Open D4 Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -503,7 +494,7 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
 | Remaining qualification | Complete native log permissions/retention, shared chronology anomaly matrix, resource/fault isolation, independent qualification runs and sanitized full acceptance dossier remain open. |
 | Known limits | CPU qualification endpoint/worker is not implemented; source-bound contract drift, short readiness transitions, cold externalOFF ignition and nonempty-outbox power loss remain explicit audit items. |
 
-## Package Acceptance and Version 0.4 Delta
+## Package Acceptance
 
 The package is ready for D3 acceptance when:
 
@@ -521,36 +512,8 @@ The package is ready for D3 acceptance when:
 7. open D4 values are visible and no target behavior is presented as current;
 8. the documentation quality gate passes.
 
-Version 0.4 was design-reviewed on 2026-08-28. It moves Service authorization
-from VDP to `CMP-KAC`, replaces retired authorization interfaces, retires
-dynamic Provider authorization, adds `REQ-CROSS-010`, and records the accepted
-D4-010.3 role-bound artifact-publication invariant as `REQ-CROSS-011`. All QM,
-observability, connectivity, chronology and resource-isolation requirements
-remain unchanged. Acceptance authorizes the shared architectural requirement
-baseline only. It does not authorize implementation, repository creation,
-signing, AosCloud calls, VM operations, provisioning, CARLA control or data
-deletion.
-
-## D3 Acceptance Record
-
-Version 0.1 was accepted on 2026-08-20 after all four review decisions were
-confirmed. In particular, `CROSS-D4` keeps AosCore/Service Manager as the sole
-in-vehicle quota-enforcement and monitoring authority. The first audience
-proof drives the actual Tire Health service instance to its independently
-approved CPU quota while Brake Health processes the deterministic CARLA event
-without restart and the shared platform remains healthy. The Demo Orchestrator
-only starts and stops a prepared bounded in-instance load; it never sets or
-enforces quotas. Mac-local backends and aggregate multi-service-per-provider
-quota enforcement are explicitly outside the claim.
-
-Version 0.4 was accepted as the current architectural requirement baseline on
-2026-08-28. It does not authorize implementation, signing, AosCloud mutation,
-VM operations, provisioning, CARLA control or data deletion.
-
-The same-day native-IAM transport correction preserves the package version and
-authority model. Cross-component qualification now proves that KAC's only
-`AF_INET` use is fixed TLS loopback `127.0.0.1:8090`, while DNS, external IP
-and any KAC TCP listener remain denied.
+Design acceptance grants no implementation or external mutation authority;
+current implementation and full-qualification limits follow the shared status map.
 
 ## Change Rules
 
@@ -564,3 +527,10 @@ and any KAC TCP listener remain denied.
   evidence link together.
 - This package may reference owner tests but never silently reassign their
   implementation ownership.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/cross-cutting.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

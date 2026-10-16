@@ -8,7 +8,7 @@ private-instance preparation, with separate explicit Cloud access/enrollment,
 backend-image preparation and Presenter launch actions. The offline transaction
 specified here still performs none of those later actions.
 
-- Status: Implemented offline transaction; full native journey remains open
+- Status: Implemented offline transaction; native/runtime proof follows the current baseline
 - Version: 1.0
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team / integration distribution tooling
@@ -101,9 +101,9 @@ slice's resumable staging is not proof of those later operations.
 | Storage binding | Insufficient space, absent/wrong volume, changed volume mid-operation and missing parent block |
 | Runtime separation | No imported payload code, network/Docker/Cloud/VM action or developer fallback; installed is not ready |
 
-Actual Kit 004 transfer/installation proof is required after deterministic tests,
-using an exclusive disposable SSD store and preserving all live owners. Keep
-compact receipts and distinguish clone allocation from logical byte count.
-
-The [27 September qualification receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/offline-installation-2026-09-27.md)
-records the passed first-install/repeat proof and explicit remaining gates.
+A changed candidate requires its own real installation/consumer proof after
+deterministic tests, preserving live owners. Retain compact receipts and
+distinguish clone allocation from logical byte count. Current scoped native
+and runtime results and remaining recovery gates are owned by the
+[baseline](../../docs/qualification/current-baseline.md), not an old kit number
+or a mandatory development-SSD test.

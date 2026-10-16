@@ -15,7 +15,7 @@ for delivery and remaining proof.
 - [ADR 0004: Start AOS-1 with One Main Node](0004-single-main-node-for-aos1.md)
 - [ADR 0005: Keep the CARLA Adapter Inside AosVM](0005-kuksa-vehicle-data-boundary.md)
 - [ADR 0006: Separate Platform and Service Repositories by Lifecycle](0006-lifecycle-based-repository-ownership.md)
-- [ADR 0007: Solution Documentation Home](0007-solution-documentation-home.md)
+- [Documentation ownership policy](../../governance/documentation-and-requirements-management.md#documentation-ownership): current rules consolidated from the completed repository rename.
 - [ADR 0008: Use Tire Health for Function Team 2](0008-use-tire-health-for-function-team-2.md)
 - [ADR 0009: Separate Release Decision Ownership from Cloud Execution](0009-separate-release-decision-from-cloud-execution.md)
 - [ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md)

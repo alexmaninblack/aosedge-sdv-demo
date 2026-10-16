@@ -48,10 +48,22 @@ class WorkspaceDocumentationTests(unittest.TestCase):
 
     def commit_component(self):
         subprocess.run(["git", "-C", str(self.component), "add", "README.md"], check=True)
+        # Disposable documentation objects must not invoke the host's signing
+        # key/agent. This does not change signing for any real repository.
         subprocess.run(["git", "-C", str(self.component), "-c", "user.name=Documentation Fixture",
-                        "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "Fixture"],
+                        "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false",
+                        "commit", "--quiet", "-m", "Fixture"],
                        check=True, capture_output=True)
         return subprocess.check_output(["git", "-C", str(self.component), "rev-parse", "HEAD"]).decode().strip()
+
+    def test_review_history_is_evidence_not_a_current_specification(self):
+        body = "# Review\n\n## Review Record for Version 0.12\n\nRecorded evidence.\n"
+        evidence = self.root / "docs/qualification/transport-evidence.md"
+        specification = self.root / "contracts/transport/README.md"
+        self.assertEqual(CHECK_GUIDANCE(self.root, {evidence: body}), [])
+        issues = CHECK_GUIDANCE(self.root, {specification: body})
+        self.assertEqual(len(issues), 1)
+        self.assertIn("completed version-review diaries", issues[0].message)
 
     def test_current_hosted_readmes_are_inspected_offline(self):
         issues, count, _ = self.result()

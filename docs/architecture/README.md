@@ -26,8 +26,14 @@ from expanded design obligations.
 - [Image compatibility](demo-control-image-compatibility.md): exact controller-image/profile guards.
 - [Service observations](demo-control-service-observation.md): read-only owner-bound catalog/status projections.
 - [Architecture decisions](decisions/README.md): current rationale and explicit supersession.
-- [Editable diagrams and exports](diagrams/README.md): design diagrams, not a claim of full implementation.
 
 A document version is not a demo release number. The launcher catalog and
 immutable delivery descriptor select media; old Factory/Kit numbers never
 override that selection.
+
+## Diagrams
+
+The overview is embedded in the root README; deployment and authority diagrams
+are maintained with current implementation, HLA and architecture flows above.
+There is no separate current editable-diagram collection. Update a diagram's
+owning document and accepted inputs together, not a second diagram baseline.

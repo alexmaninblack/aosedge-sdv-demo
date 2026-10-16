@@ -120,8 +120,9 @@ installed.
 
 The demonstration nested ext4 store preserves isolation on the fixed-context
 AosVM workdirs mount. Production storage remains a separate OEM architecture
-decision. Rootfs rollback from `.11` to `.2` is not provider-transparent; the
-provider assignment must first be suspended or removed.
+decision. A rootfs rollback is not assumed provider-transparent: verify the
+selected image/runtime compatibility and suspend or remove an incompatible
+provider assignment before changing its substrate.
 
 See [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md) for the
 accepted repository decision,

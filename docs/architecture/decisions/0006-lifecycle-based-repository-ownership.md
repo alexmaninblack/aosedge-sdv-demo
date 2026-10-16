@@ -43,6 +43,9 @@ Use the following repository boundaries:
 | `alexmaninblack/carla-ego-runtime` | CARLA ego control and VISS 3.1 projection | No, simulation only | Simulation tooling |
 | `alexmaninblack/aos-vehicle-platform` | Vehicle-data platform integration | Yes, except development-only providers | OEM platform/FOTA |
 | `alexmaninblack/brake-health-service` | Independently deployed Brake Health application | Yes | Aos service/SOTA |
+| `alexmaninblack/tire-health-service` | Independently deployed Tire Health application under the same lifecycle rule | Yes | Aos service/SOTA |
+| `alexmaninblack/brake-health-cloud` | Brake product API, durable backend and team dashboard | No, host backend | Function-team backend |
+| `alexmaninblack/tire-health-cloud` | Tire product API, durable backend and team dashboard | No, host backend | Function-team backend |
 | `alexmaninblack/aosedge-sdv-demo` | VM lifecycle, provisioning, version lock, end-to-end qualification, and demo documentation | No | Solution/demo baseline |
 
 Do not create one repository per executable. Repository boundaries follow
@@ -72,7 +75,7 @@ aos-vehicle-platform/
 └── docs/
 ```
 
-It will contain:
+It owns:
 
 - the platform-owned CARLA VISS-to-KUKSA provider used by the prototype;
 - the versioned vehicle-data contract;
@@ -229,14 +232,14 @@ Detailed rules:
   permissions; their absence does not justify moving a parallel identity/policy
   store or reusable KUKSA credentials into a functional Service.
 
-## Migration Result
+## Current ownership
 
-The platform and service repositories are public and independently validated.
-Provider source, the vehicle-data contract, FOTA packaging, and Yocto
-integration now live in `aos-vehicle-platform`; the service scaffold lives in
-`brake-health-service`. This integration repository retains only locks,
-orchestration, qualification, and sanitized documentation. Completed migration
-plans and fresh-clone evidence remain available through Git history.
+Provider source, vehicle-data contracts, FOTA packaging and Yocto integration
+live in `aos-vehicle-platform`. Brake and Tire each have an independent service
+repository and a separate host-backend repository. This integration repository
+owns cross-component locks, orchestration, qualification and solution documents.
+The [repository map](../repository-boundaries.md) maintains the full allocation;
+completed migration records remain in Git.
 
 ## Consequences
 
@@ -257,7 +260,7 @@ plans and fresh-clone evidence remain available through Git history.
 - Cross-repository changes require an explicit contract and coordinated test
   baseline.
 - CI, releases, vulnerability handling, and dependency updates must be
-  maintained for two additional repositories.
+  maintained independently for the component repositories.
 - A version lock and compatibility policy become mandatory rather than
   informal documentation.
 

@@ -207,9 +207,20 @@ numbered reports preserve earlier results. It never installs anything, connects
 to M1, downloads the payload, edits source/catalogs, or substitutes its
 `0.0.0-rc.0` fixture for a product release. Preserve this bounded proof rather than
 running it for every ordinary release. A real successor still needs its actual
-M1 consumer acceptance before the operator catalog is promoted. The
-[15 October sender acceptance record](../qualification/dropbox-publisher-2026-10-15.md)
-records the connected app, live tiny-image proof and remaining product boundary.
+M1 consumer acceptance before the operator catalog is promoted.
+
+### Publisher evidence
+
+The app-folder sender passed live publication, metadata/public HEAD and a
+fresh-client zero-upload/link-mutation repeat using a **20,020-byte transport
+fixture**. It was not a product release, large-DMG throughput measurement or
+M1 installation acceptance. The [immutable sender receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/qualification/dropbox-publisher-2026-10-15.md)
+retains exact fixture hashes, authorization scope and timing. The dedicated
+publisher uses only its reviewed app-folder permissions and owner-private
+refresh credential; no account/token data enters source or public reports.
+A new product candidate still requires its separately bound release campaign
+and actual M1 consumer. A source integration or tiny fixture pass never
+republishes/promotes the selected operator package.
 
 ### Existing Dropbox publication
 

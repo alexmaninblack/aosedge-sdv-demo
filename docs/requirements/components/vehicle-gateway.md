@@ -22,10 +22,6 @@
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Implementation baseline: candidate runtime `2e3d1164` against `CarlaSim@eb09b824`; original D3 checkpoint `22864c5` is historical
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Purpose
 
 This package defines the simulated Vehicle Gateway ECU and its engineering
@@ -83,15 +79,10 @@ or safety-critical authority to either service.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Testability Boundary
 
@@ -133,23 +124,23 @@ decisions they exercise.
 
 ## Requirement Summary
 
-| Requirement | Plain-language obligation | D3 implementation snapshot | Verification levels |
-| --- | --- | --- | --- |
-| [Frame-coherent CARLA acquisition (`REQ-GATEWAY-001`)](#req-gateway-001) | Sample one attributable vehicle frame without mixing source time | `CURRENT` | Unit, Contract, Integration |
-| [Truthful normalization and provenance (`REQ-GATEWAY-002`)](#req-gateway-002) | Convert native values to defined physical/VSS semantics | `CURRENT` | Unit, Contract, Integration |
-| [Bounded latest-value and unavailable behavior (`REQ-GATEWAY-003`)](#req-gateway-003) | Retain only the newest frame and never fabricate missing values | `CURRENT / PARTIAL` | Unit, Contract, Integration |
-| [Bounded TLS VISS read service (`REQ-GATEWAY-004`)](#req-gateway-004) | Serve the accepted read/subscribe profile without blocking simulation | `CURRENT / PARTIAL` | Unit, Component, Contract |
-| [Source identity and selected-Unit evidence (`REQ-GATEWAY-005`)](#req-gateway-005) | Carry run/ego/generation/frame identity through sequential exclusive live VU and PU bindings | `PARTIAL` | Unit, Integration, End-to-end |
-| [Authenticated fail-safe vehicle control (`REQ-GATEWAY-006`)](#req-gateway-006) | Permit one valid owner and safe-stop on invalid or lost control | `CURRENT` | Unit, Component, Integration |
-| [Continuous manual/autopilot handover (`REQ-GATEWAY-007`)](#req-gateway-007) | Switch modes without replacing actor, clock or telemetry and wait for the accepted world-context transition | `PARTIAL` | Unit, Integration, End-to-end |
-| [Independent engineering telemetry view (`REQ-GATEWAY-008`)](#req-gateway-008) | Show Gateway facts without joining the control or service path | `CURRENT` | Unit, Component, End-to-end |
-| [Explicit source-loss state (`REQ-GATEWAY-009`)](#req-gateway-009) | Turn missing, stale or disconnected input into degraded/unavailable status | `PARTIAL` | Unit, Contract, Integration |
-| [Authoritative QM advisory Set boundary (`REQ-GATEWAY-010`)](#req-gateway-010) | Accept only typed non-safety Brake/Tire advisories and reject arbitrary VSS, motion and safety-critical operations | `TARGET` | Unit, Component, Contract, Integration |
-| [Factual advisory status (`REQ-GATEWAY-011`)](#req-gateway-011) | Publish received/rejected Gateway state without a driver-display claim | `TARGET` | Unit, Contract, End-to-end |
-| [Local advisory chronology (`REQ-GATEWAY-012`)](#req-gateway-012) | Correlate local advisory delivery independently of Cloud synchronization without a first-demo latency KPI | `TARGET` | Unit, Integration, End-to-end |
-| [Truthful mode/context engineering projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Expose mode, context, scenario generation/result and reset discontinuity without joining the control path | `TARGET` | Unit, Contract, Integration, End-to-end |
-| [Complete hardware-profile accounting (`REQ-GATEWAY-014`)](#req-gateway-014) | Account for every installed capability without silently losing data before VSS selection | `PARTIAL` | Unit, Contract, Integration |
-| [Actuator command and applied-state traceability (`REQ-GATEWAY-015`)](#req-gateway-015) | Distinguish physical actuator capability, authorized commands and actual applied state | `PARTIAL` | Unit, Contract, Integration, End-to-end |
+| Requirement | Plain-language obligation | Verification levels |
+| --- | --- | --- |
+| [Frame-coherent CARLA acquisition (`REQ-GATEWAY-001`)](#req-gateway-001) | Sample one attributable vehicle frame without mixing source time | Unit, Contract, Integration |
+| [Truthful normalization and provenance (`REQ-GATEWAY-002`)](#req-gateway-002) | Convert native values to defined physical/VSS semantics | Unit, Contract, Integration |
+| [Bounded latest-value and unavailable behavior (`REQ-GATEWAY-003`)](#req-gateway-003) | Retain only the newest frame and never fabricate missing values | Unit, Contract, Integration |
+| [Bounded TLS VISS read service (`REQ-GATEWAY-004`)](#req-gateway-004) | Serve the accepted read/subscribe profile without blocking simulation | Unit, Component, Contract |
+| [Source identity and selected-Unit evidence (`REQ-GATEWAY-005`)](#req-gateway-005) | Carry run/ego/generation/frame identity through sequential exclusive live VU and PU bindings | Unit, Integration, End-to-end |
+| [Authenticated fail-safe vehicle control (`REQ-GATEWAY-006`)](#req-gateway-006) | Permit one valid owner and safe-stop on invalid or lost control | Unit, Component, Integration |
+| [Continuous manual/autopilot handover (`REQ-GATEWAY-007`)](#req-gateway-007) | Switch modes without replacing actor, clock or telemetry and wait for the accepted world-context transition | Unit, Integration, End-to-end |
+| [Independent engineering telemetry view (`REQ-GATEWAY-008`)](#req-gateway-008) | Show Gateway facts without joining the control or service path | Unit, Component, End-to-end |
+| [Explicit source-loss state (`REQ-GATEWAY-009`)](#req-gateway-009) | Turn missing, stale or disconnected input into degraded/unavailable status | Unit, Contract, Integration |
+| [Authoritative QM advisory Set boundary (`REQ-GATEWAY-010`)](#req-gateway-010) | Accept only typed non-safety Brake/Tire advisories and reject arbitrary VSS, motion and safety-critical operations | Unit, Component, Contract, Integration |
+| [Factual advisory status (`REQ-GATEWAY-011`)](#req-gateway-011) | Publish received/rejected Gateway state without a driver-display claim | Unit, Contract, End-to-end |
+| [Local advisory chronology (`REQ-GATEWAY-012`)](#req-gateway-012) | Correlate local advisory delivery independently of Cloud synchronization without a first-demo latency KPI | Unit, Integration, End-to-end |
+| [Truthful mode/context engineering projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Expose mode, context, scenario generation/result and reset discontinuity without joining the control path | Unit, Contract, Integration, End-to-end |
+| [Complete hardware-profile accounting (`REQ-GATEWAY-014`)](#req-gateway-014) | Account for every installed capability without silently losing data before VSS selection | Unit, Contract, Integration |
+| [Actuator command and applied-state traceability (`REQ-GATEWAY-015`)](#req-gateway-015) | Distinguish physical actuator capability, authorized commands and actual applied state | Unit, Contract, Integration, End-to-end |
 
 ## Detailed Requirements
 
@@ -168,7 +159,6 @@ decisions they exercise.
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: frame-aligned snapshot fixtures, rejection counters and live frame correlation
 - Requirement state: D3 design-reviewed
-- D3 implementation snapshot (historical; current baseline above): `CURRENT`
 
 ### Truthful normalization and provenance
 
@@ -186,7 +176,6 @@ decisions they exercise.
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: normal, limit, sign, non-finite and contradictory-value fixtures
 - Requirement state: D3 design-reviewed
-- D3 implementation snapshot (historical; current baseline above): `CURRENT`
 
 ### Bounded latest-value and unavailable behavior
 
@@ -203,7 +192,6 @@ decisions they exercise.
 - Interface: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: store ordering, GNSS freshness, optional-value omission and unavailable read results
 - Requirement state: D3 design-reviewed
-- D3 implementation snapshot (historical; current baseline above): `CURRENT` for data points; complete source-level degraded status belongs to `REQ-GATEWAY-009`
 
 ### Bounded TLS VISS read service
 
@@ -227,7 +215,6 @@ decisions they exercise.
 - Executable contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Required evidence: protocol suite, real mTLS suite, role/selected-Unit negative matrix and bounded-delivery metrics
 - Requirement state: D3 design-reviewed; D4-006 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; current server-authenticated read profile must add accepted mTLS roles and selected-Unit enforcement
 
 ### Source identity and selected-Unit evidence
 
@@ -246,7 +233,6 @@ decisions they exercise.
 - Executable contract: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Required evidence: VISS metadata plus orchestrator-owned selected live Unit binding
 - Requirement state: D3 design-reviewed; D4-005 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `PARTIAL`
 
 ### Authenticated fail-safe vehicle control
 
@@ -265,7 +251,6 @@ decisions they exercise.
 - Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: isolated state-machine suite, local socket permission/lifecycle test and live safe-stop observation
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `CURRENT`
 
 ### Continuous manual/autopilot handover
 
@@ -286,7 +271,6 @@ decisions they exercise.
 - Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: mode-transition suite, stable actor/run/frame identity and visual handover acceptance
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; current same-actor handover, lane validation and automatic-to-manual blend exist, while context-aware obstacle cleanup/reset before Autopilot does not
 
 ### Independent engineering telemetry view
 
@@ -304,7 +288,6 @@ decisions they exercise.
 - Interface: [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: dashboard command, observed VISS-only connection, factual labels and negative inspection for control/KUKSA/Cloud coupling
 - Requirement state: D3 design-reviewed
-- D3 implementation snapshot (historical; current baseline above): `CURRENT` for telemetry; advisory/status extension belongs to `REQ-GATEWAY-011`
 
 ### Explicit source-loss state
 
@@ -322,7 +305,6 @@ decisions they exercise.
 - Required evidence: point omission/unavailable tests, source disconnect/stale/recovery fixtures and dashboard state
 - Executable contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-006 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; exact states and timing are accepted, implementation and live qualification remain open
 
 ### Authoritative QM advisory Set boundary
 
@@ -349,7 +331,6 @@ decisions they exercise.
   safety/motion negative cases with no side effects
 - Executable contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `TARGET`; current all-Set rejection remains correct until the complete accepted endpoints and negative matrix are implemented
 
 ### Factual advisory status
 
@@ -370,7 +351,6 @@ decisions they exercise.
 - Required evidence: status transition/size/schema fixtures, VISS subscription result and factual dashboard labels
 - Executable contract: [Gateway Status schema](../../../contracts/qm-advisory-profile/qm-advisory-status.schema.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `TARGET`
 
 ### Local advisory chronology
 
@@ -389,7 +369,6 @@ decisions they exercise.
 - Interfaces: [advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004), [advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: deterministic timestamp fixtures and a correlated local chronology record distinct from backend synchronization
 - Requirement state: D4-024 shared correlation/chronology design reviewed; implementation and live qualification remain open
-- D3 implementation snapshot (historical; current baseline above): `TARGET`
 
 ### Truthful mode/context engineering projection
 
@@ -428,7 +407,6 @@ decisions they exercise.
 - Required evidence: state/path/type/freshness fixtures including per-sample acquisition freshness and latest-sample gate-time freshness; accepted controller-record schema, peer/permission and exact frame/time join fixtures; bounded missing/drop/duplicate/out-of-order/overflow/expiry negatives; monotonic generation checks; real-frame-only reset discontinuity sequence; runtime-role allowlist; dashboard rendering; and negative proof that neither the dashboard nor Gateway owns the update decision
 - Executable contracts: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 
 ### Complete hardware-profile accounting
 
@@ -451,9 +429,6 @@ decisions they exercise.
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: manifest digest and schema validation, manifest-to-adapter coverage report, optional/unavailable/unsupported cases and qualification-truth rejection
 - Requirement state: D3 design-reviewed; D4-002 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; the current adapter maps the accepted
-  scalar/wheel/GNSS subset, but startup reconciliation and complete target
-  coverage against the canonical profile are not implemented
 
 Acceptance does not require every ingested hardware value to be published by
 VSS/VISS or KUKSA. It requires the Gateway to account for the complete physical
@@ -479,7 +454,6 @@ profile before the Platform Team selects a narrower service-facing contract.
 - Interfaces: [control request (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002), [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003) and [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: capability-versus-authority matrix, valid/invalid command fixtures, command/result/applied-state correlation and negative tests proving that functional services have no vehicle-motion authority
 - Requirement state: D3 design-reviewed; D4-002 contract accepted
-- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; throttle/brake/steer control and applied-control sampling exist, while the complete declared actuator set and execution-status contract are not frozen
 
 ## Unit-Test Obligations
 
@@ -551,7 +525,7 @@ evidence is retained.
 
 ## Open Issues
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

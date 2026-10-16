@@ -17,9 +17,9 @@ package. The template deliberately keeps the requirement statement beside its
 short name and verification intent so a reader does not have to decode a table
 of unexplained identifiers.
 
-## Planned Packages and Order
+## Component packages
 
-All thirteen packages exist. The order below is the original decomposition order;
+All thirteen packages exist. The order below follows component dependencies;
 the final column is the current **implementation scope**, not blanket acceptance
 of every requirement. See the [current implementation matrix](../../architecture/current-implementation.md)
 for owning source and dated evidence, and each package's current baseline/gates.
@@ -30,7 +30,7 @@ for owning source and dated evidence, and each package's current baseline/gates.
 | 2 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway](vehicle-gateway.md) | `GATEWAY` | Strict selected-peer VISS, telemetry, typed advisory and native control implemented; broader negative/dual-role matrix remains |
 | 3 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate](factory-substrate.md) | `FACTORY` | Factory .41 built; installed scripted serial/ignition/offline checks passed; separate current API/UI and native Setup profiles passed; formal matrices remain |
 | 4 | [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac) | [KUKSA Authorization Compatibility](kuksa-authorization-compatibility.md) | `KAC` | Native IAM mapping, private JWT lifecycle and Factory integration implemented; scoped local/offline proof |
-| 5 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform](vehicle-data-platform.md) | `VDP` | V1/V2/V3 common-runtime artifacts, Safe Stop FOTA and V3 advisory implemented; Kit028 scripted progression passed; full separate current API/UI and native Setup profiles passed; formal matrices remain |
+| 5 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform](vehicle-data-platform.md) | `VDP` | V1/V2/V3 common-runtime artifacts, Safe Stop FOTA and V3 advisory implemented; current API/UI and native Setup profiles passed; formal matrices remain |
 | 6 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle](aos-lifecycle.md) | `AOS` | Selected-environment Test provisioning, serial publication/assignment, observation and retirement implemented; native dependency admission remains deferred |
 | 7 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service](brake-health-service.md) | `BHS` | V1 windows, V2 model and V3 advisory implemented; independent calibration and full fault/resource matrix remain open |
 | 8 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product](brake-health-cloud.md) | `BRAKE-CLOUD` | Real ingest/query/reset/cleanup implemented; integrated Presenter is live, standalone Dashboard remains fixtures |
@@ -40,15 +40,20 @@ for owning source and dated evidence, and each package's current baseline/gates.
 | 12 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations](cross-cutting.md) | `CROSS` | Native trust, isolation and scoped offline/recovery proof; complete security/resource qualification not claimed |
 | 13 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance](end-to-end-acceptance.md) | `E2E` | Dated receipts and source gates exist; current 118 API/42 visible UI and separate native Setup profiles passed; broader negative/dossier matrices remain |
 
-D3 review dates and requirement/verification obligations remain preserved.
-Design approval is not implementation or deployment authorization. Historical
-design-review status annotations inside a requirement do not override the
-current baseline and qualification gates.
+## Implementation and qualification
 
-Shared decisions remain in the [D4 register](../d4-decision-register.md).
-Implementation discrepancies are tracked in the [documentation audit](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/documentation-reconciliation-2026-10-07.md),
-including executable-contract drift; they are not silently accepted as a new
-protocol.
+The [current baseline](../../qualification/current-baseline.md) selects exact
+runtime, native Setup and public-consumer evidence. The
+[implementation matrix](../../architecture/current-implementation.md) maps
+owning code and proof; the [protocol map](../../../contracts/implementation-status.md)
+owns amendments and executable-profile drift. These status authorities apply
+to every package, without copying historical kit/version stamps into each one.
+
+State fields record accepted design allocation, not a second deployment-status
+ledger. Accepted requirements, stable test obligations and remaining formal gates
+are preserved. Design approval is not implementation or deployment authorization.
+The [D4 register](../d4-decision-register.md) owns shared design decisions;
+legacy fixtures do not silently redefine live protocols.
 
 ## Stable Identifier Rules
 

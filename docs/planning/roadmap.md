@@ -46,9 +46,46 @@ The single launcher provides:
 | Deferred timing diagnostics | Load-sensitive readiness and VDP-TIMEOUT-01 remain deferred; do not restart them as documentation work |
 
 A successful current engineering campaign is not blanket acceptance of every
-normative requirement. The [distribution plan](active/installable-distribution-and-reproducibility.md),
-[reproduction packet](active/work-packets/human-friendly-reproduction.md) and
-[release-campaign contract](../development/release-campaign.md) own execution details.
+normative requirement. The [release campaign](../development/release-campaign.md)
+owns promotion; [M1 scenarios](../../scripts/qualification/README.md) own execution.
+
+## Fresh developer reproduction
+
+R4 remains an independent proof, not another M1 operator installation. Declare
+a fresh host/workspace, obtain only published inputs and authorized tools/keys,
+and execute the documented [developer route](../getting-started/reproduce-demo.md).
+Record exact source and artifact identities, binary/cache reuse, elapsed time
+and peak disk demand. Exercise the resulting candidate's applicable installation
+and runtime profiles; another DMG's passes do not transfer to it.
+
+The [developer selection](../../workspace/current-developer-build.json) and
+[operator catalog](../../workspace/launcher-catalog.json) are independent.
+Normal developer assembly reuses source-locked simulator/controller inputs
+from the [Dropbox dependency catalog](../../workspace/dependencies/catalog.json).
+It does not promise turnkey fresh Yocto/CARLA/Unreal compilation.
+
+No provisioned VM, credentials, release ledger or hidden maintainer directory is
+a required build input. Preserve receipt, dependency, signing and promotion gates;
+do not export private keys, relocate/restart Docker, bypass security or publish
+automatically. Current builds permit internal or external writable local APFS;
+frozen producer plans retain their own policies and byte identities.
+
+## Execution priorities
+
+1. Complete the independent developer reproduction above.
+2. Close candidate-bound installation/recovery/permission and new-account
+   paths through their explicit independent scenarios.
+3. Close Developer ID/notarization and dependency/source/redistribution review
+   before claiming general-public distribution.
+4. Execute outstanding formal product matrices only within their authorized scope.
+
+Install / Connect / Open belongs to the [Setup contract](../../contracts/distribution-installation/native-setup.md#integrated-user-journey),
+not a pending implementation packet. Scenario execution, private test access,
+serial publication, Safe Stop and final cleanup belong to the M1 scenario guide
+and [execution policy](../governance/rapid-development-and-debugging.md).
+Source, cache and scratch placement follow the [reproduction contract](../../contracts/release-reproduction/README.md).
+Docker's actual backing disk is checked independently and is never moved as a
+build side effect. M1 installation uses its internal storage.
 
 ## Canonical design chain
 

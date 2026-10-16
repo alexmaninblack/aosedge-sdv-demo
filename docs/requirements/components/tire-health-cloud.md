@@ -22,10 +22,6 @@
 - Implementation baseline: `tire-health-cloud` at the candidate source-lock pin; real HTTP/SQLite backend
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Native service input amendment — 2026-09-11
 
 [ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -264,15 +260,10 @@ imply concurrent vehicle evidence.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Testability Boundary
 
@@ -361,7 +352,7 @@ packaged product and protected helper against controlled adjacent components.
 - Flow: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Contract, Integration
 - Evidence: producer manifest, pinned release-set entry, prepared/manifest digest and content-addressed-store verification, exactly-one-entry proof and absence of build/mutation endpoints
-- State: D3 design-reviewed; D4-013 catalogue and storage design accepted; schema implementation remains open
+- State: D3 design-reviewed; D4-013 catalogue and storage design accepted; implementation and executable-profile drift follow the protocol map
 
 ### Complete v1.0 metadata
 
@@ -373,7 +364,7 @@ packaged product and protected helper against controlled adjacent components.
 - Flow: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Contract
 - Evidence: complete/incomplete/malformed catalogue fixtures and exact rendered fields
-- State: D3 design-reviewed; D4-013 metadata design accepted; schema implementation remains open
+- State: D3 design-reviewed; D4-013 metadata design accepted; implementation and executable-profile drift follow the protocol map
 
 The view explains that Service Provider publication is not OEM deployment
 approval and that native pre-transfer Service-to-FOTA VDP Component admission
@@ -389,7 +380,7 @@ is deferred.
 - Flow: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Integration, End-to-end
 - Evidence: D4-010.3 and D4-013 contract/schema validation; confirmation record; exact `tire-sp2` and release-set binding; wrong-profile/candidate/type/path/URL negatives; content-addressed-store and file-exclusion proof; prepared/signed/Service-Version mapping; independent configuration re-read; visible missing-Cloud-digest limitation; current-receipt recovery, no-blind-retry and absence-of-key/PKCS#12-output inspection; same VU/PU Cloud Service Version proof
-- State: D3 design-reviewed; D4-010.3 and D4-013 designs accepted; exact schema implementation plus signer and live SOTA qualification remain open
+- State: D3 design-reviewed; D4-010.3 and D4-013 designs accepted; exact schema/signing/qualification scope follows the protocol map and current gates
 
 Retries after an uncertain result require reconciliation with the Function Team
 pipeline/AosCloud; a browser timeout must not cause blind republishing.
@@ -582,7 +573,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 
 ## Open D4 Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -591,50 +582,6 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
 | Audience and CPU scope | Integrated Presenter provides live results. A standalone Tire dashboard and CPU qualification control/worker are not implemented; CPU control returns NOT_IMPLEMENTED. |
 | Remaining live matrix | Complete migration/corruption/crash, route/LAN-negative, stale-preview/peer preservation and broader dual-role qualification beyond scoped Test receipts. |
 | External ownership | Cloud signing/assignment and native service-to-VDP admission remain outside this backend; current Test proof does not authorize Production mutation. |
-
-## D3 Acceptance Record
-
-The package was design-reviewed and accepted on 2026-08-19. Acceptance fixes
-the following boundaries for implementation planning:
-
-1. Tire Health Cloud is a Function Team 2 product isolated from Brake Health
-   in repository, container, persistent volume, API namespace, fixed helper
-   profile/credential binding, Service Provider identity, data and failure
-   boundary; the native helper implementation itself is common.
-2. The presentation catalogue contains exactly one immutable Tire Health v1.0
-   candidate; source editing, building and repackaging are outside the demo.
-3. Release Candidates and Vehicle Data are separate views. The former delegates
-   protected Service Provider 2 signing/publication; the latter presents only
-   real bounded backend records.
-4. AosCloud remains the lifecycle system of record. Independent OEM Release
-   Authority uses the authorized OEM delivery context for Test deployment and
-   Production rollout outside this product; Function Team 2 separately accepts
-   the exact Validation result.
-5. The dashboard does not fabricate Tire results, expose continuous raw
-   telemetry or hidden truth, or claim Gateway acceptance or driver display.
-6. The demo product is hosted locally on the Apple Silicon Mac as a native
-   ARM64 container with dedicated persistence and loopback browser access. It
-   delegates publication to the common native helper pre-bound to `tire-sp2`;
-   the current file-backed PKCS#12 remains outside Docker and the browser.
-7. The fifteen component requirements and eleven stable unit-test obligations
-   are accepted as the D3 verification baseline.
-
-Version 0.3 was revalidated on 2026-08-22 after D4-010.3 accepted the
-role-bound publication profile, current `aos-signer` 2.0.1 file-backed
-PKCS#12 limitation and independent Cloud reconciliation rule. Technical
-publication remains separate from OEM approval.
-
-Version 0.4 was revalidated on 2026-08-23 after D4-023.3 accepted the fixed,
-identity-bound Tire CPU-isolation control. The current package contains fifteen
-requirements and eleven stable unit-test obligations; live enforcement
-evidence remains required by the design-reviewed D4-023 qualification plan.
-
-The message/API schemas, HTTP transport, SQLite durability model and
-container/network identities are accepted design inputs. Repository framework,
-schema implementation, QEMU-to-container route qualification, helper transport
-implementation and runtime evidence remain open gates. This acceptance does
-not create a repository or artifact and does not authorize signing,
-publication, Cloud mutation or Unit mutation.
 
 ## Change Rules
 
@@ -648,3 +595,10 @@ publication, Cloud mutation or Unit mutation.
   updates requirements, fixtures, tests and evidence together.
 - Adding a future Tire candidate extends the catalogue explicitly; it never
   silently converts v1.0 into an untraceable mutable entry.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/tire-health-cloud.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

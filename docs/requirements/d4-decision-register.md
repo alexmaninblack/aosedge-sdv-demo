@@ -2904,34 +2904,10 @@ only an explicitly designated formal run may retain its sanitized dossier.
 D4-021 is design reviewed. Implementation, interruption tests and two-cycle
 live qualification remain required; this decision authorizes no mutation.
 
-### <a id="d4-w4-review-package"></a>W4 Morning Review Package
-
-Review in this order so that each downstream decision uses an already reviewed
-upstream contract:
-
-1. `D4-016.3` — **accepted 2026-08-23; byte/arithmetic closure accepted
-   2026-08-29**: complete input/invalid/boundary fixtures, eligibility,
-   fixed-point integer model, score/bands, identities/provenance/timestamps,
-   assessment/event schemas, atomic derived admission and crash-safe state;
-   D4-003 still must qualify the scripted stimulus and demo-only timing budget;
-2. `D4-016.4` — **accepted 2026-08-23**: new-transition and persisted-active-
-   condition triggers, sequence, lease/refresh and authoritative Gateway Status;
-3. `D4-016.5` — **accepted 2026-08-23**: Brake readiness axes, requested
-   resource envelope, version transitions, bounded logs and failure isolation;
-4. `D4-017` — Brake local API, durable acknowledgement, SQLite product store,
-   Dashboard truth boundary and exact two-Unit cleanup;
-5. `D4-018` — Tire v1 exact input subset, low-friction exercise, synthetic
-   estimator, hysteresis, assessment/event/advisory, state, queue and quotas;
-6. `D4-019` — independent Tire local API/store/Dashboard and cleanup boundary;
-7. `D4-020` — three prebuilt Mac containers, protected native helper/session
-   capabilities, ports/volumes and the proposed QEMU guest-to-host route; and
-8. the remaining live gates: D4-003 calibration, D4-020 two-VM local route,
-   D4-023 quota proof, real KUKSA/Gateway/backend
-   integration and human acceptance of every candidate above.
-
-For every numbered item the review decision is one of: accept the candidate,
-return it with an exact requested change, or keep it open. No item becomes an
-implementation authorization merely by being reviewed.
+<a id="d4-w4-review-package"></a>
+The completed W4 review agenda is retained in the [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/d4-decision-register.md).
+The accepted decisions and their outstanding verification obligations remain
+in their owning sections; the old agenda is not another execution plan.
 
 ## W5 — Resilience, Connectivity and Resource Isolation
 

@@ -24,10 +24,6 @@
 - Implementation baseline: `tire-health-service` at the demo-v1.1 dependency pin; current V1 product and proof scope below
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Native service input amendment — 2026-09-11
 
 [ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -130,15 +126,10 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Accepted Provisional Resource Envelope
 
@@ -482,35 +473,9 @@ end-to-end tests supplement these obligations; they do not replace them.
 <a id="ut-tire-003"></a>`UT-TIRE-003` is retired with `REQ-TIRE-003` and is
 replaced by [`UT-TIRE-013`](#ut-tire-013).
 
-## D3 Acceptance Record and Version 0.6 Delta
-
-Version 0.2 was accepted after review confirmed that Tire Health must not reuse
-the Brake Health resource profile merely for convenience. The accepted
-provisional profile reflects lower CPU, temporary-storage, file and process
-demand, while preserving a slightly larger persistent model-state allowance.
-It also freezes the normal summary cadence and offline queue capacity as
-separate application-level bounds.
-
-Acceptance does not claim that the values have passed runtime measurement or
-that every logical field maps one-to-one to current Aos service metadata. D4
-must prove the mapping and fit on the selected implementation. Any required
-increase follows the documented Level-B change process rather than silently
-changing candidate metadata.
-
-Version 0.5 preserved that accepted functional and resource model. Version 0.6
-is accepted as the current design baseline. It retires
-`REQ-TIRE-003`/`UT-TIRE-003`, adds
-`REQ-TIRE-013`/`UT-TIRE-013`, and replaces caller-selected broker requests with
-fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. Tire
-Health functional behavior, quotas and single-release demo role are unchanged.
-
-Acceptance of Version 0.6 closes the documentation-level CR-TIRE design
-baseline only. It creates no repository, executable or artifact and does not
-waive D4-003 calibration, implementation review or live qualification.
-
 ## Open D4 Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -533,3 +498,10 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
   requirements, fixtures, tests and evidence together.
 - Adding a future Tire service release does not rewrite v1.0; it creates a new
   immutable candidate with explicit compatibility and state-migration rules.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/tire-health-service.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

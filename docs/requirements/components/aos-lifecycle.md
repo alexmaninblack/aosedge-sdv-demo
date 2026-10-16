@@ -21,10 +21,6 @@
 - Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Purpose
 
 This package defines the AosCore and AosCloud lifecycle behavior that makes the
@@ -81,15 +77,10 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Unit Set and Demo Lane Model
 
@@ -566,43 +557,9 @@ to this package requires stable `UT-AOS-*` IDs before implementation begins.
 | Vehicle external-connectivity lifecycle behavior | [`REQ-AOS-002`](#req-aos-002), [`REQ-AOS-009`](#req-aos-009), [`REQ-AOS-015`](#req-aos-015) | Explicit uncertain/offline state and operation-specific reconciliation for the Unit-to-AosCloud portion of the atomic vehicle fault | Integration and same-Unit disconnect/reconnect evidence |
 | Service-tenant resource isolation | [`REQ-AOS-009`](#req-aos-009) | AosCore/Service Manager is the sole in-vehicle quota-enforcement and monitoring authority; no project resource manager | Fresh exact-instance Cloud usage/status in DMIPS plus separately labelled bound cgroup cap/throttle qualification and unaffected Brake/platform evidence; alert is supplementary |
 
-## D3 Acceptance Record and Version 0.4 Delta
-
-This 0.1 package was design-reviewed on 2026-08-19 after reviewers agreed that:
-
-1. AosCloud is the authoritative lifecycle/audit source but not the engineering release-decision owner;
-2. the Software Delivery Dashboard and Demo Orchestrator remain outside this component boundary;
-3. effective recipients are derived from current pending references across a completely paginated applicable Fleet/OEM Unit scope rather than Unit Set membership alone;
-4. Artifact Verification, Fleet Validation and Campaign are visibly distinct;
-5. current runtime compatibility defense is not presented as future native Cloud admission;
-6. external-platform requirements use the reviewed unit-test exception and mandatory contract/integration proof;
-7. stable Unit Set objects are separated from run-scoped membership and fresh lifecycle objects;
-8. retirement is Cloud identity and empty-set reconciliation before local overlay disposal.
-9. one first-demo control removes the Production Unit's external connectivity; `REQ-AOS-009` owns authoritative same-Unit AosCloud disconnect/reconnect state, while Function Team packages own the simultaneously interrupted backend paths and their synchronization.
-10. AosCore/Service Manager is the sole in-vehicle resource authority; the
-    first tenant-isolation proof caps the actual Tire service CPU cgroup while
-    Brake and the platform graph remain healthy, using external-platform
-    contract/integration evidence rather than project-owned scheduler logic.
-
-Version 0.2 preserved that acceptance. Version 0.3 is a review candidate that
-replaces the retired authorization-interface reference with `IF-AUTH-008` and
-makes clear that Aos IAM remains authoritative while `CMP-KAC` only translates
-its current result. No `REQ-AOS-*` lifecycle semantics change. It does not
-claim platform-feature implementation or authorize provisioning, Cloud
-mutation, update, rollback, log request, retirement or VM changes.
-
-Version 0.4 accepts D4-011 for adapter design. It separates the three
-artifact-publication profiles from `oem-delivery`, freezes the public
-Verification Batch, Fleet Validation, Campaign and Subject-service role/action
-matrix, and requires `/users/me/` effective-permission preflight plus
-authoritative reconciliation without blind retry. Live account qualification,
-D4-012 targeting, D4-013 candidate identity and D4-015 recovery/retirement are
-accepted for design; their listed live qualifications remain open. This delta
-authorizes no Cloud mutation.
-
 ## Open Issues
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -623,3 +580,10 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
   sufficient.
 - If project-owned executable lifecycle logic enters this package, stable
   `UT-AOS-*` obligations are added before implementation.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/aos-lifecycle.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

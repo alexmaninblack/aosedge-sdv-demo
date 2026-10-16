@@ -25,21 +25,12 @@
 - Accepted D4 qualification decision: [D4-026.1–.20 Qualification, Presentation, Update-State, Workspace and Icon/Terminal Policy](../d4-decision-register.md#d4-026)
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Purpose
 
@@ -445,7 +436,7 @@ remain linkable historical records and are not active acceptance inputs.
 <a id="open-d4-gates"></a>
 ## Open Implementation and Qualification Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -454,54 +445,6 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
 | Additional matrices | Complete applicable role/permission negatives, uncertain Cloud result reconciliation, retirement/old-credential checks, service recovery, nonempty-outbox power loss and cold externalOFF ignition separately. |
 | Calibration and performance | Freeze/verify model repeatability and measured readiness bounds before formal claims; observed reconnect timings are sampled bounds, not SLAs. |
 | Dossier and authority | Full parameterized acceptance/dossier and Production/dual-role scope remain broader obligations; do not manufacture a PASS from source tests or alter shared credentials to satisfy a negative test. |
-
-## Version 0.8 Acceptance and Delta
-
-Version 0.8 was accepted as the current D3 design baseline on 2026-08-27. The
-acceptance confirms the six decisions above, the complete stage and proof
-model, and the presenter-workspace cascade through D4-026.20. The gates in the
-preceding section remain implementation and live-qualification prerequisites;
-they do not reopen the accepted system behavior and they are not waived by
-this acceptance.
-
-The previous package was accepted for D3 design review on 2026-08-21 after
-reviewers confirmed that:
-
-1. all six review decisions are confirmed;
-2. every one of the 62 active system requirements is allocated without
-   silently reactivating a retired or deferred requirement;
-3. every stage identifies its entry-gate obligations, observable pass/fail
-   exit and safe abort/reconciliation boundary; exact machine-readable
-   assertions, thresholds and tolerances remain D4 gates;
-4. live, controlled-qualification, documentary and deferred proofs are clearly
-   distinguished;
-5. no E2E scenario duplicates component unit policy or creates a runtime
-   dependency, desired-state database, resource manager or history archive;
-6. VU always precedes identical PU promotion and one live source is bound
-   exclusively and truthfully;
-7. external/destructive actions remain blocked until D4 qualification and
-   explicit authorization; and
-8. the documentation quality gate passes.
-
-Version 0.5 was the review candidate that replaced retired authorization
-interfaces, added `CMP-KAC` bootstrap/reboot/removal proof and recorded the
-trusted OEM Provider assumption. Version 0.6 synchronizes the package with
-`SYS-REL-012`, D4-026.17, `IF-DEMO-002`, the complete D4-026.1–.17 baseline,
-the accepted visible recovery vocabulary and composed presenter-workspace
-acceptance. Version 0.7 adds the right-hand global Demo Lifecycle page and
-bounded Qualification Status under D4-026.18. Stage order, product behavior,
-authority and lifecycle semantics remain unchanged.
-
-Version 0.8 synchronizes the existing composed-workspace acceptance with
-D4-026.19/.20, Interaction Specification 2.5 and the accepted clickable review
-mockup. `REQ-E2E-012` and `AT-E2E-012` now qualify fixed, fully readable team
-context, version-only scrolling and independent Platform/Brake/Tire
-release-scroll restoration on the presenter Mac, consistent icon vocabulary
-in browser-owned surfaces, and a native terminal boundary with no HTML icon
-injection. Product behavior, stage order, authority, interfaces and pass/fail
-semantics are unchanged. This acceptance does not authorize implementation,
-signing, Cloud calls, VM operations, provisioning, deployment, CARLA control,
-retirement or data deletion.
 
 ## Change Rules
 
@@ -514,3 +457,10 @@ retirement or data deletion.
 - An owner package may strengthen its own evidence without changing E2E IDs
   when the accepted system claim, stage order and pass/fail semantics remain
   unchanged.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/end-to-end-acceptance.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

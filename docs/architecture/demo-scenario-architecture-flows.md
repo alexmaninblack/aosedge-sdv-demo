@@ -66,7 +66,8 @@ Cloud checks and installation never initialize it. Client CA/Unit admission,
 system trust, Cloud credentials and source-selection guards are unchanged. See
 the [local Gateway trust contract](../../contracts/distribution-installation/local-gateway-trust.md).
 
-## Current implementation view — 24 September 2026
+<a id="current-implementation-view--24-september-2026"></a>
+## Current implementation view
 
 The later [portable Prepare slice](../../contracts/portable-preparation-inputs/README.md)
 inserts locked artifact validation before the existing catalogue-read/version-
@@ -91,11 +92,9 @@ existing run keeps its backend identity. No implicit image import or engine
 start is inserted into navigation, observation or runtime start.
 
 Current package selection and qualification are owned by the launcher catalog and
-[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
+[current baseline](../qualification/current-baseline.md).
 [Implemented architecture and traceability](current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
-Earlier allocation/implementation statuses in this design are dated review
-history, not a claim that today's services, permissions or UI are absent.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
@@ -1910,114 +1909,6 @@ The following former candidate gaps remain resolvable but are no longer active:
 | <a id="gap-af-14"></a>`GAP-AF-14` | `GAP-AF-23` | Former event Cloud product replaced by Tire Health Cloud product |
 | <a id="gap-af-18"></a>`GAP-AF-18` | Deferred Edge Runtime Performance Qualification | Cloud lifecycle timing and presenter KPIs were removed from first-demo scope; future benchmarking focuses on VM/service startup, recovery, local processing and resource overhead |
 
-## Architecture-Flow Acceptance Record and Delta for Version 2.0
-
-Version 2.0 preserves the accepted M0–R0 lifecycle, functional data flows,
-dashboard evidence, QM containment, offline proof and two independent SOTA
-lifecycles from Version 1.8. It aligns the runtime model with HLA 1.5 and Demo
-Scenario 2.0 by treating KUKSA as a stable factory-installed resource server,
-removing Service JWT issuance from VDP, and allocating the current-release
-translation only to removable `CMP-KAC`. `AF-X-AUTH` now covers fixed-resource
-bootstrap, IAM lookup, private volatile JWT delivery, direct Service-to-KUKSA
-access, renewal, failure, reboot, stop, unregistration and removal. Provider-
-side connectivity is closed by the explicit OEM-platform trust
-assumption rather than a new dynamic authorization mechanism. The complete C2
-cascade was accepted on 2026-08-26. The same review delta incorporates
-D4-010.3 without adding
-a new runtime component: three fixed technical-publication profiles share one
-native helper implementation, current credential custody is local file-backed
-PKCS#12 rather than Keychain-backed, and Cloud re-read separates confirmed
-publication from subsequent OEM approval.
-
-## Architecture-Flow Acceptance Record for Version 1.8
-
-Version 1.8 preserves HLA 1.4 and the accepted lifecycle/data paths while
-narrowing `AF-X-OFFLINE` to one audience-visible loss of Production Unit
-external connectivity. It interrupts Unit-to-AosCloud and installed service-
-to-functional-backend paths together while presenter-to-AosCloud and simulated
-in-vehicle links remain available. `GAP-AF-25` covers fault-scope proof,
-authoritative offline/online state, bounded backend synchronization and same-
-Unit recovery. No component, interface, repository or authority is added.
-The same accepted version also adds `AF-TIRE-RES` and `GAP-AF-26` for one
-bounded audience-visible tenant-isolation proof: AosCore caps the actual Tire
-service instance at its approved CPU quota while Brake Health and the platform
-graph remain healthy. Mac-local backends and aggregate multi-service-per-
-provider quota enforcement are explicitly outside that claim.
-
-## Architecture-Flow Acceptance Record for Version 1.7
-
-Version 1.7 aligns the common release flow with Demo Scenario 1.8 and the
-accepted Function Team release-candidate experience. The existing
-`SW-DASH` component adds a Platform Releases view that delegates protected
-signing/publication of already-built, content-frozen VDP v1-v3 candidates to
-the Platform Team pipeline. Technical publication/verification remains
-separate from VU deployment approval and PU promotion. The Dashboard holds no
-private key, owner decision or Cloud lifecycle state. No HLA component,
-authority, repository or data direction changes.
-
-## Architecture-Flow Acceptance Record for Version 1.6
-
-Version 1.6 preserves the accepted topology and lifecycle flow while exposing
-the complete Brake Health data-product transition. `AF-G2-RT` now proves the
-ring-buffer/trigger/chunk/completion path, `AF-G3-RT` proves synthetic local
-assessment and derived-only normal Cloud messages, and `AF-G4-RT` carries the
-derived result plus advisory fact to the backend independently from the local
-advisory round trip. No new HLA component or authority is introduced.
-
-## Architecture-Flow Acceptance Record for Version 1.5
-
-Architecture Flows 1.5 preserves accepted Version 1.4 behavior and makes the
-cross-run lifecycle explicit. `AF-R0-LC` now separates deprovisioning from Unit
-deletion, proves persistent Unit Sets empty, and hands the next cycle to M1,
-where new identities are assigned to the correct disjoint sets. VM shutdown,
-sequencing and overlay disposal remain Demo Orchestrator responsibilities;
-AosCloud remains authoritative for lifecycle and membership state.
-
-## Architecture-Flow Acceptance Record for Version 1.4
-
-Architecture Flows 1.4 preserves the accepted Version 1.3 lifecycle and data
-flows, adds `AF-X-QM`, and makes the complete evidence basis preceding final
-OEM approval explicit. It was accepted on 2026-08-19
-after reviewers confirmed that:
-
-1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.5;
-2. every component and interface respects High-Level Architecture 1.8;
-3. VU validation and PU promotion use explicit current targeting and identical
-   accepted artifacts;
-4. manufacturing state, Unit identity, software graph, functional data, and
-   operational logs have distinct authorities;
-5. the one-CARLA/two-Unit limitation is explicit and not disguised;
-6. Brake and Tire Health local inference/advisory remain independent of Cloud
-   availability;
-7. no flow claims a production driver HMI, production fleet, arbitrary
-   component runtime, or unrestricted vehicle actuation;
-8. R0 retires disposable identities and overlays instead of rolling `T1` or
-   `G4` back to `G0`;
-9. `T1` follows `G4` only in presentation order, while Function Team 2 remains
-   independent of the Brake Health service and SOTA 1 lifecycle;
-10. every open technical choice is represented as a gap rather than a hidden
-    implementation assumption.
-11. `AF-G3-DEP` is visibly deferred, has no project-side substitute, and cannot
-    be presented until the native AosCloud roadmap capability is qualified.
-12. the drive-mode/world-context transition matrix has one actor and clock
-    owner, explicit obstacle lifecycle and reset evidence, and no reverse or
-    Autopilot obstacle-avoidance claim.
-13. Service Manager and Aos IAM own SOTA instance identity, `AOS_SECRET` and
-    registered permissions; the removable `CMP-KAC` helper only translates
-    them into bounded KUKSA credentials and stores no parallel identity or
-    per-service policy. VDP remains outside this authorization path.
-14. the Factory substrate provides one IAM configuration with
-    `enablePermissionsHandler: true` in provisioning and normal modes, no
-    pre-populated service permission or `AOS_SECRET`, and a non-secret
-    dedicated `kuksa-jwt` IAM/PKCS#11 and verifier-preparation wiring. A unique
-    Unit signer is created after provisioning, while signing material, shared
-    static verifiers and static provider tokens remain outside image and
-    payload artifacts; Broker and KUKSA fail closed until preparation succeeds.
-15. both functional services remain QM, the Gateway is the final authoritative
-    channel boundary, and no advisory is relied upon for a safety goal; and
-16. a Dashboard approval control represents the final evidence-backed OEM
-    decision, never the validation process or an automatic policy.
-
 ## Downstream Component Requirement Gate
 
 System Requirements and Traceability 2.0 and Component Register 2.0 have
@@ -2035,3 +1926,10 @@ component packages. The accepted component sequence remains:
 Each component requirement must cite its parent `SYS-*` requirement, relevant
 `AF-*` flow, interface ID, verification method, and retained evidence. The
 accepted flow baseline authorizes no code, artifact, Cloud, or Unit change.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/architecture/demo-scenario-architecture-flows.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

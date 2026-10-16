@@ -1605,78 +1605,6 @@ qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
 
-## Acceptance Record and Delta for Version 2.0
-
-Version 2.0 preserves the accepted stage order, product behavior, two SOTA
-lifecycles, FOTA sequence, dashboards, offline proof and retirement flow from
-Version 1.9. It aligns those stages with HLA 1.5 by moving KUKSA into the stable
-factory-installed resource-server substrate, removing Service JWT issuance
-from the VDP Component, and introducing the current-release helper only as
-removable platform infrastructure. It adds common bootstrap, renewal, failure,
-reboot, stop and removal semantics for both Services without turning
-credential preparation into an audience-facing feature or changing the
-functional data path. The complete C2 cascade was accepted on 2026-08-26.
-
-The 2026-08-25 Level-B revalidation further clarifies that the three producer
-teams may operate independently on disjoint release resources. It introduces
-no new stage, actor, authority, component or Cloud state; exact conflicts and
-run-exclusive provisioning/source/retirement operations remain guarded by the
-Demo Orchestrator.
-
-## Acceptance Record for Version 1.9
-
-Version 1.9 preserves HLA 1.4, the accepted stage order and all component and
-lifecycle owners. It defines one targeted loss of the Production Unit's
-external vehicle connectivity: Unit-to-AosCloud and service-to-functional-
-backend paths are interrupted together, while presenter-to-AosCloud and
-simulated in-vehicle paths remain available. The demo proves local behavior,
-authoritative Cloud offline/online state, bounded functional-message
-synchronization and same-Unit recovery without reprovisioning, reinstalling or
-restarting. It does not claim loss of the presenter's Internet connection or
-the simulated in-vehicle link. At `T1`, it also proves bounded service-tenant
-isolation by driving the actual Tire Health instance to its approved CPU quota
-under AosCore enforcement while Brake Health and the platform graph remain
-healthy and functional. No project resource manager is added, Mac-local
-backends are outside this proof, and no aggregate multi-service-per-provider
-quota claim is made.
-
-## Acceptance Record for Version 1.8
-
-Version 1.8 preserves HLA 1.4 components, owners, data directions and the
-accepted stage order. It makes the presentation-time release experience
-consistent for all three update lifecycles:
-
-1. every FOTA/SOTA candidate is built, packaged, tested and content-frozen
-   before the presentation;
-2. every VDP candidate declares and verifies its exact compatible OEM Demo
-   Factory Image digest and component-runtime version before publication;
-3. the live demo may explicitly sign and publish only those immutable
-   candidates through the owning team's protected pipeline;
-4. the OEM Software Delivery Dashboard adds a Platform Releases candidate
-   view for VDP v1-v3 without becoming the Platform Team, holding private keys
-   or owning Cloud state, and shows a continuous but non-conflated identity
-   chain from prepared digest through signed digest to the returned AosCloud
-   component object/version; and
-5. validation deployment and promotion remain separate evidence-backed OEM
-   actions after technical publication/verification.
-
-No HLA component, repository, authority or lifecycle is added.
-
-## Acceptance Record for Version 1.7
-
-Version 1.7 preserves HLA 1.4 component boundaries, lifecycle owners and the
-accepted `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` order. It
-refines only the Brake Health product evolution:
-
-1. v1 is an event-triggered recorder with bounded pre-trigger, active-braking
-   and post-trigger telemetry rather than a low-rate report;
-2. v2 uses a versioned deterministic synthetic demo model on-board and sends
-   derived assessments/events rather than normal v1 high-detail windows;
-3. v3 retains the v2 backend result, adds the correlated advisory fact, and
-   keeps the Cloud outside the local advisory path; and
-4. no production diagnostic-accuracy, remaining-useful-life, safety or driver-
-   HMI claim is added.
-
 ## Reference Basis
 
 - [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
@@ -1690,3 +1618,10 @@ refines only the Brake Health product evolution:
   documents Cloud-requested service and crash logs.
 - [AosCore common infrastructure](https://docs.aosedge.tech/docs/aos-core/architecture/common-infrastructure/)
   documents log archiving, compression, and Cloud transmission support.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/demo/staged-post-sop-brake-health-demo-scenarios.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

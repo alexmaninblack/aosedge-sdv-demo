@@ -13,23 +13,13 @@ selected media and exact API/UI/native Setup/public-consumer evidence.
 This package README is a developer/diagnostic reference, not proof that every
 expanded architecture obligation is implemented.
 
-## Ordinary operator path
+## Operator entry and lifecycle ownership
 
-Setup installs its matching Runtime Kit, connects one OEM and associated SP,
-then opens Presenter. Create controller starts a fresh Test and prepared
-backends from the ARM64 Factory base; it does not provision or start CARLA.
-Continue through simulator start, VDP publication, provisioning/Online,
-same-Unit attachment and Safe Stop installation.
-
-Publish each VDP/Brake version only after its predecessor is installed and
-checked. Tire V1 uses VDP V3 inputs. VDP is OEM FOTA; Brake/Tire are independent
-QM SOTA services. Upload, assignment, Running, real results and native advisory
-are separate observations.
-
-Use **Demo controls → Runtime → Stop demo and keep data** for non-destructive
-shutdown and **Start controller** to return to a retained Test. Shared Docker
-stays running. Closing Presenter alone does not stop the demo.
-**Delete Test & start over** is separately confirmed retirement.
+Follow the [operator workflow](../../docs/operations/current-demo-workflow.md)
+for installation, serial VDP/service delivery and non-destructive Stop/Start.
+Setup, Presenter and this CLI share the same core; none creates a second
+vehicle lifecycle. Publication, assignment, Running and functional/advisory
+results remain independently observed facts. Retirement is separate from Stop.
 
 ## Current command discovery
 

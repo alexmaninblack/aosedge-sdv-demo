@@ -946,6 +946,23 @@ def check_current_guidance(root: Path, documents: dict[Path, str]) -> list[Issue
         name = relative(root, path)
         if name in LOCKED_EVIDENCE:
             continue
+        # Current specifications own obligations, not a replay of every version
+        # review. Exact old decisions remain available through immutable Git.
+        current_specification = name.startswith((
+            "contracts/", "docs/requirements/", "docs/architecture/", "docs/planning/",
+        ))
+        if current_specification and re.search(
+            r"^#{2,6}\s+(?:(?:Architecture-Flow )?Acceptance Record(?: and Delta| for Version| and Version)|"
+            r"Review Record for Version|D3 Acceptance Record|Version \d+(?:\.\d+)* Acceptance and Delta)\b",
+            text, re.M,
+        ):
+            issues.append(Issue(name, "completed version-review diaries belong in immutable Git, not current specifications"))
+        if re.search(r"Current implementation status \([^\n]*(?:Kit\d+|Setup\d+)", text):
+            issues.append(Issue(name, "copied historical release status must link to the current protocol map"))
+        if re.search(r"^- D3 implementation snapshot|\| D3 implementation snapshot \|", text, re.M):
+            issues.append(Issue(name, "historical D3 implementation snapshots must not compete with the current baseline"))
+        if re.search(r"Google Drive holds reviewed developer inputs|The next new candidate is", text):
+            issues.append(Issue(name, "current delivery/version selection must come from the source-owned catalogs"))
         if re.search(r"The HTML mockups are design/test fixtures", text):
             issues.append(Issue(name, "retired HTML prototypes must not be described as present"))
         if path.name == "aosvm-apple-silicon.md" and re.search(

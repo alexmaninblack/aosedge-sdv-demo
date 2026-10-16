@@ -39,7 +39,8 @@ or independent controller; destructive removal and native activation remain gate
 | --- | --- | --- |
 | `SYS-DIST-001` | `CMP-ORCH`, `IF-DEMO-001` | `REQ-DEMO-025` |
 
-## Current implementation view — 24 September 2026
+<a id="current-implementation-view--24-september-2026"></a>
+## Current implementation view
 
 Original allocation text describing “unmodified KUKSA” is the design target.
 The current Factory's documented scope-path/source-timestamp compatibility
@@ -47,11 +48,9 @@ patches are an explicit as-built exception, not service-owned authority.
 See the [implementation map](../architecture/current-implementation.md).
 
 Current package selection and qualification are owned by the launcher catalog and
-[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
+[current baseline](../qualification/current-baseline.md).
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
-Earlier allocation/implementation statuses in this design are dated review
-history, not a claim that today's services, permissions or UI are absent.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
@@ -1061,192 +1060,9 @@ Delivery Dashboard.
     `CMP-ENG-DASH` responsibilities; it adds no component, interface,
     repository, authority, lifecycle state or system requirement.
 
-## Acceptance Record and Delta for Version 2.0
+## Review provenance
 
-Version 2.0 preserves the accepted vehicle, Cloud, FOTA/SOTA, functional and
-dashboard decomposition from Version 1.1. It adds transitional `CMP-KAC` and
-`CR-KAC`, retires `IF-AUTH-001` through `IF-AUTH-006`, introduces
-`IF-AUTH-007` through `IF-AUTH-010`, removes Service JWT issuance from VDP,
-and records the explicit OEM-trusted Provider integration assumption. No
-repository is created, no external system is mutated and no future native
-AosCore interface is invented.
-
-D4-010.3 further refines the existing publication interfaces without adding a
-component: one common session-scoped native-helper implementation exposes
-three non-interchangeable profiles (`platform-oem`, `brake-sp1`, `tire-sp2`).
-The installed `aos-signer` 2.0.1 compatibility path reads one host-local
-mode-`0600` passwordless PKCS#12 per profile for signing and mTLS upload; those
-credentials remain outside Git, browsers, containers, VM images and
-deployable artifacts. Technical publication remains separate from the
-authorized OEM decision on `IF-LC-008` through `IF-LC-010`.
-
-D4-011 further fixes that authorized OEM decision as a separately
-authenticated `oem-delivery` context with exact public endpoint, role,
-permission, failure and authoritative-reconciliation semantics. It adds no
-publication profile and no dashboard-owned lifecycle state.
-
-D4-015 further fixes recovery and retirement semantics: dependent SOTA is
-removed first; FOTA may revert only before `ApplyUpdate` and uses a new signed,
-VU-qualified forward-repair release afterward. R0 removes exact `system_uid`
-memberships before Unit deletion and proves Unit-owned Nodes inaccessible
-without inventing a Node-delete API. Live two-Unit qualification remains open.
-
-The 2026-08-25 Level-B revalidation adds `SYS-REL-012` and `CR-DEMO` 0.8
-without adding a component, interface, repository or authority. It replaces a
-local global-lock simplification with exact resource-scoped coordination and a
-bounded per-operation recovery registry; run-wide destructive and source
-operations remain exclusive.
-
-The 2026-08-26 workspace-ownership revalidation adds `IF-DEMO-002` and
-`CR-DEMO` 0.9 without adding an HLA component, repository or authority.
-`CMP-ORCH` owns measured physical window composition and local restoration;
-`CMP-SW-DASH` owns only shared-header meaning and navigation from its existing
-stateless read model. Native/browser surface content remains with its original
-owner, and workspace readiness never becomes Cloud or vehicle lifecycle truth.
-
-The 2026-08-26 global-lifecycle revalidation adds `CR-DEMO` 1.0 and extends
-the existing `CMP-SW-DASH`/`CMP-ORCH` allocation without adding an interface.
-The shared title navigates only the right browser region to Qualification,
-M0/M1/G0, lifecycle/recovery and R0; native launcher preflight/layout actions
-and all authoritative state owners remain unchanged.
-
-The 2026-08-26 team-context revalidation adds `CR-DEMO` 1.1 and synchronizes
-`CR-E2E` 0.8 without changing the component/interface register. Existing
-`CMP-SW-DASH` ownership now explicitly covers fixed team context and
-version-only scrolling at the qualified presenter viewport; all product,
-authority, source and lifecycle boundaries remain unchanged.
-
-The complete Version 2.0 register cascade was accepted on 2026-08-26. Its
-acceptance records component/interface ownership only; implementation,
-qualification and external mutation remain separately gated.
-
-The 2026-08-28 native-IAM transport correction refines existing `CMP-KAC` and
-`IF-AUTH-008` only. It records the released fixed TLS loopback
-`127.0.0.1:8090` client path and explicit denial of DNS, external IP and a KAC
-TCP listener; it adds no component, interface, repository or authority.
-
-## Acceptance Record for Version 1.1
-
-Version 1.1 preserves the Version 1.0 graph and adds no component, interface,
-repository or authority. It updates the `CR-CROSS` allocation for
-[`SYS-OBS-007`](system-requirements-and-traceability.md#sys-obs-007): one
-stateful demo control interrupts the Production Unit's AosCloud and
-functional-backend paths together while keeping presenter-to-AosCloud and the
-simulated in-vehicle network available. It also allocates
-[`SYS-RES-001`](system-requirements-and-traceability.md#sys-res-001) across
-`CR-AOS`, `CR-BHS`, `CR-TIRE`, `CR-DEMO`, `CR-CROSS` and `CR-E2E` without
-adding a component, interface, repository or authority: AosCore caps the Tire
-service CPU quota while Brake and the platform graph remain healthy.
-
-## Acceptance Record for Version 1.0
-
-Version 1.0 preserves the accepted component graph, repository boundaries and
-interface identifiers. It expands `CMP-BRAKE-DASH` and `CR-BRAKE-CLOUD` with
-the accepted prepared-candidate view, protected delegated publication, native
-ARM64 local-demo container, persistent functional data and native macOS
-helper. The earlier Keychain-only implementation assumption is superseded by
-D4-010.3. `CMP-BRAKE-BE` remains authoritative only for functional
-data; AosCloud and the OEM Software Delivery Dashboard retain lifecycle state,
-targeting, approval, deployment and promotion authority.
-
-The accepted Tire Health clarification preserves the same component and
-interface graph: `CMP-TIRE` has one v1.0 candidate on VDP v3. Brake Health owns
-the multi-version evolution story; Tire Health owns the independent second-
-provider lifecycle story. `CMP-TIRE-DASH` and `CR-TIRE-CLOUD` add the accepted
-prepared-candidate view, protected delegated publication, real bounded-result
-presentation, Mac-local ARM64 container, dedicated persistent data and native
-macOS helper without changing HLA ownership or authority. The helper's
-current-release credential custody is defined by D4-010.3 rather than by the
-earlier Keychain-only assumption.
-
-The accepted Platform release clarification also preserves the same component
-and interface graph. `CMP-SW-DASH` now explicitly presents the prepared VDP
-v1-v3 catalogue and delegates protected publication over `IF-LC-001`; it owns
-neither signing keys, the Platform Team release decision, OEM Unit approval nor
-AosCloud lifecycle state. The register was revalidated against Demo Scenario
-1.8 and Architecture Flows 1.7 without adding a component, interface or
-repository.
-
-The accepted Demo Orchestration 0.3, Cross-Cutting Security and Operations 0.1
-and End-to-End Acceptance 0.1 packages close D3 group 6. They preserve the
-accepted graph and authority boundaries while defining safe run setup,
-authoritative Cloud presentation, evidence-backed lifecycle controls,
-sequential VU/PU use, one atomic vehicle-external-connectivity button, one
-AosCore-enforced Tire CPU isolation proof, ordered R0 retirement and the
-complete acceptance-state/evidence model. Exact machine-readable assertions,
-thresholds, tolerances and qualification procedures remain D4 work; this
-acceptance authorizes no implementation or external mutation.
-
-## Acceptance Record for Version 0.9
-
-Version 0.9 preserves the accepted component graph and repositories. It
-clarifies `CMP-BHS`, `CMP-BRAKE-BE`, `CMP-BRAKE-DASH`, `CR-BHS`,
-`CR-BRAKE-CLOUD`, `IF-FUNC-001`, and `IF-FUNC-002` for the v1 event-window and
-v2/v3 derived-message family. These are contract refinements inside the
-existing Function Team 1 direction and authority, not new interfaces or
-components.
-
-## Acceptance Record for Version 0.8
-
-Version 0.8 preserves the accepted Version 0.7 component graph and clarifies
-the retirement boundary. `CR-AOS` owns qualification of authoritative
-deprovisioning, deletion, Unit Set state and membership APIs. `CR-DEMO` owns
-VM shutdown, ordered API use, partial-result reconciliation, overlay disposal,
-next-run provisioning, new identity binding and fresh lifecycle-object guards.
-`CR-E2E` proves the complete `R0 -> M0 -> M1` cycle.
-
-No HLA component or interface is added by Version 0.8.
-
-## Acceptance Record for Version 0.7
-
-Version 0.7 preserves the accepted Version 0.6 component graph, strengthens
-`CMP-GW-ADV` and `IF-ADV-004` as the authoritative QM boundary, and expands
-`CMP-SW-DASH` and `IF-LC-005` to expose the evidence dossier preceding final
-OEM approval.
-
-The baseline was accepted on 2026-08-19 after reviewers confirmed:
-
-1. every HLA 1.4 box has exactly one primary component owner;
-2. every audience-visible dashboard has exactly one authoritative data source;
-3. the three independent FOTA/SOTA lifecycles remain separated;
-4. Function Team 1 and Function Team 2 are peer product domains;
-5. `VU` and `PU` remain runtime roles rather than duplicated component sets;
-6. current, engineering-evidence, target, external and deferred states are not
-   presented as equivalent;
-7. all runtime, functional Cloud, lifecycle and observability boundaries needed
-   by Scenario 1.5, including the `T1` Function Team 2 stage, have interface
-   IDs;
-8. deferred native Cloud dependency admission and the not-yet-implemented
-   Credential Broker are not presented as current behavior;
-9. no component claims a production driver HMI, continuous raw-telemetry Cloud
-   stream, third-party Service Provider, Fleet Operator or production fleet;
-10. the provisional requirement packages can be expanded without changing HLA
-    1.4 or the accepted demo scenarios.
-11. team-owned release decisions, Service Provider publication, OEM-authorized
-    deployment approval, AosCloud state/execution, and stateless demo tooling
-    remain distinct as required by
-    [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
-12. Service Manager and Aos IAM own SOTA instance identity, `AOS_SECRET` and
-    registered permissions; the VDP broker has no parallel identity or
-    per-service policy store.
-13. the Factory Image supplies one IAM configuration with
-    `enablePermissionsHandler: true` independent of provisioning state, no
-    pre-populated service permission or `AOS_SECRET`, and a non-secret
-    signing-key seam, while per-Unit key material and static tokens remain
-    outside immutable artifacts.
-14. both functional services remain QM and no component treats IAM/KUKSA
-    permissions as a safety case or bypasses authoritative Gateway
-    containment; and
-15. OEM approval remains an explicit final decision after evidence review,
-    never an automatic result of tests or a Dashboard-owned state transition.
-
-Component requirements are written and reviewed package by package. The
-[component-package index](components/README.md) is authoritative for the exact
-review state of each current version: an accepted earlier baseline does not
-silently accept a later security or exact-contract delta. `CR-DEMO` 1.1 and
-`CR-E2E` 0.8 are D3 design-reviewed; the latest Factory, KAC, VDP, Aos, Tire
-and Cross-Cutting deltas keep their explicit package gates. Each requirement
-shall cite a named and linked parent System Requirement, Architecture Flow and
-interface, plus a verification method and retained evidence. Implementation
-planning may proceed, but an increment starts only after its exact package and
-acceptance-test inputs are reviewed and explicitly authorized.
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/component-decomposition-and-interface-register.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

@@ -3,11 +3,7 @@
 
 # Software Delivery Dashboard Contracts
 
-Current implementation status (7 October 2026, Kit028 / Setup042 / Factory .41):
-see the [complete protocol map](../implementation-status.md) for this family's
-implemented path, accepted amendments and remaining qualification or executable-
-profile differences. Design lifecycle labels below are not deployment verdicts.
-Historical golden schemas/digests are not rewritten as part of this audit.
+Implementation and qualification: [protocol status](../implementation-status.md).
 
 [`coverage-matrix.v1.json`](coverage-matrix.v1.json) is the sanitized,
 machine-readable catalogue of automotive concerns, demo-stage mappings,

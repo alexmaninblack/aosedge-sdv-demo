@@ -14,14 +14,12 @@ Presenter, CARLA and native Driving Control run as separate applications.
 
 ## Design references for contributors
 
-- [Demo name and scope](demo-name.md).
 - [Staged Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md).
 - [Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md).
 - [Interaction Specification 2.6](mockups/aosedge-demo-interaction-specification.md),
   including the accepted [Test-only Studio amendment](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 - [UI traceability](mockups/aosedge-demo-ui-traceability-register.md).
 - [Interface register](mockups/README.md).
-- [Original visual assets](assets/README.md).
 
 The accepted scenario/interaction documents contain expanded two-vehicle and
 two-provider obligations. Later Test-only and one-associated-SP amendments
@@ -31,3 +29,9 @@ the same as promoting a Test to the separate Production vehicle role.
 The interface register and interaction specification are maintained contracts.
 Standalone HTML prototypes and their tests have been retired to Git history;
 the current implementation and tests belong to Presenter and Demo Control.
+
+## Name and scope
+
+Use **AosEdge Platform - SDV Lab** for the overall demonstration and new
+presentation/video materials, not only for its Brake/Tire examples. This naming
+rule does not rename repositories, packages, Cloud objects or application titles.

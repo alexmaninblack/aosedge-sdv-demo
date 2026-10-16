@@ -9,9 +9,8 @@ apply only to the exact source, media and profile identified by their receipt.
 
 ## Current evidence
 
-- [Dropbox publisher](dropbox-publisher-2026-10-15.md): automatic immutable
-  publication, interrupted-transfer reconciliation and private OAuth handling;
-  source integration does not republish or replace the selected operator DMG.
+- [Publisher evidence and procedure](../development/release-campaign.md#publisher-evidence):
+  scoped sender transport proof; not another product-release acceptance.
 - [M1 runtime and native Setup record](m1-clean-install-e2e-2026-10-14.md):
   the 15 October corrected Production runtime passed 118 API and 42 visible
   browser UI checks with actual native driving input. A separate native Setup
@@ -26,11 +25,11 @@ apply only to the exact source, media and profile identified by their receipt.
 
 ## Provenance without historical report dependencies
 
-The [current build definition](../../workspace/build-definition.json) records
-the original Kit028 journey, source-publication report and R1 inventory by
-immutable Git revision/path and SHA-256. They are not current instructions,
-runtime proof for different bytes or files required in this checkout.
-The compatibility source, payload and dependency identities remain unchanged.
+The [current build definition](../../workspace/build-definition.json) binds
+current source/input locks and independent developer/operator selections.
+The [cache compatibility record](../../workspace/inputs/cache-compatibility.json)
+preserves unchanged input provenance and cache identity; it is not a list of
+historical reports or proof for different runtime bytes.
 
 Other superseded reports were removed from the current tree. Their original
 contents and hashes are recorded by the

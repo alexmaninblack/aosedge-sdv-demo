@@ -4,10 +4,10 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.28
+- Version: 1.29
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
-- Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
+- Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
 
 The [current build definition](../../workspace/build-definition.json), schema 3,
 is standalone. It binds source/input locks, the component policy, maintained
@@ -56,9 +56,10 @@ visible even when a profile consumes them inside a prebuilt package.
 | Developer | Integration, Presenter, Gateway, VDP, services, backends and packaging | Standalone CARLA/Unreal/content, Factory, native host/VM support and private Python |
 | Full source | Developer outputs plus heavy native, simulation and Factory builds | Explicit licensed assets, pinned wheels, OS SDKs and any declared binary-only input |
 
-These are target build scopes, not working end-user build commands. R1 adds only
-a read-only definition validator. R2 owns preparation, download/cache handling
-and build adapters; R4 owns fresh-environment proof. Full source does not mean
+These are build scopes. The [developer guide](../../docs/getting-started/reproduce-demo.md)
+owns the working entry; the tooling below implements preparation, acquisition
+and build adapters. [Independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
+still requires fresh-environment proof. Full source does not mean
 every upstream binary, OS SDK or licensed asset is available as public source.
 Unknown source inputs must remain an explicit gate.
 
@@ -84,7 +85,7 @@ inspection checks ten local Git commit objects, the baseline tag's exact target
 and the 28 unique recipe files at their declared revisions. It does not require
 the current branch or HEAD to equal those revisions, change a checkout, fetch
 missing objects or run a recipe. Lazy fetching and terminal credential prompts
-are disabled. Missing objects fail explicitly; preparation remains R2 work.
+are disabled. Missing objects fail explicitly; source preparation is a separate explicit action.
 
 The gate uses Python 3.10 or newer, the standard library and a deliberately
 bounded JSON Schema subset; unsupported schema keywords fail closed. It works
@@ -93,10 +94,10 @@ demo. Optional kit checking reads at most 8 MiB per metadata file and never
 imports kit code. Full payload verification remains with the existing
 [installation owner](../distribution-installation/README.md).
 
-Schema version 1 intentionally represents engineering candidates only. It
-cannot advertise an approved download or a qualified profile by deleting a
-blocker or toggling a flag. A future release-state extension requires reviewed
-acquisition and qualification evidence; R1 is not that promotion mechanism.
+Definition validity does not advertise a qualified profile by deleting a blocker
+or toggling a flag. [Release promotion](../../docs/development/release-campaign.md)
+requires independently reviewed acquisition and candidate qualification evidence.
+The current operator catalog is separate from this build definition.
 
 ## Artifact delivery boundary
 
@@ -167,8 +168,8 @@ remain distinct gates; this command grants no new readers automatically.
 
 ## Reusable simulation inputs
 
-On 8 October the owner approved extracting the retained, already built macOS
-ARM64 CARLA into independently versioned private Drive dependencies. Normal
+The retained, already built macOS ARM64 CARLA is an independently versioned,
+source-locked dependency, delivered through the current Dropbox catalog. Normal
 developer assembly reuses these bytes; it does not rebuild Unreal or CARLA.
 Three archives separate the simulator and compatible Python API, small native
 host support, and the existing Gateway SDK. The retained host and SDK manifests
@@ -177,8 +178,7 @@ definitions are not rewritten. No Editor, engine source, build cache, Factory,
 credentials or installed demo state is added to these archives.
 
 A separately reviewed dependency lock binds package bytes, SHA-256, selected
-manifest ancestry and compatibility. A separate Drive binding supplies file
-identifiers only. Export validates every selected source member. Acquisition
+manifest ancestry and compatibility. A separate transport binding supplies locators only. Export validates every selected source member. Acquisition
 uses the existing bounded, resumable digest cache, rejects unsafe/extra archive
 members, verifies payload hashes and modes, and publishes extracted inputs only
 after the entire set passes. Repeats validate recorded file identities; changed
@@ -211,8 +211,8 @@ explicit paths. Preparation must select the source-Factory checkpoint, rather
 than interpreting the sparse directory as a complete historical kit. Exact
 member sets, modes, digest checks, selected-volume binding, 90 GiB reserve and
 fail-closed partial-output handling follow the simulation acquisition contract.
-Private Drive bindings contain transport identifiers, not artifact authority.
-An unchanged prepared result works without Google access. Changed prepared
+Transport bindings contain locators, not artifact authority.
+An unchanged verified prepared result needs no provider access. Changed prepared
 files are not adopted or automatically repaired.
 
 This closes a build-input delivery boundary only after its real transfer and
@@ -268,18 +268,14 @@ The ordered chain forwards these explicit selections only to the affected
 owners and keeps a separate invocation identity. A frozen old owner is not
 implicitly upgraded; a new chain must pin owners supporting these options.
 
-The release owner accepted product numbering `MAJOR.MINOR.PATCH`, candidate
-suffixes `-rc.N`, and tags `sdv-lab-v<version>`. The next new candidate is
-`1.2.0-rc.1`; its completed release target is `1.2.0` after the required
-qualification. The corresponding tags are `sdv-lab-v1.2.0-rc.1` and
-`sdv-lab-v1.2.0`. Acceptance of these names does not create a tag or promote
-an artifact. A candidate tag belongs to its frozen source and build record;
-a stable tag requires the completed release evidence.
+Product numbering is `MAJOR.MINOR.PATCH`, candidates use `-rc.N`, and tags use
+`sdv-lab-v<version>`. The [operator catalog](../../workspace/launcher-catalog.json)
+selects the current package; this contract does not predict the next number.
+A candidate tag belongs to its frozen source/build record; a stable tag requires
+completed release evidence. Naming alone neither creates a tag nor promotes media.
 
-Kit, Setup, Factory and Cloud release numbers remain independent traceable
-fields. Historical Kit028 retains `productVersion: null`; it is not renamed
-to the future product version. `demo-v1.1` and `candidate/kit028-setup042`
-remain unchanged.
+Installer, Factory and Cloud release numbers remain independent traceable fields.
+Do not rename historical tags, null-version records or retained artifact identities.
 
 Changing this definition creates a new Git revision. Changing any deployed
 artifact requires a new candidate identity and corresponding qualification;
@@ -310,8 +306,8 @@ not a skip list based on previous green progress flags.
 The repository continuation checks plans, source preparation, exact producer
 storage compatibility and capacity before large input downloads. It forwards
 explicit paths/tool/signing selections to the existing `lab` commands. The
-single-script public route remains gated on actual public input publication;
-the historical producer/storage boundary is unchanged. No pin adoption or
+public route checks input availability and exact source pins before acquisition;
+the selected producer/storage boundary remains enforced. No pin adoption or
 automatic native-partial recovery is added. Success is only
 `CHAIN_BUILT_NOT_QUALIFIED` with the DMG selected from the exact chain receipt,
 never the newest file. Offline fixtures are not a completed real walkthrough.
@@ -460,21 +456,18 @@ catalog discovery does not move any historical pin or qualify a release.
 
 ### Anonymous developer input delivery
 
-On October 10 the owner approved implementing the tested public-reader route
-before a joint walkthrough. Default preparation is anonymous; explicit private
-mode remains available for maintainers. Public-read failure must never trigger
-OAuth, Google CLI installation, account questions or a private transport fallback.
+Default preparation is anonymous; explicit private mode remains available for
+maintainers. Public-read failure must never trigger OAuth, Google CLI
+installation, account questions or a private transport fallback.
 
-The public distribution folder is separate from historical/private artifacts.
-Publication requires explicit owner authorization, read-only link sharing and
-a hash-pinned source-owned `workspace/dependencies/catalog.json` locator. On October 10 the owner
-explicitly authorized public reading of the prepared eight-file folder for the
-launcher walkthrough, after disclosure that the Unreal/Apple/SDK redistribution
-review remains unresolved. This bounded test-publication amendment activates
-`PUBLIC_PIN`; it does not declare license clearance, adopt draft terms or qualify
-a release. The original private folder and immutable source/byte pins remain
-unchanged. The [preparation record](../../docs/development/public-artifact-preparation.md)
-retains the review gaps and the omitted Factory audit separately.
+The source-owned `workspace/dependencies/catalog.json` selects reviewed public
+file locators independently from private maintenance bindings. Publication
+requires explicit authorization, read-only access and a reviewed `PUBLIC_PIN`;
+reader discovery never searches an artifact folder. Existing engineering-preview
+public access does not establish Unreal/Apple/SDK redistribution clearance,
+accept draft terms or qualify a release. The [artifact preparation reference](../../docs/development/public-artifact-preparation.md)
+retains the remaining redistribution/source-notice boundaries. Immutable source
+and byte pins do not change when a transport locator changes.
 
 An absent public URL or record pin still makes the ordinary wizard exit 2 before
 prompts, state changes or tool installation; it is not an invitation for the
@@ -531,8 +524,8 @@ the user's first-use walkthrough remain separate qualification evidence.
 
 ### Dropbox dependency publication
 
-The October 16 owner-authorized migration changes only transport locators for
-the five unchanged source-locked archives. `scripts/publish-dependency-inputs`
+Dropbox delivery binds transport locators for the five source-locked archives;
+changing transport never changes their accepted bytes. `scripts/publish-dependency-inputs`
 uses the existing authorized app-folder publisher and explicit cache/records
 paths. Its fixed `/dependencies` destination is separate from operator releases.
 Archive upload is an explicit kind; the default DMG publisher/parser continues
@@ -548,25 +541,21 @@ back. A completed no-upload repeat reuses the same immutable destination.
 Only a complete five-package report can supply the successor source catalog;
 partial publication does not change reader selection.
 
-The successor record has a distinct immutable ID and canonical pin; old launcher
-pins remain unchanged in their original sources. The five public Drive archive
-copies were retired only after checking the current routes, explicit local inputs
-used by frozen producers, replacement identities and anonymous Dropbox access.
-Historical bootstraps needing the obsolete Drive index must be replaced with
-the current launcher. The source/notice companion, DMGs and local caches are
-preserved. Archive names, source
-identities, extracted-input/cache keys, producer plan, controller image and DMG
-remain unchanged. Current public readers never fallback to private Google
-credentials or the previous provider. This is delivery qualification, not a
-fresh build, installation, license clearance or product-version promotion.
+A changed catalog record needs a distinct immutable ID and canonical pin;
+old launcher pins remain unchanged in their original sources. Obsolete Drive
+indexes are not a supported current public fallback: use the current launcher.
+Preserve source/notice companions, supported DMGs, input identities and verified
+caches. Public readers never fall back to private Google credentials or another
+provider. Delivery proof is not a fresh build, installation, license clearance
+or product-version promotion.
 
 ## Explicit build storage
 
 The October 9 owner amendment permits an explicitly selected writable local
 APFS workspace on an internal or external disk. This is a build-tool policy
 change, not a release promotion. Earlier external-only campaign evidence and
-frozen producer commits retain their original meaning. The new implementation
-and regression fixtures await execution; no internal-disk build is qualified.
+frozen producer commits retain their original meaning. Storage-policy checks do not establish a completed internal-disk build;
+independent fresh-host reproduction remains unqualified.
 
 Resolve the actual filesystem device before probing volume metadata: macOS
 `/Users` firmlinks do not identify the writable Data mount through lexical
@@ -638,7 +627,8 @@ retained through Git history, not a growing hard-coded runtime allowlist.
 The seventeen-step dependency order, producer storage checks, owner reserves
 and separately sealed developer output policy remain unchanged.
 
-## R2 build tooling boundary
+<a id="r2-build-tooling-boundary"></a>
+## Build tooling boundary
 
 The build-only [lab](../../lab) entry point implements `plan`, `prepare`, `status`,
 `verify`, `build`, `cache` and `space`. An explicit selected storage root holds state, exact
@@ -653,7 +643,8 @@ report complete without the profile's required verified inputs. `status` and
 `plan` distinguish source readiness, artifact readiness, supported target builds
 and full-profile qualification. They never start or install the demo.
 
-Google Drive acquisition consumes a separate non-secret binding of release
+The default Dropbox acquisition follows the anonymous contract above. Explicit
+legacy Google Drive acquisition consumes a separate non-secret binding of release
 digest, artifact name and file ID. Expected size/digest come from the release,
 not the binding. A short-lived authorized OAuth token may be supplied through
 an inherited file descriptor; it is not a command argument, logged value or
@@ -758,7 +749,7 @@ application and independent source pin. Neither target launches Setup or the
 demo. Compiler scratch, assembly and media staging remain on the selected
 volume. A signed engineering candidate is not notarized distribution
 or installation qualification.
-See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
+See [specialist commands and scope](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.
 
 ### Ordered developer chain
@@ -808,15 +799,11 @@ The public launcher selects the schema-2 successor plan described above instead
 of the historical output-pin route. Both routes keep the same owner ordering,
 source isolation, result verification and failure preservation rules.
 
-The public `r4` plan selects the committed scratch-aware owner for every producer
-role, retaining all seventeen steps and the same source/input pins. This activates
-the temporary-storage amendment in actual worker checkouts, not only in the
-launcher's current source. Historical `r1`–`r3` plans remain unchanged.
-
-The M1 correction plan `r5` changes only the components producer to the committed
-public-source context fix. It preserves all seventeen steps, component/source
-pins and the other producer roles. Capacity guards are unchanged. The public
-launcher stays on its previous plan until the corrected candidate is checked.
+The [current developer selection](../../workspace/current-developer-build.json)
+binds the reviewed plan and its exact producer roles. Scratch/context fixes are
+effective only in those selected committed owners, not merely in the launcher's
+working tree. Previous plan revisions retain their original inputs and receipts;
+they are not competing current defaults or silently upgraded producers.
 
 The complete chain requires explicit retained kit/SDK inputs on the bound volume,
 declared build tools, a short same-volume test directory and an authorized signing

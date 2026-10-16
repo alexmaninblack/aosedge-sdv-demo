@@ -3,11 +3,7 @@
 
 # Platform FOTA Safe Stop Contract
 
-Current implementation status (7 October 2026, Kit028 / Setup042 / Factory .41):
-see the [complete protocol map](../implementation-status.md) for this family's
-implemented path, accepted amendments and remaining qualification or executable-
-profile differences. Design lifecycle labels below are not deployment verdicts.
-Historical golden schemas/digests are not rewritten as part of this audit.
+Implementation and qualification: [protocol status](../implementation-status.md).
 
 - Architecture decision: [ADR 0014](../../docs/architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Contract version: 1.1.1

@@ -11,7 +11,7 @@
 
 ## Integrated connection accepted on 11 October 2026
 
-The [integrated scenario](../../docs/planning/active/work-packets/integrated-setup-scenario.md)
+The [integrated scenario](native-setup.md#integrated-user-journey)
 adds one explicit Connect intent above the low-level first-use operations. Both
 candidate roles and their association/delivery permissions are authenticated
 before reference save. Save uses the existing writer and a metadata/config/

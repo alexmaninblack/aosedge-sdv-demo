@@ -13,11 +13,11 @@
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Authority: the user approved implementation after reviewing the installation
   proposal and explicitly retaining one OEM and one SP for Brake and Tire.
-- Parent: [Distribution plan](../../planning/active/installable-distribution-and-reproducibility.md)
+- Parent: [Distribution plan](../../planning/roadmap.md)
 
 ## Decision
 
-On 11 October the user authorized the [integrated Setup scenario](../../planning/active/work-packets/integrated-setup-scenario.md): automatic default
+On 11 October the user authorized the [integrated Setup scenario](../../../contracts/distribution-installation/native-setup.md#integrated-user-journey): automatic default
 installation, one authenticated OEM/SP Connect action, bounded missing-SP
 repair without Test deletion, paired token enrollment with official registration
 handoff, and a signed per-user persistent launcher. Reuse all existing owners;

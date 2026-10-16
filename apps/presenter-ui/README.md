@@ -18,39 +18,24 @@ restyled. The shared header contains brand, accepted vehicle assignment and
 no session/configuration controls; team navigation and the single Demo controls
 entry belong to the right panel, including the native browser window.
 
-### Operator flow
+### Operator flow and component transitions
 
-1. Full story: inspect Factory firmware (choose only when multiple images are
-   available), Create controller, then start the
-   detached simulator. Create prepares Test and its backends, not Production;
-   it does not provision. Connect to that Test only after provisioning/Online,
-   starting stationary in Manual.
-2. Platform: choose a capability profile, Prepare, Sign & publish. Release
-   allocation stays in Demo Control. Publish before Provision supports the
-   warehouse scenario; no forced downgrade or batch-approval step is added.
-3. Provision to Test / Continue registration completes only the remaining
-   native stages. Cloud Online is not inferred from local connectivity.
-4. VDP installation follows native Safe Stop. Installed and Pending are Cloud
-   facts; VDP process state is **Not reported by Cloud**.
-5. Brake/Tire: Prepare, Sign & publish through the configured Service Provider.
-   The first READY release exposes Assign to Test: Demo Control first runs
-   `service runtime-prepare test`, then OEM binds the dedicated retained Group
-   Subject and exact service identity, preserving its peer. Preparation failure
-   prevents assignment; unchanged inputs are reused without an SM restart.
-   Later higher releases use only Publish. No service update requires Safe Stop.
-6. Backend cards open product results; Aos Cloud opens Software/Resources.
-   Installed component/service details and Manage releases are separate actions.
-   Preparation, publication, assignment and running have separate observed stages.
-7. Demo controls defaults to Runtime. Pause with Safe Stop while the controller
-   stays running. Stop demo and keep data stops the owned Test simulator, VM and
-   two backends, preserving identity, disk, models and history. Docker Engine
-   stays running. A stopped controller offers Start controller without Create,
-   provisioning or republication; the guide then leads through simulator and
-   Manual connection readiness. Ignition recovery remains separate.
-8. Delete Test & start over is explicitly destructive, under Delete this Test.
-   It uses the existing retirement owner, not the preservation stop. Factory
-   originals, Cloud releases and release continuity survive; Production remains
-   untouched. Unknown or conflicting outcomes block both stop and deletion.
+The [operator workflow](../../docs/operations/current-demo-workflow.md) owns the
+ordinary action sequence and Stop/Start/Delete semantics. This component keeps
+presentation and handler mechanics distinct from that user guide:
+
+- Create prepares only the Test and its backends; provisioning remains separate.
+  Simulator connection requires the provisioned/Online Test and starts stationary
+  in Manual. Platform publication before Provision supports the warehouse story.
+- Demo Control allocates releases. The first READY service release exposes Assign
+  to Test: it calls `service runtime-prepare test`, then the OEM binds the retained
+  Group Subject and exact service identity without replacing its peer. Preparation
+  failure blocks assignment; unchanged inputs reuse preparation without SM restart.
+  Later higher releases use Publish only. QM SOTA does not require Safe Stop;
+  platform FOTA does.
+- Backend cards open real product results; Aos Cloud opens authoritative Software
+  and Resources. Installed details and release management are separate actions.
+  Preparation, publication, assignment and Running remain different observations.
 
 Quick preparation is a pre-Create alternative under Advanced preparation,
 composing the existing Test-only sequence. Its recorded recipe survives reload
@@ -138,3 +123,13 @@ Use the [current baseline](../../docs/qualification/current-baseline.md) for
 release-specific test results and the
 [release campaign](../../docs/development/release-campaign.md) for publication.
 Neither belongs to the operator's installation checklist.
+
+## Visual assets
+
+Presenter owns its icons and [selected artwork](src/assets/studio/automotive-b2.png).
+Only original, license-cleared assets belong in public source. Keep editable
+sources with exports when applicable; preserve exact checks in the
+[public visual inventory](../../workspace/public-visual-assets.json).
+Do not commit private correspondence, partner screenshots, credentials,
+proprietary references or local human-input files. Superseded concept boards
+and generation records remain in Git, not another active assets directory.

@@ -3,11 +3,7 @@
 
 # Bounded service function observation
 
-Current implementation status (7 October 2026, Kit028 / Setup042 / Factory .41):
-see the [complete protocol map](../implementation-status.md) for this family's
-implemented path, accepted amendments and remaining qualification or executable-
-profile differences. Design lifecycle labels below are not deployment verdicts.
-Historical golden schemas/digests are not rewritten as part of this audit.
+Implementation and qualification: [protocol status](../implementation-status.md).
 
 Accepted semantics: decisions 1A and 2A, 18 September 2026. The
 [v3 executable contract](v3-contract.md), closed schema, producers, backend

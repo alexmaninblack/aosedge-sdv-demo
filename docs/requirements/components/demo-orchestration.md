@@ -27,9 +27,9 @@
 - Prepared D4 functional/hosting review candidates: [Brake Cloud API](../../../contracts/brake-cloud-api/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
 
-## Implementation-status reading rule — 24 September 2026
+## Portable installed execution
 
-Post-baseline distribution realization (26 September): the
+The
 [portable preparation input contract](../../../contracts/portable-preparation-inputs/README.md)
 implements the user-accepted no-source-checkout delivery direction. Its
 pre-allocation integrity/no-build/fail-closed tests supplement the existing
@@ -52,8 +52,6 @@ Absent selections preserve development behavior; invalid selections cannot
 fall back, send credentials to a worker or silently replace a recorded backend.
 Existing authority, asynchronous observation, attempt/reconciliation, exact
 container ownership and data-retention obligations remain authoritative.
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
 ## Native service input amendment — 2026-09-11
 
@@ -94,7 +92,7 @@ blocks without rotation. Cloud identities and client mTLS remain distinct.
 <a id="req-demo-025"></a>
 
 - ID: `REQ-DEMO-025`
-- Statement: The installed adapter shall bind one explicit private instance to the executing installed program for the invocation, read code/contracts/locked input groups from that version, and write all existing state and generated artifacts beneath the instance. It shall retain developer mode unchanged without instance selection; installed mode shall reject missing inputs, foreign artifact overrides, unsafe/unknown markers, path overlap and inherited developer credential defaults. A fresh instance shall not reuse the developer VM-password Keychain item. The [explicit Test qualification profile](../../planning/active/autonomous-m1-qualification.md), accepted on 10 October, may supply the locally configured development Factory password only for its bound instance, Factory digest and staging Test; it is never shipped or inferred from developer state. Existing Cloud, native-process, journal and publication guards remain authoritative; selecting paths never implicitly activates an update or reports the demo ready.
+- Statement: The installed adapter shall bind one explicit private instance to the executing installed program for the invocation, read code/contracts/locked input groups from that version, and write all existing state and generated artifacts beneath the instance. It shall retain developer mode unchanged without instance selection; installed mode shall reject missing inputs, foreign artifact overrides, unsafe/unknown markers, path overlap and inherited developer credential defaults. A fresh instance shall not reuse the developer VM-password Keychain item. The [explicit Test qualification profile](../../../scripts/qualification/README.md#unattended-test-access), accepted on 10 October, may supply the locally configured development Factory password only for its bound instance, Factory digest and staging Test; it is never shipped or inferred from developer state. Existing Cloud, native-process, journal and publication guards remain authoritative; selecting paths never implicitly activates an update or reports the demo ready.
 - Parent: [separate installed data authority](../system-requirements-and-traceability.md#sys-dist-001).
 - Flow: [distribution entry](../../architecture/demo-scenario-architecture-flows.md#af-dist-entry).
 - Components/interfaces: `CMP-ORCH`, `IF-DEMO-001`.
@@ -103,7 +101,7 @@ blocks without rotation. Cloud identities and client mTLS remain distinct.
 
 <a id="ut-demo-025"></a>
 
-The [integrated Setup scenario](../../planning/active/work-packets/integrated-setup-scenario.md),
+The [integrated Setup scenario](../../../contracts/distribution-installation/native-setup.md#integrated-user-journey),
 accepted on 11 October, additionally requires a default path-free install,
 authenticated one-action OEM/SP connection, bounded same-Test missing-SP repair,
 paired token enrollment and a persistent signed launcher. Installation, Docker,
@@ -368,15 +366,10 @@ demo-run history.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Testability Boundary
 
@@ -857,7 +850,7 @@ proof; they do not replace these isolated decisions and failure branches.
 
 ## Open D4 Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -888,102 +881,6 @@ Acceptance authorizes D4 contract design only. It does not authorize code,
 repository mutation, signing, Cloud calls, VM operations, provisioning,
 deprovisioning, CARLA control or data deletion.
 
-## D3 Acceptance Record
-
-Version 1.1 was revalidated on 2026-08-26 after D4-026.19 accepted the fixed
-team-context and version-only-scroll presentation refinement. `REQ-DEMO-023`
-and `UT-DEMO-021` now keep the one-line team purpose, compact Release Authority
-line, current-state summaries and team evidence panels visible while only the
-release/version region scrolls, with independent per-team scroll/focus
-restoration. No new requirement, component, interface, authority, lifecycle
-state or external mutation is introduced.
-
-Version 1.0 was revalidated on 2026-08-26 after D4-026.18 fixed the global
-right-hand Demo Lifecycle workspace. New `REQ-DEMO-024` and `UT-DEMO-022`
-assign Qualification Status, M0/M1/G0, current lifecycle/recovery and R0
-composition to the existing stateless Dashboard view, keep launcher preflight
-and layout restoration native, preserve the fixed left evidence workspace and
-create no fourth producer or new HLA component. The package now contains
-twenty-three active requirements and twenty-one active unit-test obligations.
-
-Version 0.9 was revalidated on 2026-08-26 after D4-026.17 fixed composed-
-workspace ownership. New `REQ-DEMO-023` and `UT-DEMO-021` assign physical
-window composition, proof and safe restoration to `CMP-ORCH`/Presenter
-Launcher, while `CMP-SW-DASH` owns shared-header meaning and navigation from
-its existing stateless browser read model. Surface owners retain content;
-workspace recovery changes no Cloud, VM, Unit, vehicle or release state. The
-package now contains twenty-two active requirements and twenty active unit-
-test obligations, adds only the `IF-DEMO-002` interface refinement and leaves
-the HLA component graph and authorities unchanged.
-
-Version 0.8 was revalidated on 2026-08-25 after the Interaction Specification
-Section 2 review corrected the earlier demo-wide mutation lock. New
-`REQ-DEMO-022` and `UT-DEMO-020` bind D4-021.2/.3 contract 1.1.0: Platform,
-Brake and Tire operations may proceed on disjoint exact resource keys, while
-overlapping resources and run-exclusive provisioning/source/retirement/R0
-remain blocked. Restart reconciles every non-terminal entry independently,
-helper capacity affects only one request and no automatic cross-team queue is
-introduced. The package now contains twenty-one active requirements and
-nineteen active unit-test obligations without changing the HLA graph,
-interfaces or authorities.
-
-Version 0.7 was revalidated on 2026-08-22 after D4-011 accepted the current
-Cloud role/action matrix. `REQ-DEMO-005`, `006`, `008`, `UT-DEMO-005` and
-`UT-DEMO-008` now bind Unit-affecting operations to the separately
-authenticated `oem-delivery` context, require `/users/me/` role and
-`effective_permissions` preflight, distinguish public API errors and make no
-server-idempotency claim. Every ambiguous mutation remains `UNCERTAIN` until
-an authoritative re-read proves the outcome; lost create/upload identity
-mapping remains D4-013 work.
-
-Version 0.6 was revalidated on 2026-08-22 after D4-010.3 accepted the
-current-demo artifact-publication profile. `REQ-DEMO-016`, `REQ-DEMO-019`,
-`UT-DEMO-015` and `UT-DEMO-017` now bind Platform FOTA publication to
-`platform-oem`, forbid caller-selected profile/path/URL input and record the
-installed `aos-signer` 2.0.1 file-backed PKCS#12 limitation. Three local
-mode-`0600` credentials remain outside Git, dashboards, containers, VM images
-and deployable artifacts; `PUBLISHED` still requires an independent Cloud
-re-read and never grants OEM Unit approval. Exact helper wire/result and Cloud
-reconciliation lookup remain implementation gates.
-
-Version 0.3 was revalidated on 2026-08-20 after the service-tenant isolation
-proof was accepted. `REQ-DEMO-021` and `UT-DEMO-019` define one bounded
-start/stop action for a prepared CPU load inside the actual Tire instance and
-authoritative presentation of AosCore/AosCloud quota, usage and health facts.
-The Dashboard and Orchestrator never set or enforce service quotas; Brake and
-the shared platform must remain healthy and functional. Mac-local backends and
-aggregate multi-service-per-provider quota enforcement are outside the claim.
-The package now contains twenty active requirements and eighteen active unit-
-test obligations.
-
-Version 0.2 was revalidated on 2026-08-20 and cascaded on 2026-08-23 after the
-complete vehicle-connectivity design was accepted. `REQ-DEMO-020` and
-`UT-DEMO-018` define one stateful control for the currently selected VU/PU;
-the normative story uses PU. D4-022.1 changes only the selected VM's external
-QEMU plane, interrupting AosCloud and installed service-backend paths together
-while the other VM, presenter and in-vehicle plane remain available. Partial
-channel state is never accepted. D4-022.2/.3 freeze probe, UI, desired-state,
-journal, reconciliation and compensation behavior. D4-022.4 requires two live
-cycles per role, controlled negative cases and live-qualified operational
-bounds before acceptance, retaining one sanitized qualification record but no
-ordinary demo-run history. The change adds no lifecycle authority, product
-component or per-channel switch.
-
-This revalidation authorizes D4 contract design only. It does not authorize
-implementation or external mutation.
-
-### Version 0.1 acceptance
-
-Version 0.1 was accepted on 2026-08-20 after reviewers confirmed all package
-acceptance conditions above. The acceptance closes eighteen active component
-requirements and defines sixteen active unit-test obligations; retired
-`REQ-DEMO-012` and `UT-DEMO-012` remain traceable. Exact contracts, API
-schemas, packaging choices and external qualification remain D4 work.
-
-This acceptance authorizes D4 contract design only. It does not authorize
-implementation, signing, AosCloud calls, VM or CARLA operations, provisioning,
-deprovisioning or data deletion.
-
 ## Change Rules
 
 - Editorial clarification preserves stable `REQ-DEMO-*` and `UT-DEMO-*` IDs.
@@ -994,3 +891,10 @@ deprovisioning or data deletion.
   updates requirements, fixtures, tests and evidence together.
 - Implementation names may change, but accepted obligation IDs remain stable
   until deliberately retired.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/demo-orchestration.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

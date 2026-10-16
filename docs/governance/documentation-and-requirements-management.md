@@ -16,6 +16,21 @@ engineering as architecture, scenarios, requirements and implementation
 evolve. Markdown remains the source of truth; no parallel requirements
 database is introduced at the current project scale.
 
+## Documentation ownership
+
+This integration repository owns cross-system architecture, scenarios,
+requirements, operations, contracts and end-to-end evidence alongside their
+orchestration. Component implementation documentation remains with its owner:
+Gateway/control in `carla-ego-runtime`, vehicle data/FOTA in
+`aos-vehicle-platform`, Brake and Tire in their independent service repositories,
+and fork-specific material in CARLA/Unreal. Do not create a parallel documentation
+repository or duplicate a component's normative instructions here.
+
+Maintain diagrams in their owning document, or keep editable sources with their
+reviewable exports. Private/proprietary references stay outside public source.
+Git preserves retired decisions and completed rename/migration records; the
+working tree has no active archive or parallel old baseline.
+
 ## Canonical Information Chain
 
 | Information | Canonical owner |

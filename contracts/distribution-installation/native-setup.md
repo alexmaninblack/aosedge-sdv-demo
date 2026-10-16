@@ -9,48 +9,166 @@
 - Parent: [installation](README.md), [installed state](installed-state.md),
   [version selection](version-selection.md)
 
-## Integrated journey accepted on 11 October 2026
+<a id="integrated-journey-accepted-on-11-october-2026"></a>
+## Integrated user journey
 
-The [authorized scenario](../../docs/planning/active/work-packets/integrated-setup-scenario.md)
-supersedes the ordinary presentation of the separate engineering actions below;
-their transaction and authority constraints remain. Normal screens are Install
-SDV Lab, Connect to Aos Cloud and Open SDV Lab. The fixed sibling Runtime Kit is
-the only media source. Defaults are `~/AosEdge SDV Packages` and `~/SDV-Lab-Data`;
-Advanced may change the package store, never relocate existing private state.
+This is the current ordinary Install / Connect / Open contract. The engineering
+operations below are reusable engines, not additional required screens.
 
-`setup-status` reads validated selection and saved certificate references,
-without runtime start or cached readiness. `setup-install` performs existing
-preflight and local Docker validation before install, prepare and backend
-transactions. Existing receipts govern repeats and uncertain responses. A
-retained run may only observe already available backend images, never import
-missing images through this first-use action.
+The operator receives one complete DMG, installs SDV Lab, connects one OEM and
+one associated Service Provider, then opens Presenter. Setup hides packaging
+and storage mechanics while preserving their independent verification. A
+complete installation is not a manufactured or provisioned vehicle.
 
-`install-launcher` installs only the running signed Setup bootstrap at
-`~/Applications/AosEdge SDV Lab.app`. Independent pin, stable identifier and
-signature team must match before/after copying. Replace only a same-identifier,
-same-team signed prior launcher; preserve foreign or active applications. Stage
-on the destination volume, validate, then atomically rename. No duplicate kit
-or credentials. Reopen validates existing selection without requiring media.
-The fixed `.AosEdge SDV Lab.previous.app` predecessor is owned only when its
-identifier/team signature matches the running Setup. After interruption, restore
-it if the target is absent, or remove it only after the target's matching pin
-and signature are verified and both paths have no active owner. Unknown or
-ambiguous predecessors block without deletion. Launcher copying uses its own
-private same-volume transaction directory; it is not general build scratch.
+### First opening
 
-`cloud-connect` is one explicit intent: private local pair inspection,
-authenticated roles/association/permissions, atomic reference save, and bounded
-creation of the agreed absent model/Test-set through CloudSetup. No Unit,
-provisioning or publication. The bounded retained-Test SP repair follows
-[Cloud first use](cloud-first-use.md). Low-level actions remain compatible for
-diagnostics, not ordinary required clicks. Paired token enrollment uses fixed
-staging/production endpoints and existing per-role receipts; official signup,
-email and terms are explicit Cloud interactions, not anonymous API registration.
+The mounted DMG contains **AosEdge SDV Lab Setup**, **Runtime Kit** and **Start
+Here**. Opening Setup displays the product name, a short purpose statement,
+three numbered steps and one primary action. The default store is
+`~/AosEdge SDV Packages`, private state is `~/SDV-Lab-Data`, and the persistent
+launcher is `~/Applications/AosEdge SDV Lab.app`. Do not ask for those paths.
+Advanced settings may change the package store before installation. Private
+state remains internal; existing instances are never moved implicitly.
 
-Readiness requires fresh independent local, Docker and Cloud observations.
-Copy progress uses actual bytes; other phases are named indeterminate states.
-The launcher opens Presenter, not CARLA/a controller. Cold controller resume,
-notarization and distribution remain separately qualified gates.
+Read only the fixed sibling kit. Do not search mounted volumes, downloads,
+developer checkouts or old kits. If no validated installed selection exists and
+media is missing, say **Open Setup from the complete SDV Lab DMG**. If the media
+does not match the independent pin, say **This installer and Runtime Kit do not
+match**. Preserve existing files in both cases.
+
+### Step 1 Install SDV Lab
+
+The primary button is **Install SDV Lab**. It checks Apple silicon and supported
+macOS, writable storage and required capacity, then checks the existing local
+Linux arm64 Docker Engine before copying. Missing Docker displays **Install
+Docker Desktop**, opens only the official installation page on explicit intent,
+and offers **Check again**. An unavailable Engine asks the operator to start
+Docker; Setup neither restarts it nor opens Dashboard when it is already running.
+
+Run the existing preflight, verified installation, private-instance preparation,
+version selection and backend-image preparation sequentially. Copying shows a
+real byte progress bar. Other phases show a named indeterminate progress state;
+do not fabricate percentages or time estimates. Finish by installing the small,
+signed persistent launcher, without copying the Runtime Kit again. Replace only
+an existing same-identifier, same-team signed launcher. A foreign application,
+active selection lease, pending transaction or incompatible state blocks safely.
+
+The completed screen says **Installed** and advances to Cloud access. It does
+not say the vehicle is ready, does not create a vehicle journal, and does not
+start Presenter, CARLA, a VM or backend containers. Backend images remain
+Docker's independently observed state, not a stored boolean.
+
+### Step 2 Connect to Aos Cloud
+
+Offer **Use existing certificates** and **Get new certificates**. The first
+route has exactly two file inputs: OEM certificate and Service Provider
+certificate, then **Connect**. A native file picker saves no key contents. The
+certificate Organization determines the domain; filenames and issuer names
+do not. Show **Staging** or **Production** with the actual domain after inspection.
+For other valid domains show the domain, not a guessed environment.
+
+Connect inspects both private RSA PKCS#12 files, authenticates both roles and
+their association, and checks component/service delivery permissions before
+saving the pair. File/configuration/selection changes invalidate the result.
+One atomic write stores references and authenticated public owner IDs through
+the existing writer. Connect may prepare only the fixed absent Factory model
+and empty Test verification set, using the existing durable attempt receipts.
+It creates no Unit and publishes no package. Occupied or conflicting objects
+are errors, not an invitation to delete or adopt them.
+
+Show specific outcomes: incompatible domains, invalid certificate, wrong role,
+unassociated SP, insufficient permission, missing prerequisite, occupied Test
+set, lost response requiring reconciliation. Keep raw diagnostic codes under
+Details. An unsuccessful operation must not leave a green connected indicator.
+
+#### New certificates
+
+Ask **Staging** or **Production** first. Use the fixed reviewed mappings
+`aws-stage.epmp-aos.projects.epam.com` and `aoscloud.io`. Offer the official
+registration page for that environment and explain that Cloud may require
+account confirmation or email. Do not claim anonymous registration is an
+available API or embed privileged credentials.
+
+Collect the OEM and SP issuance tokens in secure native fields. One **Get
+certificates** action reconciles existing per-role receipts first, enrolls OEM
+and then SP at most once each, and connects the returned pair through the same
+validation path. A received OEM is retained when SP issuance fails. Never
+repeat an uncertain issuance automatically; Details provides the existing
+explicit inspection/recovery path. Clear secure fields when consumed and never
+put tokens in arguments, environment, logs, preferences or evidence.
+
+#### Repair a missing Service Provider on a retained Test
+
+The same Connect action can add the absent SP to a stable retained Test. Keep
+the same selected OEM file, domain and authenticated OEM owner. Reject a changed
+OEM, domain, established SP owner, pending journal/configuration write, or
+incompatible/uncertain run. Authenticate the proposed SP and its OEM association
+before saving. Reconcile under the existing writer and compare the run and pair
+again before the atomic configuration write.
+
+Preserve journal bytes, Unit identity, VM, installed VDP, release ledger, service
+history and Subject references. This route makes no Cloud mutation and never
+calls the fresh-instance preparation path. It is not a general replacement of
+credentials or a weakening of the first-use guard.
+
+### Step 3 Open SDV Lab
+
+After independent installation, backend and Cloud checks, display **Ready to
+open** and **Open SDV Lab**. Opening uses the existing Presenter launch owner,
+port checks, selected package lease and workspace restore. Accessibility consent
+remains a macOS action when needed. Explain that **Create Controller** in
+Presenter starts the vehicle journey; CARLA and Driver Control are not expected
+just from opening Presenter.
+
+The demo proceeds through controller creation, simulator connection, provisioning
+and serial VDP and service releases. VDP platform updates use Safe Stop; QM
+service delivery does not replace that rule. Do not publish all versions before
+the demonstration or preinstall the latest versions.
+
+### Repeat opening and interruption
+
+The installed launcher works after DMG ejection, without source or development
+tools. Inspect the existing selected instance on opening; never trust cached UI
+readiness. Resume the next incomplete setup phase. If local installation is
+incomplete, require the original matching media. If certificates are missing or
+expired, return to Cloud access. If Docker is stopped, request its start without
+restarting shared infrastructure. Preserve a retained run and permit only the
+bounded missing-SP repair described above. Reopening must not recopy verified
+programs or replay uncertain enrollment, imports or Cloud writes.
+
+Opening Presenter does not automatically power on a stopped controller.
+Presenter now exposes Start controller for the retained Test/backends; ordinary
+Stop/Start passed the visible UI campaign. Broader interruption/recovery gates
+remain separate. **Stop** preserves a Test;
+**Finish demo** is the separately confirmed irreversible retirement operation.
+Setup itself never performs Finish. At the end of qualification, gracefully
+stop owned consumers and verify exit, keeping shared Docker Engine and durable
+run data.
+
+Current proof and remaining limits are owned by the
+[baseline](../../docs/qualification/current-baseline.md). Existing-account
+certificate issuance is not new-company/account registration acceptance.
+
+### Persistent launcher transaction
+
+`install-launcher` copies only the running signed Setup bootstrap. Independent
+pin, stable identifier and signature team must match before and after copying.
+Stage on the destination volume, validate, then atomically rename. The fixed
+`.AosEdge SDV Lab.previous.app` predecessor is owned only when its identifier
+and team match. Restore it after interruption only if the target is absent;
+remove it only after the target pin/signature and inactive owners are verified.
+Unknown predecessors block. Use private same-volume transaction storage,
+not general build scratch. No duplicate kit or credentials are created.
+
+### Integrated action boundaries
+
+`setup-status` reads validated selection and certificate references without
+runtime start or cached readiness. `setup-install` calls preflight and local
+Docker validation before the existing install, prepare and backend operations.
+Existing receipts govern repeats and uncertain responses. A retained run may
+only observe already available backend images, not import missing images.
+`cloud-connect` uses the existing writer and bounded fresh-prerequisite or
+retained-SP-repair paths in [Cloud first use](cloud-first-use.md).
 
 ## Existing low-level engines
 
@@ -60,7 +178,7 @@ provide folder choice, read-only preflight, verified copying and explicit
 private-instance preparation/selection. Those actions remain offline: they
 do not enroll, provision, read credentials or launch the runtime.
 
-Setup042 also implements the separately accepted actions below: existing Cloud
+The engineering actions below support existing Cloud
 access, enrollment/recovery, exact Subject selection, Prepare backends and
 Open demo. None implicitly starts Docker or adopts the working developer
 installation. Installation, selection, Cloud access, image availability and
@@ -68,15 +186,14 @@ Presenter launch must report their own outcomes, never a combined false Ready
 state. Current evidence and remaining native gates are in the
 [baseline](../../docs/qualification/current-baseline.md).
 
-## Complete local media accepted on 2 October 2026
+<a id="complete-local-media-accepted-on-2-october-2026"></a>
+## Complete local media
 
-The first consolidated DMG contains the signed native Setup app, a fixed sibling
-`Runtime Kit` directory and a short Start Here guide. Setup may prefill the kit
-field only from that sibling of its own app bundle. It must not search other
-volumes, the developer checkout or previous downloads. A missing sibling leaves
-the ordinary explicit selection path available; it does not select another kit.
-Discovery starts no helper, writes no user state and does not imply verification.
-Existing source edits invalidate preflight and all trust/inventory checks remain.
+The DMG contains the signed Setup app, fixed sibling `Runtime Kit` and Start
+Here guide. Source discovery follows the integrated journey above; it starts
+no helper, writes no state and does not imply verification. Explicit low-level
+kit selection is a diagnostic interface, never an ordinary missing-media fallback.
+Source edits invalidate preflight and all trust/inventory checks remain.
 
 The media builder verifies the independent pin, exact complete payload inventory
 and copied file hashes/modes, plus the supplied Setup signature and its embedded
@@ -85,10 +202,10 @@ current and rollback kits. A failed assembly leaves identified scratch/evidence,
 never a reported successful DMG. Qualification mounts the resulting image read
 only, verifies its inventory and authenticates the transferred image before
 native M1 installation. There is no secret, developer state, Cloud call or new
-runtime owner in media assembly. This increment is not the complete future
-wizard or persistent Applications launcher.
+runtime owner in media assembly. The persistent launcher has its separate
+transaction above.
 
-## Existing OEM/SP access increment
+## Low-level OEM/SP inspection and checks
 
 The accepted [Cloud first-use completion](cloud-first-use.md) extends this
 existing-access path with explicit exact Subject references and secure token
@@ -143,9 +260,10 @@ expiry, encrypted/unsafe files, retained runs, changed metadata/configuration,
 repeat save, selection races, GET-only failure/missing/ready reports, redaction,
 and native feedback without changing the working demo.
 
-## Explicit backend preparation accepted on 1 October 2026
+<a id="explicit-backend-preparation-accepted-on-1-october-2026"></a>
+## Backend image preparation
 
-`prepare-backends` is a separate native Setup button, before Create Controller.
+`prepare-backends` is the bounded backend engine used during Install, before Create Controller.
 Its only input besides `action` is the existing private `state` path. It uses
 the independent Setup pin, existing installed instance/package leases and
 Demo Control writer. No selection, installation or vehicle journal is created.
@@ -197,9 +315,10 @@ interruption/reconciliation and unchanged non-targets; native UI and the next
 ordinary Create Controller are independent live gates. Only Setup needs a new
 build when the existing pinned kit already supplies the verified archive.
 
-## Explicit Presenter launch increment
+<a id="explicit-presenter-launch-increment"></a>
+## Presenter launch engine
 
-After the installed E2E, the separately authorized `launch` action opens the
+The explicit `launch` action opens the
 selected instance through existing Demo Control. Its only request field besides
 `action` is the private `state` path. Re-read that instance's selection, require
 the installer's independent pin, validate the mounted volume and acquire the
@@ -240,8 +359,8 @@ offline operation or a promise that its normal Cloud readers make no requests.
 The helper itself neither reads credentials nor calls Cloud. A retained run is
 permitted only with its unchanged selected version, not through version selection.
 
-The native button is separate from installation, preparation and Cloud access.
-It works after reopening setup by selecting the existing private-data folder;
+Open SDV Lab is separate from installation, preparation and Cloud access.
+The installed launcher restores its existing private instance;
 the original source kit is not required again. Success says Presenter opened,
 with simulator readiness still owned by Demo Control. OS permission/lock errors
 and incomplete geometry get explicit attention states. No automatic retry,
@@ -382,20 +501,18 @@ transaction reconciliation, not a remembered visual progress counter.
 
 Installation ends at `INSTALLED_NOT_ACTIVATED`. Explicit local preparation ends
 at `SELECTED_NOT_STARTED`. Docker application presence is not engine readiness;
-OEM and one associated SP access, secure enrollment, dependency preparation and
-first launch remain unverified. Two services keep separate identities/history.
+these statuses alone establish neither Cloud access, available backend images
+nor Presenter launch. Each later action requires its own fresh observation.
+Two services keep separate identities/history.
 No Ready/Connected/Running label may be inferred from successful local setup.
 
 ## Qualification
 
-Test malformed requests, unsupported hosts, path/volume/state conflicts,
-read-only preflight, corruption, revision races, repeat, process failure,
-progress bounds, and absence of source execution/credential/runtime effects.
-Compile only the new native target, exercise its protocol model, then inspect
-the actual window and perform a bounded local setup against an isolated store.
-Record separate evidence for source tests, native UI, real kit verification and
-unchanged live owners. These original slice tests do not close every later gate.
-Complete DMG and
-installed scripted M1 evidence now exist; full native UI, moving SOTA, secure
-native token entry and target-host interruption/repair remain open. Retained-run
-updates, public distribution/notarization and broader acceptance are not implied.
+Keep isolated proofs for malformed requests, unsupported hosts, unsafe paths,
+volume/state conflicts, corruption, revision races, repeat, process failure,
+bounded progress and the absence of implicit credential/runtime effects.
+Source tests, native secure-input/UI, real media verification, installation
+and runtime journeys are separate profiles. Their exact selected evidence and
+remaining interruption/repair/update/removal, consent and distribution gates
+are in the [current baseline](../../docs/qualification/current-baseline.md).
+Documentation consolidation changes no handler, artifact pin or acceptance result.

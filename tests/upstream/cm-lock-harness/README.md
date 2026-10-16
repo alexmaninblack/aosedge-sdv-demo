@@ -119,9 +119,11 @@ preserved in Git for reproduction of the pre-mainline incident.
   backpressure. The unsubscribe case retains the object until unsubscribe and
   the active callback both complete; it does not establish a new ownership
   contract. Stop during a stalled external handshake and production dependency
-  versions need separate qualification. Live OFF/ON acceptance remains open.
+  versions need separate qualification. This harness supplies no live OFF/ON
+  acceptance; exact current runtime proof is owned by the
+  [baseline](../../../docs/qualification/current-baseline.md).
 - Repeated forced failures demonstrate a reachable, reproducible wait cycle;
   they do not measure its probability under natural traffic or establish that
   a particular demo patch caused the live occurrence.
-- Failed children are intentionally terminated. The separate live failing
-  Test and its evidence remain untouched.
+- Failed fixture children are intentionally terminated. Historical live-incident
+  evidence is read-only provenance, not a retained Test that this harness owns.

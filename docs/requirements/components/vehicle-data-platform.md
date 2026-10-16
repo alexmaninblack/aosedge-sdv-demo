@@ -27,10 +27,6 @@
   `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`;
   no v1/v2/v3 prepared artifact exists
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Purpose
 
 This package defines the post-SOP Vehicle Data Platform Component delivered by
@@ -81,15 +77,10 @@ as the generic workload-authorization model.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Testability Boundary
 
@@ -125,16 +116,16 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 
 ## Requirement Summary
 
-| Requirement | Plain-language obligation | Verification levels | Design state | D3 implementation snapshot |
-| --- | --- | --- | --- | --- |
-| [Immutable lifecycle (`REQ-VDP-001`)](#req-vdp-001) | One identifiable FOTA artifact per release and identical promotion bytes | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
-| [Versioned v1 data contract (`REQ-VDP-002`)](#req-vdp-002) | Publish only the accepted first read-only subset with explicit quality | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
-| [Backward-compatible v2 (`REQ-VDP-003`)](#req-vdp-003) | Add Brake Health inputs without breaking v1 consumers | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET` |
-| [Explicit degraded state (`REQ-VDP-004`)](#req-vdp-004) | Never substitute fabricated normal values | Unit, Component, Integration, End-to-end | D3 design-reviewed | `CURRENT / EXTEND` |
-| [Defense-in-depth outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only typed QM Brake/Tire advisories; Gateway remains authoritative | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET` |
-| [Readiness and bounded operation (`REQ-VDP-009`)](#req-vdp-009) | Fail closed on inconsistent dependencies without adding a tenant quota or VDP-owned state/log store | Unit, Component, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
-| [Compatibility and dependent-first recovery (`REQ-VDP-010`)](#req-vdp-010) | Remove dependent Services first, then use pre-Apply revert or post-Apply forward repair | Unit, Contract, Integration, End-to-end | D4-015 design accepted; live qualification open | `TARGET / PARTIAL` |
-| [Trusted OEM Provider integration (`REQ-VDP-011`)](#req-vdp-011) | Qualify the Provider as an OEM platform integration without creating service authority | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
+| Requirement | Plain-language obligation | Verification levels | Design state |
+| --- | --- | --- | --- |
+| [Immutable lifecycle (`REQ-VDP-001`)](#req-vdp-001) | One identifiable FOTA artifact per release and identical promotion bytes | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Versioned v1 data contract (`REQ-VDP-002`)](#req-vdp-002) | Publish only the accepted first read-only subset with explicit quality | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Backward-compatible v2 (`REQ-VDP-003`)](#req-vdp-003) | Add Brake Health inputs without breaking v1 consumers | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Explicit degraded state (`REQ-VDP-004`)](#req-vdp-004) | Never substitute fabricated normal values | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Defense-in-depth outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only typed QM Brake/Tire advisories; Gateway remains authoritative | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Readiness and bounded operation (`REQ-VDP-009`)](#req-vdp-009) | Fail closed on inconsistent dependencies without adding a tenant quota or VDP-owned state/log store | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Compatibility and dependent-first recovery (`REQ-VDP-010`)](#req-vdp-010) | Remove dependent Services first, then use pre-Apply revert or post-Apply forward repair | Unit, Contract, Integration, End-to-end | D4-015 design accepted; live qualification open |
+| [Trusted OEM Provider integration (`REQ-VDP-011`)](#req-vdp-011) | Qualify the Provider as an OEM platform integration without creating service authority | Contract, Integration, End-to-end | D3 design-reviewed |
 
 ## Detailed Requirements
 
@@ -433,7 +424,7 @@ signing, Cloud upload, VM restart, provisioning or Unit mutation.
 
 ## Open Design and Qualification Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

@@ -121,6 +121,32 @@ reports. Explicit unattended VM access uses the existing owner-private profile;
 ordinary installation still uses native secure input/Keychain. Automation does
 not satisfy the separate secure-input UI gate by itself.
 
+## Unattended test access
+
+The operator also authorized reuse of the development Factory password for
+automated Test enrollment. A locally supplied test credential may be provisioned
+once into an owner-private installed-instance qualification profile, bound to
+the instance UUID, explicitly authorized Cloud domain and exact Factory SHA-256. The value is not
+shipped in the DMG, committed, displayed, passed in argv/environment or copied
+into qualification reports. This is an explicit test configuration, never an
+implicit developer-Keychain fallback or permission to operate a Production-role
+vehicle. The current approved campaign uses Production Aos Cloud with a Test
+vehicle; environment and vehicle role are independent. An invalid profile
+fails closed instead of opening a dialog. An absent profile preserves ordinary
+native first-use behavior; the unattended runner requires it before Create.
+The ordinary console login, per-VM SSH key and pinned host-key exchange remain
+mandatory. Known-host reuse after enrollment does not require the password.
+
+This accepted test-only exception refines the interactive first-SSH rule in
+[Demo Control](../../docs/architecture/demo-control.md). It does not test native
+password entry and must be reported as engineering access preparation.
+
+A partial Create can bind the same unprovisioned Test for diagnosis/shutdown
+only after its terminal job and validated vehicle journal agree; this is never
+a passed Create. Before cleanup, retain fixed reason codes and bounded job and
+lifecycle projections, not raw logs or exception text. Candidate changes require
+new evidence bindings. Ordinary secure input and native consent remain separate.
+
 ## Cleanup and retained evidence
 
 Close only scenario-owned browser/native clients, helpers, simulator, VMs and

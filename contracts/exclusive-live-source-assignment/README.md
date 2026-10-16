@@ -3,11 +3,7 @@
 
 # Exclusive Live-Source Assignment Contract
 
-Current implementation status (7 October 2026, Kit028 / Setup042 / Factory .41):
-see the [complete protocol map](../implementation-status.md) for this family's
-implemented path, accepted amendments and remaining qualification or executable-
-profile differences. Design lifecycle labels below are not deployment verdicts.
-Historical golden schemas/digests are not rewritten as part of this audit.
+Implementation and qualification: [protocol status](../implementation-status.md).
 
 The 5 September server-TLS-only local exception is historical. The current
 Test workflow uses strict selected-Unit mTLS and separate safety/observer roles;

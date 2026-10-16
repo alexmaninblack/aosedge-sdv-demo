@@ -28,10 +28,6 @@
   five-path source packet are accepted/authorized; signing, Cloud, container,
   VM or Unit mutation is not authorized
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Native service input amendment — 2026-09-11
 
 [ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -267,15 +263,10 @@ source/Unit/run correlation supplied to it.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Accepted Technology and Implementation Decomposition
 
@@ -418,7 +409,7 @@ components.
 - Interfaces: adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Contract / Integration
 - Required evidence: three producer manifests, pinned release-set entries, prepared/manifest digest verification, content-addressed-store resolution and absence of build/source/metadata mutation controls
-- State: D3 design-reviewed; D4-013 catalogue and storage design accepted; schema implementation remains open
+- State: D3 design-reviewed; D4-013 catalogue and storage design accepted; implementation and executable-profile drift follow the protocol map
 
 #### Acceptance criteria
 
@@ -460,7 +451,7 @@ components.
 - Interfaces: [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: D4-010.3 and D4-013 contract/schema validation; confirmation record; exact `brake-sp1` and release-set binding; wrong-profile/candidate/type/path/URL negatives; content-addressed-store and file-exclusion proof; prepared/signed/Service-Version mapping; independent configuration re-read; visible missing-Cloud-digest limitation; current-receipt recovery, no-blind-retry and absence-of-key/PKCS#12-output inspection; same VU/PU Cloud Service Version proof
-- State: D3 design-reviewed; D4-010.3 and D4-013 designs accepted; exact schema implementation plus signer and live SOTA qualification remain open
+- State: D3 design-reviewed; D4-010.3 and D4-013 designs accepted; exact schema/signing/qualification scope follows the protocol map and current gates
 
 #### Acceptance criteria
 
@@ -813,49 +804,9 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | Observability | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Backend is authoritative only for functional data; AosCloud is authoritative for SP1 Service-log state/file while retained; every non-current state is visible | Component, integration, demo |
 | Local hosting | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015), [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Native ARM64 container, persistent volume, loopback UI, authenticated VM route and native D4-010.3 `brake-sp1` helper boundary | Packaging, component, contract, integration |
 
-## Acceptance Record and Version 0.6 Reconciliation
-
-Version 0.3 was revalidated on 2026-08-22 after D4-010.3 accepted the
-current-demo artifact-publication profile. `REQ-BRAKE-CLOUD-004`,
-`REQ-BRAKE-CLOUD-016`, `UT-BRAKE-CLOUD-003` and `UT-BRAKE-CLOUD-014` now bind
-the Release Candidates surface to `brake-sp1`, record the installed
-`aos-signer` 2.0.1 file-backed PKCS#12 limitation and forbid caller-selected
-profile/path/URL input. The credential remains outside Git, the browser,
-Docker, VM images and artifacts; technical SP1 publication still has no OEM
-Unit-approval authority.
-
-Version 0.1 was accepted for D3 after reviewers confirmed that:
-
-1. the three-view UI decision is accepted without creating a new lifecycle authority or log archive;
-2. Component Register 1.0 includes the prepared candidate catalogue and
-   delegated presenter controls within `CMP-BRAKE-DASH` and
-   `CR-BRAKE-CLOUD` without creating a new lifecycle authority;
-3. all sixteen requirements and fourteen stable unit-test obligations are accepted;
-4. the split between protected Function Team signing/publication and OEM
-   Software Delivery approval is accepted;
-5. the v1/v2/v3 dashboard products and same-digest VU-to-PU rule are accepted;
-6. exact D4 schema, retention, authentication and performance decisions are
-   assigned without being misrepresented as implemented behavior;
-7. the documentation gate passes.
-
-Acceptance of this D3 package does not create the planned repository, sign an
-artifact, call AosCloud or mutate either Unit.
-
-Version 0.5 reconciles the package with accepted D4-017 and design-reviewed
-D4-020. The functional API, durable store, Dashboard authority, local hosting
-topology and cleanup boundaries are design accepted. Repository creation,
-implementation and live route/LAN-negative qualification remain separate
-gates; this acceptance authorizes none of them by itself.
-
-Version 0.6 records the accepted additive D4-017 Brake window-detail closure.
-It keeps all accepted 1.0.0 collection/SSE/Current Unit/error behavior and the
-existing SQLite schema unchanged while adding one bounded exact-Unit/event read
-over already stored canonical samples. Independent review accepted the exact
-five-path packet and authorized its source-only offline implementation.
-
 ## Open Issues for D4
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -877,3 +828,10 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
 - Implementation test names may change, but accepted `UT-BRAKE-CLOUD-*`
   obligation IDs and their `REQ-BRAKE-CLOUD-*` mappings remain stable until
   deliberately retired.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/brake-health-cloud.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

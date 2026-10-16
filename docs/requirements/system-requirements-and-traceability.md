@@ -44,14 +44,13 @@ is an expanded scenario, not a requirement for a second account/certificate.
 Enrollment/profile wiring and its executable contract review remain a gated
 first-use deliverable; path separation does not grant publishing authority.
 
-## Current implementation view — 24 September 2026
+<a id="current-implementation-view--24-september-2026"></a>
+## Current implementation view
 
 Current package selection and qualification are owned by the launcher catalog and
-[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
+[current baseline](../qualification/current-baseline.md).
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
-Earlier allocation/implementation statuses in this design are dated review
-history, not a claim that today's services, permissions or UI are absent.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
@@ -423,146 +422,19 @@ Component requirements shall reference both their parent `SYS-*` requirement
 and the relevant `AF-*` flow. Tests shall reference the component requirement,
 system requirement and retained evidence identifier.
 
-## Proposed Function Team 2 Repository Creation Gate
+<a id="proposed-function-team-2-repository-creation-gate"></a>
+## Repository ownership
 
-Before creating `tire-health-service`, reviewers shall confirm:
+The independent Tire repository exists and is listed in the
+[workspace map](../../workspace/repositories.json). Its current service/data,
+licensing, resource, compatibility and verification obligations remain in the
+[Tire package](components/tire-health-service.md). New component repositories
+follow [contribution and ownership rules](../../CONTRIBUTING.md), not a pending
+creation gate for an already implemented component.
 
-1. the initial source layout conforms to the accepted repository name and
-   in-vehicle SOTA ownership boundary;
-2. public visibility and Apache-2.0 licensing with copyright `maninblack`;
-3. a `main`-only workflow for the current single-developer phase;
-4. an ARM64 Aos service scaffold equivalent in quality to
-   `brake-health-service`, but with a distinct service identity and SOTA 2
-   provider metadata;
-5. no CARLA, VISS, VM, platform-provider or Cloud credential dependency;
-6. a versioned compatibility declaration for the accepted KUKSA contract;
-7. explicit CPU, memory, persistent state, temporary storage, file, process, report-rate
-   and offline-queue limits;
-8. addition to `workspace/repositories.json` only after the initial repository
-   revision exists and passes its repository gates.
+## Review provenance
 
-No remote repository creation is authorized by acceptance of this baseline.
-
-## Acceptance Record and Delta for Version 2.0
-
-Version 2.0 preserves all accepted manufacturing, lifecycle, functional,
-observability, offline, resource and retirement obligations from Version 1.0.
-It retires `SYS-SEC-005` and `SYS-SEC-006`, introduces `SYS-SEC-008` for the
-separately packaged current-release Service authorization helper and scopes
-`SYS-SEC-001` to distinguish IAM-derived SOTA authority from the explicitly
-trusted OEM VDP integration. Provider-side connectivity is no longer an open
-dynamic-credential requirement, and VDP no longer issues Service JWTs.
-The complete C3 cascade was accepted on 2026-08-26.
-
-The 2026-08-28 native-IAM transport correction refines `SYS-SEC-008` without
-changing its authority or topology: the released `GetPermissions` interface is
-called only through fixed TLS loopback `127.0.0.1:8090`; no KAC TCP listener,
-DNS, caller-selected endpoint, external IP or vehicle-external dependency is
-introduced.
-
-The 2026-08-25 Level-B revalidation adds `SYS-REL-012` inside the accepted
-component and authority boundaries. It replaces the local demo-wide mutation
-lock assumption with bounded per-operation recovery and exact resource-scoped
-conflicts while preserving run-exclusive provisioning, source handover and R0.
-
-## Acceptance Record for Version 1.0
-
-Version 1.0 adds [`SYS-OBS-007`](#sys-obs-007) for the accepted targeted loss
-of Production Unit external vehicle connectivity. It preserves HLA 1.4 and
-all component, interface and lifecycle authorities. One stateful control
-interrupts Unit-to-AosCloud and installed service-to-functional-backend paths
-together while presenter-to-AosCloud and simulated in-vehicle paths remain
-available. `GAP-AF-25` and `CR-CROSS` own shared proof; Aos lifecycle owns
-authoritative Unit disconnect/reconnect state, and Function Team products own
-bounded backend synchronization. It also adds [`SYS-RES-001`](#sys-res-001)
-for the `AF-TIRE-RES` proof: AosCore caps the actual Tire service at its
-approved CPU quota while Brake and the shared platform remain functional.
-`GAP-AF-26` allocates the exact runtime mapping, monitoring evidence, safe load
-trigger and tolerance design without adding a project resource manager.
-
-## Acceptance Record for Version 0.9
-
-Version 0.9 retires the accepted low-rate `SYS-BHS-001` report concept while
-preserving its anchor. `SYS-BHS-005` defines the bounded v1 braking-event
-window and `SYS-BHS-006` defines the v2 derived Cloud data product;
-`SYS-BHS-002` is clarified as a synthetic deterministic edge assessment and
-`SYS-BHS-004` covers offline continuity for both window chunks and derived
-messages. No HLA boundary, lifecycle owner or QM-authority decision changes.
-
-The same requirement set was revalidated on 2026-08-19 against Demo Scenario
-1.8 and Architecture Flows 1.7. The Platform Releases catalogue and delegated
-protected publication refine the already allocated immutable-candidate,
-team-owned-release and Cloud-authoritative-dashboard obligations; they add no
-new system requirement or lifecycle authority.
-
-## Acceptance Record for Version 0.8
-
-Version 0.8 preserves the accepted Version 0.7 requirement set and adds
-[`SYS-RET-006`](#sys-ret-006). The new requirement makes the cross-run boundary
-explicit: the dedicated Fleet and role Unit Set objects are created once outside
-the Demo Orchestrator; R0 preserves those objects but proves both memberships
-empty after retirement, while the next M1 creates new identities, assigns them
-to the correct disjoint sets and uses only fresh lifecycle objects. Platform-contract obligations are allocated to
-`CR-AOS`; sequencing, guards and overlay lifecycle are allocated to `CR-DEMO`;
-the complete transition is allocated to `CR-E2E`.
-
-## Acceptance Record for Version 0.7
-
-Version 0.7 preserves the accepted Version 0.6 requirement set and adds
-`SYS-REL-010`, `SYS-SEC-007`, and `SYS-OBS-006` for evidence-backed final OEM
-approval, explicit QM classification, authoritative Gateway containment and
-truthful Dashboard presentation.
-
-The baseline was accepted on 2026-08-19 after reviewers confirmed
-that:
-
-1. every active Architecture Flows 1.4 gap is covered without claiming it is already
-   implemented;
-2. requirements are externally observable and testable;
-3. the two Service Providers remain independent peers;
-4. `tire-health-service` is the accepted repository name and owns
-   only the in-vehicle SOTA 2 service;
-5. each Function Team's backend and dashboard share its accepted independent
-   Cloud-product repository and remain separate from its in-vehicle SOTA
-   repository;
-6. no requirement expands vehicle-control, driver-HMI or production-fleet
-   scope;
-7. component requirement packages align with HLA 1.4 and Demo Scenario 1.5;
-8. deferred [native Cloud dependency rejection (`SYS-REL-006`)](#sys-rel-006)
-   is not treated as implemented or replaced by custom
-   dashboard policy before an implementing AosEdge release is qualified.
-9. team-owned release decisions, Service Provider publication, OEM-authorized
-   deployment approval, and AosCloud state/execution remain distinct as
-   required by [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
-10. fail-safe exclusive control and continuous mode handover now have stable,
-    testable `SYS-CTRL-*` parents without expanding functional-service
-    authority or changing the accepted audience scenario.
-11. Service Manager and Aos IAM remain authoritative for SOTA instance
-    identity, secret and registered permissions; no project-owned parallel
-    identity or per-service policy store is required.
-12. the broker signing key is per Unit and platform-protected, while the
-    Factory Image and update artifacts contain neither that key nor static
-    provider/service tokens.
-13. both functional services are QM-domain applications and the Gateway is the
-    final authoritative deny-by-default boundary for their outbound channel;
-    and
-14. the Software Delivery Dashboard exposes the evidence dossier preceding
-    final OEM authorization without owning the decision, evidence or lifecycle
-    state, and passing tests never auto-approve.
-15. simulator cleanup is owned independently from factory-image preservation;
-    the two remain coordinated only by the cross-system R0 lifecycle.
-16. all Scenario, Manual, Autopilot and Safe Stop transitions have explicit
-    world-context, obstacle, reset, failure and evidence semantics without
-    adding reverse or obstacle-avoidance claims.
-17. every installed hardware-equivalent signal, sensor and actuator is defined
-    by one digest-addressed selected-vehicle profile rather than by the entire
-    set of capabilities CARLA could theoretically instantiate;
-18. complete Simulator–Gateway accounting, applied-control feedback and
-    qualification-ground-truth isolation are required without implying that
-    every native value is published through VSS/VISS or that every physical
-    actuator is authorized for the current Control UI.
-
-Following acceptance of this document and the Component Decomposition and
-Interface Register, D3 expands the component requirement packages listed above.
-Implementation planning follows only after those packages and their acceptance
-tests are reviewed.
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/system-requirements-and-traceability.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

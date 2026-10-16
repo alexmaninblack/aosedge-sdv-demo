@@ -46,6 +46,17 @@ class DocumentationCheckTests(unittest.TestCase):
                 destination = root / source.relative_to(ROOT)
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, destination)
+        # Linked source files must exist even though this fixture only reads
+        # documentation and never executes any of these tools or build recipes.
+        for relative_path in (
+            "lab", "scripts/prepare-macos.sh", "scripts/aosedge-sdv-lab.sh",
+            "tests/upstream/cm-lock-harness/CMakeLists.txt",
+            "tests/upstream/cm-lock-harness/probe.cpp",
+            "tests/upstream/cm-lock-harness/run.py",
+        ):
+            destination = root / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / relative_path, destination)
         shutil.copytree(
             ROOT / "apps", root / "apps",
             ignore=shutil.ignore_patterns(".DS_Store", ".venv", "node_modules", "build", "dist", "__pycache__", "*.egg-info"),
@@ -89,6 +100,40 @@ class DocumentationCheckTests(unittest.TestCase):
         result = self.run_check(ROOT)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn("Documentation quality gate: PASS", result.stdout)
+
+    def test_historical_status_and_review_diaries_are_rejected(self) -> None:
+        cases = (
+            ("## Review Record for Version 0.12", "completed version-review diaries"),
+            ("## Acceptance Record for Version 1.0", "completed version-review diaries"),
+            ("Current implementation status (7 October 2026, Kit028 / Setup042):", "copied historical release status"),
+            ("- D3 implementation snapshot (historical): `TARGET`", "historical D3 implementation snapshots"),
+            ("Google Drive holds reviewed developer inputs.", "source-owned catalogs"),
+            ("The next new candidate is `1.2.0-rc.1`.", "source-owned catalogs"),
+        )
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "contracts" / "release-reproduction" / "README.md"
+        clean = target.read_text(encoding="utf-8")
+        for extra, diagnostic in cases:
+            with self.subTest(extra=extra):
+                target.write_text(clean + "\n" + extra + "\n", encoding="utf-8")
+                result = self.run_check(root)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(diagnostic, result.stderr)
+
+    def test_current_obligations_and_immutable_history_remain_allowed(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "contracts" / "release-reproduction" / "README.md"
+        target.write_text(
+            target.read_text(encoding="utf-8")
+            + "\n## Verification obligations\n\n"
+            + "Full fresh-host reproduction remains unqualified. "
+            + "The current catalog selects a candidate; Git preserves prior review records.\n",
+            encoding="utf-8",
+        )
+        result = self.run_check(root)
+        self.assertEqual(0, result.returncode, result.stderr)
 
     def test_broken_anchor_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()

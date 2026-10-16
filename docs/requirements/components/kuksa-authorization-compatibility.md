@@ -16,21 +16,12 @@
 - Accepted authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
-
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Native service input amendment — 2026-09-11
 
@@ -496,7 +487,7 @@ integration and end-to-end obligations.
 
 ## Open D4 Gates
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
@@ -505,113 +496,9 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
 | Remaining qualification | Complete the negative/time/overload/resource and full repeatability matrices. Native permission-key 256-character build bound is distinct from the larger protocol path bound; do not claim every syntactically valid path is supported. |
 | Provider scope | Provider authority stays in the separate trusted OEM one-shot/systemd credential path. Dynamic Provider IAM and malicious-Provider containment remain outside the accepted first-demo claim. |
 
-## Review Record for Version 0.12
+## Review provenance
 
-Version 0.12 incorporates contract profile 1.7.0 and the accepted resource-
-envelope correction. It removes the unmeasured 64-MiB and 10%-CPU ceilings
-from the temporary platform helper while retaining deterministic request,
-concurrency, rate, deadline, task, descriptor, network, sandbox and redaction
-bounds. Brake and Tire SOTA instances remain the only quota-controlled
-tenants in the first demo.
-
-## Review Record for Version 0.11
-
-Version 0.11 incorporates accepted `IMP-03-KAC-006` and contract profile
-1.6.0: exact filesystem owners/modes, private systemd PIN delivery, pinned
-SoftHSM/OpenSSL provider and token parameters, separate KAC/verifier-preparation
-SELinux domains and the initial no-create/delete/rename backend boundary. It
-also records that SoftHSM is a current-demo software-token choice, not evidence
-of hardware-HSM physical isolation, and requires a separate review instead of
-automatic SELinux widening if pinned integration needs more access.
-Version 0.11 was superseded by Version 0.12.
-
-## Review Record for Version 0.10
-
-Version 0.10 incorporates the accepted D4-027.7 current-release simplification
-and contract profile 1.5.0. The temporary helper keeps the per-boot sync and
-stable-window gate, UTC/boottime split and issue/renew deviation check, while
-removing the anchor, continuous monitor and KUKSA/token lifecycle controller.
-The stronger trustworthy-time and invalidation outcome remains a native
-AosCore migration qualification obligation rather than throw-away helper
-implementation.
-Version 0.10 was superseded the same day by Version 0.11.
-
-## Review Record for Version 0.9
-
-Version 0.9 incorporates the D4-027.8 native-IAM transport correction and
-contract profile 1.4.1. Source inspection of the pinned AosCore release proved
-that `IAMPublicPermissionsService/GetPermissions` is exposed through the public
-gRPC endpoint on port `8090`, so the earlier `AF_UNIX`-only process envelope
-was not implementable without changing Aos IAM and Service Manager. The
-accepted correction permits only fixed TLS loopback `127.0.0.1:8090`, trusts
-the Aos CA, expects server name `main`, and forbids DNS, caller-selected
-endpoints, external IP access and any KAC TCP listener. Version 0.9 was
-design-reviewed on 2026-08-28 and superseded the same day by Version 0.10.
-
-## Review Record for Version 0.8
-
-Version 0.8 incorporates D4-027.8 and contract profile 1.4.0: exact size,
-permission/path, concurrency, backlog, rate, timeout, retry, systemd resource
-and redaction bounds. D4-027 is complete. Version 0.8 was design-reviewed on
-2026-08-28 and was superseded the same day by Version 0.9 after pinned-source
-transport inspection; implementation had not begun.
-
-## Review Record for Version 0.7
-
-Version 0.7 incorporates D4-027.7 and contract profile 1.3.0: one NTP sync and
-10-second stable window per boot, UTC claims plus boottime scheduling,
-same-boot anchor recovery, ordinary offline continuation, five-second
-discontinuity threshold, fail-closed KUKSA/token handling and cold-offline
-`NOT_READY`. At that version operational bounds were the final open D4-027
-gate.
-
-## Review Record for Version 0.6
-
-Version 0.6 incorporates D4-027.6 and contract profile 1.2.0: one protected
-per-Unit RSA key, exact preparation unit and volatile public-verifier path,
-protected sign/verify self-test, mandatory KUKSA `--jwt-public-key`, fail-closed
-startup, reboot reconstruction, cross-Unit rejection and R0 retirement. At
-that version trustworthy-time behavior and operational bounds remained open.
-
-## Review Record for Version 0.5
-
-Version 0.5 incorporates accepted D4-027.4/.5 and contract profile 1.1.0:
-exact non-widening `r`/`rw` mapping, rejection of `w` and provider actions,
-fixed JWT claims, 300-second TTL, renewal at 180 seconds, a 120-second reserve,
-fresh-IAM renewal and mandatory KUKSA reconnect/subscription recreation. At
-that version signer and trusted-time preparation plus operational bounds
-remained open.
-
-## Review Record for Version 0.4
-
-Version 0.4 incorporates accepted `D4-027.3` and its machine-readable schemas:
-strict one-request/one-response JSON framing, `status`/`issue`, implicit
-resource `kuksa`, `ready`/`issued`/`rejected`, fixed error codes, KAC-generated
-correlation and no free-text or caller-selected authority. At that version JWT
-mapping/timing, signer preparation and operational bounds remained open.
-
-## Review Record for Version 0.3
-
-Version 0.3 incorporates accepted `D4-027.2`: a private host Unix socket,
-platform-owned named-resource mount/group admission, authoritative IAM lookup,
-bootstrap-only `AOS_SECRET` use, atomic mode-`0400` JWT delivery in a
-Service-private tmpfs and deletion on stop/replacement/removal/reboot. Exact
-wire schemas, JWT profile/timing, signer preparation and bounds remain open.
-
-## Review Record for Version 0.2
-
-Version 0.2 incorporates accepted `D4-027.1`: exact repository/package/unit
-and process identity, provisioning/IAM/signer startup boundary, absence of VDP
-and global Service Manager dependencies, least-privilege fail-closed rule and
-independent native-migration removal boundary. Exact transport, schemas, JWT,
-timing, signer preparation and resource bounds remain open. This version
-authorizes no source or image change.
-
-## Review Record for Version 0.1
-
-Version 0.1 creates the transitional package required by HLA 1.5 and ADR 0013.
-It allocates current-release Service authorization behavior outside VDP and
-both SOTA products, defines ten stable component requirements and ten isolated
-unit-test obligations, and preserves unmodified KUKSA plus direct Service data
-paths. Review and acceptance remain pending; this package authorizes no
-implementation or external operation.
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/kuksa-authorization-compatibility.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

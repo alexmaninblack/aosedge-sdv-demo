@@ -65,9 +65,9 @@ retain current rationale; explicitly superseded decisions are Git references.
 ## Navigation by responsibility
 
 - [Getting started](getting-started/README.md)
-- [Architecture](architecture/README.md), [editable diagrams](architecture/diagrams/README.md)
+- [Architecture and diagrams](architecture/README.md)
 - [Demo scenarios and interaction contracts](demo/README.md)
-- [Automotive orchestration coverage](research/demo-foundation/automotive-orchestration-coverage-matrix.md): accepted coverage input, not blanket implementation proof
+- [Automotive orchestration coverage](research/demo-foundation/automotive-orchestration-coverage-matrix.md): design coverage input, not blanket implementation proof
 - [Requirements](requirements/README.md)
 - [Operations](operations/README.md)
 - [Development and release tooling](development/README.md)

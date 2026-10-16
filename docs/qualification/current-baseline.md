@@ -68,12 +68,9 @@ is a separate destructive operation. Shared Docker Engine is not a demo owner.
 <a id="immutable-factory"></a>
 <a id="current-qualification-limitation"></a>
 
-## Historical checkpoints
+## Input provenance
 
-Kit028 / Setup042, demo-v1.1 / Factory39 and their then-open gates do not
-select the current package. The immutable Factory41 provenance remains in its
-[checkpoint](../../workspace/inputs/controller-images.lock.json).
-The [original baseline](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/current-baseline.md)
-preserves the earlier hashes and limits. Other retired documents are listed in
-the [retirement inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).
-This page is a source/evidence summary, not a fresh observation of running hosts.
+The [controller image lock](../../workspace/inputs/controller-images.lock.json)
+preserves immutable Factory provenance. It does not select operator media or
+inherit another artifact's qualification. This page summarizes source/evidence,
+not a fresh observation of running hosts.

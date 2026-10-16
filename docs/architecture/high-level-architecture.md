@@ -59,7 +59,8 @@ enrollment/recovery, backend preparation and Presenter launch actions are now
 implemented under the same owners; see the current implementation view.
 None creates a second runtime owner or implies full native acceptance.
 
-## Current implementation view — 24 September 2026
+<a id="current-implementation-view--24-september-2026"></a>
+## Current implementation view
 
 As-built exception to the original “unmodified KUKSA” target: the current
 Factory retains explicit scope-path compatibility and VAL v1 source-timestamp
@@ -69,11 +70,9 @@ The historical .21 allocation and original diagram below are not the current
 image selector or a claim of byte-identical upstream KUKSA.
 
 Current package selection and qualification are owned by the launcher catalog and
-[current baseline](../qualification/current-baseline.md). Reviewed 15 October 2026; the historical heading remains only for incoming links.
+[current baseline](../qualification/current-baseline.md).
 [Implemented architecture and traceability](current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
-Earlier allocation/implementation statuses in this design are dated review
-history, not a claim that today's services, permissions or UI are absent.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
@@ -116,34 +115,15 @@ their reviewed Git revision. For the installed topology use the
 - [Draw.io source](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.drawio);
 - [PNG export](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/architecture/diagrams/aosedge-demo-hla-authoring-reference.png).
 
-The Draw.io file is the primary visual architecture source. Its PNG export and
-the Mermaid rendering below are reviewable derivatives and must be regenerated
-or reconciled whenever the source changes.
+Those files preserve the expanded design's visual provenance. They are not a
+second current deployment baseline or a mandatory source for current diagram
+edits. Maintain the diagrams embedded with their owning current documents.
 
-The visual source defines the component boundaries and principal relationships
-used by Architecture 1.6: two peer OEM Function Teams represented as
-independent AosCloud Service Providers, the shared Vehicle Data Platform
-Component, the Tire Health function, the Factory Baseline Assembly-to-Factory
-Image artifact and factory-installed runtime boundaries,
-the Software Delivery and log-observation surfaces, and the explicit typed
-Brake Health and Tire Health advisory paths through KUKSA. It separates the
-factory-installed Eclipse KUKSA resource-server boundary from the FOTA-owned
-Vehicle Data Platform Component and shows the current-release authorization
-helper only as a removable compatibility overlay below a permanent,
-implementation-neutral platform credential boundary. It also distinguishes
-producer-owned acceptance from the independent OEM Release Authority context
-used to authorize exact Cloud mutations and from AosCloud lifecycle state and
-execution. It also identifies
-both functional services as QM-domain applications, the Gateway as the final
-authoritative containment boundary, and Release Authority authorization as an
-evidence-backed final decision rather than a bare dashboard action. The diagram does not
-introduce a production driver HMI; the advisory remains visible on the
-Engineering Telematics Dashboard.
+<a id="revision-15-summary"></a>
+## Platform credential boundary
 
-## Revision 1.5 Summary
-
-Architecture 1.6 preserves the vehicle, Cloud, FOTA/SOTA and QM-containment
-topology of 1.4 while adopting the authorization-boundary correction in
+The accepted vehicle, Cloud, FOTA/SOTA and QM-containment topology uses the
+authorization boundary in
 [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md):
 
 1. Eclipse KUKSA is a stable factory-installed resource server outside the
@@ -170,10 +150,10 @@ topology of 1.4 while adopting the authorization-boundary correction in
    implementation may be reused, but every dashboard surface is pre-bound to
    one profile and technical publication never performs OEM Unit approval.
 
-## Revision 1.4 Summary
+<a id="revision-14-summary"></a>
+## QM containment and release authority
 
-Architecture 1.4 preserves the component and lifecycle topology of 1.3 and
-adopts [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md):
+The accepted component/lifecycle topology includes [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md):
 
 1. Brake Health and Tire Health are QM-domain maintenance/inspection
    applications with no allocated safety goal or vehicle-motion authority;
@@ -1223,26 +1203,9 @@ The expanded architecture is aligned only while all of the following remain true
 - exact VSS overlay paths, enum values, timing budgets, and retry policy;
 - Cloud or Unit mutation merely by accepting this document.
 
-## Acceptance Record and Downstream Ownership
+## Review provenance
 
-High-Level Architecture 1.5 was accepted on 2026-08-26 with ADR 0013 and ADR
-0014 after the complete class-C cascade and Safe Stop boundary were reviewed.
-Its accepted downstream projections are:
-
-1. Demo Scenario 2.0 for audience-visible stage order and component presence;
-2. Architecture Flows 2.0 for detailed lifecycle, runtime, observability, and
-   failure mapping;
-3. System Requirements and Traceability 2.0 for normative system obligations
-   and gap coverage;
-4. Component Decomposition and Interface Register 2.0 for component ownership,
-   interface identifiers, repository allocation, and provisional requirement
-   packages.
-
-Revision 1.5 replaces the 1.3/1.4 permanent VDP-owned credential model with an
-implementation-neutral platform boundary and a removable current-release
-compatibility overlay. Scenario 2.0, Architecture Flows 2.0, System
-Requirements 2.0 and Component Register 2.0 are the accepted matching cascade.
-
-Acceptance of this architecture does not authorize implementation, building,
-signing, Cloud publication, assignment, provisioning, deprovisioning or Unit
-mutation.
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/architecture/high-level-architecture.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.

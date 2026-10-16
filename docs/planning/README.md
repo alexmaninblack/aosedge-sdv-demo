@@ -7,31 +7,25 @@ Plans describe required work; reading one grants no build, publication, Cloud
 mutation or deletion authority. Current implementation and exact proof are
 owned by the [baseline](../qualification/current-baseline.md), not a plan's date.
 
-## Current plans and execution rules
+## Remaining work
 
-- [Distribution and reproducibility](active/installable-distribution-and-reproducibility.md):
-  completed engineering-preview slices and the remaining acceptance boundaries.
-- [Human-friendly reproduction](active/work-packets/human-friendly-reproduction.md):
-  R1–R3 implemented boundaries; separate R4 fresh-host source-build proof.
-- [Autonomous M1 qualification](active/autonomous-m1-qualification.md):
-  scenario-first execution, private test access, bounded diagnostics and cleanup.
-- [Integrated Setup scenario](active/work-packets/integrated-setup-scenario.md):
-  accepted Install / Connect / Open behavior and transaction boundaries.
+- [Current roadmap](roadmap.md): all remaining delivery/reproduction gates,
+  including independent fresh-host developer reproduction.
 - [Host sleep/wake recovery](active/native-sleep-wake-recovery-2026-09-21.md):
-  still an unimplemented/unqualified planning item, separate from controller ignition.
-- [Current roadmap](roadmap.md): consolidated remaining gates.
+  accepted recovery behavior not yet implemented/qualified; separate from ignition.
+- [Formal stimulus calibration](../qualification/d4-003-stimulus-calibration-plan.md):
+  outstanding verification, not a passed result.
 
-Presenter, integrated Setup, semantic native/browser runners, the unified
-launcher and engineering-preview main/tag/publication flow are implemented.
-The current M1 runtime API/UI and separate native certificate first-use
-profiles passed. Do not reintroduce their completed gates as pending work.
+## Implemented behavior and execution
 
-Implemented readiness and independent Reset rules are maintained in the
-[advisory contract](../../contracts/qm-advisory-profile/readiness-and-reset.md),
-not in an active execution packet.
+- [Setup contract](../../contracts/distribution-installation/native-setup.md):
+  ordinary Install / Connect / Open and transaction boundaries.
+- [M1 scenario guide](../../scripts/qualification/README.md): scenario-first
+  execution, private test access, reconciliation and mandatory cleanup.
+- [Release campaign](../development/release-campaign.md): exact-candidate
+  source/tag/delivery and consumer gates.
+- [Readiness and Reset](../../contracts/qm-advisory-profile/readiness-and-reset.md):
+  the current service contract, not an active implementation packet.
 
-Closed P0/P1 implementation packets, prior migration/storage plans and old
-experiment journals have been removed. Accepted obligations remain in
-architecture, requirements and contracts; exact original plans are accessible
-through immutable Git citations and the
-[documentation retirement record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/d14e837c4cca30d8d9ebe83df996974b92c46f3b/workspace/checkpoints/documentation-retirement-20261015.json).
+Completed work packets are retained in Git, not as competing active plans.
+Their removal does not waive accepted requirements or change selected artifacts.

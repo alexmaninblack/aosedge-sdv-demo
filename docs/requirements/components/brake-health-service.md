@@ -20,11 +20,7 @@
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 v1 contract: [D4-016.1/.2 decision](../d4-decision-register.md#d4-016) and [executable Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md)
 - Accepted D4 exact contracts: [v2 synthetic model](../../../contracts/brake-health-model/README.md), [v3 advisory policy](../../../contracts/brake-health-advisory-policy/README.md), [runtime/evidence profile](../../../contracts/brake-health-runtime/README.md) and [Brake Cloud API](../../../contracts/brake-cloud-api/README.md)
-- Implementation baseline: candidate source-lock pin; earlier `04abe5b` scaffold is historical
-
-## Implementation-status reading rule — 24 September 2026
-
-Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+- Implementation baseline: selected source lock and current qualification map
 
 ## Native service input amendment — 2026-09-11
 
@@ -109,15 +105,10 @@ rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Reviewed 15 October 2026 against the selected engineering preview.
-The [current baseline](../../qualification/current-baseline.md) selects exact
-runtime, native Setup and public-consumer evidence; the
-[cross-package implementation matrix](../../architecture/current-implementation.md)
-identifies owning code and proof, and the
-[protocol map](../../../contracts/implementation-status.md) records amendments
-and executable-profile drift. These are the current status authorities, not
-the original D3 allocation annotations below. Requirements, stable IDs and
-unfulfilled verification obligations are unchanged.
+Use the [shared status authorities](README.md#implementation-and-qualification)
+for selected evidence, code ownership and protocol amendments. Requirement and
+verification definitions below remain binding; this package's open-gate table
+does not claim full acceptance.
 
 ## Testability Boundary
 
@@ -224,7 +215,7 @@ real KAC/KUKSA/backend integration begins only in `BHS-ADAPTERS-001`.
 - Interfaces: [Brake Health SOTA (`IF-LC-002`)](../component-decomposition-and-interface-register.md#if-lc-002) and [Function Team 1 approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: reproducible unsigned staging result, secret-negative scan, exact artifact/metadata digests, architecture and release manifest
-- State: D3 design-reviewed; scaffold packaging exists, product candidates do not
+- State: D3 design-reviewed; candidate implementation/proof follows the current baseline
 
 Acceptance requires repeatable bytes from identical inputs, different identity
 for changed content, no private key/token/Unit identity, complete third-party
@@ -243,7 +234,7 @@ notices, English product content and no CARLA/VISS/platform source dependency.
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: compatible and incompatible manifests, readiness/status reason, absence of report/advisory side effects, no restart loop and automatic recovery after a compatible VDP change
-- State: D3 design-reviewed; D4-007 ranges and readiness behavior accepted, runtime enforcement not implemented
+- State: D3 design-reviewed; D4-007 design accepted, with the current input-contract amendment
 
 This requirement must not be presented as native Cloud admission. After an
 implementing platform release is qualified, Cloud rejection and service
@@ -399,7 +390,7 @@ evidence, and no status is driver display or acknowledgement.
 - Interface: [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration, Analysis
 - Required evidence: state compatibility matrix, forward/backward fixtures, interrupted transition, Service removal/absence, VU-qualified VDP repair and safe reassignment sequence
-- State: D4-015 design accepted; scaffold has no persistent state and live recovery qualification remains open
+- State: D4-015 design accepted; full recovery qualification remains separately scoped
 
 ### Health, resources and failure isolation
 
@@ -414,7 +405,7 @@ evidence, and no status is driver display or acknowledgement.
 - Interface: [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration
 - Required evidence: process/capability state matrix, v3 initial advisory-ready acceptance followed by degraded recovery, resource measurements and AosCore limit faults, restart/state recovery or quarantine and adjacent-component continuity; during the prepared Tire CPU saturation proof, Brake remains ready without restart and processes the deterministic CARLA event/result/advisory
-- State: D4-016.5 design accepted; scaffold quotas remain provisional until D4-023 qualification
+- State: D4-016.5 design accepted; formal resource qualification follows D4-023
 
 ### Redacted native logs and separated chronology
 
@@ -513,39 +504,14 @@ replaced by [`UT-BHS-013`](#ut-bhs-013).
 | Offline and recovery | [`REQ-BHS-009`](#req-bhs-009), [`REQ-BHS-010`](#req-bhs-010) | Local decision continuity, bounded replay and versioned recovery-safe state | Disconnect/restart/reconnect and state matrix |
 | Observability | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Separate process health/readiness and bounded native log evidence | Component state matrix and native log integration |
 
-## Acceptance Record and Version 0.8 Reconciliation
-
-The previously accepted package established that:
-
-1. the in-vehicle service, backend/dashboard and Vehicle Data Platform remain separate products and repositories;
-2. v1-v3 are one independent SOTA product family with explicit compatibility, not three architecture components;
-3. v1 is a bounded pre/active/post braking-event recorder, v2 moves a clearly labelled synthetic assessment on-board and normally emits derived data only, and v3 adds the typed advisory while retaining the v2 backend result;
-4. local assessment and advisory do not depend on Cloud connectivity;
-5. Aos IAM is authoritative, `CMP-KAC` only translates its current result, and no duplicate policy database or caller-selected JWT authority is introduced;
-6. the advisory is a typed QM maintenance request with no driver-HMI, safety or motion claim;
-7. every owned behavior has a stable deterministic unit-test obligation;
-8. current scaffold evidence is not presented as implemented product behavior;
-9. the open interface/model/resource decisions below are resolved in D4 before implementation claims acceptance.
-
-Version 0.5 introduced the reviewed security delta. It retires
-`REQ-BHS-003`/`UT-BHS-003`, adds
-`REQ-BHS-013`/`UT-BHS-013`, and replaces caller-selected broker requests with
-fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. All
-functional v1-v3 semantics remain unchanged. Version 0.8 reconciled the
-package with accepted D4-016, D4-017 and D4-027 decisions. Version 0.9 records
-the accepted D4-016.3 byte/arithmetic/fixture closure and its exact
-implementation-test obligations. This acceptance authorizes no service implementation,
-signing, upload, deployment, OEM approval, Cloud mutation or VM changes;
-implementation still requires an exact work packet.
-
 ## Open Issues
 
-Reviewed 15 October 2026. The [current baseline](#current-implementation-baseline) and [cross-package implementation matrix](../../architecture/current-implementation.md) own exact source and scoped M1 evidence. Remaining formal obligations below are not removed or declared passed by this documentation review.
+See [implementation and qualification](README.md#implementation-and-qualification); the remaining obligations below are not waived.
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented product chain | V1 acquisition/window/spool, V2 synthetic model, V3 typed advisory/Gateway facts, IAM/KAC bootstrap and durable backend delivery are built and have scoped live evidence. |
-| Current Kit028 proof | Brake112/113/114 V1→V2→V3, products, independent Reset/history, offline recovery and post-ignition products passed in the installed scripted sequence. Native/full fault acceptance remains separate. |
+| Selected runtime proof | Current V1→V2→V3, real products, independent Reset/history, offline recovery and post-ignition results follow the selected baseline. The full fault matrix remains separate. |
 | Remaining model/resource gates | Frozen Brake 20/20 calibration, full quota/failure-isolation, corrupt-state/crash, uninstall/recovery and log-API matrices remain separate. |
 | Readiness and source quality | Short advisory readiness transitions remain observable; missing inputs do not prove VDP version incompatibility. Presenter owns exact installed-profile reporting. |
 | Persistence fault scope | Empty-outbox ignition does not prove queued-message power-loss recovery. Retained native storage patch has scoped proof, not every migration/failure case. |
@@ -564,3 +530,10 @@ Reviewed 15 October 2026. The [current baseline](#current-implementation-baselin
   tests and evidence together.
 - Implementation function/test names may change, but accepted obligation IDs
   and their mappings remain stable until deliberately retired.
+
+## Review provenance
+
+The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/brake-health-service.md) preserves prior version deltas and review dates.
+Current obligations, stable identifiers, acceptance criteria and outstanding
+verification gates remain in this document; a historical approval is not a
+claim that its implementation or full live matrix has passed.
