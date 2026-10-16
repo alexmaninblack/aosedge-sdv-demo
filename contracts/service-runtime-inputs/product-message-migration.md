@@ -4,7 +4,7 @@
 # Native product-message migration
 
 - Authority: [ADR 0015](../../docs/architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
-- Delivery step: N3, consumer compatibility before producer publication
+- Rollout rule: consumer compatibility before producer publication
 - Wire revision: `schemaVersion: 2`, `contractVersion: "2.0.0"`
 
 The nine `*.v2.schema.json` product schemas replace only application
@@ -76,9 +76,9 @@ artifact field; a v2 window summary uses `messageSchemaVersion: 2` and
 `serviceInstance` instead. Tire query envelopes likewise use 2 / 2.0.0 and
 return the original stored messages. Receipts, errors, SSE change notices,
 admin context and cleanup request contracts are unchanged.
-This freezes the detail response contract only: the current backend branch
-does not yet implement the accepted window-detail endpoint. That existing
-endpoint gap remains in P7; a schema file is not evidence of a working route.
+The current Brake backend implements window-detail queries under this envelope.
+The [API contract](../brake-cloud-api/README.md) defines its guarded selector and
+response bounds. A schema fixture alone is not endpoint or live-runtime proof.
 
 Brake database migration 003 preserves canonical messages, receipt IDs/times,
 keys, content hashes and legacy projection values. Only legacy artifact
@@ -102,14 +102,16 @@ an older binary against this extended wrapper state is not qualified here.
 
 ## Integration gate
 
-Deploy neither producer nor backend during this source-only increment.
 Consumer tests cover old/new ingestion, malformed identity/version, unchanged
-receipts/history, cross-instance conflicts and query correlation. The N3 source producer gate now passes: both readers use the separate inputs,
-and actual C++ output for all nine product kinds passes matching backend
-validation/storage and exact-retry checks. This is not ARM64/live qualification. Demo Control's existing private
+receipts/history, cross-instance conflicts and query correlation. Both service
+readers use the separate inputs. Backend validation/storage and exact-retry
+checks include actual C++ output for all nine product kinds; consult the
+[protocol map](../implementation-status.md) for selected runtime evidence and
+remaining gates. Demo Control's existing private
 empty-store proof accepts Brake database 2/3 and Tire 2 without weakening its
 ownership, selector or empty-state checks. Real query/readiness/evidence
-consumers must use the new query envelopes before P7 acceptance/N6 evidence.
+consumers must use the matching query envelopes before claiming end-to-end
+compatibility.
 Tire load commands retain the accepted Unit/service/version/instance binding,
 authorization, fixed profile, lease, idempotency and 180-second ceiling;
 this migration does not invent its still-unimplemented transport or model.

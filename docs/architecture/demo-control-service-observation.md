@@ -3,9 +3,10 @@
 
 # Demo Control: service catalog and ownership inspection
 
-Read-only P5 tooling increment. It supports the
-[accepted SOTA work package](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p5-implement-sota-and-backend-plumbing-with-brake-v1)
-without creating an SP, Service, Subject, assignment, version or credential.
+These engineering catalog reads inspect current configured authorities without
+creating an SP, Service, Subject, assignment, version or credential. They are
+not the integrated Presenter product-readiness API; normal operation follows
+the [operator workflow](../operations/current-demo-workflow.md).
 
 ## Shared CLI/API contract
 
@@ -118,8 +119,7 @@ budget and 256-KiB sanitized-output limit; the shared HTTP client retains its
 12-second/2-MiB bounds. At most four profile workers run concurrently. There is
 no timer loop, process control, publication, provisioning or assignment.
 
-The initial live inspection exercised separate OEM/SP catalogs and all three
-existing service details, including a two-page 103-version legacy history.
-All observed service-to-Unit lists were empty. No existing Brake/Tire service
-identity or independent team-SP binding was established. These scoped catalog
-facts are not a claim about providers hidden from the configured OEM.
+Catalog inspection alone does not establish producer bindings, assignment,
+runtime or real function. Exact current live proof belongs to the
+[baseline](../qualification/current-baseline.md), not an older observation of
+then-empty Unit lists or a count of legacy catalog versions.

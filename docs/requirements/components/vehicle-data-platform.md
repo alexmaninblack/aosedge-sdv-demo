@@ -21,11 +21,11 @@
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- Implementation evidence: source-complete checkpoint
-  `67123333775a696a1143d0281013651b3736f0fd`, integrated as `f565251` in
-  accepted Factory-source revision
-  `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`;
-  no v1/v2/v3 prepared artifact exists
+- Implementation and artifact selection: [current implementation map](../../architecture/current-implementation.md)
+  and [runtime input lock](../../../workspace/inputs/runtime-inputs.lock.json).
+  Source, prepared artifacts, installation and functional acceptance are separate
+  evidence levels; the [current baseline](../../qualification/current-baseline.md)
+  defines the exercised scope and remaining limits.
 
 ## Purpose
 
@@ -52,16 +52,16 @@ vehicle-motion authority.
 | --- | --- |
 | What this package owns | VDP v1-v3 artifacts, trusted OEM Provider, VISS client, signal validation/normalization, versioned KUKSA data contract and outbound advisory validation |
 | What this package does not own | Factory Image, KUKSA executable, KUKSA Authorization Compatibility helper, SOTA identity/JWT lifecycle, functional-service metadata, Cloud deployment approval, Gateway implementation or functional backends |
-| Factory dependency | Healthy provider-specific empty slot, unmodified KUKSA and the separately packaged authorization compatibility substrate required by SOTA services |
+| Factory dependency | Healthy provider-specific empty slot, KUKSA resource server and the separately packaged authorization compatibility substrate required by SOTA services; current compatibility patches are identified below |
 | Intended lifecycle | Immutable component FOTA: Platform Team validates and accepts on Validation Unit first; OEM Release Authority authorizes identical accepted bytes for Production rollout, where readiness confirms delivery health rather than a second product test |
-| Current state | VDP v1-v3 source, manifests, inbound/outbound logic and packaging validators are integrated in the accepted `.21` source history; prepared ARM64 artifacts, digests, signatures, Cloud publication and live FOTA qualification are absent |
+| Current state | Common VDP runtime and V1/V2/V3 profiles are implemented and delivered. Use the selected input locks and current baseline for exact artifact and serial FOTA evidence; this does not close the complete negative/recovery acceptance matrix |
 
 ## Component and Authorization Boundary
 
 ```mermaid
 flowchart LR
     VISS["Vehicle Gateway VISS"] --> IN["Inbound provider"]
-    IN --> K["Unmodified Eclipse KUKSA"]
+    IN --> K["KUKSA resource server"]
     S["Authorized SOTA service<br/>short-lived JWT"] -->|"direct read or actuate"| K
     K --> OUT["Outbound provider"]
     OUT --> VISS
@@ -74,6 +74,11 @@ rules are specified by `CR-KAC`, outside this package. OEM review and
 authorized deployment remain lifecycle decisions. The Provider's trusted
 platform configuration is not reusable by SOTA services and is not presented
 as the generic workload-authorization model.
+
+The accepted requirements retain the original unmodified-KUKSA design target.
+The current implementation uses the explicitly documented
+[KUKSA compatibility patches](https://github.com/alexmaninblack/aos-vehicle-platform/blob/main/authorization/aos-kuksa-compat/README.md);
+do not describe these retained binaries as stock upstream builds.
 
 ## Current Implementation Baseline
 

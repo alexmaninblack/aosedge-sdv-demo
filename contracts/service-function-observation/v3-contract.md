@@ -3,11 +3,11 @@
 
 # Service function observation v3 — executable contract
 
-Frozen for consumer-first P3 implementation on 18 September 2026, under
-accepted decisions 1A and P2 option A. This is a new message discriminator,
+This implemented contract uses a separate message discriminator,
 not an expansion of Tire's legacy FUNCTION_STATUS v1/v2 or product records.
 [Schema](function-observation.v3.schema.json) and the reference
-[validator/store](function-observation.ts) precede new producers.
+[validator/store](function-observation.ts) define the consumer boundary.
+See [protocol status](../implementation-status.md) for scoped live evidence.
 
 ## Wire and meaning
 
@@ -55,7 +55,7 @@ instance and release byte-for-byte. A different Unit/service/Subject/index
 cannot inherit that ledger. This does not elect a current instance; Cloud
 matching remains mandatory at read time.
 Existing model/outbox formats and retained messages must remain readable;
-P4 must prove the producer persistence implementation before publication.
+Producer persistence/restart proof is required before publication.
 
 Idempotency key: SHA256(canonical JSON of
 [unitSystemUid,messageType,serviceInstance,generation,sequence]).
@@ -74,7 +74,7 @@ Maximum canonical message: 8192 bytes. Per binding the backend retains the
 newest 1024 full payloads by generation/sequence, while compact receipts and
 conflict digests remain until owned-run cleanup to preserve exact retries.
 No automatic model, assessment, window or advisory-history deletion.
-P4 uses a separate bounded observation allocation inside existing delivery
+The producer uses a separate bounded observation allocation inside existing delivery
 storage (at most 64 pending records); it cannot evict product messages.
 On overflow, coalesce an unsent observation without changing any attempted
 message bytes. Analytics must never block on delivery.
@@ -100,7 +100,8 @@ Schema/cleanup proofs must include receipts and conflicts; exact Test cleanup
 preserves other Units. Old wire readers and stored canonical bytes are retained.
 Consumers and cleanup adapters deploy before changed producers. The old
 Presenter remains usable because this new GET is not substituted for legacy
-status/product routes. P6 adopts it only after producer qualification.
+status/product routes. The integrated Presenter uses the matching selector;
+current-instance and release qualification remain required.
 
 ## Gates
 

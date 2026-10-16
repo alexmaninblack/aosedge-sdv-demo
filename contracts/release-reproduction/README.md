@@ -14,6 +14,21 @@ is standalone. It binds source/input locks, the component policy, maintained
 instructions and independent build/delivery selections. A consistent definition
 is not a qualified release and does not advance any artifact pin.
 
+## Reading this contract
+
+Start with the [developer guide](../../docs/getting-started/reproduce-demo.md)
+to build the demo and installer. This is the implementation reference, not a
+second prerequisite checklist.
+
+| Task | Relevant section |
+| --- | --- |
+| Understand selected sources, dependencies and reuse | [Authority and immutable inputs](#authority-and-immutable-inputs), [profiles](#profiles-and-dependency-closure) |
+| Follow the downloaded developer launcher | [One-run workflow](#one-run-macos-developer-workflow), [host preparation](#standalone-macos-developer-preparation), [storage](#explicit-build-storage) |
+| Understand public downloads and publication | [Artifact delivery](#artifact-delivery-boundary), [anonymous inputs](#anonymous-developer-input-delivery), [Dropbox publication](#dropbox-dependency-publication) |
+| Rebuild the controller image instead of reusing it | [Source-built controller input](#source-built-controller-input) |
+| Maintain compatibility with an explicitly selected private catalog | [Private catalog](#pre-clone-release-catalog); not required for public downloads |
+| Inspect build recipes, result seals and cache keys | [Build tooling](#build-tooling-boundary) |
+
 ## Current selection and compatibility identity
 
 Default validation needs no old release file, obsolete report, Git history or
@@ -102,7 +117,7 @@ The current operator catalog is separate from this build definition.
 ## Artifact delivery boundary
 
 The private publication/receipt contract below remains valid for historical
-artifacts and explicit maintainer operations. The October 10 owner-authorized
+artifacts and explicit maintainer operations. The
 [anonymous reader extension](#anonymous-developer-input-delivery) is a separate
 transport for reviewed public inputs; it does not automatically publish any
 existing file or change its permissions.
@@ -219,18 +234,18 @@ This closes a build-input delivery boundary only after its real transfer and
 consumer checks pass. It does not supply undeclared host toolchains, qualify a
 cold build, change installer/runtime trust, or imply public distribution rights.
 
-## Version policy
+## Source-built controller input
 
-The October 8 clean-build campaign additionally selects a source rebuild of
-Factory .41 while reusing `carla-macos-arm64-r1`. This explicit combination does
+The declared source-build input selects a rebuild of the locked controller
+image while reusing `carla-macos-arm64-r1`. This explicit combination does
 not change the default developer profile or enable the still-gated full-source
-profile. The old Factory checkpoint and recipe remain historical authorities.
+profile. Original input records and recipes remain immutable provenance.
 `lab factory plan` renders the successor Moulin input by binding that template
-to the checkpoint's exact .41 platform revision/version. `factory prepare`
+to the controller lock's exact platform revision/version. `factory prepare`
 creates independent pinned source checkouts and a fresh configuration inside
 the explicitly selected SSD-backed Builder. It reuses declared downloads and
 sstate, not old `tmp`, `auto.conf` or image outputs. The original guest driver
-remains the historical .11 route; the new adapter uses the pinned Moulin
+remains a legacy compatibility route; the source-build adapter uses the pinned Moulin
 configuration generator instead of changing that old driver in place.
 
 `factory build` uses the existing Factory owner and native/package/image gates,
@@ -250,12 +265,12 @@ Fresh Factory outputs require new evidence and independently reviewed downstream
 packaging identities. Preparation alone does not prove a completed image build.
 
 `build --target preparation --factory-inputs <result-root>` explicitly selects
-the [October 8 source image checkpoint](../../workspace/inputs/controller-images.lock.json).
+the [source-built controller identity](../../workspace/inputs/controller-images.lock.json).
 The result directory must be on the bound volume. Its independently pinned
 manifest, exact source/tool revisions, native/package/image results and immutable
 image size are verified; the canonical assembler hashes the image at transfer.
 Retained firmware and unsigned VDP bases keep their historical manifest checks.
-Without this option the historical Factory selection is unchanged. Source-built
+Without this option the default prebuilt controller selection is unchanged. Source-built
 Factory selection changes the preparation key and requires independent downstream
 group and Setup pins. It does not qualify a live guest or replace historical media.
 
@@ -267,6 +282,8 @@ reviewed hashes, not by latest timestamp, while older results stay intact.
 The ordered chain forwards these explicit selections only to the affected
 owners and keeps a separate invocation identity. A frozen old owner is not
 implicitly upgraded; a new chain must pin owners supporting these options.
+
+## Version policy
 
 Product numbering is `MAJOR.MINOR.PATCH`, candidates use `-rc.N`, and tags use
 `sdv-lab-v<version>`. The [operator catalog](../../workspace/launcher-catalog.json)
@@ -285,7 +302,7 @@ See the [current build inputs and remaining gates](../../docs/development/releas
 
 ## One-run macOS developer workflow
 
-The October 10 owner-approved amendment makes the downloaded wizard the single
+The downloaded wizard is the single
 entry for preparation, root checkout, source/input acquisition and the existing
 developer DMG chain. One displayed plan and confirmation covers this build-only
 route, including signing with the selected identity. `--prepare-only` retains
@@ -314,7 +331,7 @@ never the newest file. Offline fixtures are not a completed real walkthrough.
 
 ### Human progress and result presentation
 
-The October 10 owner-requested UX amendment adds in-place terminal progress
+The launcher provides in-place terminal progress
 without changing acquisition, validation, build or release authority. Input
 events carry only source-locked artifact role/name, byte totals and observed
 byte counts. Transfer, digest verification and extraction are separate phases.
@@ -334,13 +351,12 @@ Private ownership/intent metadata allows atomic advance and interrupted-update
 reconciliation. Foreign output files/directories/links or changed metadata fail
 without overwrite. Earlier results and receipts remain intact. The workflow
 record retains canonical and displayed paths; display state cannot skip any
-owner verification on repeat. This amendment changes no frozen producer plan
+owner verification on repeat. This presentation changes no frozen producer plan
 or source/input pin and requires no product rebuild for its offline UX tests.
 
 ## Standalone macOS developer preparation
 
-The October 9 owner-approved wizard replaces the six manual prerequisite
-blocks. [prepare-macos.sh](../../scripts/prepare-macos.sh) is a single downloadable
+[prepare-macos.sh](../../scripts/prepare-macos.sh) is a single downloadable
 Bash 3.2 file, runnable before a source checkout, Python or Homebrew exists.
 Its preparation phase is a host-preparation owner, not a new builder or runtime
 controller; the default continuation calls the existing repository builder.
@@ -394,13 +410,12 @@ compatibility. UI/output and recovery are described in the
 
 ### Pre-clone release catalog
 
-This subsection records the October 9 private catalog compatibility contract.
-It now requires `--private-inputs` (or `--advanced-inputs`); the ordinary route
-uses the October 10 anonymous extension below. Old records and source pins are
+This private catalog compatibility route requires `--private-inputs` (or
+`--advanced-inputs`); the ordinary route uses anonymous delivery below.
+Old records and source pins are
 preserved, not reinterpreted as public permissions.
 
-The October 9 owner-approved amendment replaces ordinary manual binding-path
-questions. For optional private-input maintenance the stable filename is `release-index.json` in the authorized
+For optional private-input maintenance the stable filename is `release-index.json` in the authorized
 `AosEdge SDV Lab Artifacts` folder. Versioning is internal: integer
 `schemaVersion` for format, positive `catalogRevision` for catalog updates,
 and immutable release records with unique `id` and `productVersion`.
@@ -551,7 +566,7 @@ or product-version promotion.
 
 ## Explicit build storage
 
-The October 9 owner amendment permits an explicitly selected writable local
+The launcher accepts an explicitly selected writable local
 APFS workspace on an internal or external disk. This is a build-tool policy
 change, not a release promotion. Earlier external-only campaign evidence and
 frozen producer commits retain their original meaning. Storage-policy checks do not establish a completed internal-disk build;
@@ -569,8 +584,8 @@ use the explicit workspace. Retained inputs, clone donors, Gateway scratch and
 the selected Factory Builder stay on its bound volume; same-volume clone
 restrictions are not relaxed. Factory keeps its independent guest-space guard.
 
-The October 10 temporary-storage amendment places disposable build/compiler,
-packaging and media staging under the selected workspace's `.tmp`. The launcher
+Disposable build/compiler,
+packaging and media staging live under the selected workspace's `.tmp`. The launcher
 binds `SDV_SCRATCH_ROOT` to that directory. Direct build commands without the
 launcher use their explicit workspace/output parent's `.tmp` on the same volume.
 Each operation owns a private marked child and a lease. Successful, failed and
@@ -756,7 +771,7 @@ for the exercised scope, exit codes and remaining gates.
 
 #### Developer result sealing
 
-Accepted on 10 October 2026: a source-reviewed schema-2 producer plan may select
+A source-reviewed schema-2 producer plan may select
 `resultPolicy: seal-developer-results-v1`. This build-only policy validates the
 same pinned sources, acquired input archives and exact upstream owner receipts,
 then seals the resulting group manifests and application digest for that build.

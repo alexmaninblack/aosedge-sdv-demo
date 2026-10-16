@@ -1,18 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Active VDP capability evidence — accepted semantic amendment
+# Active VDP capability evidence
 
-Accepted: 18 September 2026, decision 2A, subsequently corrected by the
-operator-approved Cloud-first approach on the same date. A mandatory new guest
-evidence file/timer is superseded; compatibility outcomes remain required.
-Implementation and any necessary executable schema revision follow the
-[work packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
+This contract separates Cloud-confirmed installed profiles from service-local
+input and recovery observations. It introduces no guest evidence file or timer.
+Use [protocol status](../implementation-status.md) for implementation and scoped
+qualification; compatibility and recovery outcomes below remain required.
 
-## P2 boundary clarification — option A accepted, 18 September 2026
+## Evidence ownership
 
-After executable proof that legacy metadata and the preloaded KUKSA catalog
-cannot identify the active profile, the operator selected A:
+Legacy metadata and the preloaded KUKSA catalog cannot identify the active
+publisher profile. The evidence owners are:
 
 - Exact installed VDP profile/release and version-matrix compatibility are
   Presenter observations from native Aos Cloud plus exact package binding.
@@ -20,15 +19,15 @@ cannot identify the active profile, the operator selected A:
   recover automatically without Cloud or Presenter access. A missing value
   is not evidence of a proved incompatible profile.
 - No new local active-profile file, schema, timer or transport is introduced.
-  The previous requirement that a service distinguish an unsuitable profile
-  from a suitable but silent publisher using its own evidence is superseded.
+  A service must not claim to distinguish an unsuitable profile from a suitable
+  but silent publisher without corresponding local evidence.
 - Preserve the strict five-field public metadata and family-document identity.
   Missing initial inputs must be handled by the authorized service recovery
   work, not by fabricated metadata, widened trust or a Cloud dependency.
 
-See the [proof and decision](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/service-renewal-and-local-capability-2026-09-18.md).
-This clarification selects the mechanism; it does not claim early-install,
-FOTA or reconnect implementation/qualification is complete.
+These ownership rules do not establish complete early-install, FOTA or
+reconnect qualification. Consult the current baseline rather than inferring
+acceptance from a compatible metadata schema.
 
 ## Distinct identities
 

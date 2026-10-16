@@ -32,8 +32,8 @@ for delivery and remaining proof.
   — accepted application provenance, public inputs and private KUKSA token
   sessions without new SM code changes; implementation authorized.
 - [ADR 0016: Unsigned Packages and Session-scoped Signing](0016-unsigned-packages-and-session-scoped-signing.md)
-  — accepted local source-trust and per-Cloud publication amendment; audited
-  migration, service parity and preservation of the operator's parked Test.
+  — unsigned reusable content, current-context signing, service parity and
+  preserved monotonic release/receipt identity.
 - [ADR 0017: Continuous Demo Lifecycle and Upstream Core](0017-continuous-demo-lifecycle-and-upstream-core.md)
   — accepted removal of operator Park/Resume; later explicitly authorized
   retention/recovery corrections are recorded in the current implementation.

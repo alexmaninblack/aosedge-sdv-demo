@@ -125,8 +125,8 @@ The lifecycle-based repository decision and migration gate are defined by
 - A dedicated CARLA-to-KUKSA provider and a private host-to-guest path are
   required.
 - The official demo service needs ARM64 and dependency-layer qualification.
-- The historical prototype-token flow must be replaced by the accepted ADR
-  0013 current-release compatibility flow. Current implementation and image-bound
+- Service authorization uses the accepted ADR 0013 current-release compatibility
+  flow; manually issued prototype tokens are not the runtime setup. Image-bound
   proof follow the [implementation map](../current-implementation.md).
 - The provider must expose data age and failure state without replacing stale
   values with fabricated zeroes.

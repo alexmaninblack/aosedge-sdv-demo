@@ -65,6 +65,18 @@ The [selected release](../getting-started/release-status.md) and current develop
 build plan identify exact artifact/producer sources; current documentation
 does not change those immutable selections.
 
+## Terms used throughout the documentation
+
+| Term | Meaning in this lab |
+| --- | --- |
+| Controller / Unit | The VM represents a vehicle computer; provisioning binds it to its actual Cloud Unit/Node identity |
+| Test | The current demonstration run, not a second simulator or the Staging Cloud environment |
+| Factory / Builder | The clean controller base image / the separate development VM that compiles that image |
+| VDP / KUKSA | OEM vehicle-data integration / the local authorized data interface consumed by services |
+| Service / backend | Analytics in the controller / its separate Mac-local result receiver; neither is Aos Cloud |
+| Profile / release | Functional V1/V2/V3 content / an independently allocated package number; one cannot be inferred from the other |
+| Stop / Finish | Preserve the same Test and data / explicitly retire its Cloud identity and disposable run data |
+
 ## Read deeper when needed
 
 - [Implemented architecture](current-implementation.md)

@@ -21,20 +21,24 @@
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 exact product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
-- Implementation baseline: `tire-health-service` at the demo-v1.1 dependency pin; current V1 product and proof scope below
+- Implementation baseline: selected source lock and current implementation/qualification map
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
-## Native service input amendment — 2026-09-11
+## Effective input and deployment profile
 
-[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
-and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
-are accepted for this package. They replace the fixed token-root leaf and
-mandatory final service/model OCI digest obligations below, while preserving
-the referenced legacy records and all unrelated requirements. Use the
-[current input contract](../../architecture/demo-control-service-inputs.md);
-application version comes from the package, not public Unit metadata.
-Implementation and live gates remain in the
-[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+This is an accepted requirement allocation, not an implementation-status diary.
+[Native service inputs](../../architecture/demo-control-service-inputs.md)
+use package release provenance, native Aos identity, strict public metadata v2
+and private volatile credentials. Legacy product messages retain their own
+decoder/provenance; mandatory final OCI-digest and fixed shared token-leaf
+examples do not govern new messages.
+
+Installed use is one Test and one associated SP with independent services and
+integrated Presenter views. Expanded dual-role/two-SP promotion and resource
+proof obligations remain where allocated; they are not first-use prerequisites.
+The [implementation map](../../architecture/current-implementation.md) and
+[baseline](../../qualification/current-baseline.md) own current source/proof.
+Accepted requirement Statements and stable UT IDs below are unchanged.
 
 ## Purpose
 

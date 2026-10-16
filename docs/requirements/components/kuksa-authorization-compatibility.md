@@ -23,17 +23,21 @@ for selected evidence, code ownership and protocol amendments. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
-## Native service input amendment — 2026-09-11
+## Effective input and deployment profile
 
-[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
-and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
-are accepted for this package. They replace the fixed token-root leaf and
-mandatory final service/model OCI digest obligations below, while preserving
-the referenced legacy records and all unrelated requirements. Use the
-[current input contract](../../architecture/demo-control-service-inputs.md);
-application version comes from the package, not public Unit metadata.
-Implementation and live gates remain in the
-[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+This is an accepted requirement allocation, not an implementation-status diary.
+[Native service inputs](../../architecture/demo-control-service-inputs.md)
+use package release provenance, native Aos identity, strict public metadata v2
+and private volatile credentials. Legacy product messages retain their own
+decoder/provenance; mandatory final OCI-digest and fixed shared token-leaf
+examples do not govern new messages.
+
+Installed use is one Test and one associated SP with independent services and
+integrated Presenter views. Expanded dual-role/two-SP promotion and resource
+proof obligations remain where allocated; they are not first-use prerequisites.
+The [implementation map](../../architecture/current-implementation.md) and
+[baseline](../../qualification/current-baseline.md) own current source/proof.
+Accepted requirement Statements and stable UT IDs below are unchanged.
 
 ## Purpose and Boundary
 

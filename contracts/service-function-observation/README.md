@@ -5,11 +5,10 @@
 
 Implementation and qualification: [protocol status](../implementation-status.md).
 
-Accepted semantics: decisions 1A and 2A, 18 September 2026. The
-[v3 executable contract](v3-contract.md), closed schema, producers, backend
-consumers and Presenter selectors are implemented and have scoped live
-evidence. Remaining acceptance and freshness observations are recorded in the
-[work packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/work-packets/versioned-service-observability.md).
+The [v3 executable contract](v3-contract.md), closed schema, producers, backend
+consumers and Presenter selectors are implemented. Use the protocol status
+above for scoped live evidence and remaining acceptance/freshness limits;
+implementation is not proof of every failure and recovery case.
 
 ## Authority and axes
 
@@ -25,7 +24,7 @@ Keep these independent facts:
   explicit evidence source. Presenter installed-profile evidence comes from
   native Cloud plus exact artifact metadata; service-local capability/input
   observations remain independent. Neither implies the other is current.
-  The subsequent P2 option-A clarification assigns exact version/profile
+  The current contract assigns exact version/profile
   comparison to Cloud/package evidence in Presenter; services do not need a
   new local profile transport and must not infer incompatibility from absent
   samples. Legacy Tire `requiredVdpContractVersion: 3.0.0` is not comparable
@@ -48,8 +47,8 @@ Keep these independent facts:
 Routine credential renewal must remain distinguishable from lost source data.
 Mandatory token replacement/reconnection and fail-closed expiry are unchanged.
 An uncorrelated cached advisory ACK is not a current success and is not, by
-itself, evidence of failed analytics. These distinctions must be frozen in
-the bounded observation schema before the changed service producers ship.
+itself, evidence of failed analytics. These distinctions are part of the
+bounded v3 observation contract, not optional display heuristics.
 
 No continuous raw-telemetry stream, new inbound guest listener, arbitrary
 command or dependency of local analytics on backend connectivity is introduced.
@@ -57,8 +56,9 @@ command or dependency of local analytics on backend connectivity is introduced.
 ## Boundedness and migration
 
 Emit state-change observations and a bounded periodic freshness observation.
-Specify maximum message size, rate, retained status history and offline
-behavior before implementing the new wire revision. Reuse service delivery
+Preserve the v3 contract's message size, rate, retained status history and
+offline bounds. Any new wire revision must specify those bounds before
+producer changes. Reuse service delivery
 workers; never block KUKSA consumption on HTTP. Late historical status cannot
 replace newer function state merely because its receipt is later.
 

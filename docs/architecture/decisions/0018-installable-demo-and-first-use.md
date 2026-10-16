@@ -17,7 +17,7 @@
 
 ## Decision
 
-On 11 October the user authorized the [integrated Setup scenario](../../../contracts/distribution-installation/native-setup.md#integrated-user-journey): automatic default
+Use the [integrated Setup scenario](../../../contracts/distribution-installation/native-setup.md#integrated-user-journey): automatic default
 installation, one authenticated OEM/SP Connect action, bounded missing-SP
 repair without Test deletion, paired token enrollment with official registration
 handoff, and a signed per-user persistent launcher. Reuse all existing owners;
@@ -34,8 +34,9 @@ operator does not build Unreal, CARLA, Python, the host UI or vehicle services.
 Docker Desktop is an explicit separately installed prerequisite with its own
 operator acceptance and licensing; do not silently install or reconfigure it.
 
-On 1 October the user accepted the separate native **Prepare backends** step:
-the trusted Setup wrapper imports the pinned untagged image set into the already
+The backend-preparation engine is composed inside ordinary Install; it is not
+another required screen. The trusted wrapper imports the pinned untagged image
+set into the already
 running local Docker Desktop engine. It uses existing instance/package leases
 and the Demo Control writer; only a private attempt record is added for lost
 response reconciliation. Docker remains image-readiness authority. No second
@@ -75,7 +76,7 @@ Before external delivery, close Developer ID/notarization, dependency notices
 and redistribution review, and declare only the measured support envelope.
 Do not disable OS security to make installation work.
 
-On 29 September the user selected direct beta distribution: Developer ID
+The accepted direct beta channel uses Developer ID
 Application signing and Apple notarization, delivered through a DMG rather
 than TestFlight. This refines the existing delivery channel, not vehicle/runtime
 authority. Apple Development remains an explicitly local engineering signature.
@@ -92,12 +93,10 @@ the required hardened-runtime/entitlement behavior and strict signatures before
 submitting the exact archive to Apple. A successful local DMG build, developer
 signature or checksum alone does not qualify distribution or notarization.
 
-## Single DMG delivery accepted on 2 October 2026
+## Single DMG delivery
 
-The user accepted the operator-experience direction and requested complete media
-as the first implementation milestone. Ship the trusted native Setup and its
-matching complete runtime kit in one DMG. Setup may discover only the fixed
-sibling payload and prefill its source field; the existing independently pinned
+Ship the trusted native Setup and its matching complete runtime kit in one DMG.
+Setup discovers only the fixed sibling payload internally; the independently pinned
 validation still authenticates it. Discovery is not installation or readiness.
 No folder picker is needed on the ordinary mounted-media path. No arbitrary
 payload code is executed and no Cloud, dependency installation or runtime start
@@ -106,13 +105,14 @@ is added to the offline transaction.
 Build from the current verified kit without rebuilding Factory or CARLA. Verify
 the mounted media and install on M1 without a separately staged kit fallback.
 The candidate remains local engineering media until signing, notarization and
-redistribution gates close. Persistent launcher installation, unified onboarding
-and the guided scenario are accepted direction but later implementation slices;
-do not claim that wrapping today's Setup completes those deliverables.
+redistribution gates close. The persistent launcher and integrated onboarding
+are implemented through the engines below. A complete guided scenario and
+full native return journey remain separate from opening the existing lab.
 
 <a id="current-implementation--7-october-2026"></a>
 
-## Current implementation — 15 October 2026
+<a id="current-implementation--15-october-2026"></a>
+## Current implementation
 
 The selected preview implements complete DMG delivery, private state,
 integrated Setup, backend-image preparation, Cloud connection/enrollment/recovery
@@ -120,69 +120,61 @@ and Presenter launch through existing owners. The current Presenter also
 provides Stop demo and keep data / Start controller for a retained Test.
 The [current baseline](../../qualification/current-baseline.md) separates
 118 API/42 visible UI, native Setup issuance, public consumer and remaining
-installation/recovery/distribution gates. The original staged paragraphs below
-describe historical allocation, not today's missing-feature list.
+installation/recovery/distribution gates. The ownership allocation below is
+effective architecture, not a chronological missing-feature list.
 
-## Staged allocation and non-claims
+<a id="staged-allocation-and-non-claims"></a>
+## Installed engines and non-claims
 
-The [installation contract](../../../contracts/distribution-installation/README.md)
-freezes the first offline transaction slice. It installs only immutable bytes,
-has no runtime activation entry point and never opens operator state. Therefore
-it does not yet change the existing runtime root, state owner or Cloud protocol.
-The broader canonical architecture/flow/requirements cascade and installed
-runtime path separation are gates before enabling activation, first-use SDK
-enrollment, update switching or removal. Keep this work on its architecture
-branch until that cascade and its tests are complete.
-
-The subsequent [installed-state slice](../../../contracts/distribution-installation/installed-state.md)
-has completed that canonical path-separation cascade and its isolated Kit 005
-proof. It adds explicit engineering instance selection, not native activation
-or onboarding. The [evidence and remaining gates](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installed-state-2026-09-27.md)
-distinguish these outcomes from the first transaction slice above.
+The [installation engine](../../../contracts/distribution-installation/README.md)
+validates and installs immutable bytes offline; it never creates Cloud state
+or a vehicle run. The [installed-state boundary](../../../contracts/distribution-installation/installed-state.md)
+separates selected programs and read-only inputs from private credentials,
+mutable outputs and run state. Setup composes these engines without giving
+the transaction readiness authority.
 
 The [version-selection/recovery detail](../../../contracts/distribution-installation/version-selection.md)
-now refines the same ownership decision: explicit compatible manifest selection,
+implements explicit compatible manifest selection,
 runtime-use leases, stale-action rejection and program-only recovery with the
 original bytes retained. This engineering layer permits only quiescent instances
 without a retained current run; it does not authorize deleting run data to allow
 an update. Native activation, retained-run updates and destructive removal remain
 separate gates, not consequences of a successful local selection.
 
-The [native local-setup detail](../../../contracts/distribution-installation/native-setup.md)
-wraps these same engines with bounded progress and explicit local preparation.
-Its original preparation actions remain offline. The separate explicit-launch
-increment opens the selected instance using existing Demo Control ownership,
-leases and workspace restoration, without version activation or VM/Cloud
-mutations. Source/native/live qualification remain distinct; enrollment is open.
+The [native Setup](../../../contracts/distribution-installation/native-setup.md)
+wraps the engines with bounded progress, explicit local preparation and launch.
+Open demo restores the selected instance through existing Demo Control
+ownership, leases and workspace layout. Opening Presenter alone does not
+manufacture a controller or simulator.
 
-The accepted 29 September [first-use completion detail](../../../contracts/distribution-installation/cloud-first-use.md)
-now has source implementation for one-shot SDK enrollment, durable private
-attempt/key recovery and explicit exact unbound Subject references. The existing
-assignment owner rechecks a saved reference before use; installation cannot bind
-it to a Unit. Native secure input and the existing writer/leases preserve the
-same ownership boundary. Source/fixture results do not qualify real token
-issuance, ordinary installed first use, or clean-system acceptance.
+The [first-use engine](../../../contracts/distribution-installation/cloud-first-use.md)
+owns one-shot SDK enrollment, durable private attempt/key recovery and exact
+unbound Subject references. The assignment owner rechecks a saved reference
+before use; installation cannot bind it to a Unit. Native secure input and
+the writer/leases preserve the same ownership boundary. Existing-account
+certificate issuance has scoped native M1 evidence; new-account signup,
+state migration, public notarization and the full native return journey are
+not implied by that result.
 
-The complete wizard, state migration, public signing/notarization and full native
-E2E remain separate deliverables. DMG, backend import and installed scripted M1
-evidence are recorded separately; they are not full wizard/native acceptance. Installing
-bytes must report `INSTALLED_NOT_ACTIVATED`, never claim the demo is ready.
+Installing bytes reports `INSTALLED_NOT_ACTIVATED`, never demo readiness.
+Backend import, Cloud access, controller/simulator startup and functional
+delivery retain independent checks and the current baseline's verdicts.
 
 ## Impact and preservation
 
-Accepted 28 September first-use refinement: Demo Control initializes a separate
+Demo Control initializes a separate
 private local Gateway server identity during explicit first simulator start,
 as defined in the [local-trust contract](../../../contracts/distribution-installation/local-gateway-trust.md).
 This is local lab authority, not an Aos Cloud/OEM certificate or system trust
-enrollment. It fills the previously explicit missing server-TLS prerequisite;
+enrollment. It supplies the server-TLS prerequisite;
 client mTLS and selected-Unit authorization remain unchanged.
 
 Owner: integration distribution tooling and the existing Demo Control. No
 vehicle service, Gateway, Factory, model threshold or AosCore change is needed.
-Preserve the existing source work, current live Test/Production, credentials,
-video repository, package pins and warm build caches. The source `demo-v1.1`
-tag stays immutable; installation candidate identity is the manifest digest,
-not a reused application version label.
+Preserve existing source work, unrelated Test/Production data, credentials,
+the video repository, package pins and warm build caches. Source tags remain
+immutable; installation candidate identity is the manifest digest, not a
+reused application version label.
 
-Evidence is recorded per delivery slice in the distribution plan. A source
+Evidence is selected by the current baseline. A source
 test, local installation and clean-system/live proof remain distinct verdicts.

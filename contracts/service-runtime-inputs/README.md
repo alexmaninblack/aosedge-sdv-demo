@@ -9,7 +9,7 @@ Status: accepted input contract under
 [ADR 0015](../../docs/architecture/decisions/0015-use-native-aos-service-runtime-inputs.md);
 implementation and live qualification are separate.
 
-18 September accepted amendment: [active VDP capability evidence](active-vdp-capability-amendment.md)
+The [active VDP capability evidence contract](active-vdp-capability-amendment.md)
 defines profile/release/capability observation, corrected to use native Cloud
 for Presenter inventory and verified artifact/profile binding. The strict v2
 schema below remains unchanged. No guest timer or mandatory new input revision
@@ -24,7 +24,7 @@ is prescribed; service-local compatibility/recovery still requires proof.
 - [Credential placement profile](credential-placement.v1.json): private
   sessions using the unchanged native resource mount mechanism.
 - [Placement and sequence](../../docs/architecture/demo-control-service-inputs.md).
-- [Ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+- [Current implementation and qualification](../implementation-status.md).
 
 The old seven-field schemaVersion 1 runtime input is not a fallback for new
 readers. This does not remove the decoder for historical product messages.

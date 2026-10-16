@@ -3,9 +3,11 @@
 
 # Demo Control: verification-Test component publication
 
-P2 source increment, 10 September 2026. Implements the publication portion of
-the [accepted delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p2-make-cloud-observations-and-publication-results-truthful).
-No live upload, delivery, runtime start or P3 qualification is claimed here.
+This document specifies current-Test component publication, bounded Cloud
+reconciliation and serial-version delivery rules. Publication, installation
+and functional readiness are separate facts. Consult the
+[current baseline](../qualification/current-baseline.md) for exact exercised
+runtime/media scope; this specification is not a qualification receipt.
 
 ## Commands and stages
 
@@ -62,12 +64,6 @@ declarations block publication; there is no hardcoded .31 exception. The
 now supply this declaration; registration is not a hidden upload side effect.
 Tests use an explicit declared fixture, not an invented compatibility claim.
 
-The integrated read-only `component cloud-status 15.0.0` observed the exact
-historical bundle `2489fb29-8169-4451-8d32-4926c12c0607` as `done` with
-`build_info=Done` and the matching real catalog version `Ready` at
-2026-09-09 16:07 UTC. It returned publication `READY` independently of Test's
-reported `Offline` connectivity and installed version. No upload was repeated.
-
 ## Documented API and read bounds
 
 Source: [OpenAPI v11 / 6.1.53](https://api.aoscloud.io/api/v11/openapi.json).
@@ -99,4 +95,4 @@ ID, digest, OEM and recipient coverage. New receipts are marked
 `publicationPath=VERIFICATION_TEST`. Retirement can confirm their exact Ready
 publication without an approve record; historical engineering receipts retain
 their existing batch proof. Processing/error/unknown outcomes stay unresolved;
-failed-update recovery is not invented by this increment.
+failed-update recovery is not inferred from a publication receipt.

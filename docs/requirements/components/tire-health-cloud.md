@@ -22,17 +22,21 @@
 - Implementation baseline: `tire-health-cloud` at the candidate source-lock pin; real HTTP/SQLite backend
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
-## Native service input amendment — 2026-09-11
+## Effective input and deployment profile
 
-[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
-and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
-are accepted for this package. They replace the fixed token-root leaf and
-mandatory final service/model OCI digest obligations below, while preserving
-the referenced legacy records and all unrelated requirements. Use the
-[current input contract](../../architecture/demo-control-service-inputs.md);
-application version comes from the package, not public Unit metadata.
-Implementation and live gates remain in the
-[ordered migration](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
+This is an accepted requirement allocation, not an implementation-status diary.
+[Native service inputs](../../architecture/demo-control-service-inputs.md)
+use package release provenance, native Aos identity, strict public metadata v2
+and private volatile credentials. Legacy product messages retain their own
+decoder/provenance; mandatory final OCI-digest and fixed shared token-leaf
+examples do not govern new messages.
+
+Installed use is one Test and one associated SP with independent services and
+integrated Presenter views. Expanded dual-role/two-SP promotion and resource
+proof obligations remain where allocated; they are not first-use prerequisites.
+The [implementation map](../../architecture/current-implementation.md) and
+[baseline](../../qualification/current-baseline.md) own current source/proof.
+Accepted requirement Statements and stable UT IDs below are unchanged.
 
 ## Purpose
 
@@ -72,8 +76,8 @@ and shall never be manually fabricated.
 
 ## Product Views and Authority
 
-The Function Dashboard may be one web application with three visually and
-logically separated views:
+The logical Function Dashboard separates release authoring, product data and
+role-scoped diagnostics:
 
 | View or adjacent surface | Presented information or action | Authoritative source | Explicit prohibition |
 | --- | --- | --- | --- |

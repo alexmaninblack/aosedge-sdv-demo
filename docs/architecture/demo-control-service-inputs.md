@@ -92,7 +92,7 @@ before starting analytics. Persistent model/outbox data stay in native
 
 <a id="native-launch-boundary--confirmed-11-september-2026"></a>
 
-### Native launch boundary — confirmed 11 September 2026
+### Native launch boundary
 
 Container launch and retained-instance recovery remain native AosCore duties.
 Do not add a launcher, container startup wrapper, token/identity SM patch or
@@ -100,7 +100,7 @@ replacement container lifecycle for these inputs. Demo Control prepares our
 packages and public inputs; the Factory image carries the declared resource
 configuration. Generic native lifecycle bug fixes are tracked separately.
 
-The pinned AosCore revision `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`
+The retained AosCore revision `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`
 implements `Instance::Start`, `CreateAosEnvVars`, `AddResources` and
 `CRunRunner::StartContainer` (direct `libcrun_container_run`). The published
 Launcher page describes a systemd template that does not match that runner;
@@ -108,12 +108,11 @@ its `aos-service@.service` example is not an available integration hook in
 this revision. See [native Instance](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp)
 and [native CRunRunner](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/crunrunner.cpp).
 
-N5 concerns reconstructing our volatile input files, not implementing native
-container recovery again. A missing application input is not evidence that
-AosCore cannot launch a container. Cold-start input ordering was open on
-11 September; the .33 checkpoint above supplies its scoped live evidence.
-It changes neither the five-field schema nor the provenance authority and
-read-only mount contract, and does not establish real KUKSA authorization.
+Cold preparation reconstructs volatile input files; it does not reimplement
+native container recovery. A missing application input is not evidence that
+AosCore cannot launch a container. The five-field schema, provenance authority
+and read-only mount contract remain unchanged. Startup and KUKSA authorization
+require their own evidence in the current baseline.
 
 ### Required sequence
 
@@ -122,8 +121,8 @@ read-only mount contract, and does not establish real KUKSA authorization.
 2. Before launch, project native Unit/role, committed VDP and public trust.
    Reject missing/contradictory inputs instead of supplying placeholders.
 3. Load the Factory-packaged native resource configuration at SM initialization,
-   not via hot reload. .33 requires no runtime activation or SM restart for
-   routine service deployment. The older explicit activation command is an
+   not via hot reload. Routine service deployment requires no runtime
+   activation or SM restart. The explicit activation command is an
    engineering migration operation, not a normal preparation step.
 4. Assign service IDs through the existing Subject operation. Native Aos
    determines the actual instance and version.
@@ -134,8 +133,7 @@ read-only mount contract, and does not establish real KUKSA authorization.
 7. Cold start restores the /run sources from verified committed state before
    automatic retained assignments launch, without requiring a running VDP.
    After native SM recovery, verify process/slot agreement. Warm refresh still
-   requires that agreement. This split was explicitly accepted on 11 September
-   2026; it changes no SM code or container lifecycle.
+   requires that agreement. This split changes no SM code or container lifecycle.
 
 No direct guest reads are added to the Presenter platform dashboard; Cloud
 remains its platform-state source. Engineering input projection/inspection is
@@ -143,18 +141,15 @@ a Demo Control operation, separate from dashboard observation.
 
 <a id="cold-start-ordering-conflict--11-september-2026"></a>
 
-### Historical cold-start ordering conflict — 11 September 2026
-
-The first warm public projection and its unchanged repeat succeeded through
-`democtl service runtime-prepare test` on the existing Test with VDP 18.0.0.
-This does not establish a cold-start integration hook.
+<a id="historical-cold-start-ordering-conflict--11-september-2026"></a>
+### Cold and warm projection ordering
 
 The existing platform `aos-vehicle-data-provider-bootstrap.service` runs the
 store check before `aos-sm.service`; it does not start VDP. The VDP service is
 explicitly not enabled independently: component runtime
 `SystemdSlotComponentRuntime::Start()` calls `Recover()`, which validates the
-committed slot and starts the provider. The current projector requires a
-running provider whose process matches that committed slot. Putting this
+committed slot and starts the provider. The warm projector requires a
+running provider whose process matches that committed slot. Putting the warm
 projector into the pre-SM store check would therefore prevent SM from reaching
 the code that starts the provider. The negative fixture verifies that no
 public input is published when the provider is absent.
@@ -167,8 +162,7 @@ under the same layer. These are our component/startup integration, not a missing
 native container capability. The pinned native runner has no per-container
 systemd template into which this preparation can be inserted.
 
-The user explicitly accepted the cold/warm split on 11 September 2026:
-prepare cold-start inputs from validated committed state, then verify the
+Prepare cold-start inputs from validated committed state, then verify the
 process after SM recovers VDP. An interrupted transaction does not authorize
 using an intermediate slot or claiming functional readiness. Native component
 recovery remains responsible for that transaction; public projection must
@@ -185,13 +179,9 @@ describes this authority; the [native file implementation](https://github.com/ao
 reads the configured file and trims whitespace. Initial activation and warm
 observations still reconcile this source with native IAM.
 
-Implementation and live startup/reboot evidence are tracked separately in the
-delivery plan. Acceptance does not itself mark N4/N5/N6 complete.
-
 ## Migration and remaining evidence
 
-[The delivery plan](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
-owns the ordered work and its actual status. Product-message migration must
+[Product-message compatibility](../../contracts/service-runtime-inputs/product-message-migration.md) must
 cover the service digest **and** Brake's modelArtifactSha256 alias of it.
 Retain modelConfigSha256 and the VDP compatibility digest. Do not invent a
 replacement artifact hash. New messages use an explicit new schema version;
@@ -200,10 +190,9 @@ legacy queues and backend records remain readable and are never relabelled.
 Native environment/resource behavior was inspected at AosCore
 `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`; evidence links and limitations
 remain in [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md#9-evidence-and-limitations).
-Native container startup with Enforcing SELinux, synthetic backend ingestion
-and retained-assignment cold start had scoped .33 evidence. Later real native
-KAC/TLS/subscriptions/renewal, private sessions and vehicle-derived products
-have the [current .39 evidence](../qualification/current-baseline.md).
-The old Cloud-permissions block is not the current integration state.
+The [current baseline](../qualification/current-baseline.md) selects scoped
+startup/reboot, native KAC/TLS/subscription renewal, private-session and
+vehicle-derived product evidence. It is not blanket acceptance of every
+restart/failure combination.
 Exact profile comparison uses Cloud in Presenter; services validate local
 inputs independently. Full negative-matrix acceptance remains separate.

@@ -61,7 +61,7 @@ remain the stable service boundary.
 | Repository | Owns | Lifecycle |
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
-| `aos-vehicle-platform` | Vehicle Data Platform Component source and FOTA payload; factory/rootfs integration for unmodified KUKSA, Service Manager/IAM, the current-release removable `aos-kuksa-auth-compat` helper under `authorization/aos-kuksa-compat/`, and the OEM-trusted Provider-side KUKSA integration | OEM Platform Team; VDP FOTA and separately governed factory/system-integration artifacts |
+| `aos-vehicle-platform` | Vehicle Data Platform Component source and FOTA payload; factory/rootfs integration for KUKSA with documented compatibility patches, Service Manager/IAM, the current-release removable `aos-kuksa-auth-compat` helper under `authorization/aos-kuksa-compat/`, and the OEM-trusted Provider-side KUKSA integration | OEM Platform Team; VDP FOTA and separately governed factory/system-integration artifacts |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
 | `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; public repository exists and its accepted revision is pinned in the workspace contract |
 | `brake-health-cloud` | Function Team 1 backend, Brake Health Function Dashboard and client integration with the common publication helper surface pre-bound to `brake-sp1` | Function Team 1 Cloud product; public repository exists and its accepted revision is pinned in the workspace contract; its current local PKCS#12 remains outside the repository, browser and container |

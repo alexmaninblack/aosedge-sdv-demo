@@ -32,18 +32,16 @@ explicit. `repositories.json` and its schema remain hash-bound compatibility
 inputs of existing build/payload definitions, not the current maintenance map.
 Do not delete or rewrite them while that product depends on their exact bytes.
 
-The former Stage 0 machine-observation report is no longer a build input.
-Vehicle preparation reads the current firmware/VDP definition and the service
-input lock; host observations, obsolete tool versions and copied service pins
-do not participate. This source migration does not modify a frozen producer
-checkout, completed recipe receipt, selected DMG or existing cache namespace.
+Vehicle preparation reads the firmware/VDP definition and service input lock.
+It does not use a host-observation report or a second copied service inventory.
+The selected controller input is a bootable Linux/AosEdge image for the ARM64
+virtual controller, not the separate Linux VM used to build that image.
 
-The cache compatibility record preserves exact existing namespaces and retained
-input provenance without rewriting receipts, relabeling artifacts or inheriting
-qualification. Its old storage label is not the current product identity. A
-changed input closure requires an explicitly reviewed successor namespace; the
-projection tool refuses automatic rebinding. Frozen producer checkouts retain
-their own historical files and are not rewritten during source maintenance.
+The cache compatibility record preserves exact namespaces and input provenance.
+Its storage label is not the product version or qualification status. A changed
+input closure requires an explicitly reviewed successor namespace; projection
+tools refuse automatic rebinding. Source maintenance never rewrites a frozen
+producer, completed recipe receipt or selected DMG.
 
 ```sh
 python3 -B scripts/validate-release-definition

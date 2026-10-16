@@ -1,7 +1,11 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-## Studio Test contract migration — implemented state, 24 September 2026
+# Tire Health Cloud API — Accepted Contract
+
+Implementation and qualification: [protocol status](../implementation-status.md).
+
+## Effective installed profile
 
 The backend supports one current Test and optional retained Production context;
 Test-only cleanup rejects unrelated selectors and preserves peer records.
@@ -11,10 +15,7 @@ conformance. Use the [as-implemented administrative protocol](studio-current-wir
 for exact requests, responses, counts and guards. No handler or frozen digest
 is changed by this documentation correction.
 
-# Tire Health Cloud API — Accepted Contract
-
-Implementation and qualification: [protocol status](../implementation-status.md).
-
+## Contract and authority
 - Decision: `D4-019`
 - Lifecycle state: `ACCEPTED`
 - Contract version: `1.0.0`

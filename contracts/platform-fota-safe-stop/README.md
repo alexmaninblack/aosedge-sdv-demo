@@ -7,7 +7,7 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 
 - Architecture decision: [ADR 0014](../../docs/architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Contract version: 1.1.1
-- Lifecycle state: design accepted; implementation and live qualification are open
+- Lifecycle state: accepted policy; implemented scoped FOTA proof follows the current baseline
 
 This contract fixes the Safe Stop evidence, policy, lifecycle gate and recovery
 behavior used by the factory-installed OEM Component Runtime before applying a
@@ -87,49 +87,28 @@ The profile is specific to the first demonstration qualification. A production
 vehicle may use a different Vehicle State Manager and different homologated
 thresholds behind the same runtime-owned policy boundary.
 
-## Local Test clock-age exception — 2026-09-06
+## Effective timing profiles
 
-The operator explicitly authorized `safeStopFreshnessProfile: "demo-5s"` in
-the Test .29 SM bootstrap runtime configuration to continue the local CARLA
-demo despite approximately 2.016 seconds of Mac/VM clock skew. This is a
-separate demonstration exception, not compliance with the unchanged 1.1.1
-250-ms profile. It admits up to 5000 ms source age both at acquisition and
-at each destructive gate, including genuinely delayed data within that bound.
-That original exception was not symmetric: future timestamps remained rejected.
-The local Test behavior below supersedes that restriction on 2026-09-10.
-
-Omitting the setting retains `standard` (250 ms); other values are rejected.
-The twelve distinct advancing frames, mode/transition, motion/brake/throttle,
-generation/reset, completeness, transport identity, bounded waits and rollback
-conditions are unchanged. Production and signed VDP profile hashes are not
-modified. The initial proof uses a temporary Test-only SM binary/config mount;
-it does not qualify or alter the immutable Factory .29 image. The independent
-StopInstance/StartInstance correction is now proven by Test VDP 7.0.0; see the
-[qualification record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/democtl-vdp-family.md).
+| Vehicle role | Source-age interval at acquisition and each destructive gate | Read deadline |
+| --- | --- | --- |
+| Standard / Production role / missing role | 0 through 250 ms; future values rejected | 250 ms |
+| Explicit Test role, `demo-5s` | -5000 through +5000 ms, inclusive | 1000 ms maximum, not a fixed wait |
 
 <a id="local-test-timing-2026-09-10"></a>
+The Test allowance handles the single-Mac demonstration's clock skew and
+delayed data; it is not compliance with the unchanged standard profile or
+proof of synchronization/real-time behavior. Cloud environment does not select
+this policy: a Test on Production Cloud is still the vehicle Test role.
+The immutable bootstrap field and standard signed profile remain 250 ms.
+Only the explicit persistent role selects the effective demo allowance;
+unknown profile values are rejected.
 
-## Revised local Test timing allowance — 2026-09-10
-
-The operator authorized less restrictive timing for the single-Mac demo,
-which is not a demonstration of real-time guarantees. Effective `demo-5s`
-now admits signed source age from **-5000 through +5000 ms**, inclusive,
-at acquisition and at each destructive gate. This includes both clock skew
-and delayed data within that bound; it is not a claim of clock synchronization.
-The read deadline becomes **1000 ms**, a maximum rather than a fixed delay.
-
-The immutable bootstrap field remains 250 ms. Effective timing is selected
-after reading the persistent role: Test uses the demo allowance; Production
-and missing role retain standard timing (250 ms age/read, no future allowance).
-The standard 1.1.1 profile and its signed hashes remain unchanged.
-
-Twelve distinct coherent advancing frames, actual SAFE_STOP/STABLE, physical
-thresholds, generation/reset checks, TLS identity, cancellation, transaction
-deadlines and rollback remain unchanged. Every new transaction reconstructs
-evidence; a cached frame cannot manufacture stability. This is initially a
-targeted transient SM proof on the current Test `.31`, not a rebuilt or newly
-qualified Factory image. See the
-[current implementation checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/demo-studio-implementation-progress-2026-09-10.md).
+Both profiles require twelve distinct coherent advancing frames, actual
+SAFE_STOP/STABLE, physical thresholds, generation/reset checks, strict transport
+identity, cancellation and transaction deadlines. Every destructive operation
+revalidates fresh evidence; no cached frame or durable sample creates authority.
+The earlier temporary `.29`/`.31` probes and asymmetric exception are Git
+history, not another active timing profile.
 
 ## Queued cold-boot recovery correction — accepted 2026-09-10
 
@@ -141,14 +120,11 @@ and removal, matching the existing ordinary-installed recovery behavior.
 The intentionally stopped predecessor and empty first-install branches are
 unchanged; all resumed destructive steps reconstruct fresh Safe Stop evidence.
 
-The native runtime does not invent a missing active selector. The operator
-separately authorized one bounded Demo Control repair of the current Test's
-selector from its matching saved 17.0.0 records, after the old FailClosed path
-removed it. No durable installed/transaction record, Cloud assignment, immutable
-Factory image or Production state is rewritten by that repair. Qualification
-remains recorded in the current implementation checkpoint.
+The runtime never invents a missing active selector. Recovery failure retains
+diagnostic/transaction state for exact reconciliation; a one-off historical
+selector repair is not a normal boot or installation instruction.
 
-## Durable local-demo input integration — Factory .30
+## Durable local-demo input integration
 
 The Factory opts into `demoLocalSourceInputs`; without it the native credential
 paths and default profile are unchanged. Public CA, source binding, selected
@@ -164,4 +140,5 @@ VDP `LoadCredential` entries read the public input files from persistent data.
 Reboot retains configuration, not authorization from old Safe Stop samples:
 every destructive operation still requires fresh live evidence. The existing
 source-selection operation owns reconnecting the local CARLA transport.
-This integration is being qualified; it is not yet a clean-build E2E result.
+The [current baseline](../../docs/qualification/current-baseline.md) maps the
+selected image to scoped FOTA/ignition proof and the remaining negative matrix.

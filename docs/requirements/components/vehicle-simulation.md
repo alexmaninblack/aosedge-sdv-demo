@@ -17,15 +17,16 @@
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 control decision: [D4-004 Simulator Control and Context Contract](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
-- Implementation baseline: candidate `CarlaSim@eb09b824` and `carla-ego-runtime@2e3d1164`; original runtime `22864c5` is historical
+- Implementation: [current map](../../architecture/current-implementation.md); source/candidate pins and proof are independently selected
 
 ## Purpose
 
 This package expands the Vehicle simulation allocation into testable
 requirements for the virtual physical vehicle and deterministic scenario
 controller. It preserves the already working CARLA braking demonstration and
-identifies the Tire Health stimulus and complete source-binding proof that
-remain to be implemented.
+allocates Tire Health stimulus, complete source binding and deterministic
+calibration proof. Native maneuvers are implemented; the full hidden-profile
+calibration/repeatability matrix remains separately required.
 
 ## Reader Summary
 

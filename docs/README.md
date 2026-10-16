@@ -57,8 +57,9 @@ These are normative obligations, not claims that every case is implemented:
 7. [Executable contracts](../contracts/README.md) and
    [implemented protocol/amendment status](../contracts/implementation-status.md).
 
-Later accepted amendments take precedence over original expanded two-vehicle,
-two-provider and lifecycle examples. Stable requirement IDs remain in their
+The installed profile is one Test and one associated SP; the explicitly
+labelled expanded profile adds two-provider/vehicle-promotion obligations.
+Use each document's effective profile, not earlier review examples. Stable requirement IDs remain in their
 canonical documents. [Architecture decisions](architecture/decisions/README.md)
 retain current rationale; explicitly superseded decisions are Git references.
 

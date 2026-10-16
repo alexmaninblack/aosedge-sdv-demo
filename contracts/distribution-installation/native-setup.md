@@ -137,9 +137,8 @@ bounded missing-SP repair described above. Reopening must not recopy verified
 programs or replay uncertain enrollment, imports or Cloud writes.
 
 Opening Presenter does not automatically power on a stopped controller.
-Presenter now exposes Start controller for the retained Test/backends; ordinary
-Stop/Start passed the visible UI campaign. Broader interruption/recovery gates
-remain separate. **Stop** preserves a Test;
+Presenter exposes Start controller for the retained Test/backends. Stop/Start,
+interruption and recovery retain separate checks in the current baseline. **Stop** preserves a Test;
 **Finish demo** is the separately confirmed irreversible retirement operation.
 Setup itself never performs Finish. At the end of qualification, gracefully
 stop owned consumers and verify exit, keeping shared Docker Engine and durable
@@ -209,8 +208,9 @@ transaction above.
 
 The accepted [Cloud first-use completion](cloud-first-use.md) extends this
 existing-access path with explicit exact Subject references and secure token
-enrollment. Its tests and live qualification remain separately recorded; the
-historical local-only slice below must not imply those later actions are offline.
+enrollment. Local certificate inspection, authenticated Cloud checking and issuance are
+different operations. Only the installation/copy engine is offline; explicit
+Cloud actions retain their own authority and current baseline evidence.
 
 For a selected, fresh installed instance only, the native window accepts two
 explicit external PKCS#12 references. No developer defaults, key copying, tokens,

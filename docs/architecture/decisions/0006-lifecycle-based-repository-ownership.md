@@ -62,7 +62,7 @@ This repository owns vehicle-computer integration:
 ```text
 aos-vehicle-platform/
 ├── authorization/
-│   └── kuksa-current-release-compatibility/
+│   └── aos-kuksa-compat/
 ├── config/
 │   └── kuksa/
 ├── contracts/
@@ -83,7 +83,7 @@ It owns:
 - system-level packaging and lifecycle definitions;
 - provider conformance and integration tests;
 - the separately packaged removable current-release KUKSA authorization
-  helper, the still-open Provider platform-identity integration, and their
+  helper, the separate trusted-OEM Provider credential integration, and their
   negative-test evidence as defined by ADR 0013.
 
 The CARLA provider is development-only, but it implements the same platform

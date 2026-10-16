@@ -21,6 +21,17 @@
 - Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 
+## Applicability and current evidence
+
+This package allocates requirements, not a second implementation ledger.
+Installed use is one Test and one associated SP. Expanded dual-role/promotion,
+cross-provider and complete negative/resource matrices retain their explicit
+scope; accepted design or a source fixture is not live acceptance. Use the
+[implementation map](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[baseline](../../qualification/current-baseline.md) for current source/evidence.
+Stable Statements, test IDs and unclosed obligations below remain unchanged.
+
 ## Purpose
 
 This package defines the AosCore and AosCloud lifecycle behavior that makes the

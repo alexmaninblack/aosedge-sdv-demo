@@ -3,7 +3,7 @@
 
 # Portable preparation inputs
 
-- Status: Accepted Stage 2 integration slice; not installer/live qualification.
+- Status: Accepted preparation-input contract; runtime proof is separately scoped
 - Version: 1.1
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
@@ -30,24 +30,30 @@ selecting the bundle and each consumed file's SHA-256 at preparation. Do not
 rehash the multi-gigabyte Factory merely to prepare a software release.
 This local integrity contract is not publisher signature/notarization proof.
 
-The offline producer may select an explicit reviewed Factory checkpoint from
-the integration source tree. Its default remains the historical `demo-v1.1`
-checkpoint; a successor uses a separate candidate file, never overwrites the
-return point. The producer validates version, image name, source revision, size
-and digest against the immutable Factory manifest, with no fallback on an
-invalid explicit choice. This is build-time input only: runtime selection,
-the independent release-source lock and installation authority are unchanged.
+## Build-time source selection
 
-Likewise, the offline producer may select `--service-checkpoint`, a reviewed
-source-tree JSON file containing exactly Brake V1/V2/V3 and Tire V1 source
-revisions, ARM64 architecture and executable digests. Brake profiles share one
-source revision. Missing, invalid, linked or escaping explicit checkpoints fail
-without falling back to the historical Stage 0 inventory. Omitting this option
-preserves the historical producer inputs. Product identity, test receipt,
-executable and notice checks still apply; the checkpoint does not adopt a
-nearby self-generated build receipt. It adds no runtime selector or new manifest
-format. Fresh output still needs its own independent release-source lock and
-candidate qualification; Kit028's lock is not changed automatically.
+The current offline producer reads
+[vehicle-build-inputs.json](../../workspace/inputs/vehicle-build-inputs.json)
+for the exact firmware, unsigned VDP bases and reviewed common runtime.
+Its default Factory selection is
+[controller-images.lock.json](../../workspace/inputs/controller-images.lock.json),
+with independently identified prebuilt/rebuilt roles. An explicit reviewed
+source-tree choice must match the immutable Factory manifest's version, image,
+source, size and digest; invalid explicit input never falls back.
+
+Service inputs default to the reviewed
+[service-inputs.lock.json](../../workspace/inputs/service-inputs.lock.json).
+An explicit `--service-checkpoint` must contain exactly Brake V1/V2/V3 and
+Tire V1, ARM64 architecture, source revisions and executable digests; all Brake
+profiles share one source revision. Product identity, test receipt, executable
+and notice checks remain mandatory. No copied host inventory or adjacent
+self-generated receipt is authority.
+
+These are build-time definitions, not runtime selectors or a new manifest
+format. Frozen producer checkouts retain their own source-matched definitions.
+Do not rewrite a completed receipt, existing cache namespace, input lock or
+current DMG to make it appear built from newer source. Fresh output needs its
+own reviewed lock and qualification; none is automatic.
 
 The bound source artifact supplies the three exact unsigned VDP profiles,
 reviewed common/advisory modules, four prebuilt Linux/arm64 service profiles,

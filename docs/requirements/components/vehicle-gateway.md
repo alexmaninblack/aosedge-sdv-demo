@@ -20,18 +20,17 @@
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- Implementation baseline: candidate runtime `2e3d1164` against `CarlaSim@eb09b824`; original D3 checkpoint `22864c5` is historical
+- Implementation: [current map](../../architecture/current-implementation.md); selected source locks and evidence remain independent
 
 ## Purpose
 
 This package defines the simulated Vehicle Gateway ECU and its engineering
 tools. The Gateway owns the bidirectional VSS/VISS vehicle boundary: the
-implemented read path publishes normalized vehicle state through VISS
-Get/Subscribe, while the target write path accepts only narrowly typed,
-allowlisted advisory Set requests. It also preserves the implemented separate
-vehicle-control and telemetry-dashboard behavior while specifying the
-still-missing advisory return, factual Gateway status and local chronology
-evidence.
+read path publishes normalized state through VISS Get/Subscribe and the
+implemented write path accepts only narrowly typed, allowlisted advisory Set
+requests. Separate vehicle control, native telemetry, factual Gateway status
+and source chronology remain distinct boundaries. Implementation does not
+close the complete hardware, negative or dual-role acceptance matrix.
 
 For Brake Health and Tire Health, the Domain Controller route is a QM-origin
 channel. VDP validation is defense in depth; this Gateway package owns the
@@ -42,7 +41,7 @@ or safety-critical authority to either service.
 
 | Question | Answer |
 | --- | --- |
-| What this package owns | Vehicle control UI/channel, complete Vehicle Hardware Capability Manifest accounting, CARLA sampling, actuator-command/applied-state traceability, signal normalization, VSS projection, VISS endpoint, future advisory handler and Engineering Telematics Dashboard |
+| What this package owns | Vehicle control UI/channel, complete Vehicle Hardware Capability Manifest accounting, CARLA sampling, actuator-command/applied-state traceability, signal normalization, VSS projection, VISS endpoint, typed advisory handler and Engineering Telematics Dashboard |
 | What this package does not own | CARLA scenario truth, Domain Controller provider, KUKSA, service decisions, functional backends, AosCloud lifecycle or production driver HMI |
 | Intended result | A stable Gateway exposes truthful vehicle data and accepts only narrowly scoped typed advisory requests without exposing vehicle-motion authority |
 | Accountable lifecycle owner | Vehicle Gateway Tooling; host-side demo build and qualification lifecycle |
@@ -55,7 +54,7 @@ or safety-critical authority to either service.
 - [Vehicle Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control);
 - [Vehicle Gateway Runtime (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw);
 - [Vehicle Gateway VISS Server (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss);
-- target [Gateway Advisory Handler (`CMP-GW-ADV`)](../component-decomposition-and-interface-register.md#cmp-gw-adv);
+- [Gateway Advisory Handler (`CMP-GW-ADV`)](../component-decomposition-and-interface-register.md#cmp-gw-adv);
 - [Engineering Telematics Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash).
 
 ### Out of scope

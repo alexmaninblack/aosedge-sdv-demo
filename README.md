@@ -116,10 +116,9 @@ The current package is an engineering preview.
 
 The ready-to-install DMG and all five reusable developer input archives are
 delivered from Dropbox. The small catalogs and source locks live in GitHub.
-The developer route needs no Dropbox or Google login. Route A downloads the selected engineering DMG from its reviewed
-public link, or reuses an approved local copy, and checks its exact identity.
-It needs no Dropbox or Google login and does not ask for a release-index JSON
-path. Public downloads do not grant Aos Cloud access or permission to
+Neither download route needs a Dropbox or Google login or a release-index
+JSON path. Route A downloads the selected engineering DMG from its reviewed
+public link, or reuses an approved local copy, and checks its exact identity. Public downloads do not grant Aos Cloud access or permission to
 redistribute restricted content.
 
 <a id="install-and-run"></a>

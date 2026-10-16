@@ -63,13 +63,12 @@ class DocumentationCheckTests(unittest.TestCase):
         )
         sibling_files = (
             ("carla-ego-runtime", "docs/carla-setup-macos.md"),
-            ("carla-ego-runtime", "docs/macos-launchers.md"),
+            ("carla-ego-runtime", "docs/standalone-fixtures.md"),
             ("carla-ego-runtime", "docs/brake-event-scenario.md"),
             ("carla-ego-runtime", "config/m6_2_town10hd_handover.json"),
             ("carla-ego-runtime", "docs/external-control-contract.md"),
             ("carla-ego-runtime", "docs/viss-profile.md"),
             ("carla-ego-runtime", "docs/telemetry-contract.md"),
-            ("carla-ego-runtime", "docs/m6-2-live-handover.md"),
             ("carla-ego-runtime", "config/brake_event_hybrid_town10hd.json"),
             ("carla-ego-runtime", "tests/brake_event_scenario_test.py"),
             ("carla-ego-runtime", "tests/external_control_protocol_test.py"),

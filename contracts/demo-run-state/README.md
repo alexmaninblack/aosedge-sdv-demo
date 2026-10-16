@@ -1,284 +1,172 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Run State, Overlays and Cleanup — Design Reviewed
+# Current-run state, overlays and retirement
 
-Implementation clarification, 2 October 2026: an assignment preflight rejected
-with `SERVICE_SUBJECT_UNRECORDED_LABEL_COLLISION` may leave an identity-free
-`ownerId`/`label` placeholder. When its exact current Test/owner/service record
-contains no create identity or receipt and no attempted operation steps, it is
-not a retained Cloud Subject. Normal scoped Test retirement can proceed without
-adopting or deleting the colliding object. Preserve the failed receipt until
-ordinary run cleanup; unknown external outcomes, attempted steps and all other
-retirement checks remain enforced.
+- Decision: `D4-021`; accepted lifecycle and narrow cleanup exceptions retained
+- Contract version: 1.8.0; editorial consolidation, no journal/schema change
+- Implementation and proof: [protocol map](../implementation-status.md)
 
-Implementation and qualification: [protocol status](../implementation-status.md).
+## Purpose and profiles
 
-- Decision: `D4-021`
-- Lifecycle state: `DESIGN_REVIEWED`
-- Contract version: `1.8.0`
-- Accepted subdecisions: D4-021.1 Factory Image and overlay layout, D4-021.2
-  minimal current-run journal, D4-021.3 interrupted-operation recovery and
-  D4-021.4 complete R0 ordering plus D4-021.5 functional/simulator cleanup,
-  and D4-021.6 next-run readiness proof, 2026-08-23
-- Revalidated behavior: D4-021.2 bounded per-operation recovery registry and
-  D4-021.3 resource-scoped conflict coordination, 2026-08-25
+The current-run journal coordinates one owned demonstration; it is not a
+history database, Cloud mirror or backend authority. Installed Studio uses one
+Test. An explicitly retained Production peer remains outside Test operations.
+The expanded two-role profile and its full acceptance matrix remain allocated,
+not prerequisites for an ordinary single-Test installation.
 
-The local demo keeps one qualified read-only Factory Image under
-`.local/factory` and exactly two current-run copy-on-write overlays under
-`.local/demo-current`. The overlays are named `validation.qcow2` and
-`production.qcow2`, have mode `0600`, and both bind the exact Factory Image
-digest recorded by its manifest.
+The [machine profile](demo-run-state-profile.v1.json) retains its frozen design
+fields. Apply this effective contract and the
+[installed-state boundary](../distribution-installation/installed-state.md),
+not its older two-overlay/credential-probe examples as current Studio commands.
+The operator uses [the current workflow](../../docs/operations/current-demo-workflow.md).
 
-The Factory Image is a qualified local copy of the CMP Factory output, not a
-symlink or hard link to a mutable build result. M0 and R0 verify its digest;
-the demo never modifies or removes it. A provisioned overlay is never copied
-or reused as a next-run source.
+## Factory, overlays and state roots
 
-The [2026-09-05 local creation amendment](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#agreed-cli-surface)
-preserves the selected source format and bytes: raw images are copied to
-.local/factory/oem-demo-factory.img; qcow2 retains the original .qcow2 path.
-Both overlays explicitly bind the selected format/path and original SHA-256.
-No format conversion occurs. Explicit single-role engineering creation is
-allowed, but does not satisfy the two-role complete-demo requirement or
-promote a test-only artifact to production qualification. This amendment does
-not change Cloud topology, provisioning or retirement requirements.
+The qualified source Factory is immutable and identified by its manifest.
+Current copies/overlays live in the selected instance's `.local/factory` and
+`.local/demo-current`; bounded run state lives in `.run/demo-current`.
+Preserve source format and bytes: raw copies use `oem-demo-factory.img`; qcow2
+keeps its declared path. Record format/path/digest rather than converting it.
+A provisioned overlay is never a manufacturing source or a next-run template.
 
-The same local increment supports explicit retirement of UNPROVISIONED_LOCAL_CREATE
-output: no Cloud/Current Vehicle identity, successful manufacture and no open
-handles. Never-started overlays must have no guest-owned extents. A booted guest
-instead needs a democtl stop observation proving provisioning mode and no local
-provision state, bound to the stopped overlay digest; retire requires that same
-digest. Absent journal Unit IDs alone never prove this. Per the approved symmetry
-correction, remove recorded overlays and tracked local access keys, then the local copy/generated manifest,
-then the journal; retain the original artifact and published manifests. This
-local-create amendment supersedes local-copy retention for this narrow scope.
-It also covers the exactly catalog-bound copy left by the former local retire.
-This is not full
-R0. Provisioned environments still require the complete ordering below.
-Interrupted local unlink is reconciled per exact file before continuing; an
-unknown/corrupt journal is not permission to remove a directory tree.
+The role overlays use `validation.qcow2` and, only when that profile is selected,
+`production.qcow2`, mode 0600. Fresh manufacture generates distinct identity;
+there is no hidden Production VM for Test-only use. Unknown files, corrupt
+journals, unresolved operations or a conflicting existing run block creation.
 
-Version 1.3.0 records the agreed local VM start/stop increment. It uses the same
-current-run journal for owned process/profile/access references, shared DNS
-ownership, bounded VM_START/VM_STOP intent and stop-proof digest; credentials
-are never journal content. Password-based initial enrollment is explicit and
-interactive, not credential discovery. Actual process ownership is re-read on
-retry. Stop is graceful, preserves disks and identities, and stops owned DNS
-only when no managed VM remains. Current Vehicle requires separate detach/park.
-No Cloud, CARLA, full R0 or live qualification is implied by this increment.
+Installed program/input roots are separate from private state and mutable
+outputs. Window layout uses its own existing workspace record; opening or
+restoring windows does not create/repair a vehicle journal. Create Controller
+initializes that journal. No new cross-run state store is introduced.
 
-Version 1.4.0 records the authorized low-level Unit increment, without changing
-complete R0 ordering: OEM provision/deprovision/delete use the same journal and
-run-exclusive writer. The journal pins owner/fleet/role-set UUIDs and actual
-systemUID/Unit/Main Node identity. Provision proves Online, normal guest mode
-and scoped role membership. Retirement requires Offline, single deprovision,
-explicit failure of the old identity to restore Online, stopped VM, scoped set
-removal and Unit/Node absence with independent visibility. WebSocket rejection
-is not represented as TLS certificate revocation. These commands retain local
-disks, access and journal; fresh manufacture still requires separately completed
-cleanup. No full R0 or repeatability claim follows. See the
-[bounded live record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/democtl-unit-lifecycle.md).
+## Journal and operation ownership
 
-Version 1.5.0 adds the separately authorized cleanup of a Cloud-retired CLI-only
-run. All current Cloud identities must already be deleted with recorded
-old-identity rejection; fresh authenticated reads must again prove Unit/Node/
-systemUID absence and empty persistent role sets before any local deletion.
-Stopped owners, no Current Vehicle, released exact files and unchanged backing
-bindings remain mandatory. Interrupted cleanup repeats the read-only Cloud gate
-before resuming exact pending unlinks. Delete tracked overlays/access, the
-working factory copy/generated manifest and journal last, without backup;
-preserve the original artifact and manifests. This does not implement scenario,
-backend, VISS or CARLA R0; those actions have not occurred in this CLI-only slice.
+`journal.json` is a mode-0600, atomically replaced single-writer record in a
+mode-0700 directory. Keep current stage/start time, Factory/manifest identity,
+relative owned files, current Unit/Node/system UID and role references, source
+binding, VISS fingerprint, bounded external-operation registry, conflict keys,
+reconciliation state and sanitized last authoritative reads. Mac/Launcher
+restart does not make nonterminal entries trustworthy: reread their owners.
 
-Version 1.6.0 records the operator's 2026-09-05 removal of the old-identity probe
-from this CLI increment. After one Cloud deprovision and authoritative new/Offline
-confirmation, stop the exact VM without restarting CM. Cloud owns identity
-revocation; the CLI neither retests it nor claims TLS-revocation evidence.
-Delete and local retire no longer require an oldIdentityRejected flag.
-Their stopped-owner, authoritative absence, scoped membership and ownership
-checks remain unchanged. Historical probe fields in existing journals are not
-used to initiate or resume a connection attempt.
+Never store key/certificate/PKCS#12 contents, passwords, JWTs, session capability,
+raw Cloud responses, telemetry/products/logs, VIN, personal paths, backend
+confirmation tokens or previous-run history. Infrastructure OEM/SP credentials
+remain external references, are not copied into overlays and survive Finish.
+Unit/Node and vehicle credentials are disposable run identities; native service
+credentials retain their separate Aos/KAC lifecycle.
 
-Version 1.7.0 records the operator's 10 September authorization for Test-only
-retirement and recreation while preserving an existing Production peer. The
-local leaf `EnvironmentService.retire_test` requires Test stopped and detached,
-its exact files unheld, fresh authenticated Test Unit/Node/systemUID absence and
-an empty Test role set. Production membership may remain present. The
-`UnitService.confirm_test_retired` callback receives the full journal so upload
-reconciliation cannot overwrite or discard Production. Backend cleanup must
-prove exact old-Test data/context cleanup before the identity is discarded;
-its callback must return literal `True`, preserve peer records and persist its
-own completed stages. Both callbacks run again before interrupted unlink resumes.
+Record exact team/candidate, authority, target, request fingerprint, resource
+keys and known external IDs before a call (`SUBMITTING`). HTTP success means
+`RECONCILING`, not completed work. Response loss/restart means `UNCERTAIN`.
+Independently classify the observed effect as APPLIED, NOT_APPLIED,
+CONTRADICTORY or UNOBSERVABLE. Only proved APPLIED can advance automatically;
+NOT_APPLIED requires new explicit intent. No blind retry or queue submission.
+An absence/404 is meaningful only with independently established visibility.
 
-The peer's overlay, runtime PID, Cloud identity, DNS and shared factory copy are
-not stopped, deleted or recopied. Only exact Test overlay/access files and
-terminal Test component/preparation receipts are removed. Unknown files,
-unresolved publications or peer-targeted receipts block deletion. The existing
-journal gains bounded `testRetirement` per-file intent, then only a completed
-marker until fresh Test creation. The compositor's `demoLifecycle` receipt is
-preserved so its remaining stages can finish. No ordinary history is introduced.
+Same candidate/digest/profile, resulting Cloud object, Batch/Campaign or
+Unit/Set are conflicting resources. Provisioning, retirement, live-source
+handover/reset and cleanup are run-exclusive. Installed operator mutations are
+serialized; expanded disjoint-resource concurrency does not weaken writer or
+uncertainty guards. Read-only diagnosis remains available. Corrupt registry
+blocks mutations; helper BUSY is not permission for automatic replay.
 
-`create(target="test")` may then add a new Test overlay to the retained
-Production journal, using the same factory selector, format and SHA, with a
-fresh local identity and no inherited Unit credentials. It never truncates an
-existing Test or retries an uncertain create. The existing complete/all local
-retirement semantics remain unchanged. A single-Test environment delegates to
-that existing cleanup only after the compositor has persisted backend cleanup
-and removed the cleaned backend ownership/path references. Shared source
-stop/reset and product cleanup belong to the compositor, not this local leaf.
-These primitives alone do not qualify complete Studio R0 or its UI.
+## Stop, Start and identity retirement
 
-Version 1.8.0 corrects the installed single-Test Finish path under the existing
-authorized Test-only retirement and explicit first-use reference decisions.
-It does not require an invented Production peer. Exact Subject identities and
-terminal service receipts remain in the current journal until fresh Cloud
-reads prove the retired Unit/Node absent and both desired and reported Subject
-recipients empty. Cloud Subject/service objects and published versions remain
-unchanged. The complete local cleanup owner validates terminal receipts before
-unlinking; the single-Test compositor also performs fresh absence and receipt
-checks before backend-data cleanup. Interrupted local cleanup accepts only
-that owner's validated per-file receipt and rechecks authoritative absence.
-Unknown fields, unresolved publications, foreign bindings and unsafe files
-continue to block deletion.
+Stop closes exact owned VM/source/backend processes, preserves disks/models/
+history/releases and releases shared DNS only when no managed VM still uses it.
+Start restores that retained Test; it is not creation, provisioning or Finish.
+Initial SSH access is explicit secure enrollment, never credential discovery.
+Controller ignition, Studio Stop/Start and host sleep are distinct; no operator
+Park/Resume or automatic host sleep/wake recovery is reinstated.
 
-The complete single-Test cleanup includes the fixed `dns-bridge.log` only
-when its journal identifies the locally owned, stopped bridge and no process
-still carries that owner ID. Normal file identity/link/open-handle guards
-apply. The retained-Production path keeps its shared DNS log unchanged.
-Unreceipted historical source fragments are not silently adopted or deleted.
+Provisioning records native system UID, Cloud Unit/Main Node, authenticated
+owner and scoped role membership. Partial registration reconciles those exact
+identities instead of starting another SDK attempt. Cloud owns Online and
+identity revocation. Current retirement observes Offline, deprovisions once,
+rereads authority, stops exact owners, removes only current membership and
+deletes the Unit with Unit/Node absence proof. It does not reconnect old
+credentials as a routine deletion prerequisite or claim TLS revocation proof.
+The broader security-negative matrix remains a separate qualification duty.
 
-A simulator can exit before the runner starts and creates its terminal receipt.
-The exact current, stopped, never-assigned source run can therefore be retired
-without a runner manifest only when its journal-bound runner command names the
-same input and run directory, no vehicle is attached, and the directory contains
-only its owned JSON input and optional simulator log. A runner log, historical
-fragment, unknown file or conflicting command binding blocks this exception.
-Stopped-owner, file identity, link and open-handle checks still apply before any
-unlink; interrupted cleanup resumes only from the existing validated per-file
-retirement intent. No synthetic runner-completion receipt is created.
+## Complete single-Test Finish
 
-Successful single-Test Finish removes the completed run journal last. Public
-references remain discoverable from Cloud; they are not automatically adopted
-into another instance or saved as a new state store. Subsequent reuse follows
-the [explicit exact-reference first-use contract](../distribution-installation/cloud-first-use.md).
-Existing configuration, external credentials, release ledger, Factory source
-and every non-target remain unchanged. Dual-role retirement keeps its existing
-retained-Production journal and Subject references.
+1. Freeze mutations and retain exact identities/receipts; stop/detach the owned
+   simulation, VM and backend consumers through their normal owners. Reconcile
+   uncertain effects before any new destructive intent.
+2. Retire the exact Test identity and reconcile exact Subject/Set bindings.
+   Fresh authorized reads must prove Unit/Node absence and empty desired and
+   reported recipients. Do not invent a Production peer or delete permanent
+   Subjects, services, releases, Fleet/Unit Sets or Cloud audit history.
+3. Clean exact old-Test backend data/context through each product's accepted
+   preview/confirm/delete/prove-empty path. Keep confirmation tokens in memory;
+   repeat preview after interruption, never retain the token in the journal.
+   Preserve peer/unrelated records. Backend callbacks must return literal True
+   and persist completed stages; identity cannot be discarded first.
+4. Validate terminal receipts, exact released file identity, backing binding,
+   stopped owners and zero open handles. Journal per-file unlink intent, then
+   remove only owned overlay/access/working-source files. Unknown content blocks.
+   Recheck Cloud absence and backend proof before interrupted unlink continues.
+5. Dispose of the completed single-Test journal last. Keep configuration,
+   external credentials, release-number continuity, original Factory/artifacts,
+   source, maps and scenarios. Next first use explicitly selects exact unbound
+   Cloud references; it does not auto-adopt discoverable objects.
 
-No historical ordinary-run directory exists. `.local/demo-current` and
-`.run/demo-current` represent the only current run. If they describe an
-incomplete or uncertain run, M0 is blocked until reconciliation or successful
-retirement. Successful R0 removes both overlays and current-run state while
-retaining the unchanged Factory Image and manifest.
+The single-Test compositor removes backend ownership/path references only after
+their cleanup is proved. Its lifecycle receipt remains until remaining stages
+finish. The exact old runner/source binding is needed even when creation or
+installation failed; a fresh empty workspace is not proof of successful Finish.
 
-`.run/demo-current/journal.json` is a mode-`0600`, single-writer, atomically
-replaced recovery record in a mode-`0700` project directory. It persists across
-Launcher and Mac restart, but is neither a history database nor an
-authoritative Cloud/backend store. It records only the current stage, bounded
-start time, factory/manifest digests, relative overlay roles, exact current
-VU/PU identity references, VISS certificate fingerprint, selected live source,
-one bounded registry of current external operations, per-operation
-resource-conflict keys, reconciliation state and sanitized last authoritative
-re-read. Restart always causes new authoritative external reads for every
-non-terminal operation.
+### Narrow local cleanup cases
 
-The journal contains no key/certificate/PKCS#12 content, password, JWT, helper
-capability, raw Cloud response, telemetry, functional payload, raw log, VIN,
-personal absolute path, backend confirmation token or previous-run history.
-`UNCERTAIN` forbids blind retry. A missing/corrupt journal beside current
-overlays blocks M0. Successful R0 deletes it; incomplete R0 retains it until
-reconciliation. No audience-visible Demo Run ID is introduced.
+- **Identity-free collision placeholder:** an exact owner/label record with no
+  create identity/receipt or attempted step is not an owned Cloud Subject.
+  Retire local Test state without adopting/deleting that colliding object.
+  An attempted or unknown external outcome is not this exception.
+- **Unprovisioned local create:** require no Cloud/current-vehicle identity,
+  successful manufacture and no handles. A never-booted overlay has no guest
+  extents; a booted one requires the stopped provisioning-mode/no-local-provision
+  proof bound to its unchanged overlay digest. Missing journal IDs alone prove
+  neither. Remove exact overlay/access, owned working copy/manifest, journal last;
+  preserve the original source artifact. This is not full provisioned R0.
+- **Source failed before runner startup:** no synthetic terminal receipt. Allow
+  only the exact stopped, never-assigned source whose journal-bound command
+  identifies its same input/run directory, containing only owned JSON input and
+  optional simulator log. Runner logs, unknown fragments or conflicting binding
+  block this case; normal identity/link/handle/per-file guards still apply.
+- **DNS bridge log:** remove fixed `dns-bridge.log` only for the journal's stopped
+  owned bridge with no remaining process carrying that owner ID. A retained
+  Production peer keeps shared DNS and its log.
 
-Per D4-026.2, the once-issued OEM, SP1 and SP2 Cloud certificates are stable
-control-plane infrastructure outside this run-state tree. They are not copied
-into an overlay or journal and R0 never deletes or rotates them. The Unit/Node/
-`system_uid` and vehicle credentials referenced by the journal are disposable
-current-run identities; Aos IAM Service-instance identity and short-lived
-KUKSA JWT follow their separate runtime-derived lifecycle.
+## Retained Production and expanded retirement
 
-Platform, Brake and Tire operations may be in flight independently when their
-exact resource-conflict key sets are disjoint. Before every call, one bounded
-registry entry records the owning team, operation/candidate identity,
-authority context, exact target, request fingerprint, resource keys, known
-external IDs and `SUBMITTING`. An HTTP success moves that entry to
-`RECONCILING`, never directly to `COMPLETED`; response loss or process/Mac
-restart moves it to `UNCERTAIN`.
+Test retirement preserves the peer's overlay, PID, Cloud identity, DNS, shared
+Factory and journal references. Its callback receives the full journal so
+publication reconciliation cannot discard Production. Exact Test files and
+terminal Test receipts alone are disposable; peer-targeted/unknown receipts
+block. New Test creation may append a fresh overlay to that retained journal
+with the same Factory identity, never truncate a peer or inherit Unit credentials.
 
-The same candidate/digest/publication profile or resulting Cloud object, the
-same Batch/Campaign, and the same Unit/Unit Set are conflicting resources.
-Provisioning, identity retirement, live-source handover/reset and R0
-freeze/cleanup are run-exclusive operations. A conflict blocks only the
-overlapping mutation; read-only navigation and fresh reads remain available.
-A helper-capacity `BUSY` result leaves only the affected request `WAITING` and
-requires a new explicit action rather than automatic queue submission.
+The expanded R0 sequence retires Validation then Production, verifies exact
+empty role membership and owner absence, cleans both products and all owned
+sources/files, and preserves permanent infrastructure. Full dual-role, security,
+partial-failure and two-consecutive-cycle proof remains separately required.
+Do not interpret old profile examples as authority to delete a retained peer
+or a successful single-Test cycle as proof of that whole expanded matrix.
 
-Restart acquires only the journal-writer lock, validates the complete registry,
-factory and overlays, and performs authoritative reads for every non-terminal
-entry before any mutation. Each result is classified independently as
-`APPLIED`, `NOT_APPLIED`, `CONTRADICTORY` or `UNOBSERVABLE`. Only proven
-`APPLIED` advances its exact operation automatically. Proven `NOT_APPLIED`
-still requires new explicit confirmation; the latter two outcomes keep only
-overlapping scopes blocked. A corrupt registry blocks all mutations for
-recovery but keeps diagnosis available. A `404` proves absence only with
-independently known visibility.
+## Completion and verification
 
-Partial provisioning reconciles both roles before retry, disposal or a new
-M0. Partial R0 resumes at the first unproven step and never repeats a proven
-destructive action. Overlays remain until Cloud identity retirement and
-backend cleanup are proven. Corrupt state is `RECOVERY_REQUIRED`; automatic
-rollback and just-in-case deletion are forbidden. Qualification interrupts
-lost responses, Helper, Launcher and Mac and every destructive R0 boundary.
+READY_FOR_M0 requires matching authoritative Cloud/local evidence: retired
+identities absent, applicable role/context bindings clean, owned processes,
+listeners, files, source assignments and actors released, unchanged source
+Factory/manifests and prebuilt catalog preserved. Missing proof is BLOCKED.
+Cleanup is identity retirement/new manufacture, not FOTA/SOTA rollback.
 
-R0 freezes new actions, captures final identities and detaches the live source,
-then retires Validation followed by Production. Each Unit is made
-authoritatively offline, deprovisioned and re-read; its old credential is
-proved unable to restore `Online`; its stopped VM releases the overlay; exact
-current-run log requests are deleted; its `system_uid` is removed from its one
-role Unit Set and re-read; and the Unit is deleted with Unit/Node absence proof.
-The persistent Unit Set objects and AosCloud audit/Batch/Campaign history are
-never deleted.
-
-Only after both identities are retired does R0 clean exact Brake then Tire
-data, stop their local backends and reset the empty owned volumes, reset and
-stop CARLA/controller/Gateway, destroy run-specific VISS/host material and
-delete the two released overlays. It deletes current-operation receipts,
-re-verifies the Factory Image/manifest and deletes the journal last. Any
-uncertain step halts, retains recovery material and blocks M0. This is Unit
-retirement and new manufacture, not FOTA/SOTA rollback.
-
-Only the Demo Orchestrator cleans functional data. It selects exact current
-VU/PU `system_uid` values verified by final Cloud evidence, executes Brake then
-Tire preview/confirm/delete/prove-empty flows, keeps each short-lived
-confirmation token in memory only and repeats preview after restart. Cross-
-Function deletion is forbidden; backend containers stop and empty volumes
-reset only after both products prove clean.
-
-Simulator cleanup applies `SAFE_STOP`, aborts the active scenario and
-Autopilot/Traffic Manager, performs the accepted D4-004 canonical free-drive
-reset, removes the scenario obstacle, proves reset generation and detaches the
-live source. One unified shutdown then owns Control UI, controller, Gateway and
-CARLA. `ESC` and R0 use that same path. A bounded graceful wait may escalate
-only to exact Launcher-owned PIDs/process group; broad process killing is
-forbidden. No CARLA window/process, listener/socket, source assignment, run
-actor or run state may remain. Installation, maps, assets, source and prepared
-scenarios are preserved. Failure blocks overlay deletion and M0.
-
-After R0, the Orchestrator exposes local `READY_FOR_M0` only when exact Cloud
-and local checks match: retired Units/Nodes are absent, persistent role sets
-exist empty, old credentials fail, Cloud history remains, the Factory Image
-matches its manifest, all current-run files/identities/processes/listeners/data/
-sources/actors are absent and the prebuilt artifact catalogue remains. A
-missing proof is `BLOCKED`, not a warning. M0 creates overlays but no Cloud
-identity; the next M1 proves fresh Unit/Node/system/VISS identities. Two
-consecutive complete cycles qualify repeatability without retaining ordinary
-run history; only a specifically designated formal run may retain the accepted
-sanitized dossier.
-
-Files:
-
-- [`demo-run-state-profile.v1.json`](demo-run-state-profile.v1.json) — accepted
-  D4-021.1–.6 design-reviewed contract.
-
-This design-reviewed contract authorizes no overlay creation/deletion, VM operation,
-Cloud mutation or reset.
+Test lost responses, owner/Launcher/Mac interruption and destructive boundaries
+with exact resumption rather than repeated effects. Scenario cleanup owns only
+its actors, state and safe shutdown; it cannot force-kill unrelated processes or
+invent stopped-frame evidence. Retain a formal sanitized dossier only for its
+designated qualification run, not every ordinary demonstration.
+Earlier version-by-version implementation diaries remain in
+[Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/a6c095f12f77a947357f504811577ac37784fde0/contracts/demo-run-state/README.md).
+This contract itself authorizes no live mutation, start or deletion.

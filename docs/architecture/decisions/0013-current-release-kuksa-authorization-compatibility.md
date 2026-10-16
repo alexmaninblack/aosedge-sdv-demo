@@ -12,9 +12,10 @@
 
 ## Context
 
-The accepted baseline assigns a thin Aos–KUKSA Credential Broker to the
-Vehicle Data Platform Component (VDP). That broker authenticates SOTA Service
-instances through Aos IAM, translates permissions and issues KUKSA JWTs.
+The superseded design assigned a thin Aos–KUKSA Credential Broker to the
+Vehicle Data Platform Component (VDP). This decision separates that
+compatibility responsibility from VDP while retaining native Aos IAM as
+the authority for active SOTA instance identity and permissions.
 
 Current AosCore does provide a native SOTA permission lifecycle:
 
@@ -27,9 +28,9 @@ Current AosCore does provide a native SOTA permission lifecycle:
 
 `AOS_SECRET` is not a JWT and Eclipse KUKSA does not accept it. The current
 AosCore release does not prepare, inject, rotate or renew a KUKSA JWT for a
-Service. The AosCore Platform Team intends to provide native JWT delivery in a
-future release, but its file path, API, rotation behavior, JWT profile and
-release contract are not yet released or frozen.
+Service. A future native JWT delivery path can replace the helper only after
+its actual file/API, rotation, JWT profile and release contract are reviewed.
+No platform roadmap promise is required to use the retained compatibility path.
 
 The demo must progress on the current release. At the same time, temporary
 credential authority must not become permanent VDP product logic, Brake/Tire

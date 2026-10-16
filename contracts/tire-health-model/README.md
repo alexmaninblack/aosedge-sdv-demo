@@ -15,13 +15,13 @@ Implementation and qualification: [protocol status](../implementation-status.md)
   2026-08-23; local advisory chain plus persistence/offline/readiness/resource
   boundary and logs/fault isolation accepted 2026-08-23
 
-The 3 October CPU amendment requests a 600-DMIPS candidate after measurement
-of the initial 300-DMIPS candidate (original baseline: 150), through native
-signed staging releases only. It is a qualification candidate, not an accepted
-live baseline; see D4-023 and the M1 qualification report. No guest quota override
-or relaxation of input quality is permitted.
+Current packages request 600 DMIPS through signed native metadata. The earlier
+150/300-DMIPS measurements do not select a live quota or authorize an in-guest
+override. The fixed CPU-isolation demonstration and full resource acceptance
+remain separate D4-023 obligations; declaration/monitoring is not proof.
+No input-quality, freshness, model or other quota change follows.
 
-This package defines the proposed exact current-demo contract for the single
+This package defines the accepted current-demo contract for the single
 Tire Health Service v1.0. It consumes only the accepted VDP v3 native dynamics
 subset. CARLA's selected `HEALTHY`/`PRE_AGED` profile and friction multiplier
 are qualification truth and are forbidden from the Service, KUKSA, backend and

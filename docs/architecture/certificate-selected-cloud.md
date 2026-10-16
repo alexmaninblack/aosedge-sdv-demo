@@ -1,16 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Certificate-selected Test Cloud
+# Certificate-selected Cloud access
 
-Accepted scope: 2026-09-14. This is an amendment to [Demo Control](demo-control.md),
-not a change to the presentation story or permission to provision automatically.
+Demo Control derives the Cloud destination from the selected credentials;
+Setup and Presenter use the same guarded owner. Production/Staging environments
+are distinct from Test/Production vehicle roles. Selecting access does not
+provision a vehicle or grant permission for an automatic mutation.
 
-**15 September accepted amendment:** [Unsigned packages and session-scoped signing
-(ADR 0016)](decisions/0016-unsigned-packages-and-session-scoped-signing.md)
-replaces the historical source-certificate dependency and separates
-destination-specific signing/publication receipts. Retained-Test guards are
-preserved; actual current deployment evidence follows the current baseline.
+Reusable content and destination-specific signing are separated by
+[ADR 0016](decisions/0016-unsigned-packages-and-session-scoped-signing.md).
+The [Setup first-use contract](../../contracts/distribution-installation/cloud-first-use.md)
+owns enrollment, pair validation and missing-prerequisite preparation. Exact
+current evidence belongs to the [baseline](../qualification/current-baseline.md).
 
 ## Operator interaction
 
@@ -79,28 +81,22 @@ non-production Cloud is selected, Cloud lifecycle operations target Test only;
 Production UUID to the selected debug API. The old dual-role component path is
 not available in debug mode; the normal Studio verification-publication path is.
 
-The selected Cloud must provide its own matching Unit Model, node support,
-Test verification set and service catalog. Selection does not create them or
-imply that another tenant's IDs are valid there. The 15 September approved
-[first-use packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/first-use-cloud-configuration-audit-2026-09-15.md)
-adds explicit `democtl cloud check` and `democtl cloud prepare`. Ordinary Setup
-composes the agreed preparation through Connect; those CLI commands are
-engineering controls, not extra first-use steps. Check is read-only.
-Prepare authenticates OEM and SP, reuses Default,
-creates only the absent `aos-vm;1.0.0` model with the tracked single-node config
-and `Test Vehicles` verification set, then authoritatively rereads them.
-An existing incompatible/ambiguous object, denied read or uncertain creation
-blocks instead of overwriting/retrying. Node Types are read during Check, but an
-empty catalog is labelled `AFTER_PROVISION`: the platform documentation places
-this confirmation after provisioning, and staging does not populate it on model
-creation alone. SDK identity must match `aos-vm-main`; verify the Cloud Node
-after registration. No independent speculative Node Type POST is added. Preparation
-never provisions a Unit, publishes a package or assigns a Subject.
-If Test already has a Cloud Unit ID, absence of its expected node type is a
-failed confirmation rather than `AFTER_PROVISION`. This ordering follows the
-[Unit ontology](https://docs.aosedge.tech/docs/reference/ontology/unit).
-Setup `READY` confirms prerequisites only; installation and runtime are separate
-observations and cannot be inferred from it.
+### First-use prerequisites
+
+The selected Cloud needs its own matching Unit Model, node support, Test
+verification set and service catalog. Selection alone creates none of them.
+Ordinary Setup Connect composes the existing `cloud check` / `cloud prepare`
+engines. Check is read-only. Prepare authenticates OEM/SP, reuses Default and
+creates only an absent `aos-vm;1.0.0` model with the tracked single-node config
+and empty `Test Vehicles` verification set, then rereads authoritative state.
+Incompatible/ambiguous objects, denied reads and uncertain creation block;
+there is no overwrite, adoption or blind retry.
+
+Node Types are observed, not speculatively created. An empty catalog before
+provisioning is `AFTER_PROVISION`; after the journal has a Unit identity, absence
+of its expected node type is a failed confirmation. SDK identity must match
+`aos-vm-main`. Prepare creates no Unit, service publication or Subject assignment.
+Setup readiness confirms prerequisites, not installation or vehicle operation.
 
 ### Interrupted registration recovery
 
@@ -153,7 +149,7 @@ recipient checks and the monotonic release ledger remain unchanged.
 
 ### Signing authority is the session selection
 
-Every new VDP bundle is signed with the **OEM PKCS#12 selected in Session**,
+Every new VDP bundle is signed with the **currently selected OEM PKCS#12**,
 referenced by `cloudProfiles.oem-delivery.credential`. Verification before upload
 uses that same credential, and upload uses its authenticated OEM account in the
 selected Cloud. A missing, changed or incompatible credential blocks the action;
@@ -224,32 +220,12 @@ offline scope and guest-projection tests, and the live settings UI. A real
 developer-Cloud provision/reboot cycle is a separate live qualification; do not
 infer it from a successful selection or from simulated mount tests.
 
-### Verified on 14 September 2026
+## Evidence boundary
 
-- Sixteen dedicated offline selection, scope, host-resolution and guest-projection
-  tests passed; targeted Unit, lifecycle, publication and retirement regressions
-  passed. Two existing optional publication/package tests remained skipped.
-- All 111 Presenter UI unit tests passed and the production UI build passed.
-- The live Session panel displayed the certificate domain and the confirmation;
-  cancelling the confirmation did not submit another selection.
-- The current configured developer Cloud passed a real `democtl status --cloud
-  --profile oem-delivery --timeout 8` read with packaged-CA TLS and authenticated
-  OEM authority (`CURRENT`, `AVAILABLE`, matching role). The invocation took
-  approximately 0.74 seconds. No retained Production UUID was sent.
-- Current Test remains unprovisioned. No live guest projection, CM restart or
-  developer-Cloud provisioning was performed during this settings implementation.
-- Follow-up: 81 focused Cloud-selection, guest-access, VM and Unit tests passed
-  in approximately 22 seconds. They cover explicit production no-op, all six
-  debug names on one line, first-SSH ordering and failure blocking. Live guest
-  startup/provisioning was not repeated for this ordering change.
-- First-publication follow-up: 206 focused component, Unit, Cloud-selection and
-  service-package/publication tests passed without skips in 2.28 seconds using
-  the installed Aos runtime. Coverage includes absent/new Cloud identities,
-  processing/error/ready states, foreign owners, non-absence HTTP errors,
-  original baseline signatures, session-selected signing/upload credentials
-  and missing-credential rejection without fallback.
-- `democtl component verify 1.0.16` verified the real pinned source bundle's
-  RS256 signature and signed hashes with the original public certificate while
-  the debug OEM remained selected. The idle UI backend was reloaded. No new
-  release was signed/uploaded and no VM or Cloud state was changed in this
-  follow-up; live publication remains an operator test.
+Certificate inspection, access checks, first-use preparation, publication,
+provisioning and guest recovery establish separate facts. The current baseline
+owns scoped API/UI/native Setup results; it does not close every new-account,
+rotation or interruption case. Earlier session-specific tests, legacy source
+signature verification and then-unprovisioned Test observations remain in
+[Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/a6c095f12f77a947357f504811577ac37784fde0/docs/architecture/certificate-selected-cloud.md),
+not current setup prerequisites or evidence of another environment's readiness.

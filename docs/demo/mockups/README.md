@@ -109,7 +109,7 @@ This decision is implemented in the documentation baseline by revised
 D4-021.2/.3, [Demo Run State 1.2.0](../../../contracts/demo-run-state/README.md),
 `SYS-REL-012`, `REQ-DEMO-022`, `UT-DEMO-020` and Interaction Specification
 2.5. HLA, component graph, repositories, interfaces and authority boundaries
-were revalidated unchanged. UI implementation remains separately unauthorized.
+were revalidated unchanged. Current implementation and scoped proof follow the linked baseline; this decision itself grants no mutation.
 
 ## <a id="i0-dec-003"></a>I0-DEC-003 Accepted — Current Vehicle and Update-State Presentation
 

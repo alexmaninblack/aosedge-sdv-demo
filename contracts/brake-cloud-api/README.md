@@ -1,21 +1,6 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-## Studio Test context migration — 2026-09-10
-
-The current [UI-STUDIO-026 target](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
-requires one current Test UID without a hidden Production vehicle. The JSON
-profiles and backend handlers/tests now accept exactly the current Test alone
-or the retained dual-role engineering flow. They
-reject empty, duplicate, foreign and partial unrelated selectors. Keep the
-current UID binding until scoped cleanup completes, then clear it. Ordinary
-backend restart retains the database; Finish deletes the selected run records
-without an archive. Studio Park/Resume is retired.
-This is isolated contract/backend evidence, not full Demo Control lifecycle
-or live E2E qualification. Message formats, durable
-acknowledgement and authority boundaries below are unchanged.
-
-
 # Brake Health Cloud API — Accepted Contract
 
 Implementation and qualification: [protocol status](../implementation-status.md).
@@ -28,6 +13,15 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 - Subdecision state: transport, first-demo security boundary, idempotency,
   durable acknowledgement, persistence, Dashboard query/authority and exact
   current-run cleanup accepted 2026-08-23
+
+## Current context and lifecycle
+
+Use one current Test UID in installed Studio; dual-role context is an explicit
+engineering profile, not a hidden Production vehicle. The handlers reject
+empty, duplicate, foreign and unrelated partial selectors. Keep the current UID
+bound through scoped Finish cleanup, then clear it. Backend restart and ordinary
+Stop preserve the database; Finish deletes only selected run records. Neither
+ingestion health nor context readiness proves a live analytic result.
 
 This package freezes the accepted current-demo transport boundary between the
 Brake Health in-vehicle Service and the Mac-hosted Brake Health Cloud product.

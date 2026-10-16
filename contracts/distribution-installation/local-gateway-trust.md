@@ -39,8 +39,7 @@ Only that exact dashboard-only state is exempt from the guest restore check:
 Unit/Node or Cloud identity, guest-role fingerprints, onboarding/assignment intent,
 a Current Vehicle or a nonzero assignment generation still require the existing
 complete matching binding. No identity is synthesized and no admission gate is
-opened by this distinction. The [30 September proof](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installer-first-use-2026-09-30.md#preprovisioning-resume-correction)
-records the source correction and its deployment boundary.
+opened by this distinction. The current baseline records its scoped proof.
 
 The private key stays on the host, outside Git, Factory, component packages,
 Cloud and installer payloads. Output contains only fixed readiness/reuse facts,
@@ -67,21 +66,12 @@ interrupted-publication preservation, retained-source refusal and redacted
 errors. Keep the existing no-client-certificate mTLS admission proof for the real
 Gateway: a TLS fixture alone does not qualify live Unit onboarding.
 
-The already running Kit 009 has no initializer. A bounded, explicitly recorded
-rapid-debug helper may invoke the reviewed initializer against the preserved
-Test before resuming its unchanged installed launch; that is a transient proof,
-not evidence of automatic first-use in Kit 009. Never patch immutable installed
-bytes or bypass retained-run version-switch guards. Export/verify the source
-change in the next immutable candidate for normal first-use qualification.
-
-The [28 September receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installed-gateway-trust-2026-09-28.md)
-records source tests, Kit 010 direct installed-code proof and the preserved
-Test's live transport checks. These do not close automatic UI first-use,
-native installer launch, complete Cloud E2E or clean-Mac qualification.
-
-The [30 September continuation](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/installer-first-use-2026-09-30.md)
-subsequently proves automatic initialization in ordinary installed Start
-simulator and same-identity mutual-TLS onboarding, live service operation and
-full-power-cycle recovery on Kit 020. Clean-Mac qualification remains open.
-The narrowly scoped preprovisioning VM-start correction is frozen in Kit 021;
-its installation acceptance is separate from the earlier transient proof.
+Current installed Start simulator initializes/validates this trust and managed
+onboarding supplies the selected Unit's matching mutual-TLS binding. Scoped
+first-use/transport/ignition results and remaining negative/recovery cases are
+in the [baseline](../../docs/qualification/current-baseline.md). A local TLS
+fixture is not full onboarding or clean-install acceptance. Never patch an
+immutable installed payload or bypass retained-run version-selection guards.
+Earlier kit-specific helper workarounds and then-open UI gates remain in
+[Git history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/a6c095f12f77a947357f504811577ac37784fde0/contracts/distribution-installation/local-gateway-trust.md),
+not instructions for the delivered installer.

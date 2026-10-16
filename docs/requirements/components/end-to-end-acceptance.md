@@ -32,6 +32,17 @@ for selected evidence, code ownership and protocol amendments. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
+## Applicability and current evidence
+
+This package allocates requirements, not a second implementation ledger.
+Installed use is one Test and one associated SP. Expanded dual-role/promotion,
+cross-provider and complete negative/resource matrices retain their explicit
+scope; accepted design or a source fixture is not live acceptance. Use the
+[implementation map](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[baseline](../../qualification/current-baseline.md) for current source/evidence.
+Stable Statements, test IDs and unclosed obligations below remain unchanged.
+
 ## Purpose
 
 This package defines how the complete accepted demonstration is judged as one

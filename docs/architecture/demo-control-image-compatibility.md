@@ -3,9 +3,10 @@
 
 # Demo Control: image-bound component support
 
-Status: P1 catalog reader and producer metadata increment, 10 September 2026.
-Scope: the [accepted catalog compatibility change](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/demo-studio-delivery-plan.md#p1-fix-shared-operations-once),
-not SOTA execution, service permissions or a new image qualification.
+This contract describes the current image compatibility reader and producer
+metadata, not a dated Factory migration. The image is selected by the
+[controller input lock](../../workspace/inputs/controller-images.lock.json);
+the [baseline](../qualification/current-baseline.md) owns actual runtime proof.
 
 Image presence, architecture and firmware version alone do not establish VDP
 compatibility. `ImageCatalog.component_support` reads the selected immutable
@@ -31,22 +32,17 @@ through a `.31` fallback. The declaration is a producer compatibility claim,
 not live install/runtime evidence, and must not assert advisory support from
 the telemetry-only VDP profiles.
 
-The existing .31 artifact's declaration was registered through
-`democtl image build 6.1.1-maninblack.31 --metadata-only`. It derives the 23
-accepted v1/v2/v3 read paths from the exact clean pinned Platform source and
-checks the existing image's producer source, identity, read-only file and size.
-It preserves the recorded image SHA and every unrelated manifest field.
-It does not silently modify legacy manifests during status or publication.
-No rebuild, image replacement or qualification promotion has occurred.
+## Producer and validation responsibilities
 
-The existing pinned Factory build producer now includes this declaration in
-its output manifest, deriving paths from that source's packaged VSS composition
-and preserving `BUILT_NOT_LIVE_QUALIFIED`. Eight producer/migration tests cover
-the exact source, schema, CLI/API parity, metadata conflicts, unsafe files,
-immutable image preservation and idempotent repeat. Metadata-only mode cannot
-fall through into a build when an artifact is missing. Actual registration and
-one explicit repeat passed; the second returned `noOp=true`. Builder was not run.
+The producer derives the declaration from its exact clean Platform source and
+packaged VSS composition, checking source identity, read-only image, size and
+recorded digest. Metadata-only registration preserves image bytes and unrelated
+manifest fields; it must not fall through to a build if input is missing.
+Status/publication never silently migrates a legacy manifest.
 
-Isolated regression tests cover a version-independent declared image, missing
-declaration, wrong image SHA/type/source, unsupported paths and conflicting
-producer metadata. They do not substitute for the declaration or live proof.
+Verify version-independent declarations, exact image/source/type binding,
+unsupported paths, missing/conflicting metadata, unsafe files, immutable-image
+preservation and idempotent repeat. A declaration is producer compatibility,
+not proof of live installation, service permission or a healthy VDP process.
+The former `.31` registration and its test diary remain in Git history, not the
+current image selector.

@@ -3,7 +3,7 @@
 
 # Installed Runtime Path Separation
 
-- Status: Accepted for the isolated Stage 3 implementation; live activation unqualified
+- Status: Accepted installed-state contract; action-specific evidence follows the current baseline
 - Version: 1.1
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team
@@ -57,11 +57,12 @@ its mount name and requires it to match the private installation receipt.
 The engineering `--instance-root` option selects an existing instance for one
 CLI invocation. Selection requires the executing application to reside in an
 installed version with the matching manifest digest and installation receipt.
-The original Kit 005 engineering entry does not write an active-version pointer.
-Subsequent managed kits use the [version-selection contract](version-selection.md):
-an explicit compatible selection and shared instance/package leases are required
-before runtime entry. Neither mechanism stops another process or grants permission
-to replace a running setup. Native operator activation remains a later gate.
+Managed installed entry follows the [version-selection contract](version-selection.md):
+explicit compatible selection and shared instance/package leases are required
+before runtime entry. The engineering instance option alone does not replace
+that selection, stop another process or permit replacing a running setup.
+Current scoped first-use proof and remaining activation/recovery cases are
+recorded by the [baseline](../../docs/qualification/current-baseline.md).
 
 Normal runtime status does not repeatedly hash large immutable payloads.
 Existing bounded source-lock and consumed-file validation remains mandatory;
@@ -70,7 +71,7 @@ never be used as a writable runtime working directory.
 
 ## Window metadata is not lifecycle state
 
-Accepted 29 September amendment: the existing window owner stores its private
+The existing window owner stores its private
 metadata at `.local/demo-control/workspace/state.json`, independently of the
 vehicle-run journal. This is physical UI state, not a second lifecycle authority.
 First/repeat/restarted Open Presenter must leave the vehicle journal absent
@@ -92,7 +93,7 @@ remains the only existing mechanism for choosing external certificate files.
 This slice does not enroll users, generate trust or claim encrypted PKCS#12
 support. One OEM and one associated SP own the two distinct demo services.
 
-Accepted 28 September amendment: [local Gateway server trust](local-gateway-trust.md)
+[Local Gateway server trust](local-gateway-trust.md)
 adds per-instance initialization during explicit first simulator start, not
 during installation or read-only observation. It replaces only the missing
 server-pair prerequisite for a fresh installed instance; unsafe/foreign material
