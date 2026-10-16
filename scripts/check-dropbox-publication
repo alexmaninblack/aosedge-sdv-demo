@@ -17,7 +17,7 @@ with directory(ROOT) as scratch:
     env=dict(os.environ,TMPDIR=str(scratch),PYTHONDONTWRITEBYTECODE='1')
     result=subprocess.run([sys.executable,'-B','-m','unittest',
         'tests.test_dropbox_delivery','tests.test_dropbox_oauth','tests.test_dropbox_public',
-        'tests.test_dropbox_download_parser','tests.test_release_automation',
+        'tests.test_dropbox_download_parser','tests.test_dependency_dropbox','tests.test_release_automation',
         'tests.test_release_projection','tests.test_release_operator_amendment'],
         cwd=ROOT,env=env,timeout=300)
 print('Dropbox publisher fixture scenario: '+('PASS' if result.returncode==0 else 'FAIL')+

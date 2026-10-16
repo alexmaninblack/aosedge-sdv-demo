@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.26
+- Version: 1.27
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -106,9 +106,11 @@ artifacts and explicit maintainer operations. The October 10 owner-authorized
 transport for reviewed public inputs; it does not automatically publish any
 existing file or change its permissions.
 
-The release owner selected Google Drive in the existing Google Workspace
-account, with public Git source/metadata and read/download access for approved
-testers. Published artifacts are separate files, never overwritten; inputs of
+The current public DMG and all five developer dependency archives use Dropbox;
+their source-owned catalogs and byte locks remain in GitHub. The following
+authenticated Google Drive contract is retained for explicit private maintenance
+and already-pinned consumers, not the current public route.
+Published artifacts are separate files, never overwritten; inputs of
 supported releases are retained. The schema does not itself provision hosting
 or grant access. Local SSD paths and Git source URLs are not binary download
 routes. Until the actual delivery binding is verified, the candidate retains
@@ -483,16 +485,21 @@ The existing catalog envelope/versioning is retained. Public records have
 distinct immutable IDs and canonical record SHA-256 pins. A selected record
 must match `PUBLIC_PIN`, the same dependency-lock digests and source-file pins.
 Its schema-2 bindings contain exactly `schemaVersion`, `transport` equal to
-`google-drive-public`, `lockDigest` and a role-to-public-download-URL `files`
+`dropbox-public` for current inputs (`google-drive-public` for legacy pinned
+inputs), `lockDigest` and a role-to-public-download-URL `files`
 mapping. No private folder IDs, OAuth fields, API keys or expected-byte overrides
 are accepted. Source locks, not URLs or response headers, authenticate archives.
 
-The standard-library transport is `scripts/public_drive.py`, embedded with the
+The standard-library transport keeps its compatibility name
+`scripts/public_drive.py`, embedded with the
 catalog helper by `scripts/sync-preparation-catalog`. It uses HTTPS only, bounded
-same-file redirects between the two observed Google download endpoints, and no
+provider-specific redirects, and no
 ambient proxy authentication, cookies, OAuth or API key. Resource keys remain
 part of the approved public locator. The reader does not search Drive.
-Only Google's expected bounded same-file "cannot scan for viruses" confirmation
+Dropbox bindings accept only reviewed archive file links and observed Dropbox
+content endpoints. They preserve Range across redirects and reject HTML/login,
+foreign hosts, provider switching, altered encodings and unsupported queries.
+Only the legacy Google adapter's expected bounded same-file "cannot scan for viruses" confirmation
 form is followed, once. Unexpected forms, login redirects, malware/abuse
 warnings, foreign hosts and quota errors fail closed with sanitized messages.
 There is no alternate-copy or quota-bypass operation.
@@ -515,11 +522,38 @@ the authenticated schema-1 route retains those checks unchanged. A verified
 cache repeat requires no network client or credentials.
 
 The offline maintainer generator accepts `--public-links` with reviewed URLs,
-preserves byte/source identities and creates a distinct `-public` record. It
+preserves byte/source identities and creates a distinct `-dropbox` record
+(`-public` for explicit legacy Drive maintenance). It
 does not upload, change sharing, approve redistribution or edit old records.
 After public publication the owner must review the stable URL and record pin
 into source and regenerate the standalone script. Real archive delivery and
 the user's first-use walkthrough remain separate qualification evidence.
+
+### Dropbox dependency publication
+
+The October 16 owner-authorized migration changes only transport locators for
+the five unchanged source-locked archives. `scripts/publish-dependency-inputs`
+uses the existing authorized app-folder publisher and explicit cache/records
+paths. Its fixed `/dependencies` destination is separate from operator releases.
+Archive upload is an explicit kind; the default DMG publisher/parser continues
+to reject dependency archives. No new credential scope or arbitrary-file
+publication is introduced.
+
+Before publication, local size and SHA-256 must match the lock. Upload uses the
+existing private cursor journal, strict no-overwrite commit, chunk content hashes
+and interruption reconciliation. Readback verifies remote identity, revision,
+size and Dropbox block-content hash, then a bounded anonymous one-byte range
+probe checks access. Routine verification never downloads the entire archive
+back. A completed no-upload repeat reuses the same immutable destination.
+Only a complete five-package report can supply the successor source catalog;
+partial publication does not change reader selection.
+
+The successor record has a distinct immutable ID and canonical pin; old launcher
+pins and Drive compatibility objects remain unchanged. Archive names, source
+identities, extracted-input/cache keys, producer plan, controller image and DMG
+remain unchanged. Current public readers never fallback to private Google
+credentials or the previous provider. This is delivery qualification, not a
+fresh build, installation, license clearance or product-version promotion.
 
 ## Explicit build storage
 

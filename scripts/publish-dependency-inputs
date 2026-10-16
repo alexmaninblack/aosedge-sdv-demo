@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""Publish the five source-locked archives to Dropbox; no build or catalog mutation.
+
+Uses existing digest-cache objects read-only. Upload journals are private and
+resumable; an interrupted mutation must be reconciled by the existing uploader.
+Outputs reviewed public links only after all remote identities and probes pass.
+"""
+import argparse
+import fcntl
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+from release_automation import atomic, code, read, require, safe
+from reproduction import dropbox_delivery as delivery
+from reproduction.artifacts import identity
+from reproduction.dropbox_oauth import initialize_folder
+import public_drive
+
+LOCKS = {'buildInputs': 'developer-factory41-r1', 'simulation': 'carla-macos-arm64-r1'}
+
+
+def packages():
+    catalog = json.loads((ROOT / 'workspace/dependencies/catalog.json').read_bytes())
+    require(len(catalog['releases']) == 1, 'DEPENDENCY_SELECTION_AMBIGUOUS')
+    groups = catalog['releases'][0]['dependencyGroups']
+    require(set(groups) == set(LOCKS), 'DEPENDENCY_GROUPS_CHANGED')
+    rows = []
+    for group, name in LOCKS.items():
+        lock = json.loads((ROOT / f'workspace/dependencies/{name}.lock.json').read_bytes())
+        require(groups[group]['binding']['lockDigest'] == delivery.digest(lock), 'DEPENDENCY_LOCK_CHANGED')
+        expected = {role: {k: value[k] for k in ('file', 'bytes', 'sha256')}
+                    for role, value in lock['packages'].items()}
+        require(groups[group]['packages'] == expected, 'DEPENDENCY_PACKAGE_IDENTITY_CHANGED')
+        rows.extend((group, role, value) for role, value in expected.items())
+    require(len(rows) == 5, 'DEPENDENCY_COUNT_CHANGED')
+    return rows
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--profile', type=Path, required=True)
+    parser.add_argument('--cache-root', type=Path, required=True, help='Existing cache/sha256 directory')
+    parser.add_argument('--records', type=Path, required=True, help='Private persistent upload journals/report')
+    args = parser.parse_args(argv)
+    os.umask(0o077)
+    records = safe(args.records.absolute())
+    records.mkdir(mode=0o700, parents=True, exist_ok=True)
+    require(records.stat().st_uid == os.getuid() and records.stat().st_mode & 0o777 == 0o700,
+            'PRIVATE_DEPENDENCY_RECORDS_REQUIRED')
+    lease = os.open(records / '.lease', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        selected = read(args.profile.absolute()); delivery.selection(selected)
+        selected = dict(selected, folderPath='/dependencies')
+        cache = safe(args.cache_root.absolute())
+        rows = packages()
+        sources = {role: cache / e['sha256'] for _, role, e in rows}
+        before = {role: identity(path) for role, path in sources.items()}
+        require(all(before[role][2] == e['bytes'] for _, role, e in rows), 'DEPENDENCY_CACHE_SIZE_CHANGED')
+        started = time.monotonic()
+        report = dict(schemaVersion=1, status='PREFLIGHT', packages={}, buildsStarted=False,
+                      dmgChanged=False, cachesChanged=False, googlePayloadDownloaded=False)
+        atomic(records / 'intent.json', dict(folderPath=selected['folderPath'],
+               packages={r: e for _, r, e in rows}, overwrite=False, sourceCacheReadOnly=True))
+        client = delivery.Client(selected['credentialFile'], selected['accountId'])
+        initialize_folder(client, selected['folderPath'])
+        client.preflight(selected['folderPath'], sum(e['bytes'] for _, _, e in rows))
+        links = {group: {} for group in LOCKS}
+        probe = public_drive.Client()
+        for group, role, expected in rows:
+            total = expected['bytes']; last = [-1]
+            print(f'Publishing {expected["file"]} ({total / 2**20:.1f} MiB)', flush=True)
+            def progress(event, count):
+                percent = int(count * 100 / total)
+                if event == 'UPLOAD_REUSED' or percent // 5 > last[0] // 5:
+                    last[0] = percent
+                    print(f'{role}: [{"#" * (percent // 5):<20}] {percent:3d}%', flush=True)
+            remote = delivery.upload(client, sources[role], expected, selected,
+                                     records / (role + '-upload.private.json'),
+                                     suffix='.tar.gz', progress=progress)
+            url = delivery.public_url(client, remote, suffix='.tar.gz')
+            probe.probe(url, expected)
+            delivery.check_remote(client.metadata(remote['id']),
+                selected['folderPath'] + '/' + expected['file'], expected, remote['content_hash'], remote)
+            links[group][role] = url
+            report['packages'][role] = dict(group=group, **expected, downloadURL=url,
+                remote={k: remote[k] for k in ('id', 'rev', 'size', 'content_hash')}, anonymousRangeProbe=True)
+            require(identity(sources[role]) == before[role], 'DEPENDENCY_SOURCE_CHANGED')
+            atomic(records / 'report.json', report)
+            print(role + ': remote identity/hash and anonymous range PASS', flush=True)
+        require(all(identity(path) == before[role] for role, path in sources.items()), 'DEPENDENCY_CACHE_CHANGED')
+        report.update(status='PASS', seconds=round(time.monotonic() - started, 3))
+        atomic(records / 'public-links.json', links)
+        atomic(records / 'report.json', report)
+        print('DEPENDENCY_PUBLICATION_PASS: five archives; catalog unchanged; no builds or cache writes.', flush=True)
+        return 0
+    except (Exception, KeyboardInterrupt) as error:
+        atomic(records / 'failure.json', dict(status='BLOCKED', code=code(error), buildsStarted=False))
+        reason = str(error) if isinstance(error, public_drive.PublicDriveError) else code(error)
+        print('STOP: ' + reason + '; reconcile private upload journals before resuming.', file=sys.stderr)
+        return 2
+    finally:
+        os.close(lease)
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

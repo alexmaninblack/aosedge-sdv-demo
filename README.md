@@ -114,8 +114,9 @@ package and access information. The launcher reads the selected version and
 checksums automatically; you do not need to choose a release JSON file.
 The current package is an engineering preview.
 
-The developer route has owner-authorized public input downloads and needs no
-Google login. Route A downloads the selected engineering DMG from its reviewed
+The ready-to-install DMG and all five reusable developer input archives are
+delivered from Dropbox. The small catalogs and source locks live in GitHub.
+The developer route needs no Dropbox or Google login. Route A downloads the selected engineering DMG from its reviewed
 public link, or reuses an approved local copy, and checks its exact identity.
 It needs no Dropbox or Google login and does not ask for a release-index JSON
 path. Public downloads do not grant Aos Cloud access or permission to

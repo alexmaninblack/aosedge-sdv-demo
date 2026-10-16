@@ -211,7 +211,7 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(result['operator']['downloadURL'],URL)
         self.assertEqual(result['catalogRevision'],5)
         self.assertEqual(result['operator']['setupBundle'],'signed Setup')
-        self.assertIn('dropbox-delivery.json',relative)
+        self.assertEqual(relative,'workspace/releases/delivery.json')
         self.assertEqual(json.loads(target.read_text()),catalog)
 
 

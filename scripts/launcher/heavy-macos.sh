@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 # BEGIN VERIFIED DEPENDENCY PINS — maintained by scripts/sync-launcher-pins
-HEAVY_COMMON_SHA256=dc46cb50707edd8399e3aa180a05bba0563e1ea4f08c08826b959dc42feff13f
+HEAVY_COMMON_SHA256=a199a5c78b0a79b599bd19dd2da6dc5d14572426c7b9e4582f4a8d687b4dd37e
 # END VERIFIED DEPENDENCY PINS
 
 heavy_import() {

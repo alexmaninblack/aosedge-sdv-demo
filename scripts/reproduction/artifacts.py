@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Digest cache and bounded private/public Drive downloads; no publication."""
+"""Digest cache and bounded public Dropbox/legacy Drive downloads; no publication."""
 import hashlib
 import http.client
 import json

@@ -180,26 +180,26 @@ class Client:
         raise CampaignError('DROPBOX_LINK_PAGE_LIMIT')
 
 
-def normalize_link(url):
+def normalize_link(url, *, suffix='.dmg'):
     require(isinstance(url, str), 'DROPBOX_LINK_RESPONSE_INVALID')
     parsed = urlsplit(url)
     rows = parse_qsl(parsed.query, keep_blank_values=True, strict_parsing=True)
     require(len(rows) == len(dict(rows)), 'DROPBOX_LINK_RESPONSE_INVALID')
     return public_link(urlunsplit((parsed.scheme, parsed.netloc, parsed.path,
-        urlencode([(k, v) for k, v in rows if k != 'dl'] + [('dl', '1')]), parsed.fragment)))
+        urlencode([(k, v) for k, v in rows if k != 'dl'] + [('dl', '1')]), parsed.fragment)), suffix=suffix)
 
 
-def checked_link(meta, remote):
+def checked_link(meta, remote, *, suffix='.dmg'):
     require(meta.get('.tag') == 'file' and meta.get('id') == remote['id'] and
             meta.get('path_lower') == remote['path_lower'] and meta.get('size') == remote['size'] and
             meta.get('rev') == remote['rev'] and
             meta.get('link_permissions', {}).get('resolved_visibility', {}).get('.tag') == 'public' and
             meta.get('link_permissions', {}).get('allow_download') is True,
             'DROPBOX_PUBLIC_LINK_NOT_CONFIRMED')
-    return normalize_link(meta.get('url'))
+    return normalize_link(meta.get('url'), suffix=suffix)
 
 
-def public_url(client, remote):
+def public_url(client, remote, *, suffix='.dmg'):
     rows = client.links(remote['id'])
     require(len(rows) <= 1, 'DROPBOX_DUPLICATE_DIRECT_LINKS')
     if not rows:
@@ -211,7 +211,7 @@ def public_url(client, remote):
             if not (error.status == 409 and 'shared_link_already_exists' in error.tags): raise
         rows = client.links(remote['id'])
     require(len(rows) == 1, 'DROPBOX_PUBLIC_LINK_RECONCILIATION_REQUIRED')
-    return checked_link(rows[0], remote)
+    return checked_link(rows[0], remote, suffix=suffix)
 
 
 def check_remote(meta, path, expected, content_hash, saved=None):
@@ -254,9 +254,11 @@ def source_hashes(source, expected, verified, check):
     return before, blocks.hexdigest()
 
 
-def binding(selected, expected, folder_id):
+def binding(selected, expected, folder_id, *, suffix='.dmg'):
     selection(selected)
-    require(re.fullmatch(r'AosEdge-SDV-Lab-\d+\.\d+\.\d+-rc\.\d+\.dmg', expected['file']) and
+    pattern = (r'AosEdge-SDV-Lab-\d+\.\d+\.\d+-rc\.\d+\.dmg' if suffix == '.dmg' else
+               r'(?:carla-macos-arm64-r\d+|developer-factory\d+-r\d+)-[a-z][a-z0-9-]{0,80}\.tar\.gz')
+    require(suffix in ('.dmg', '.tar.gz') and re.fullmatch(pattern, expected['file']) and
             type(expected['bytes']) is int and expected['bytes'] > 0 and
             re.fullmatch('[a-f0-9]{64}', expected['sha256']), 'DROPBOX_ARTIFACT_INVALID')
     return dict(descriptorDigest=digest(expected), accountId=selected['accountId'],
@@ -264,12 +266,12 @@ def binding(selected, expected, folder_id):
 
 
 def upload(client, source, expected, selected, state_path, *, check=lambda: None,
-           progress=lambda *args: None, verified_source=None):
+           progress=lambda *args: None, verified_source=None, suffix='.dmg'):
     """Session IDs are private operational state, never included in release facts."""
     source, state_path = safe(source), safe(state_path)
     require(source.is_file() and source.stat().st_nlink == 1, 'DROPBOX_SOURCE_NOT_REGULAR')
     folder_id = client.preflight(selected['folderPath'], 0)
-    bound = binding(selected, expected, folder_id)
+    bound = binding(selected, expected, folder_id, suffix=suffix)
     before = identity(source)
     if state_path.exists():
         state = read(state_path)

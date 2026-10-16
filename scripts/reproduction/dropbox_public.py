@@ -6,7 +6,11 @@ from urllib.parse import parse_qsl, unquote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
-def public_link(url):
+def public_link(url, *, suffix='.dmg'):
+    if suffix == '.tar.gz':
+        from public_drive import dropbox_link
+        return dropbox_link(url)
+    if suffix != '.dmg': raise ValueError('DROPBOX_LINK_INVALID')
     if not isinstance(url,str) or len(url)>4096 or re.search(r'\s',url):
         raise ValueError('DROPBOX_LINK_INVALID')
     u=urlsplit(url)
@@ -42,8 +46,8 @@ class Redirects(HTTPRedirectHandler):
         return Request(newurl,method='HEAD')
 
 
-def observe(url,expected_bytes):
-    public_link(url)
+def observe(url,expected_bytes, *, suffix='.dmg'):
+    public_link(url, suffix=suffix)
     if type(expected_bytes) is not int or expected_bytes<=0:raise ValueError('DROPBOX_SIZE_INVALID')
     with build_opener(Redirects()).open(Request(url,method='HEAD'),timeout=15) as response:
         lengths=response.headers.get_all('Content-Length',[])

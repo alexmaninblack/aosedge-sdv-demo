@@ -15,7 +15,7 @@ metadata, not installer releases. Validation requires no Git history or network.
 | Prebuilt and independently rebuilt controller images | [Controller images](inputs/controller-images.lock.json); these have distinct digests |
 | Reviewed service binaries | [Service inputs](inputs/service-inputs.lock.json) |
 | Component graph and build profiles | [Build policy](inputs/build-policy.json) |
-| Public package discovery | [Dependency catalog](dependencies/catalog.json); payloads remain on Google Drive |
+| Public package discovery | [Dependency catalog](dependencies/catalog.json); all five payloads are on Dropbox |
 | Exact existing cache/prepared-workspace namespace | [Cache compatibility](inputs/cache-compatibility.json) |
 
 Names describe roles. Versions and immutable revisions remain inside records.

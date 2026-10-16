@@ -107,8 +107,9 @@ See the [launcher reference](unified-macos-launcher.md) for all options.
 
 ## Automatic input selection
 
-The wizard reads the hash-pinned source-owned `workspace/dependencies/catalog.json`; it does not search
-your Drive. Versions and dependency identities are inside JSON, not inferred
+The wizard reads the hash-pinned source-owned `workspace/dependencies/catalog.json`
+from GitHub and obtains all five archives from their reviewed public Dropbox links.
+No Dropbox or Google account is required. Versions and dependency identities are inside JSON, not inferred
 from filenames or timestamps. No compatible record, changed checksum or
 denied access stops with a specific error instead of asking for a manual
 JSON path or your publisher's credentials.
@@ -118,10 +119,11 @@ stage checks each complete archive's size and SHA-256 against the source lock
 before using it. Interrupted downloads can continue from retained ranges,
 and verified cached inputs are reused.
 
-A standard large-file virus-scan confirmation can be handled automatically.
-Malware/abuse denials, sign-in pages, quota errors, wrong ranges and changed
-bytes stop the transfer. For provider-side problems, see
-[Google Drive troubleshooting](https://support.google.com/drive/answer/2456903?hl=en).
+Sign-in pages, provider limits, foreign redirects, wrong ranges and changed
+bytes stop the transfer. There is no automatic switch to Google Drive or a
+request for publisher credentials. Resolve the reported access/connectivity
+problem, then rerun the same downloaded launcher to reuse verified cache data
+and resume a retained partial download.
 
 For source changes or release-owner/private-input maintenance, use the
 [development map](../development/README.md), not a separate preparation path.

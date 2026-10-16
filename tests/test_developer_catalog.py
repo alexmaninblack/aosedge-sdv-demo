@@ -205,11 +205,25 @@ class CatalogSourceTests(unittest.TestCase):
 
     def test_public_activation_pin_is_valid_and_embedded(self):
         catalog.public_ready()
-        self.assertTrue(catalog.PUBLIC_PIN['releaseId'].endswith('-public'))
+        self.assertTrue(catalog.PUBLIC_PIN['releaseId'].endswith('-dropbox'))
         self.assertNotEqual(catalog.PUBLIC_PIN['recordSha256'], catalog.PIN['recordSha256'])
         script = (ROOT/'scripts/prepare-macos.sh').read_text()
         self.assertIn(catalog.PUBLIC_PIN['url'], script)
         self.assertIn('SDV_PUBLIC_CATALOG_RECORD='+catalog.PUBLIC_PIN['recordSha256'], script)
+
+    def test_current_catalog_uses_dropbox_for_all_five_locked_archives(self):
+        value=json.loads((ROOT/'workspace/dependencies/catalog.json').read_bytes())
+        record=catalog.select_record(value, public=True)
+        roles=set()
+        for group in record['dependencyGroups'].values():
+            self.assertEqual(group['binding']['transport'],'dropbox-public')
+            for role, url in group['binding']['files'].items():
+                self.assertTrue(url.startswith('https://www.dropbox.com/scl/'))
+                self.assertNotIn('drive.google.com',url)
+                self.assertEqual(catalog.urllib.parse.unquote(catalog.urllib.parse.urlsplit(url).path.rsplit('/',1)[1]),
+                                 group['packages'][role]['file'])
+                roles.add(role)
+        self.assertEqual(roles,{'factory-image','vehicle-bases','carla-runtime','host-support','gateway-sdk'})
 
     def test_catalog_append_repeat_preserves_history_and_refuses_mutation(self):
         owner = runpy.run_path(str(ROOT/'scripts/preparation-catalog'))
@@ -244,7 +258,7 @@ class CatalogSourceTests(unittest.TestCase):
             links.write_text(json.dumps({group: {role: 'https://drive.google.com/uc?export=download&id=public_fixture_'+role
                 for role in row['binding']['files']} for group,row in old['dependencyGroups'].items()}))
             public = root/'public.json'
-            pin = create(receipt, public, public_links=links)
+            pin = create(receipt, public, public_links=links, public_transport='google-drive-public')
             entry = json.loads(public.read_text())['releases'][0]
             self.assertTrue(pin['releaseId'].endswith('-public'))
             self.assertEqual(pin['recordSha256'], catalog.digest(entry))

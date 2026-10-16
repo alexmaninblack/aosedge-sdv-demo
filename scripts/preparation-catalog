@@ -19,7 +19,7 @@ from reproduction.core import digest, read_json, LabError, require, no_links
 import public_drive
 
 
-def create(receipt_path, output, previous=None, public_links=None):
+def create(receipt_path, output, previous=None, public_links=None, public_transport='dropbox-public'):
     output = no_links(output)
     require(not output.is_relative_to(ROOT), 'Private catalog output must remain outside the public checkout')
     old = read_json(receipt_path)
@@ -46,7 +46,7 @@ def create(receipt_path, output, previous=None, public_links=None):
         links = read_json(public_links)
         require(isinstance(links, dict) and set(links) == set(groups), 'Public link groups differ')
         for group, row in groups.items():
-            value = {'schemaVersion': 2, 'transport': 'google-drive-public',
+            value = {'schemaVersion': 2, 'transport': public_transport,
                      'lockDigest': row['binding']['lockDigest'], 'files': links[group]}
             try:
                 public_drive.binding(value, value['lockDigest'], row['packages'])
@@ -54,7 +54,7 @@ def create(receipt_path, output, previous=None, public_links=None):
                 raise LabError(str(error)) from None
             row['binding'] = value
     entry = {
-        'id': 'sdv-lab-inputs' + ('-public' if public_links is not None else ''),
+        'id': 'sdv-lab-inputs' + (('-dropbox' if public_transport == 'dropbox-public' else '-public') if public_links is not None else ''),
         'productVersion': old['productVersion'],
         'status': 'ENGINEERING_CANDIDATE_NOT_QUALIFIED',
         'sourceFiles': {p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths},
@@ -92,9 +92,10 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--previous', type=Path)
     parser.add_argument('--public-links', type=Path, help='Reviewed public URLs grouped by buildInputs/simulation and role; does not grant sharing or redistribution rights')
+    parser.add_argument('--public-transport', choices=('dropbox-public', 'google-drive-public'), default='dropbox-public')
     args = parser.parse_args()
     try:
-        print(json.dumps(create(args.historical_index, args.output, args.previous, args.public_links), indent=2, sort_keys=True))
+        print(json.dumps(create(args.historical_index, args.output, args.previous, args.public_links, args.public_transport), indent=2, sort_keys=True))
     except (LabError, OSError, ValueError, KeyError, TypeError) as exc:
         print('Catalog preparation failed: ' + (str(exc) if isinstance(exc, LabError) else 'invalid input/output'), file=sys.stderr)
         sys.exit(1)

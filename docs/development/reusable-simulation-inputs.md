@@ -7,7 +7,9 @@ Normal [developer builds](../getting-started/reproduce-demo.md) automatically
 obtain reviewed public dependencies and reuse the standalone CARLA simulator.
 They compile project components and assemble the installer without rebuilding
 Unreal, opening an Editor or recooking unchanged content. No Google login or
-private binding file is a prerequisite for that route.
+private binding file is a prerequisite for that route. The simulator, host
+support and SDK archives are hosted on Dropbox; the public source catalog
+selects them by unchanged byte identities.
 
 The independent dependency identity `carla-macos-arm64-r1` is not a CARLA
 upstream version or a demo release. The

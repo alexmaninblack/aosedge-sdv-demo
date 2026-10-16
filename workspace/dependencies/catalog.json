@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "product": "aosedge-sdv-lab",
-  "catalogRevision": 1,
+  "catalogRevision": 2,
   "releases": [
     {
-      "id": "sdv-lab-inputs-public",
+      "id": "sdv-lab-inputs-dropbox",
       "productVersion": "1.2.0-rc.1",
       "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
       "sourceFiles": {
@@ -24,11 +24,11 @@
         "buildInputs": {
           "binding": {
             "schemaVersion": 2,
-            "transport": "google-drive-public",
+            "transport": "dropbox-public",
             "lockDigest": "f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0",
             "files": {
-              "factory-image": "https://drive.google.com/uc?id=1Rb7nWMFF_lgFZHXTRNibXh452qW6ebjr&export=download",
-              "vehicle-bases": "https://drive.google.com/uc?id=1suxeJffmbOjXeE3TPi15Aac5TSeSTbpZ&export=download"
+              "factory-image": "https://www.dropbox.com/scl/fi/wsev1pe8bgscu3qyqlhv6/developer-factory41-r1-factory-image.tar.gz?rlkey=5v22h2285ajhln5sgziaew9si&dl=1",
+              "vehicle-bases": "https://www.dropbox.com/scl/fi/d18mypr3e4o0fjsi28e3g/developer-factory41-r1-vehicle-bases.tar.gz?rlkey=32da5jp62zxxakr526yxzxcgz&dl=1"
             }
           },
           "packages": {
@@ -47,12 +47,12 @@
         "simulation": {
           "binding": {
             "schemaVersion": 2,
-            "transport": "google-drive-public",
+            "transport": "dropbox-public",
             "lockDigest": "18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e",
             "files": {
-              "carla-runtime": "https://drive.google.com/uc?id=1O59CrZaYmklXU3gzASktCmvpmICaesEM&export=download",
-              "gateway-sdk": "https://drive.google.com/uc?id=1hT5GBMTkG_ORaT2oAMyjYtL9j03MTX-u&export=download",
-              "host-support": "https://drive.google.com/uc?id=1hba9ZWfI9MgvuyjIW9VyS6g3x7gdGU2I&export=download"
+              "carla-runtime": "https://www.dropbox.com/scl/fi/n7qus5mcdj3xl6tfw1nh2/carla-macos-arm64-r1-carla-runtime.tar.gz?rlkey=7gdccnfzj8t7f8gusxtmon795&dl=1",
+              "gateway-sdk": "https://www.dropbox.com/scl/fi/9ba78wswcuokcc6ygkz77/carla-macos-arm64-r1-gateway-sdk.tar.gz?rlkey=e40b8mt46ys2sk8ihi1ut1jj6&dl=1",
+              "host-support": "https://www.dropbox.com/scl/fi/a6pjceem1ggl6x7suqtk1/carla-macos-arm64-r1-host-support.tar.gz?rlkey=933vvik5vm7hy91mslvbp7qq9&dl=1"
             }
           },
           "packages": {

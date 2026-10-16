@@ -5,14 +5,17 @@
 
 Reviewed developer dependencies are available through the pinned public
 catalog. The [developer launcher](../getting-started/reproduce-demo.md)
-requires no Google login, publisher credentials or manual binding files.
+requires no Dropbox/Google login, publisher credentials or manual binding files.
 Operator DMG delivery is independently selected by the
 [launcher catalog](../../workspace/launcher-catalog.json) and release descriptor.
 
-The [public companion folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
-contains dependency archives and supplementary source/notices. The current
+All five build dependency archives are delivered from Dropbox: standalone CARLA,
+native host support, Gateway SDK, the controller image and vehicle bases. The
+[public companion folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
+retains supplementary source/notices and compatibility copies for older pinned
+launchers; it is not the current build-input delivery route. The current
 [dependency catalog](../../workspace/dependencies/catalog.json) is maintained with
-the source; it selects those existing archives independently of an installer.
+the source; it selects Dropbox archives independently of an installer.
 Public test access is authorized; that is not blanket redistribution clearance
 or fresh-source-build qualification. The underlying byte/source locks remain
 immutable even when delivery locations change.
@@ -66,6 +69,34 @@ and [third-party notices](../../THIRD_PARTY_NOTICES.md).
 
 ## Maintainer catalog controls
 
+Publish the existing five source-locked cache objects through the same private
+Dropbox publisher profile used for release delivery:
+
+```sh
+python3 -B scripts/publish-dependency-inputs \
+  --profile /absolute/private/dropbox-delivery.json \
+  --cache-root /absolute/workspace/inputs/cache/sha256 \
+  --records /absolute/workspace/build/dependency-dropbox
+```
+
+This creates or verifies the app's `/dependencies` folder. It never builds,
+changes the selected DMG, rewrites archives or removes cache data. Each immutable
+destination has a private resumable upload journal. Remote size/revision and
+Dropbox content hash must match the SHA-256-verified local archive; anonymous
+one-byte range probes confirm public availability. Repeats reconcile and reuse
+matching remote files instead of uploading another copy. On interruption,
+retain the exact journals and source files; rerun only after reconciling the
+reported boundary. No new login or broad Dropbox permission is required when
+the existing publisher profile is valid.
+
+Only after every package passes, `public-links.json` and `report.json` are
+completed in the private records directory. Review those links into a successor
+catalog record with `transport: dropbox-public`, preserving package names,
+sizes, SHA-256 and both lock digests. Keep current catalogs out of upload
+journals and never commit the private profile or session identifiers. The old
+Drive copies remain for already-pinned consumers; current acquisition does not
+fallback to them. This transport migration does not upgrade frozen build owners.
+
 These controls are optional release-owner maintenance, not route B prerequisites.
 Prepare public catalog records from an existing verified receipt and approved
 URL mapping:
@@ -77,7 +108,9 @@ python3 -B scripts/sync-launcher-pins --write
 python3 -B scripts/sync-launcher-pins --check
 ```
 
-The catalog generator's `--public-links` preserves byte/source pins and emits
+The catalog generator's `--public-links` uses Dropbox by default; explicit
+`--public-transport google-drive-public` is retained for legacy maintenance.
+It preserves byte/source pins and emits
 a distinct immutable public record; it neither uploads nor widens permissions.
 Maintain the small source-owned `workspace/dependencies/catalog.json`. Review
 its package URLs against the unchanged lock identities, then run
