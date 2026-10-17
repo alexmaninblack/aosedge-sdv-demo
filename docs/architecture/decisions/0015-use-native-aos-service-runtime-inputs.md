@@ -12,7 +12,7 @@
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Current proof: [baseline](../../qualification/current-baseline.md)
-- Editorial consolidation: 2026-10-16; native-input schema unchanged
+- Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 
 ## 1. Accepted decision
 
@@ -21,16 +21,15 @@ resource mounts and storage. Adapt our Brake/Tire applications and protocols
 instead of extending Service Manager (SM) to supply application metadata or
 special-case ownership of a KUKSA token directory.
 
-Current implementations and scoped real-data/renewal/ignition/offline evidence
-are mapped in the [implementation view](../current-implementation.md). Acceptance
-does not close every negative/cold-start matrix or make an old source inspection
-a current implementation status.
+The [implementation map](../current-implementation.md) and baseline separate
+current source/runtime evidence from the full negative/cold-start obligations.
 
 For this scope:
 
 - Do not add service-version or manifest-digest environment variables to SM.
-- Retire the prepared SM token-mount UID/GID patch and its recipe integration
-  before a build. Implement private sessions in the existing bootstraps.
+- Token ownership uses bootstrap-private sessions on native mounts. No special
+  SM token-mount UID/GID patch or token-specific launch wrapper is part of this
+  application-input boundary.
 - Use the same input and credential model for Brake and Tire, with separate
   service identities, instances, permissions and data.
 - Retain the existing KUKSA authorization compatibility layer. It is our
@@ -226,7 +225,7 @@ No Cloud dependency is added to local renewal or analytics.
 7. **Recover.** Acquire a new token session on launch. Preserve valid outbox,
    model and producer state; refresh public VDP inputs only on committed change.
 
-Cold/warm clarification accepted by the user on 11 September 2026: before SM
+Cold start and warm refresh have distinct gates: before SM
 starts, derive public inputs from verified durable committed VDP state without
 requiring a running provider. After native SM recovery, verify process/slot
 agreement. Warm refresh still requires that agreement. An interrupted
@@ -279,7 +278,7 @@ production deployment, signing authority and token lifetimes do not change.
 
 ## 8. Focused acceptance, not a new broad qualification cycle
 
-After document approval, use targeted contract/bootstrap tests, then one
+Verification uses targeted contract/bootstrap tests and one
 bounded Test integration through `democtl`:
 
 - Package version equals publication version; no mandatory manifest-digest
@@ -304,7 +303,7 @@ authorization and Demo Control; no Production mutation is included.
 
 ## 9. Evidence and limitations
 
-Read-only inspection on 11 September 2026 used AosCore revision
+The retained native integration was inspected at AosCore revision
 `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`, the local IAM v6 descriptors,
 our Brake/Tire bootstrap sources and resource templates. It established the
 available mechanisms, not a completed live service deployment.
@@ -327,14 +326,14 @@ verify the actual same-instance update path. The sources also do not establish
 a public pre-assignment API for the final ARM64 manifest digest; this decision
 removes that dependency rather than claiming such an API exists.
 
-### Review relationship to earlier records
+### Canonical integration mapping
 
-The [service-input contract](../demo-control-service-inputs.md) is the current
-implementation mapping. This ADR replaces its former seven-field input,
-manifest-before-assignment requirement and token-owner patch proposal only;
-the valid read-only trust/resource findings remain applicable. The
-[11 September checkpoint](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/demo-studio-implementation-progress-2026-09-11.md)
-remains historical evidence of what was actually built, committed or tested.
+The [service-input contract](../demo-control-service-inputs.md) owns exact
+current placement and startup sequence. Package release, public Unit/trust
+metadata, native instance identity and private token authority are different
+inputs. No final-manifest lookup before assignment or token-owner SM patch is
+required. Persisted legacy products retain strict decoding and original bytes;
+current metadata is never used to rewrite their provenance.
 
 The accepted provenance tradeoff, token root/private-directory distinction
 and boot-ordering gate apply to the coordinated implementation. Formal acceptance remains scoped to the actual evidence linked by the current

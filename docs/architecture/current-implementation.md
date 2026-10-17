@@ -6,7 +6,7 @@
 - Status: as-built candidate view; not blanket requirements acceptance
 - Version: 2.1
 - Prepared: 2026-10-07
-- Updated: 2026-10-15
+- Updated: 2026-10-17
 - Owner: SDV Lab integration
 - Current selection: [launcher catalog](../../workspace/launcher-catalog.json) and its immutable delivery descriptor
 - Source inputs: [current source lock](../../workspace/inputs/sources.lock.json)
@@ -15,20 +15,16 @@
 
 The accepted chain remains HLA 1.8 → Scenario 2.1 → Flows 2.2 →
 System Requirements 2.2 → Component Register 2.2 → component packages.
-Stable IDs and unfulfilled obligations remain intact. Accepted later amendments
-take precedence over original design examples; implementation is not authority
-to invent a new requirement or mark an unexecuted test passed.
+The owning sections state effective installed and expanded profiles while
+preserving stable IDs and unfulfilled obligations. Implementation is not
+authority to invent a requirement or mark an unexecuted test passed.
 
-The [current baseline](../qualification/current-baseline.md) points to the
-selected release and its exact evidence. The
-[release report](../qualification/release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
-records current main/tag publication, M1 Production runtime checks, separate
-native Setup first use and anonymous delivery. Kit028 / Setup042 and
-demo-v1.1 / Factory .39 are historical; the
-[Kit028 return point](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/qualification/kit028-setup042-source-publication-2026-10-05.md)
-preserves its exact sources. The retained Factory .41
-embeds mainline-derived AosCore with explicit retained patches, KUKSA and the
-removable KAC helper. It is not unmodified current upstream mainline.
+The [current baseline](../qualification/current-baseline.md) selects the exact
+delivered package, source/input records and scoped proof. This map describes
+ownership and implemented boundaries, not release selection or blanket
+acceptance. The retained controller uses pinned AosCore/KUKSA integration with
+documented compatibility patches and the removable KAC helper; it is not
+unmodified current upstream mainline.
 
 ## Installed workstation
 
@@ -89,21 +85,17 @@ path, not the Aos secret. Provider authority is separately packaged and is not
 issued by a service or by its backend. No browser gains VM, signing or QMP
 credentials. See the [protocol status map](../../contracts/implementation-status.md).
 
-## Accepted amendments that supersede older wording
+## Effective design boundaries
 
-| Earlier design wording | Current interpretation and source |
-| --- | --- |
-| Two fresh VU/PU overlays and mandatory production promotion in every demo | UI-STUDIO-026 scopes this milestone to one Test; Production is preserved, dual-role promotion remains separate scope |
-| Pre-signed reusable bundles tied to old certificates | ADR 0016: immutable unsigned prepared content; destination/session-selected OEM or SP signing; exact publication reconciliation |
-| Application requires final service OCI digest or a fixed shared token leaf | ADR 0015: immutable package release, native instance identity, strict public metadata v2 and private volatile credential sessions; legacy product decoders retained |
-| Service proves exact active VDP version from local metadata/catalog | Accepted 18 September option A: Presenter uses Cloud plus exact artifact/profile binding; services validate actual inputs locally and never infer incompatibility from missing samples |
-| Package major number equals functional version | Functional VDP V1/V2/V3, Brake V1/V2/V3 and Tire V1 are independent of monotonically allocated release numbers |
-| Old 30-Hz/every-third-frame Brake acquisition | Accepted source-time retention amendment selects the first valid complete frame per 100-ms bucket, with gaps retained |
-| Every timing budget is 250 ms | Separate budgets: Brake V1 accepted 5s freshness, Test FOTA `demo-5s`, fixed local control join and advisory lease/future bounds. Never substitute one for another |
-| Operator Park/Resume is the pause/restart flow | ADR 0017: Safe Stop pause, no Studio Park/Resume; accepted .39 controller ignition restores the same identity/attachment in Safe Stop under guarded conditions |
-| Restart storage loss is a universal current condition | Retained native storage/cold-component corrections have scoped .39 reboot/power-cycle evidence; nonempty-outbox power loss remains unqualified |
-| Backend Reset means delete history or repair vehicle | Reset Driver Advisory resets the selected service model/advisory through command/application acknowledgement, retaining history/queues; Finish is separate destructive run cleanup |
-| Separate dashboards own every audience view | Integrated Presenter cards/popups use team APIs and native Cloud reads; standalone backend fixture shells are not the integrated live UI |
+The [HLA](high-level-architecture.md), [scenario](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+and [flows](demo-scenario-architecture-flows.md) state current installed and
+expanded behavior directly. Current products use package/native-instance
+provenance, private volatile credentials, Cloud/package profile evidence and
+100-ms source-bucket Brake acquisition. Services remain locally independent
+of Cloud; Stop/Start, model Reset, source reset and destructive Finish are
+different operations. Their exact accepted contracts own bounds and authority.
+
+<a id="accepted-amendments-that-supersede-older-wording"></a>
 
 ## Component requirements → implementation → evidence
 
@@ -172,13 +164,12 @@ Load-sensitive readiness and VDP-TIMEOUT-01 remain explicitly deferred.
 
 ## Qualification and residual mismatches
 
-The [current baseline](../qualification/current-baseline.md) and selected release
-report supply current acceptance boundaries. The
-[7 October audit register](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/documentation-reconciliation-2026-10-07.md)
-retains that review's dated findings. The
-[protocol map](../../contracts/implementation-status.md) records legacy
-machine-readable packages that need a separately versioned synchronization;
-passing their old fixtures is not proof of current backend conformance.
+The [current baseline](../qualification/current-baseline.md) supplies selected
+acceptance evidence. The [protocol map](../../contracts/implementation-status.md)
+identifies retained machine-readable compatibility inputs and the separately
+versioned synchronization they need. Their unchanged legacy fixtures do not
+establish current backend wire conformance.
+
 Unchanged legacy digests are not silently relabeled as current runtime wire
 contracts. Full production promotion, CPU stress proof and calibration stay
 visible instead of being removed from requirements.

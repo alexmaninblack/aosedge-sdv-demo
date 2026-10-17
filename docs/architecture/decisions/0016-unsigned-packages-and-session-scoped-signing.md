@@ -12,7 +12,7 @@
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Existing contract: [Certificate-selected Test Cloud](../certificate-selected-cloud.md)
 - Current proof: [baseline](../../qualification/current-baseline.md)
-- Editorial consolidation: 2026-10-16; signing and source-trust semantics unchanged
+- Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 
 ## Accepted decision
 
@@ -119,13 +119,10 @@ without trustworthy destination provenance requires reconciliation; it is
 neither silently adopted nor resent. Legacy VDP current-run receipts retain
 the journal's guarded Cloud scope. No old artifact is deleted by migration.
 
-Reviewed unsigned-source SHA-256 values (exact inner archive bytes):
-
-| Source | Unsigned SHA-256 |
-| --- | --- |
-| 1.0.16 | `d6757035407968553f27fe7e93caae00bbab72bb13fc4f3527a37700e8f34fa1` |
-| 2.0.0 | `8728a0779cb1665910f2953457a1140ccfcda07ee236f215836193ff0d6b1a90` |
-| 3.0.0 | `746a38d76848f86ed6d4c4150893c95eb36cf044cf6f44c7a6f57506d72e7411` |
+Exact unsigned input bytes are selected by source-owned input locks and
+producer declarations, not by a copied digest table in this decision. Keep
+prepared content, destination-specific signatures and Cloud objects separate;
+an old signature or receipt cannot authorize another domain/owner.
 
 ## Legacy-source compatibility
 

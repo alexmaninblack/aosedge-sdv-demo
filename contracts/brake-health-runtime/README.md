@@ -5,7 +5,7 @@
 
 Implementation and qualification: [protocol status](../implementation-status.md).
 
-18 September amendment: [bounded function observation](../service-function-observation/README.md)
+The [bounded function observation contract](../service-function-observation/README.md)
 extends backend-visible explanation of compatibility, input and episode state.
 It does not change the model, quota profile, existing logs or advisory authority.
 
@@ -14,21 +14,20 @@ It does not change the model, quota profile, existing logs or advisory authority
 - Accepted profile SHA-256:
   `bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820`
 
-This profile freezes the proposed capability-oriented readiness, requested Aos
+This profile defines capability-oriented readiness, requested Aos
 quota envelope, cross-version state rules and bounded native-log vocabulary
 for Brake Health v1-v3. AosCore remains the process/resource authority and
 AosCloud remains the native log source; the Service introduces neither a
 resource manager nor a separate log archive.
 
-The quota values match the current scaffold and remain subject to live
+The quota values match the declared runtime profile and remain subject to live
 measurement and the independent D4-023 AosCore isolation qualification. A
 declared value is not evidence that enforcement or headroom has passed.
 
-On 16 September 2026 the operator approved increasing Brake `pidsLimit`
-from 16 to 24, with measured headroom required. Brake V3 had exhausted the
-16-task envelope (one bootstrap plus 15 product threads), with a thread
-creation failure. Only immutable Service package metadata changes; other
-quotas, model thresholds and native AosCore enforcement remain unchanged.
+Brake requests 250 DMIPS, 16 MiB RAM, 8 MiB storage, 1 MiB state,
+8 MiB tmp, 1024 files and 24 PIDs through immutable native package metadata.
+Actual consumption, signed-config/native mapping and headroom need their own
+proof; no guest override, quota scheduler or threshold change is introduced.
 
 Process health and product capability are separate. AosCore owns only the
 process lifecycle. The Service reports `OPERATIONAL`, `DEGRADED` or
@@ -61,7 +60,8 @@ Structured Service logs report owned state, queue and capability facts.
 Repeated records are rate-limited and aggregated. CPU/RAM quota enforcement
 and evidence come from AosCore, not from a Service-side resource monitor.
 
-The first demo intentionally saturates CPU only inside Tire Health. AosCore
+The planned isolation experiment intentionally saturates CPU only inside Tire
++Health; its fixed worker/control is not implemented in the current product. AosCore
 caps that instance by throttling without stopping, restarting or redeploying
 it; Brake Health is the healthy control tenant and must continue processing the
 deterministic event while VDP, KUKSA and Gateway remain healthy. Stopping the

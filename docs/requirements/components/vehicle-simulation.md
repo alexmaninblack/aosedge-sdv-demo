@@ -69,10 +69,11 @@ calibration/repeatability matrix remains separately required.
 | Town and vehicle profile | Demo Vehicle Tooling | Versioned configuration and deterministic fixed step | Qualification result is rejected as non-reproducible |
 | Source-to-Unit selection | Demo Orchestration | Exact sequential live selected Unit, generation and bounded frame range | Evidence cannot be attributed and the stage fails |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -145,7 +146,7 @@ configuration.
 Acceptance requires incompatible source/map preflight failure, non-empty and
 monotonic frame identity for a successful run, and an unambiguous link from the
 retained frame range to exactly one selected Unit. Telemetry replay is deferred
-beyond the first implementation.
+beyond the current profile.
 
 ### Deterministic stationary-obstacle braking
 
@@ -409,17 +410,13 @@ Physical dynamics and actual actor cleanup remain integration obligations.
 
 ## D3 Review Closure and Product Acceptance
 
-The component boundary, ten requirement obligations, interface ownership,
-verification levels and stable `UT-VEHICLE-SIM-*` obligations were
-design-reviewed on 2026-08-19 and are accepted as input to D4. This closes the
-`CR-VEHICLE-SIM` D3 package; it does not claim that every target behavior is
-implemented or qualified.
-
-Product acceptance remains open until the source-selection owner closes the
-VU/PU attribution boundary, the Tire Health stimulus design is accepted,
-repeated live Brake Event qualification passes, cleanup failure/recovery is
-proved, every `UT-*` obligation is green or has a reviewed exception, and the
-repository and documentation gates pass.
+The accepted package defines ten requirement obligations, stable unit-test
+IDs and simulator/Gateway/source-selection ownership. Design acceptance does
+not imply complete target-host qualification. Full acceptance requires the
+source-attribution/reset boundary, accepted Tire stimulus, repeated live Brake
+qualification, cleanup-failure recovery, every required unit obligation (or
+reviewed exception) and repository/documentation gates. Expanded use also
+qualifies sequential Validation/Production attribution.
 
 ## Open Issues
 

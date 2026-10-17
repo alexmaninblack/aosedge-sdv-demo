@@ -8,7 +8,7 @@
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27, with the linked accepted lifecycle/interaction amendments
 - Owner: System Architecture
-- Editorial consolidation: 2026-10-16; no new component, authority or requirement
+- Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 - Scope: simulated vehicle, Gateway, ARM64 virtual controller, Aos Cloud,
   functional products and installation/presentation tooling
 - Implementation or Cloud/Unit mutation authorized by this document: no

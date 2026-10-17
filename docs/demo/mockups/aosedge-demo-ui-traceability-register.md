@@ -5,19 +5,18 @@
 
 - Status: Accepted traceability contract
 - Version: 1.2
-- Prepared: 2026-08-26
-- Accepted: 2026-08-26
 - Owner: Demo Solution Team with visible-surface owners and System Acceptance
 - Interaction contract: [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
-- Implementation authorized: current Test Studio scope; separate Production-role promotion remains outside the installed workflow.
 
-## Current Studio Test traceability amendment
+<a id="current-studio-test-traceability-amendment"></a>
+## Installed and expanded interaction coverage
 
 The earlier UI-INT/UI-AT rows remain for stable reverse links. For current Test,
 apply the replacement map in [UI-STUDIO-026](aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
 before using those rows as acceptance requirements; conflicting old layout,
-Production/approval and terminal-only clauses are superseded for this scope.
+The owning UI rule states installed behavior directly; explicit expanded
+clauses retain their separate Production and qualification duties.
 References to mockup checks below describe historical design evidence retained
 in Git, not tests to run against the current product. The maintained Presenter
 unit/browser scenarios and the current baseline own present implementation
@@ -131,14 +130,10 @@ verification route exist; it does not mean implemented or qualified.
 | [`UI-INT-078`](aosedge-demo-interaction-specification.md#ui-int-078) | [D4-026.17](../../requirements/d4-decision-register.md#d4-026-17), [`REQ-DEMO-023`](../../requirements/components/demo-orchestration.md#req-demo-023) | [`UI-I0-001`](README.md#ui-i0-001), [`UI-I0-004`](README.md#ui-i0-004) | [`UI-AT-049`](aosedge-demo-interaction-specification.md#ui-at-049) | `DESIGNED` |
 | [`UI-INT-079`](aosedge-demo-interaction-specification.md#ui-int-079) | [D4-026.18](../../requirements/d4-decision-register.md#d4-026-18), [`REQ-DEMO-024`](../../requirements/components/demo-orchestration.md#req-demo-024) | [`UI-I0-004`](README.md#ui-i0-004), [`UI-I0-007`](README.md#ui-i0-007) | [`UI-AT-050`](aosedge-demo-interaction-specification.md#ui-at-050) | `DESIGNED` |
 
-Version 1.1 adds D4-026.19 and the strengthened `REQ-DEMO-023` ownership to
-the existing `UI-INT-004`, `UI-INT-008` and `UI-INT-010` rows. Stable UI rule
-and acceptance-case IDs are preserved because this is a reviewed layout
-refinement, not a new interaction behavior family.
-
-D4-026.20 strengthens the existing `UI-INT-003`, `UI-INT-051` and
-`UI-AT-002` trace without new IDs because it clarifies icon vocabulary and
-native Terminal rendering ownership rather than adding interaction behavior.
+Layout/context rules map to `REQ-DEMO-023` and D4-026.17/.19;
+icon vocabulary and native Driving Control/Telemetry ownership map to
+D4-026.20 and `UI-INT-003`/`UI-INT-051`/`UI-AT-002`. These are current
+allocations, not a separate history or an additional acceptance result.
 
 ## Change Rules
 

@@ -7,7 +7,7 @@
 - Version: 1.0
 - Owner: SDV Lab integration and Brake/Tire producers
 
-This is the maintained readiness and demo-reset amendment used by the current
+This contract defines readiness and demo Reset used by the current
 Brake and Tire contracts. It replaces the completed implementation work packet,
 not the typed advisory profiles or their golden bytes. Runtime qualification
 and remaining matrices are owned by the [current baseline](../../docs/qualification/current-baseline.md).
@@ -45,7 +45,7 @@ VDP V3 sends a bounded five-second heartbeat to the two corresponding VISS
 `ready`, and current UTC `observedAt`. Sending it means the running VDP has
 advisory support. Only the selected Unit mTLS role may write these paths.
 Gateway accepts at most five seconds of forward VM clock skew for this display
-heartbeat only (the preserved Test measured a 9–10 ms lead). It still rejects
+heartbeat only. It still rejects
 older-than-15-second or non-increasing observations. No warning request or
 Safe Stop authorization window changes. Gateway publishes a read-only projection with its own observed time and a
 15-second expiry. Its six fields are `schemaVersion`, `supported`, `ready`,
@@ -56,7 +56,7 @@ clears, renews or proves application of a recommendation.
 
 ## Reset semantics
 
-The accepted 20 September UI amendment moves **Reset Driver Advisory** to each
+**Reset Driver Advisory** is on each
 Brake/Tire backend summary card with one-click protected submission and no
 additional confirmation. Details retain outcome/history, not a second action.
 Immediate submission, backend PENDING and correlated CLEAR remain distinct;
@@ -118,7 +118,7 @@ The native dashboard reads Gateway/VISS only. Backend command administration
 is private and remains under Demo Control; it is not a public management API.
 The service bootstraps use the native gRPC resolver and the existing container
 `Server` hosts entry for KUKSA, including offline JWT-renewal reconnection.
-No CM/SM/IAM change is introduced by this readiness/reset amendment.
+Readiness and Reset use existing CM/SM/IAM authority; no parallel lifecycle is introduced.
 
 Pedal release smoothing must not overlap nonzero throttle and brake. A rejected
 pedal command requests Safe Stop without closing the UI channel. A genuinely
@@ -137,7 +137,7 @@ Current source attachment/provisioning and vehicle-control behavior follow
 They do not inherit old one-session staging permissions or the retired
 Park/Resume implementation order.
 
-The [original accepted packet](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/cc75541f255f3d2fb0fd670053687ebe406c37ee/docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md)
-preserves the exact September decisions and execution record. This relocation
+The maintained contract
+
 preserves the display, reset and command-protocol sections without changing
 request bodies, deadlines, identity bindings or success criteria.

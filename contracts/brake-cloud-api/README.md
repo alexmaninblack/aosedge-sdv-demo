@@ -9,7 +9,7 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 - Lifecycle state: `ACCEPTED`
 - Accepted contract version: `1.0.0`
 - Additive Query/SSE/Admin profile: `1.1.0`
-- Accepted amendment: `BC-WINDOW-DETAIL-DEC-01`; accepted 2026-08-31
+- Window detail decision: `BC-WINDOW-DETAIL-DEC-01`
 - Subdecision state: transport, first-demo security boundary, idempotency,
   durable acknowledgement, persistence, Dashboard query/authority and exact
   current-run cleanup accepted 2026-08-23
@@ -213,7 +213,8 @@ chunk 0's first sample timestamp or the completion's
 quarantined and non-terminal. No window-change SSE notification is emitted for
 a still-hidden later chunk.
 
-## Accepted Window Detail Amendment
+<a id="accepted-window-detail-amendment"></a>
+## Window detail contract
 
 The accepted 1.1.0 Query/SSE/Admin profile adds one point read without changing
 the four accepted 1.0.0 collection bodies:
@@ -240,11 +241,10 @@ factual. Corrupt stored content is a retryable `503`, not a partial response.
 The existing collection, SSE, cache, Current Unit, first-demo network and
 security boundaries remain unchanged.
 
-No database migration belongs to this amendment. Existing migration 002
+The point-read contract needs no database migration. Existing migration 002
 already retains canonical validated chunk content and the exact
 Unit/event/chunk index. The point read is implemented and used by Presenter;
-the original five-path source-only packet remains historical execution scope,
-not current evidence that this route is missing.
+its implementation/qualification status is recorded with the current protocol baseline.
 
 The Brake Dashboard obtains functional windows, assessments, events and
 advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated
@@ -271,7 +271,8 @@ is forbidden.
 This accepted design contract authorizes no repository creation, backend
 implementation, signing, Cloud call, Unit mutation or deployment by itself.
 
-## Accepted Fixture Erratum — 2026-08-29
+<a id="accepted-fixture-erratum--2026-08-29"></a>
+## Retained fixture interpretation
 
 The originally accepted
 `fixtures/brake-advisory-fact.valid.json` contained a placeholder
@@ -284,7 +285,8 @@ the complete fixture SHA-256 is
 `a2dc0c016d5281c9accead1d6447600d4a2c3736acaef1f725a2831efe334cad`.
 This is an accepted fixture erratum, not a Brake Cloud API version change.
 
-## Native product provenance — 2026-09-11
+<a id="native-product-provenance--2026-09-11"></a>
+## Current and legacy product provenance
 
 For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
 defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.

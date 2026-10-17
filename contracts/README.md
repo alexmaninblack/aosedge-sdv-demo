@@ -4,8 +4,7 @@
 # Cross-Component Contracts
 
 Start with [implementation status](implementation-status.md) for current implementation,
-accepted amendments and executable-profile differences. Accepted later amendments take
-precedence over original dual-role/credential examples. One associated SP
+effective profiles and executable-contract differences. One associated SP
 serves both independent services in the first-install topology. Contract,
 functional profile, Cloud release and installer versions are separate.
 Frozen historical schemas are not silently rewritten to match newer handlers.

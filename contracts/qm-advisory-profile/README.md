@@ -20,7 +20,7 @@ envelopes, authority, freshness, replay/rate limits and clear/expiry behavior.
 - [Readiness and independent Reset](readiness-and-reset.md) — maintained
   display/command amendment; no change to the frozen wire profiles.
 
-The first implementation transports one canonical UTF-8 JSON object in one
+The installed profile transports one canonical UTF-8 JSON object in one
 VSS `string` leaf. This preserves atomic message semantics through the current
 primitive `kuksa.val.v1` datapoint API. It is not arbitrary display text: the
 VDP and Gateway independently validate the exact schema, endpoint-specific

@@ -6,8 +6,7 @@
 - Status: Accepted
 - Version: 2.1
 - Prepared: 2026-08-22
-- Accepted: 2026-09-27 (installed-workstation amendment)
-- Previous accepted version: 2.0
+- Accepted: 2026-09-27
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
@@ -57,17 +56,15 @@ Use the [operator workflow](../operations/current-demo-workflow.md),
 scoped API/visible UI/native Setup checks are now recorded there; a historical
 Kit number is not the current selector or blanket full-matrix qualification.
 
-### Profiles and stage applicability
+### Profiles
 
-[UI-STUDIO-026](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
-defines the installed Test profile. The detailed VU/PU promotion sequence below
-is the **expanded accepted profile**, not instructions to create a second
-controller during first use. Its stable stage, requirement and interface IDs
-remain valid. Two SP organizations, dedicated Fleet objects, mandatory
-Production approval, terminal-only presentation and concurrent writers are
-not simultaneous installed-Test prerequisites. Backend handlers implement the
-Test context; remaining legacy schema differences are in the
-[protocol map](../../contracts/implementation-status.md).
+The stage definitions below apply to the installed Test unless an expanded
+subsection explicitly adds Production promotion. Installed use has one OEM,
+one associated SP and one Test controller. The expanded accepted profile adds
+two independent SP organizations and a separate Production-role controller.
+Shared authority, safety, data-quality and evidence obligations apply to both.
+Expanded promotion is retained design scope, not an installation prerequisite
+or a claim of completed dual-role qualification.
 
 ### Packaged inputs do not change the story
 
@@ -91,8 +88,8 @@ uses `R`.
 
 | Code | Meaning | State or outcome |
 | --- | --- | --- |
-| `M0` | Manufacturing output | Two fresh, unprovisioned Domain Controller overlays are created from the immutable OEM Demo Factory Image |
-| `M1` | End-of-line provisioning | Both overlays receive unique Unit identities and connect to AosCloud; this transition establishes `G0` |
+| `M0` | Manufacturing output | One fresh unprovisioned Test overlay; the expanded profile adds an independent Production overlay, both from the same immutable Factory image |
+| `M1` | End-of-line provisioning | Provision the Test exactly once and establish `G0`; expanded use separately provisions Production with a different identity |
 | `G0` | Provisioned SOP substrate | Working vehicle and update-ready Domain Controller, with an empty Vehicle Data Platform slot and no functional services |
 | `G1` | First platform capability | VDP Component v1 exposes the first read-only vehicle-data subset in KUKSA |
 | `G2` | First Brake Health product | Brake Health Service v1 captures bounded pre-trigger, braking and post-trigger telemetry windows and transfers them to its backend |
@@ -197,7 +194,7 @@ moves. Their other release gates remain unchanged.
 | Domain Controller | QEMU plus AosVM representing a separate vehicle ECU |
 | Official AosEdge release | Immutable upstream release from which the OEM platform image is reproducibly derived |
 | OEM Demo Factory Image | Cloud-unprovisioned OEM image derived from the official AosEdge release; it contains the accepted component runtime but no provider payload, functional service, Unit registration, or Cloud-issued identity certificate |
-| Platform substrate | AosCore, Service Manager, one stock IAM configuration with `enablePermissionsHandler: true` independent of provisioning state but no pre-populated service permission/secret state, factory-installed unmodified KUKSA, the accepted Vehicle Data Provider component runtime, security/update support, and current-release non-secret signer/verifier preparation wiring present from SOP |
+| Platform substrate | AosCore, Service Manager, one stock IAM configuration with `enablePermissionsHandler: true` independent of provisioning state but no pre-populated service permission/secret state, factory-installed Factory-owned KUKSA, the accepted Vehicle Data Provider component runtime, security/update support, and current-release non-secret signer/verifier preparation wiring present from SOP |
 | Platform-controlled Service credential boundary | Permanent implementation-neutral security boundary that derives Service authority from immutable Service metadata and active Aos IAM state; in the current release it is realized by a separately packaged, removable compatibility helper outside VDP and both SOTA services |
 | Current-release KUKSA authorization compatibility helper | Transitional platform helper (`CMP-KAC`) that accepts only an instance-bound `AOS_SECRET` plus a fixed KUKSA resource identifier, queries Aos IAM `GetPermissions`, maps the returned active permissions into a bounded short-lived JWT, and delivers that credential privately to the requesting Service; it is infrastructure, not audience-facing product value |
 | Vehicle Data Platform Component | OEM-qualified trusted FOTA platform artifact containing the inbound/outbound providers, signal selection, validation, allowlists and versioned KUKSA data/advisory contract; its fixed Provider-side KUKSA connection is platform integration, it does not issue Service JWTs, and the first demo makes no malicious/substituted-Provider containment claim; stage names use the shorthand VDP Component v1–v3 |
@@ -236,7 +233,7 @@ for Brake Health and Tire Health whenever either Service is present:
 3. The helper resolves current authority through Aos IAM `GetPermissions`,
    maps only the supported result into the pinned KUKSA JWT profile, and
    privately places a short-lived JWT in volatile Service-instance storage.
-4. The Service connects directly to unmodified KUKSA. The helper is not in the
+4. The Service connects directly to Factory-owned KUKSA. The helper is not in the
    telemetry, advisory, backend, or Cloud data path.
 5. An active Service renews before expiry through the same fixed-resource
    exchange. Invalid or inactive identity, removed permissions, unsupported
@@ -439,7 +436,7 @@ online/offline/reconnect behavior and allowlisted redaction must be qualified.
 
 | Stage | Accepted state after the stage | New capability |
 | --- | --- | --- |
-| M0 | `OEM Demo Factory Image + two fresh overlays` | Two fresh unprovisioned Domain Controller VM overlays exist; no Cloud Units or credentials exist |
+| M0 | `OEM Demo Factory Image + selected role overlays` | A fresh unprovisioned Test exists; expanded use adds Production. No overlay has Cloud identity or credentials |
 | M1 | `Two provisioned Unit roles` | Validation and Production Units have unique identities, certificates, roles, and Cloud connectivity |
 | G0 | `Initial post-SOP runtime graph` | Working vehicle and update-ready Domain Controller, but no VDP Component or functional service |
 | G1 | `VDP Component v1` | First read-only subset of vehicle telemetry becomes available in KUKSA |
@@ -522,10 +519,10 @@ It intentionally contains no:
   per-vehicle secret;
 - vehicle-specific mutable runtime state.
 
-At the beginning of a demo run, two new copy-on-write VM overlays are created
-from this immutable image. One represents the Test Vehicle computer and
-one represents the Production vehicle computer. The factory image itself
-remains read-only and is never provisioned or modified.
+Create Controller makes one fresh copy-on-write Test overlay from this
+immutable image. Expanded-profile manufacture additionally creates a separate
+Production overlay. Each overlay has independent identity and writable state;
+the backing image remains read-only and is never provisioned or modified.
 
 Each new instance must establish distinct local system, Node, SSH, and network
 identity before Cloud registration. The factory artifact must therefore retain
@@ -547,12 +544,12 @@ multi-type runtime is implemented and qualified.
 
 ### Audience-visible proof
 
-- two newly manufactured Domain Controller instances exist locally;
-- neither instance is registered as an AosCloud Unit;
+- the selected profile has its fresh unprovisioned Test overlay and, only for
+  expanded use, its independent Production overlay;
+- no newly manufactured overlay is registered as an AosCloud Unit;
 - no Cloud registration, Cloud-issued certificate, provider payload, or
   functional service exists;
-- the Software Delivery Dashboard identifies both instances as
-  `Manufactured / Awaiting provisioning`;
+- Presenter identifies each manufactured role as awaiting provisioning;
 - the shared header shows `Current Vehicle: Not assigned`; and
 - M1 has not started automatically.
 
@@ -561,7 +558,13 @@ multi-type runtime is implemented and qualified.
 The manufacturing station provisions each fresh VM exactly once with the
 official Aos provisioning SDK. Provisioning creates the Unit and Main Node,
 registers the instance's unique identity, generates its certificates, and
-enables secure Cloud connectivity. After both Units are Online:
+enables secure Cloud connectivity. Installed Test provisioning confirms its
+exact system UID, Cloud Unit/Main Node and configured Test verification set;
+it does not create a second vehicle or adopt a Production identity.
+
+### Expanded-profile provisioning and promotion topology
+
+After both independently provisioned Units are Online:
 
 1. the pinned one-time Cloud topology is re-read: `AosEdge SDV Demo Fleet`,
    validation-enabled `AosEdge SDV Demo / Test Vehicles`, and non-validation
@@ -604,14 +607,15 @@ The complete demonstration environment is running:
 - the Vehicle Control UI can use manual or autopilot mode;
 - the Vehicle Gateway publishes live VISS telemetry;
 - the Engineering Telematics Dashboard displays that telemetry;
-- the Validation and Production Units have the fresh provisioned identities
-  created during M1 and retain them throughout `G0–T1`;
+- the Test retains its provisioned M1 identity throughout `G0–T1`; expanded
+  use also retains its separate Production identity;
 - the Domain Controller contains AosCore, Service Manager, KUKSA, the accepted
   Vehicle Data Provider runtime, the empty current-release authorization
   helper, security integration, and update support.
 
-After M1 proves both identities and exact disjoint Unit Set membership, the
-Test Vehicle becomes the initial exclusive Current Vehicle. The fresh
+After M1 proves Test identity and exact membership, the Test becomes the
+initial exclusive Current Vehicle. Expanded use additionally proves independent
+Production identity and disjoint role membership. The fresh
 CARLA/Gateway binding and Engineering Telematics proof establish G0; G0 is a
 visible baseline state, not another provisioning mutation or team release
 action.
@@ -783,7 +787,7 @@ could develop a later model outside the live vehicle demonstration.
 6. The helper calls Aos IAM `GetPermissions`, maps only the Service instance's
    active registered permissions into the pinned KUKSA JWT profile, and either
    delivers a short-lived JWT into Service-private volatile storage or rejects
-   the request. The Service then connects directly to unmodified KUKSA. Invalid,
+   the request. The Service then connects directly to Factory-owned KUKSA. Invalid,
    stale, removed, malformed, broadened, cross-instance, or unsupported
    authority fails closed.
 7. A deterministic CARLA braking episode proves that the pre-trigger buffer
@@ -1147,7 +1151,7 @@ provider onboarding, fleet-operator tenancy or safety-domain consolidation.
    helper resolves the active registered authority through Aos IAM, maps only
    supported permissions into a short-lived scoped JWT, and delivers it to
    Service-private volatile storage. Tire Health then connects directly to
-   unmodified KUKSA.
+   Factory-owned KUKSA.
 5. Validation proves local estimation, persistent-state continuity, bounded
    offline reporting, idempotent backend ingestion, advisory isolation, and
    that the existing Brake Health graph remains unchanged.
@@ -1295,8 +1299,9 @@ presentation. No live step compiles source, invokes a Yocto/rootfs/container
 build, generates or repackages a payload or metadata, trains a model, or runs
 the full qualification suite. The live demo performs only:
 
-- creation of two fresh overlays from the immutable factory image;
-- controlled provisioning and assignment of the two new Units;
+- creation of a fresh Test overlay from the immutable Factory image, plus a
+  separate Production overlay only for expanded use;
+- controlled provisioning and exact configured assignment of each owned Unit;
 - selection of an already-built immutable candidate;
 - explicit protected signing and publication through the owning team's
   release view and pipeline, without exposing private keys;
@@ -1304,7 +1309,7 @@ the full qualification suite. The live demo performs only:
 - visible validation and approval;
 - promotion of the accepted artifact graph;
 - deterministic runtime execution;
-- one mandatory targeted Production-Unit external-connectivity loss that
+- one targeted current-Test (expanded use: Production-Unit) external-connectivity loss that
   interrupts its AosCloud and installed functional-backend paths together,
   followed by same-Unit recovery;
 - retirement of the current demo run and reset of external demo data.
@@ -1320,11 +1325,20 @@ performance KPI.
 
 ## R0 — End-of-Demo Retirement and Next-Run Reset
 
-The complete demo does not reverse the accepted software graph from `T1` or
-`G4` to `G0`. No artificial provider, service, or rootfs rollback is part of the normal
-presentation. Instead, the two simulated Domain Controller Unit instances
-created for the current run are retired, and the next run represents two newly
-manufactured vehicle computers.
+Finish demo retires the exact current Test without rolling its software graph
+back to G0. Stop/Start instead preserves that Test. Quiesce owned source, VM
+and backends; reconcile exact Unit/Node/Subject/Set effects and backend cleanup;
+dispose of owned working files and remove the reconciled journal last.
+Preserve credentials, permanent Subjects/Sets, releases, Factory and unrelated
+or Production state. A next run requires a new explicit Create Controller and
+Provision. Ordinary Finish does not require reconnecting an old identity.
+
+### Expanded two-role retirement and security qualification
+
+The expanded R0 sequence below retires both explicitly owned Validation and
+Production controller instances and proves the complete credential-retirement
+matrix. It is not an additional prerequisite for ordinary installed Finish.
+Neither profile simulates a rootfs/provider/service rollback.
 
 R0 is available after a completed, failed or presenter-aborted run and does not
 require a `QUALIFIED` verdict. It is cleanup and identity retirement, not a
@@ -1407,7 +1421,8 @@ first on disposable Units.
 The existing Validation and Production identities must not be used for that
 destructive experiment.
 
-## Consistency Decisions Already Accepted
+<a id="consistency-decisions-already-accepted"></a>
+## Scenario invariants
 
 1. The official AosEdge release is an upstream input; manufacturing uses a
    reproducibly derived OEM Demo Factory Image.
@@ -1443,11 +1458,13 @@ destructive experiment.
 12. High-Level Architecture 1.8 is a capability superset; `G0–G4` exercise
     Function Team 1 and `T1` adds Function Team 2 through its independent Tire
     Health SOTA 2 lifecycle.
-13. Function Team 1 and Function Team 2 remain independent AosCloud Service
-    Providers. Function Team 2 consumes the existing platform contract and
-    does not request another capability in the current demo.
-14. The current demo session is associated through the two Unit IDs and a time
-    window after M1; no additional architecture identity is mandatory.
+13. Function Teams retain independent service/product lifecycles. Installed
+    use shares one associated SP; expanded use requires separate SP domains.
+    Tire consumes the existing VDP V3 capability and requests no extra platform
+    extension in this story.
+14. A run is associated with its exact provisioned Test identity and source
+    time window; expanded use also binds its Production identity. No additional
+    architecture identity is mandatory.
 15. Native Cloud rejection of a SOTA service whose required FOTA capability is
     absent is a target demo scenario deferred until the AosEdge roadmap feature
     ships and is qualified. No project-specific admission controller is used.
@@ -1485,22 +1502,23 @@ destructive experiment.
     malicious/substituted-Provider containment; Service JWTs cannot grant
     provider authority.
 
-## Open Qualification and Implementation Gates
+<a id="open-qualification-and-implementation-gates"></a>
+## Verification obligations
 
-1. Implement and qualify the accepted `T1` Tire Health scenario, including its
+1. Qualify the complete accepted `T1` Tire Health matrix, including its
    existing signal subset,
    accelerated/pre-aged degradation model, persistent state, condition bands,
    bounded backend payload, advisory, hidden qualification truth, and dashboard
    proof.
-2. Implement and qualify sequential exclusive live CARLA/VISS handover:
+2. For expanded use, qualify sequential exclusive live CARLA/VISS handover:
    Validation attach/run/detach, deterministic scenario reset, then
    Production attach/run/detach. Telemetry-trace replay remains deferred;
    do not imply two simultaneous simulated vehicles.
 3. Confirm the exact VDP Component v1–v3 signal and advisory subsets, including
    the existing dynamics inputs required by Tire Health.
-4. Select the simulated brake degradation or anomaly and define how CARLA or
-   the Vehicle Gateway generates its source values.
-5. Define the exact bounded Service v1 braking-event contract: trigger and
+4. Verify the accepted simulated brake stimulus and its CARLA/Gateway source
+   values without injecting model results or exposing hidden qualification truth.
+5. Prove the bounded Service v1 braking-event contract: trigger and
    clear rules, pre/active/post durations, signal sampling, merge/debounce,
    ordered chunk/completion schemas, reconstruction/resume, and all memory,
    queue and size limits. Continuous unrestricted raw streaming is excluded.
@@ -1511,30 +1529,30 @@ destructive experiment.
    file/archive bounds, explicit deletion effect, offline/reconnect behavior,
    redaction and bounded temporary downloads; state that API retention policy
    is not exposed.
-7. Define the minimum OEM Software Delivery Dashboard views and exact evidence
+7. Verify the OEM delivery views and the exact designated qualification evidence
    dossier, including the Platform Releases candidate catalogue, protected
    Platform Team sign/publish handoff, artifact and metadata digests, requested
    permissions, target, evidence completeness/freshness, team acceptance,
    active OEM role, blocked reasons, final explicit confirmation and
    post-action Cloud re-read, without introducing local lifecycle state,
    browser-held keys or automatic approval.
-8. Define the versioned synthetic model identity, deterministic
+8. Verify the versioned synthetic model identity, deterministic
    `BrakeHealthAssessment` and threshold/change `BrakeHealthEvent` shown by
    Service v2, including proof that normal v2 operation no longer emits v1
    high-detail windows, before advisory actuation is introduced.
-9. Prove that a fresh verification batch shows only its intended Validation
+9. For expanded approval governance, prove that a fresh verification batch shows only its intended Validation
    Unit before approval; never reuse a stale batch after Unit Set changes.
 10. Freeze and qualify a clean, unprovisioned OEM Demo Factory Image with an
     empty VDP component slot, no Cloud registration or credential, and no fixed
     identity that would be duplicated across instances.
-11. Prove that two fresh overlays create different system, Node, SSH, and
+11. For expanded use, prove that two fresh overlays create different system, Node, SSH, and
     certificate identities.
 12. Live-qualify offline-only Cloud deprovision, post-`204` Unit re-read,
     old-certificate rejection, exact `system_uid` Unit Set removal, Unit
     deletion, Unit-owned Node disappearance without a standalone Node-delete
     call, retained audit history, authorization-masked `404`, and
     partial-failure reconciliation on disposable Units.
-13. Define current-session naming, binding to the two Unit IDs and time window,
+13. Verify current-session naming and exact profile-bound Unit/time-window binding,
     Unit Set assignment, and external data-retention rules. An internal UUID is
     optional and is not an architecture identity.
 14. When an implementing AosEdge release becomes available, qualify native
@@ -1573,8 +1591,8 @@ proof above remain part of the demo and are not a performance benchmark.
 Cloud provisioning, authentication, signing, approval and operator-interaction
 duration are not vehicle-performance KPIs for this demo.
 
-Detailed interaction mapping now exists in Demo Scenario Architecture Flows
-2.0. The open gates above constrain component requirements, implementation,
+Architecture Flows 2.2 owns detailed interaction mapping. These verification
+obligations constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
@@ -1593,9 +1611,9 @@ the independence of the two SOTA lifecycles.
 - [AosCore common infrastructure](https://docs.aosedge.tech/docs/aos-core/architecture/common-infrastructure/)
   documents log archiving, compression, and Cloud transmission support.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/demo/staged-post-sop-brake-health-demo-scenarios.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

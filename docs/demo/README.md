@@ -17,13 +17,13 @@ Presenter, CARLA and native Driving Control run as separate applications.
 - [Staged Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md).
 - [Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md).
 - [Interaction Specification 2.6](mockups/aosedge-demo-interaction-specification.md),
-  including the accepted [Test-only Studio amendment](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+  including the [installed Test interaction profile](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 - [UI traceability](mockups/aosedge-demo-ui-traceability-register.md).
 - [Interface register](mockups/README.md).
 
 The accepted scenario/interaction documents contain expanded two-vehicle and
-two-provider obligations. Later Test-only and one-associated-SP amendments
-define the implemented first-demo scope. A Production Cloud connection is not
+two-provider obligations, explicitly separated from the installed Test and
+one-associated-SP scope. A Production Cloud connection is not
 the same as promoting a Test to the separate Production vehicle role.
 
 The interface register and interaction specification are maintained contracts.

@@ -16,10 +16,11 @@
 - Accepted authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -37,7 +38,8 @@ integrated Presenter views. Expanded dual-role/two-SP promotion and resource
 proof obligations remain where allocated; they are not first-use prerequisites.
 The [implementation map](../../architecture/current-implementation.md) and
 [baseline](../../qualification/current-baseline.md) own current source/proof.
-Accepted requirement Statements and stable UT IDs below are unchanged.
+Stable requirement/test IDs are retained; the owning clauses below state the
+effective obligations and profile-specific scope.
 
 ## Purpose and Boundary
 
@@ -45,7 +47,7 @@ Accepted requirement Statements and stable UT IDs below are unchanged.
 platform-controlled Service credential boundary for the current AosCore
 release. It enables independently deployed Brake Health and Tire Health SOTA
 instances to obtain short-lived KUKSA JWTs from their active native Aos IAM
-authority without changing upstream KUKSA and without placing an issuer inside
+authority without moving IAM ownership into KUKSA or placing an issuer inside
 VDP or either functional Service.
 
 The helper is separately packaged Platform Team infrastructure in the OEM Demo
@@ -63,7 +65,7 @@ assumption. `CMP-KAC` shall never issue, renew or imply KUKSA `provide` or
 [`D4-027.1`](../d4-decision-register.md#d4-027-1) freezes the current-release
 deployment boundary:
 
-- planned source: `aos-vehicle-platform/authorization/aos-kuksa-compat/`;
+- source owner: `aos-vehicle-platform/authorization/aos-kuksa-compat/`;
 - separate Yocto recipe/package and systemd unit:
   `aos-kuksa-auth-compat` / `aos-kuksa-auth-compat.service`;
 - dedicated unprivileged runtime identity: `aos-kac:aos-kac`;
@@ -75,9 +77,10 @@ deployment boundary:
   `NOT_READY` while credential preparation is unavailable; and
 - independently removable package boundary for later native AosCore migration.
 
-The current source contains `aos-iam.service`, `aos-sm.service` and
-`kuksa-databroker.service`, but no helper or verifier-preparation unit. Their
-implementation remains future work and is not created by this document.
+The Factory integrates the native IAM/Service Manager, KUKSA, helper and
+verifier-preparation units. Use the shared implementation/protocol baseline
+for their exact source and scoped proof; the deployment definition is not a
+claim that every startup, expiry or recovery case has passed.
 
 ## Accepted Local Transport and Credential Delivery
 
@@ -153,7 +156,7 @@ D4-010.1 lifecycle for the current compatibility helper:
 - `aos-kuksa-verifier-prepare.service` performs a protected sign/verify
   self-test and atomically publishes only the public key as root-owned
   mode-`0444` `/run/aos-kuksa-verifier/kuksa-jwt-public.pem`;
-- unmodified KUKSA always starts with that exact file through
+- Factory-owned KUKSA always starts with that exact file through
   `--jwt-public-key`, while KUKSA and `CMP-KAC` both fail closed when
   preparation is absent, malformed or unverifiable;
 - `CMP-KAC` invokes only the protected `RS256` sign operation and cannot
@@ -486,7 +489,7 @@ integration and end-to-end obligations.
 | Unit | Pure request validation, IAM result mapping, JWT profile, lifecycle state machine, bounds and redaction |
 | Component | Process/package isolation, private credential location, startup/readiness, empty restart and teardown |
 | Contract | `IF-AUTH-007`–`010` schemas, errors, pinned JWT fixtures, permissions and lifecycle cases |
-| Integration | Real Service Manager/IAM, per-Unit signer/verifier, unmodified KUKSA, two independent SOTA instances and direct Service access |
+| Integration | Real Service Manager/IAM, per-Unit signer/verifier, Factory-owned KUKSA, two independent SOTA instances and direct Service access |
 | End-to-end | VU before PU, restart/reboot, stop/removal, targeted vehicle offline operation, R0 destruction and fresh next-run authority |
 
 ## Open D4 Gates
@@ -500,9 +503,9 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 | Remaining qualification | Complete the negative/time/overload/resource and full repeatability matrices. Native permission-key 256-character build bound is distinct from the larger protocol path bound; do not claim every syntactically valid path is supported. |
 | Provider scope | Provider authority stays in the separate trusted OEM one-shot/systemd credential path. Dynamic Provider IAM and malicious-Provider containment remain outside the accepted first-demo claim. |
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/kuksa-authorization-compatibility.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

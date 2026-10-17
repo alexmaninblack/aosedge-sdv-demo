@@ -60,7 +60,8 @@ target-host interruption/repair gate. See the [current baseline](../docs/qualifi
 | [Software dashboard](software-delivery-dashboard/README.md) | Cloud lifecycle/resource projections and integrated function views | Coverage catalogue and formal CPU verdict/dossier design are not proof that every coverage item has a live implementation |
 | [E2E stage evidence](e2e-stage-evidence/README.md) | Atomic operations/reconciliation plus dated qualification receipts | Current 118 API/42 visible UI and separate native Setup profiles passed; full dossier/expanded-scope acceptance is not established; legacy golden stage maps retain their design scope |
 
-## Current wire authorities and amendment precedence
+<a id="current-wire-authorities-and-amendment-precedence"></a>
+## Current wire authorities and contract precedence
 
 - KAC: [strict request/response schemas](kuksa-current-demo-authorization/README.md)
   and platform helper; one LF-delimited request/response per Unix connection.

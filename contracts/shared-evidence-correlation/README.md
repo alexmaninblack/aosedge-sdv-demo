@@ -110,7 +110,9 @@ sequence rollback, late old epoch, invalid/owner-impossible time, missing
 watermark and forbidden/unknown UI fields. Clock anomalies use fixtures and do
 not change Mac or VM clocks.
 
-Validation Unit integration proves normal Brake/Tire chains, restart/new epoch,
+Expanded Validation Unit integration proves normal Brake/Tire chains,
+ordinary restart with epoch preservation and explicit producer replacement
+with epoch rotation,
 atomic external-connectivity loss, local offline decision, immutable reconnect
 retry and acknowledged synchronization without duplicate rows or state
 rollback. Production Unit rehearsal runs one normal and one offline/reconnect
@@ -119,7 +121,8 @@ chain with the same reviewed contracts and prepared artifacts.
 `PASS` requires exact Unit/role/source/team binding, valid causal linkage, the
 complete idempotency/ordering matrix, no forbidden browser-state data, R0
 current-record cleanup and no historical demo database. Evidence feeds the
-future common D4-025 acceptance dossier; D4-024 creates no separate archive.
+common D4-025 acceptance dossier; D4-024 creates no separate archive.
 
-The design is closed. Implementation and live qualification remain open. This
-review authorizes no implementation, publication, Cloud mutation or VM change.
+The accepted design defines the complete acceptance matrix. Use the current
+protocol baseline for implemented scope and proof; ordinary positive chains
+do not close every chronology, isolation and recovery obligation.

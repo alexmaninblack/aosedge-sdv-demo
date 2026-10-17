@@ -6,8 +6,7 @@
 Implementation and qualification: [protocol status](../implementation-status.md).
 
 - Decision: [`D4-016.3`](../../docs/requirements/d4-decision-register.md#d4-016)
-- Contract version: 1.1.0; original arithmetic accepted 2026-08-29,
-  demo timing amendment approved 2026-09-16
+- Contract version: 1.1.0
 - Model: `brake-condition-demo-v1`
 - Profile: `DEMO_PRECONDITIONED`
 - Provenance: `DEMO_SYNTHETIC`
@@ -19,7 +18,7 @@ v2 model used by the demonstration. It proves event analysis can move from
 Cloud collection into the vehicle; it is not a production brake diagnostic,
 remaining-useful-life estimate or safety function.
 
-The timing amendment permits source age/input gaps up to 5000 ms, separately
+The model permits source age/input gaps up to 5000 ms, separately
 from signal skew <=100 ms (one retained period). The latest original timestamp
 identifies a sample; maximum age is measured from its oldest required value.
 Missing samples are never interpolated. The previous profile digest
@@ -158,7 +157,8 @@ Function Team 1-owned and outside the first-demo scope.
 This accepted contract authorizes no product implementation, artifact build,
 publication, Cloud/VM/Unit operation, push or merge by itself.
 
-## Native product provenance — 2026-09-11
+<a id="native-product-provenance--2026-09-11"></a>
+## Current and legacy product provenance
 
 For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
 defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.

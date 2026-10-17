@@ -46,7 +46,7 @@ The [current baseline](../../qualification/current-baseline.md) selects exact
 runtime, native Setup and public-consumer evidence. The
 [implementation matrix](../../architecture/current-implementation.md) maps
 owning code and proof; the [protocol map](../../../contracts/implementation-status.md)
-owns amendments and executable-profile drift. These status authorities apply
+owns effective contract profiles and executable-profile drift. These status authorities apply
 to every package, without copying historical kit/version stamps into each one.
 
 State fields record accepted design allocation, not a second deployment-status

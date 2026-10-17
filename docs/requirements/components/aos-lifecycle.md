@@ -14,7 +14,6 @@
 - System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0004](../../architecture/decisions/0004-single-main-node-for-aos1.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md), [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md) and [ADR 0014](../../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-- Previous accepted package: Version 0.2
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
@@ -30,7 +29,8 @@ scope; accepted design or a source fixture is not live acceptance. Use the
 [implementation map](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [baseline](../../qualification/current-baseline.md) for current source/evidence.
-Stable Statements, test IDs and unclosed obligations below remain unchanged.
+Stable requirement/test IDs and unclosed obligations remain binding; the
+owning clauses state effective installed and expanded scope.
 
 ## Purpose
 
@@ -86,10 +86,11 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 | Stable Fleet/Unit Set configuration and run-scoped membership control | OEM/AosCloud administration creates and pins the objects once; `CR-DEMO` uses qualified membership APIs | Dedicated `AosEdge SDV Demo Fleet`; validation-enabled `AosEdge SDV Demo / Test Vehicles`; non-validation `AosEdge SDV Demo / Production Vehicles`; no unresolved placeholder, mismatch, prior-run membership or lifecycle object | M1 or any release approval remains blocked |
 | External platform release | AosEdge Platform Team | Exact Cloud/API/Core versions identified and compatible | Qualification result is invalidated; deferred features remain unavailable |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -216,7 +217,7 @@ if project-owned executable lifecycle logic is later moved into `CR-AOS`.
 - Required evidence: redacted overlay/Unit/Node/certificate uniqueness, exact role/Unit Set binding and stable identity across accepted restarts
 - State: D3 design-reviewed; existing one-Unit provisioning is implementation evidence, not final two-Unit acceptance
 
-Acceptance requires two different Unit and Node identities from two fresh
+Expanded-profile acceptance requires two different Unit and Node identities from two fresh
 overlays, exactly one current-run lane per Unit and stable bindings throughout
 the staged lifecycle. Duplicate identity, reused provisioning material,
 additional Node or ambiguous role blocks M1.
@@ -592,9 +593,9 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 - If project-owned executable lifecycle logic enters this package, stable
   `UT-AOS-*` obligations are added before implementation.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/aos-lifecycle.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

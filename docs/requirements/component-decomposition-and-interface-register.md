@@ -6,8 +6,7 @@
 - Status: Accepted
 - Version: 2.2
 - Prepared: 2026-08-22
-- Accepted: 2026-09-27 (installed-workstation amendment)
-- Previous accepted version: 2.1
+- Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -17,9 +16,7 @@
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
   [ADR 0014](../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-- Brake Cloud repository creation completed on 2026-08-28; no additional
-  repository creation, implementation, Cloud or Unit mutation is authorized by
-  this component baseline alone
+- Document approval alone authorizes no implementation, publication or live mutation.
 
 ## Installed workstation allocation
 
@@ -42,28 +39,28 @@ or independent controller; destructive removal and native activation remain gate
 <a id="current-implementation-view--24-september-2026"></a>
 ## Current implementation view
 
-Original allocation text describing “unmodified KUKSA” is the design target.
-The current Factory's documented scope-path/source-timestamp compatibility
-patches are an explicit as-built exception, not service-owned authority.
+Factory owns KUKSA integration and its documented scope-path/source-timestamp
+compatibility patches. These do not transfer authority to a service.
 See the [implementation map](../architecture/current-implementation.md).
 
 Current package selection and qualification are owned by the launcher catalog and
 [current baseline](../qualification/current-baseline.md).
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
-the accepted requirements, amendments, protocols, component owners and proof.
+the effective requirements, protocols, component owners and proof.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
-## Native service input amendment — 2026-09-11
+<a id="native-service-input-amendment--2026-09-11"></a>
+## Native service input allocation
 
 [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
 changes application provenance and credential placement, not component ownership
 or interface direction. Demo Control projects public Unit/VDP/trust inputs;
 packages carry releases; native Aos supplies instance identity. Private token
 sessions use the existing resource without an SM ownership extension.
-The [current input contract](../architecture/demo-control-service-inputs.md)
-and [D4 replacement map](d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
-replace conflicting placement/digest details below. Other boundaries are unchanged.
+The [input contract](../architecture/demo-control-service-inputs.md) owns exact
+package/native provenance and public/private placement. Interface rows below
+use those current meanings; legacy message formats retain separate decoders.
 
 ## Purpose
 
@@ -107,8 +104,8 @@ supplied components may have no project-owned repository at all.
 
 ### Component is not runtime instance
 
-The Validation Unit and Production Unit are two instances of the same
-Domain Controller component graph. They are roles in the demo lifecycle, not
+The installed Test is one instance of the Domain Controller graph. The
+expanded profile adds an independent Production instance of that same graph. They are roles in the demo lifecycle, not
 different software components. Each is a runtime deployment created from the
 accepted factory-image artifact; neither is an instance of the build-time
 Factory Baseline Assembly component.
@@ -246,7 +243,7 @@ they interact with its simulated boundaries.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including one stock Aos IAM configuration with `enablePermissionsHandler: true`, factory-installed unmodified KUKSA, separately packaged removable `CMP-KAC`, no pre-populated Service authority/secret state, and dedicated non-secret `kuksa-jwt` signer/verifier preparation wiring without a key, JWT or shared production verifier | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | `IMPLEMENTED`; Factory41 built and Kit028 installed scripted sequence passed; full native E2E remains open |
+| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including one stock Aos IAM configuration with `enablePermissionsHandler: true`, factory-installed Factory-owned KUKSA, separately packaged removable `CMP-KAC`, no pre-populated Service authority/secret state, and dedicated non-secret `kuksa-jwt` signer/verifier preparation wiring without a key, JWT or shared production verifier | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | `IMPLEMENTED`; Controller image and installed API/UI profiles have scoped evidence in the current baseline; the complete requirement matrix remains open |
 | <a id="cmp-runtime"></a>`CMP-RUNTIME` | Provider-Specific Empty-Slot Runtime | Preinstalled OEM Service Manager runtime, bounded provider slot, health/storage boundary and Safe Stop application gate for the Vehicle Data Platform payload; owns durable transaction metadata and asynchronous bounded waiting/recovery, consumes fresh monotonic Gateway frames through a purpose-bound mTLS `VehicleStateProviderItf`, and never persists Safe Stop samples | Platform Team; factory image | `aos-vehicle-platform` | `CURRENT / SCOPED`; FOTA and retained-component boot recovery implemented |
 | <a id="cmp-aos-core"></a>`CMP-AOS-CORE` | AosCore and Service Manager | Unit identity, desired state, security, update lifecycle, service execution and status | AosEdge platform | External AosVM/AosCore release | `EXTERNAL / CURRENT` |
 | <a id="cmp-kuksa"></a>`CMP-KUKSA` | Eclipse KUKSA Databroker | Stable factory-installed in-vehicle VSS resource server, direct authorized Service access and verification of short-lived Service JWTs using the configured per-Unit public verifier | External Eclipse component in the SOP substrate; Platform Team governs integration and exposed contract | Unmodified external executable; configuration/contract in `aos-vehicle-platform` | `CURRENT`; real VDP data and authorized service access have scoped .39 proof |
@@ -416,22 +413,19 @@ negative-path demo remains `DEFERRED` and no local interface substitutes for
 it. Existing component-to-component and service-to-layer dependency contracts
 remain available through their native platform paths.
 
-## Provisional Component Requirement Packages
+<a id="provisional-component-requirement-packages"></a>
+## Component requirement packages
 
-This allocation is the bridge to the component requirement documents. It does
-not itself define component-level normative requirements. `CR-VEHICLE-SIM`,
-`CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-FACTORY`, `CR-KAC`, `CR-VDP`, `CR-DEMO`,
-`CR-CROSS` and `CR-E2E` have completed D3 design review in the
-[component package set](components/README.md); the remaining allocations retain
-their own recorded review state. The reader view explains each purpose without
-requiring another document, while the detailed traceability below remains the
-single allocation record for exact identifiers.
+This register allocates all thirteen [component packages](components/README.md).
+The table is a reader summary; each package owns its exact obligations, stable
+IDs, verification levels and remaining acceptance gates. Design acceptance is
+not a claim of implemented or qualified behavior.
 
 | Package | Human-readable responsibility | Primary components | Requirement themes |
 | --- | --- | --- | --- |
 | <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Define the installed Vehicle Hardware Capability Manifest, provide every declared physical signal/actuator behavior, repeatable braking and tire stimuli, exact source evidence, hidden ground-truth isolation and clean CARLA scenario reset. | CARLA vehicle and Scenario Controller | Hardware-profile completeness, determinism, source integrity, simulation truth and reset |
 | <a id="cr-gateway"></a>`CR-GATEWAY` | Account for the complete hardware profile, distinguish actuator capability from authority, expose VISS, arbitrate control, enforce the authoritative QM-channel advisory boundary and present factual engineering status. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Hardware coverage, telemetry contract, unavailable data, control traceability, deny-by-default QM containment and chronology |
-| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling, carry the dedicated non-secret per-Unit signer/verifier preparation seam without key material, and create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key/shared-verifier absence, overlay uniqueness and preservation |
+| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling, carry the dedicated non-secret per-Unit signer/verifier preparation seam without key material, and create an identity-safe Test deployment with a healthy empty slot; the expanded profile additionally requires an independent Production deployment. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key/shared-verifier absence, overlay uniqueness and preservation |
 | <a id="cr-kac"></a>`CR-KAC` | Realize the current-release Service credential boundary without entering VDP or SOTA business logic: named-resource-mounted Unix socket, implicit fixed-resource bootstrap, IAM lookup, bounded JWT derivation, Service-private tmpfs delivery and lifecycle cleanup. | Current-Release KUKSA Authorization Compatibility Helper | Peer isolation, bootstrap-only secret use, no caller-selected authority, mapping, protected signing, renewal, reboot, stop/removal and native-migration deletion seam |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability and defense-in-depth outbound QM advisory path as an OEM-trusted FOTA component without issuing Service JWTs. | KUKSA contract/configuration and Vehicle Data Platform Component | Compatibility, data quality, outbound validation, trusted Provider integration, FOTA and recovery |
 | <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows; apply the closed twelve-path/fixed-point v2 synthetic assessment with atomic derived admission and crash-safe state; operate offline; and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, exact model input/arithmetic/identity/time, model/data-product evolution, compatibility, offline operation and advisory scope |
@@ -878,7 +872,7 @@ above remain authoritative. Acceptance is not implementation qualification.
   success and presenter Cloud loss is not a Unit-offline fact.
 - Services maintain bounded local models/outboxes through offline operation.
   D4-016 owns Brake acquisition/chunk/spool limits; the accepted source-time
-  amendment, not an old frame-count example, governs current acquisition.
+  contract governs current acquisition; frame-count examples are not an alternate policy.
   Backend production authentication remains outside the example-product claim.
 - Native AosCore alone enforces per-instance quotas. The accepted fixed Tire
   CPU proof uses a bounded in-instance worker, exact fixed-profile command,
@@ -913,9 +907,9 @@ above remain authoritative. Acceptance is not implementation qualification.
 The [pre-consolidation register](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/requirements/component-decomposition-and-interface-register.md) preserves review
 chronology. Requirements and stable identifiers are not retired by this summary.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/component-decomposition-and-interface-register.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

@@ -12,20 +12,18 @@ Implementation and qualification: [protocol status](../implementation-status.md)
   state machine, D4-022.3 transition/recovery behavior and D4-022.4
   qualification plan, 2026-08-23
 
-The current single-NIC AosVM launcher cannot model the accepted fault: taking
-that link down would remove both external connectivity and the in-vehicle
-VDP-to-VISS/Gateway path. The successor OEM Demo Factory Image and QEMU
-launcher therefore provide two explicit network planes per VM.
+The Factory image and QEMU launcher provide separate vehicle and external
+planes per controller. A connectivity fault must preserve the simulated
+in-vehicle VDP-to-VISS/Gateway path.
 
 `vehicle-net`/`vehicle0` carries only the VDP-to-VISS/Gateway route, has no
 default route or Cloud DNS and remains up. `external-net`/`external0` owns the
-default route, DNS, AosCloud and Brake/Tire backend routes. Both concurrently
-running VMs have independent instances of these planes.
+default route, DNS, AosCloud and Brake/Tire backend routes. The installed Test owns these planes; expanded two-role use gives each VM
+an independent instance.
 
 The protected native helper resolves the currently selected Validation or
 Production role from the current-run journal and issues one fixed QMP
-`set_link` operation to that VM's exact `external-net`. The other VM is not
-affected. QMP and serial remain out of band; the browser receives neither a
+`set_link` operation to that VM's exact `external-net`. No unrelated VM or peer is affected. QMP and serial remain out of band; the browser receives neither a
 QMP socket nor an arbitrary-command surface. No macOS or guest firewall
 mutation is required.
 

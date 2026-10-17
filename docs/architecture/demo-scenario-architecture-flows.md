@@ -6,8 +6,7 @@
 - Status: Accepted
 - Version: 2.2
 - Prepared: 2026-08-22
-- Accepted: 2026-09-27 (installed-workstation amendment)
-- Previous accepted version: 2.1
+- Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -138,7 +137,7 @@ not change.
 | `GATEWAY` | Vehicle Gateway ECU behavior, CARLA sampling, VSS normalization | `carla-ego-runtime` | Current |
 | `VISS` | TLS VISS 3.1 server | `carla-ego-runtime` | Implemented Get/Subscribe and allowlisted typed Set |
 | `GW-ADV` | Typed maintenance-advisory handler and factual Gateway status | `carla-ego-runtime` | Implemented two-target QM boundary; full negative matrix separately scoped |
-| `ENG-DASH` | Engineering Telematics Dashboard | `carla-ego-runtime` | Implemented native telemetry/advisory observer; Terminal is an engineering surface |
+| `ENG-DASH` | Engineering Telematics Dashboard | `carla-ego-runtime` | Implemented combined native Driving Control/Telemetry observer |
 | `FACTORY` | Immutable OEM Demo Factory Image with one IAM configuration containing `enablePermissionsHandler: true`, factory-installed KUKSA under the accepted compatibility boundary, the separately packaged current-release helper, no pre-populated Service authority/secret state, and non-secret signer/verifier preparation wiring but no key, JWT or shared production verifier | Platform Team | Selected by controller input lock; immutable empty-slot base, proof in current baseline |
 | `RUNTIME` | Preinstalled provider-specific empty-slot component runtime | Platform Team / `aos-vehicle-platform` | Factory-installed; scoped serial Safe Stop FOTA proof in current baseline |
 | `AOS-CORE` | Identity, desired state, Service Manager, security, update support | AosCore in AosVM | Current on existing provisioned Units |
@@ -168,8 +167,8 @@ manufacturing and deployment sequence described here.
 
 ```mermaid
 flowchart LR
-    M0["M0<br/>two unprovisioned factory overlays"]
-    M1["M1<br/>two unique Online Units"]
+    M0["M0<br/>fresh Test overlay<br/>expanded: separate Production overlay"]
+    M1["M1<br/>unique provisioned Test<br/>expanded: independent Production identity"]
     G0["G0<br/>SOP substrate<br/>empty capability slot"]
     G1["G1<br/>VDP Component v1"]
     G2["G2<br/>VDP Component v1 + Brake Health v1"]
@@ -383,6 +382,12 @@ exchange.
 <a id="af-m0-lc"></a>
 ### `AF-M0-LC` — Factory-image and overlay creation
 
+#### Installed Test flow
+
+Create a fresh empty Test overlay from the immutable Factory image; never copy a provisioned overlay. Expanded use adds independent Production manufacture.
+
+#### Expanded-profile lifecycle and proof
+
 ```mermaid
 sequenceDiagram
     participant UR as Official AosEdge Release
@@ -395,7 +400,7 @@ sequenceDiagram
 
     UR->>BA: Immutable upstream input
     PT->>BA: Accepted OEM integration and qualification inputs
-    BA->>BA: Compose AosCore, unmodified KUKSA, security, removable KAC helper and empty-slot runtime
+    BA->>BA: Compose AosCore, Factory-owned KUKSA, security, removable KAC helper and empty-slot runtime
     BA->>BA: Qualify clean startup and non-secret signer verifier preparation wiring
     BA->>FI: Freeze reproducible unprovisioned image and digest
     OR->>FI: Verify accepted digest and read-only source
@@ -406,7 +411,7 @@ sequenceDiagram
 ```
 
 The factory image contains the provider-specific runtime, an empty component
-store, unmodified KUKSA, and the separately packaged current-release helper.
+store, Factory-owned KUKSA, and the separately packaged current-release helper.
 It contains no provider payload, SOTA service, Cloud Unit, Cloud certificate,
 pre-populated Service permission, `AOS_SECRET`, issued JWT, private signing key,
 shared production verifier, or other reusable vehicle identity.
@@ -421,7 +426,7 @@ artifact; none is an instance of `BA`.
 | Evidence owner | Audience proof |
 | --- | --- |
 | Factory artifact manifest | Source release, OEM image version, immutable digest, architecture, and qualification reference |
-| Local overlay inventory | Exactly two fresh overlays with Test and Production audience roles; neither has a Cloud identity or Current Vehicle assignment |
+| Local overlay inventory | One fresh Test overlay; expanded manufacture adds independent Production. Every newly manufactured overlay has no Cloud identity or Current Vehicle assignment |
 | Identity preflight | Different system, Node-seed, SSH, hostname/network, and first-boot identity material as applicable |
 | Software Delivery Dashboard | Both instances show `Manufactured / Awaiting provisioning`; no Cloud Unit ID exists |
 | Component inventory | Empty VDP component slot and no functional service payload; OEM Component Runtime A/B working storage contains no installed VDP payload |
@@ -454,6 +459,12 @@ artifact; none is an instance of `BA`.
 
 <a id="af-m1-lc"></a>
 ### `AF-M1-LC` — Provisioning and lane assignment
+
+#### Installed Test flow
+
+Provision the selected Test once and verify exact Unit/Node/system UID and Test membership. Expanded use additionally verifies the independent Production role.
+
+#### Expanded-profile lifecycle and proof
 
 ```mermaid
 sequenceDiagram
@@ -552,7 +563,7 @@ data in KUKSA is a deliberate accepted state, not a platform fault.
 | --- | --- |
 | CARLA scene | Vehicle drives in the city; manual/autopilot handover and safe stop remain available |
 | Engineering Telematics Dashboard | Live Gateway telemetry independent of the Domain Controller |
-| Software Delivery Dashboard | Both Units online, runtime present, provider/service payloads absent |
+| Software Delivery Dashboard | Test Online with runtime present and VDP/services absent; expanded use separately confirms Production |
 | KUKSA qualification probe | No live provider-owned values; no fabricated zeros |
 | Functional dashboards | Explicit `feature not deployed`, not a transport error |
 | Local security probe | Public verifier prepared, helper authority state empty, and no Service `AOS_SECRET` or JWT |
@@ -634,6 +645,12 @@ The exact accepted transition and engineering-path contract is
 
 <a id="af-g1-lc"></a>
 ### `AF-G1-LC` — FOTA validation and promotion
+
+#### Installed Test flow
+
+Publish the next VDP profile only after the preceding publication/installation is reconciled. The Test verification recipient receives native FOTA; application waits for Safe Stop.
+
+#### Expanded-profile lifecycle and proof
 
 ```mermaid
 sequenceDiagram
@@ -753,6 +770,12 @@ presentation does not use it to reset the complete demo.
 
 <a id="af-g2-lc"></a>
 ### `AF-G2-LC` — Independent SOTA 1 delivery
+
+#### Installed Test flow
+
+Publish Brake V1 with the associated SP, assign its exact service identity to Test once, then observe native installation and a real qualifying window. No Safe Stop gate applies to QM SOTA.
+
+#### Expanded-profile lifecycle and proof
 
 ```mermaid
 sequenceDiagram
@@ -919,6 +942,12 @@ roadmap feature.
 <a id="af-g3-lc"></a>
 ### `AF-G3-LC` — Independent releases and derived G3 capability milestone
 
+#### Installed Test flow
+
+Independently publish/install VDP V2 under Safe Stop, then Brake V2. Confirm exact installed profiles and real analytics before deriving G3; no combined release or approval is invented.
+
+#### Expanded-profile lifecycle and proof
+
 ```mermaid
 sequenceDiagram
     participant FT1 as Function Team 1
@@ -1081,6 +1110,12 @@ Cloud contract and is not claimed.
 <a id="af-g4-lc"></a>
 ### `AF-G4-LC` — Independent v3 releases and derived G4 capability milestone
 
+#### Installed Test flow
+
+Independently publish/install VDP V3 under Safe Stop, then Brake V3. Preserve model state and distinguish Gateway-confirmed advisory from Cloud installation before deriving G4.
+
+#### Expanded-profile lifecycle and proof
+
 ```mermaid
 sequenceDiagram
     participant FT1 as Function Team 1
@@ -1213,6 +1248,12 @@ lifecycle.
 
 <a id="af-tire-lc"></a>
 ### `AF-TIRE-LC` — Independent SOTA 2 lifecycle
+
+#### Installed Test flow
+
+Publish/assign Tire V1 as an independent SOTA identity under the associated SP. VDP V3 supplies its inputs; Brake installation is not its lifecycle authority.
+
+#### Expanded-profile lifecycle and proof
 
 ```mermaid
 sequenceDiagram
@@ -1409,10 +1450,11 @@ Before presenting this flow as a live stage:
 | <a id="af-ft2-fr"></a>`AF-FT2-FR` | `AF-TIRE-FR` | Low-Friction candidate superseded by ADR 0008 |
 
 <a id="af-x-source"></a>
-## `AF-X-SOURCE` — One Visible Vehicle Source, Two Unit Roles
+<a id="af-x-source--one-visible-vehicle-source-two-unit-roles"></a>
+## `AF-X-SOURCE` — Exclusive vehicle source and role handover
 
 The architecture contains two Domain Controller instances but only one visible
-live CARLA/Vehicle Gateway/VISS source. The first implementation uses one
+live CARLA/Vehicle Gateway/VISS source. The installed profile uses one
 mandatory sequential flow:
 
 1. bind the live source exclusively to VU for qualification;
@@ -1637,6 +1679,12 @@ independently injected fault.
 <a id="af-r0-lc"></a>
 ### `AF-R0-LC` — Controlled retirement
 
+#### Installed Test flow
+
+Finish retires only the exact owned Test, reconciles Cloud/backend effects, removes owned working data and disposes the journal last. Stop/Start instead preserves the same Test.
+
+#### Expanded-profile lifecycle and proof
+
 ```mermaid
 sequenceDiagram
     participant OR as Demo Orchestrator
@@ -1851,8 +1899,8 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Downstream Component Requirement Gate
 
-System Requirements and Traceability 2.0 and Component Register 2.0 have
-revalidated these Version 2.0 flows and allocated their authorization,
+System Requirements and Traceability 2.2 and Component Register 2.2
+allocate these flows and their authorization,
 Release Authority, Safe Stop and workspace obligations to the canonical
 component packages. The accepted component sequence remains:
 
@@ -1867,9 +1915,9 @@ Each component requirement must cite its parent `SYS-*` requirement, relevant
 `AF-*` flow, interface ID, verification method, and retained evidence. The
 accepted flow baseline authorizes no code, artifact, Cloud, or Unit change.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/architecture/demo-scenario-architecture-flows.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

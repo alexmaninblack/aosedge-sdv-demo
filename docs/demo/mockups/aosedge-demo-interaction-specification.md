@@ -3,10 +3,8 @@
 
 # AosEdge Demo Interaction Specification
 
-- Status: Accepted interaction contract; current Test scope amended by UI-STUDIO-026
+- Status: Accepted interaction contract; effective installed/expanded profiles stated below
 - Version: 2.6
-- Prepared: 2026-08-25
-- Accepted: 2026-08-26
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../staged-post-sop-brake-health-demo-scenarios.md)
@@ -25,7 +23,7 @@
 - UI traceability: [AosEdge Demo UI Traceability Register](aosedge-demo-ui-traceability-register.md)
 - Maintained UI implementation: [Presenter](../../../apps/presenter-ui/README.md)
 - Current implementation/proof: [baseline](../../qualification/current-baseline.md)
-- Editorial consolidation: 2026-10-16; stable UI IDs retained
+- Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 
 ## Purpose and authority
 
@@ -35,7 +33,7 @@ store. Upstream contracts win. The maintained Presenter and native Driving
 Control are the implementation; retired HTML simulations are not test evidence.
 
 <a id="ui-studio-026--current-test-studio-contract"></a>
-## UI-STUDIO-026 — current Test Studio contract
+## UI-STUDIO-026 — Installed Test interaction contract
 
 The installed profile uses one Test, one OEM and one associated SP with separate
 Brake/Tire service identities. Presenter, CARLA and native Driving Control/
@@ -44,24 +42,19 @@ integrated cards/dialogs; Platform, Brake and Tire retain contextual release
 actions. Ordinary Stop/Start is non-destructive; Delete/Finish names the Test
 and consequence. No hidden Production VM, Fleet creation or automatic approval.
 
-### Applicability of stable interaction rules
+### Interaction profiles
 
-The numbered UI-INT/UI-AT sections retain common authority, safety, identity,
-product-evidence and security obligations. Their two-SP, dual-vehicle promotion,
-terminal-only and earlier linear-card presentation provisions describe the
-**expanded accepted profile**, not simultaneous installed-Test prerequisites.
-This explicit mapping keeps IDs traceable without requiring a review diary.
+The numbered rules below state their effective installed behavior directly.
+An explicitly marked expanded rule retains separate Production promotion,
+two-provider isolation or full qualification obligations. It is not an
+installed feature claim. Shared security, evidence, Safe Stop, motion-control
+and no-blind-retry rules apply to both profiles. UI IDs remain stable.
 
-| Earlier provision / owner | Current replacement | Disposition |
-|---|---|---|
-| Terminal engineering surface; D4-026.20 and UI-INT-003/078 surface rules | Separate CARLA window plus native Driving Control/Telemetry on the left; Studio on the right | Native accepted composition replaces terminal-only rendering; no CARLA embedding |
-| Fixed lifecycle/team workspace, five-stage release cards, UI-INT-004/008/010/079 | Persistent architecture actors with clickable components/services/Cloud/backend cards and contextual release actions | Studio B replaces the old navigation/cards; no additional Controller/Architecture tab |
-| Test-to-Production handover, two-vehicle setup and dedicated demo Fleet, D4-012.1 | Exactly one current Test controller in the configured Test verification set; Production visible but Deferred | No hidden Production VM, Fleet creation or Production rollout |
-| Per-release accept/approve/deploy stage | VDP publication is followed by delivery observation; first service Publish is followed by identity assignment; later service versions only Publish update | Verification recipients do not require batch approval; no version-specific Subject assignment |
-| Independent team progress implies simultaneous mutations | Preserve separate ownership, releases and peer service bindings; serialize operator mutations in this milestone | Parallel writer execution is deferred, not a new Cloud restriction |
-| Full error/log and cancellation UX | Truthful failure/uncertainty and safe refusal; no invented cancellation, rollback or automatic campaign halt | Expanded diagnostics and terminal failed-install recovery are later-phase work |
-| Required intermediate Pending observation | Confirm terminal expected version/instance directly if intermediate states were missed | Do not manufacture historical transitions |
-| Retain all run evidence/history | Stop/Start retains the Test; confirmed Finish removes owned run data | Formal qualification checkpoint is separate from routine demo retention; operator Park/Resume removed by ADR 0017 |
+Installed navigation uses integrated actor/component cards and contextual
+dialogs/actions, not a mandatory five-stage release-card layout. Protected
+operator mutations are serialized. Logical producer independence does not
+require multiple simultaneous writers. Native Driving Control includes its
+read-only telemetry; a separate Terminal dashboard is not required.
 
 ### Observation and resource facts
 
@@ -284,12 +277,12 @@ on the Production Cloud environment.
 
 ### 1.1 Presentation environment
 
-The first implementation targets the known presenter-operated Apple Silicon
+The installed profile targets the known presenter-operated Apple Silicon
 Mac and one physical display in full-screen presentation mode. The exact
 qualification viewport is measured from that Mac during implementation; this
 specification deliberately does not invent a pixel resolution before that
 measurement. Mobile, tablet and multi-display responsive layouts are outside
-the first implementation.
+the installed profile.
 
 The audience core flow shall not require switching browser tabs, changing
 macOS Spaces or manually rearranging windows. `CMP-ORCH` and its trusted
@@ -297,102 +290,54 @@ Presenter Launcher own the physical composition of existing native windows,
 one reserved shared-header strip and one browser window on the measured
 presenter display. They do not own the content or authoritative state rendered
 inside those surfaces. CARLA and the native Controller remain native surfaces;
-the first implementation shall not embed, stream or screen-capture them into
+the installed profile shall not embed, stream or screen-capture them into
 the browser.
 
-### <a id="ui-int-001"></a>UI-INT-001 — Full-screen composition
+### <a id="ui-int-001"></a>UI-INT-001 — Visible workspace composition
 
-Below one compact shared header, the usable display area is divided into two
-approximately equal vertical regions:
+Keep the live CARLA vehicle and native Driving Control/Telemetry visible
+beside the integrated Presenter. Layout restoration is host-window composition,
+not a Cloud or vehicle lifecycle mutation. The measured display profile must
+keep required controls readable without horizontal page scrolling, overlapping
+critical controls or manual rearrangement during the core story. CARLA and
+Driving Control remain native windows, not browser streams or screen captures.
+Mobile/tablet and unqualified multi-display layouts are outside this profile.
 
-1. a fixed vehicle-evidence workspace on the left; and
-2. a browser-based current-team release workspace on the right.
+### <a id="ui-int-002"></a>UI-INT-002 — Shared title and vehicle context
 
-The first implementation shall not introduce horizontal page scrolling. A
-small measured adjustment to the 50/50 split is permitted during qualification
-only to preserve readability of the real CARLA, Controller and Engineering
-surfaces; it shall not make either side secondary or require a presenter layout
-choice during the demo.
+The shared title identifies SDV Lab and its selected Test context. Detailed
+Cloud/software/backend facts belong to their owning cards/dialogs, not a
+header probe or combined healthy indicator. Vehicle selection is restored
+from the accepted source assignment, never inferred from Internet or Cloud
+Online state. Before assignment, show no assigned vehicle; expanded handover
+distinguishes Test and Production explicitly. Do not expose Unit/Node UUIDs,
+run IDs, guest attachment plumbing, a global step counter or automatic approval.
+Use audience-facing Test terminology while technical details retain the exact
+Validation Unit/Verification Set concepts.
 
-### <a id="ui-int-002"></a>UI-INT-002 — Shared header
+### <a id="ui-int-003"></a>UI-INT-003 — Native vehicle evidence workspace
 
-The compact header spans the composed workspace and remains visible throughout
-the core flow. It contains only:
+CARLA shows the selected physical actor. The existing native Driving Control
+combines driving actions with read-only Gateway/VISS telemetry and separate
+Brake/Tire advisory rows. Manual/Autopilot, prepared maneuvers, Safe Stop,
+Return to road and vehicle external connectivity stay with their existing
+owners. A model Reset is not Return to road. No publication, provisioning,
+approval or deployment action belongs in the vehicle-control surface.
+Telemetry freshness, unavailable input and advisory readiness remain visible;
+decorative icons cannot change their meaning or synthesize values.
 
-- `AosEdge Software Evolution Demo`;
-- exactly one current logical vehicle indicator: `Not assigned` before `G0`,
-  then `Test Vehicle` or `Production Vehicle`; and
-- the three selectable OEM team perspectives: `Platform Team`, `Brake Team`
-  and `Tire Team`.
+### <a id="ui-int-004"></a>UI-INT-004 — Contextual team and release navigation
 
-Operator amendment, 2026-09-08: keep each header item on one line without
-subtitles, team-status summaries or connection-probe diagnostics. Detailed
-status belongs inside its team perspective. The current-vehicle label reflects
-Demo Control's accepted assignment after selection/handover, restored from
-that state on UI reload and cleared by detach/stop. It is not a continuously
-probed connection, Internet availability or Cloud Online claim; the header
-does not initiate guest/Cloud reads to validate that label.
-
-The header does not display a global step number, `Next` action, demo-run ID,
-Unit/Node UUID, attach/detach plumbing or an automatic approval claim.
-
-Before rendering, the Representation Layer normalizes the stable internal
-`VALIDATION_VEHICLE` role and any legacy structured-evidence vehicle alias to
-`Test Vehicle`. Internal role values shall never be shown as audience labels;
-technical details continue to use `Validation Unit`, `VU` and `Verification
-Unit Set` where those exact Cloud concepts are relevant.
-
-### <a id="ui-int-003"></a>UI-INT-003 — Fixed vehicle-evidence workspace
-
-The left region remains visible and does not scroll while the presenter reads
-or operates the release story. It is divided into:
-
-- CARLA across the upper portion, preserving the largest evidence area;
-- the existing Vehicle Controller in the lower-left portion; and
-- the existing Engineering Telematics Dashboard in the lower-right portion.
-
-The working ratio is approximately 55% for CARLA and 45% for the lower row;
-the two lower surfaces have equal width. The real surface aspect ratios and
-legibility are qualified on the presenter Mac before this ratio is frozen.
-
-The single `Vehicle external connectivity` control remains inside the Vehicle
-Controller surface. No lifecycle, publication, approval or deployment action
-is placed in the left region.
-
-Engineering Telematics content remains owned and rendered by the existing
-native macOS Terminal application. Appended sections use monospaced text,
-stable labels and optional ANSI color. They do not use PNG/bitmap assets,
-terminal inline-image escape protocols, an HTML overlay inside the terminal
-output or a browser/Representation Layer re-rendering. The composed shell may
-place a Vehicle Signals icon in the surrounding surface label, but that icon
-is outside the Terminal content and carries no evidence semantics.
-
-### <a id="ui-int-004"></a>UI-INT-004 — Fixed team context and version-only scrolling
-
-The right region shows either exactly one selected OEM team perspective or the
-global `Demo Lifecycle` page. The global page keeps the run-wide qualification,
-preparation, lifecycle, reset and recovery story together and may scroll as one
-page inside the right region.
-
-A team view has two vertical regions inside the right workspace:
-
-1. a compact fixed team-context region containing the one-line team name and
-   purpose, the non-selectable OEM Release Authority line, the three current-
-   state summaries and the current Platform capability, Function backend or
-   Runtime Isolation evidence panel; and
-2. one independently scrollable release/version region containing every
-   version card and its release stages.
-
-Only the release/version region scrolls in a team perspective. The shared
-header, complete left evidence workspace and complete team-context region
-remain fixed. The context region shall be qualified at the accepted presenter
-viewport without its own vertical scroll, hidden controls or audience-required
-expansion.
-
-Vertical order explains product evolution; it does not impose execution order.
-There is no version-tab selector, hidden version page or mandatory `Next`
-control. A version card remains visible even when its action is blocked,
-waiting, already completed or superseded on one vehicle.
+The right-hand integrated Presenter shows persistent architecture actors,
+their current facts and contextual release/result dialogs. Platform, Brake
+and Tire retain independent meaning without requiring separate browser tabs,
+a five-stage card stack or a second Controller/Architecture tab. Preserve the
+selected actor/profile and disposable view context across read-only refreshes;
+temporary unavailable reads do not reset authoring selections. A confirmed
+different run or confirmed empty-controller state may reset that context.
+Expanded audience governance may expose its additional lifecycle stages, but
+cannot hide native evidence, add horizontal page scrolling or imply authority
+from navigation.
 
 ### <a id="ui-int-005"></a>UI-INT-005 — Details overlay
 
@@ -401,7 +346,7 @@ navigating away, changing team, changing current vehicle or advancing release
 state. Closing it by its explicit close action or `Escape` returns to the exact
 prior scroll position and focus context.
 
-The accepted first implementation confines the modal to the right browser
+The installed profile confines the modal to the right browser
 workspace so that CARLA, the Vehicle Controller and Engineering Telematics
 remain visible. Section 6 defines its exact content, focus, disclosure and
 redaction rules.
@@ -435,62 +380,24 @@ The following rules hold across every team and release version:
 10. **No source-of-truth transfer:** shared composition does not make the Demo
     UI authoritative for AosCloud, Gateway, CARLA or either Function backend.
 
-### <a id="ui-int-078"></a>UI-INT-078 — Workspace shell and header ownership
+### <a id="ui-int-078"></a>UI-INT-078 — Workspace and content ownership
 
-The composed workspace has an explicit ownership split:
+The existing Demo Control/launcher owns measured native/browser window
+placement and layout restoration. Presenter owns title, actor navigation and
+factual content over its owning sources. Opening/restoring windows writes only
+workspace metadata; Create initializes the vehicle journal. No second header
+controller, lifecycle database, guest probe or browser credential boundary is
+introduced by composition. CARLA and Driving Control own their content.
 
-- `CMP-ORCH` through the Presenter Launcher owns physical window discovery,
-  launch order, the measured display profile, reserved header geometry,
-  placement, visibility, non-overlap, readability checks and safe local layout
-  restoration after a surface or presenter-Mac restart;
-- `CMP-SW-DASH` through the stateless Representation Layer owns the shared
-  header's title, Current Vehicle projection, Platform/Brake/Tire summaries
-  and team-perspective navigation; it derives these from the same accepted
-  read model used by the right-hand browser workspace and performs no separate
-  Cloud reads or lifecycle-state storage for the header; and
-- CARLA, Vehicle Controller, Engineering Telematics and the browser release
-  workspace retain ownership of their own content and behavior.
+### <a id="ui-int-079"></a>UI-INT-079 — Global demo controls
 
-Workspace composition is a local substep of `Start or Restore Demo
-Environment`, not an audience lifecycle action. A safe local `Restore workspace
-layout` operation may reapply only the accepted measured geometry. It shall not
-start M0/M1, change Current Vehicle, operate a VM/Unit, call AosCloud, advance a
-release or reinterpret any surface state.
-
-If one required surface is missing, duplicated, off-screen, materially
-overlapped or unreadable, the launcher reports `Workspace incomplete` with the
-affected surface and a local recovery action. It never reports the Cloud,
-vehicle or release lifecycle as failed or ready on that basis. The exact macOS
-window-identification and positioning mechanism remains an implementation
-qualification item on the actual presenter Mac; it shall not create a new HLA
-component, persistent privileged daemon or content authority.
-
-### <a id="ui-int-079"></a>UI-INT-079 — Global Demo Lifecycle page
-
-The title `AosEdge Software Evolution Demo` is the single navigation entry to
-the global `Demo Lifecycle` page. Selecting it changes only the right browser
-region. The shared header remains visible, and CARLA, Vehicle Controller and
-Engineering Telematics remain fixed and operational on the left. The global
-page is not a fourth producer perspective and does not change the selected
-team's independently preserved state.
-
-The page presents, in one vertically ordered run-wide story:
-
-1. `Qualification Status`, read from the current bounded qualification status
-   and showing `QUALIFIED`, `ABSENT`, `STALE`, `WITHDRAWN` or
-   `NOT_QUALIFIED` with sanitized reasons and no manual green override;
-2. `Prepare Demo`, containing the explicit M0 and M1 actions and resulting G0
-   baseline;
-3. the current global lifecycle and factual recovery state;
-4. `End and Reset Demo (R0)` with its terminal result; and
-5. read-only or protected global recovery actions allocated by Sections 5 and
-   7.
-
-`Start or Restore Demo Environment` and `Restore workspace layout` remain
-native Presenter Launcher actions. They are not duplicated in the browser
-global page. Qualification status is informative and gates an official
-audience presentation according to D4-026.5; it does not authorize or execute
-M0, M1, a release or R0.
+Installed Demo controls exposes the existing runtime, non-destructive Stop/
+Start, guarded recovery and exact Test deletion actions. Navigation itself has
+no effect. Cloud inventory, local process state, missing prerequisites and
+last-known facts remain separate. Expanded qualification/preparation/retirement
+views may aggregate their additional evidence, but are not a second current
+controller or another lifecycle owner. They cannot hide failure, initiate
+provisioning on entry or make an unavailable dossier look qualified.
 
 ### 1.2 Composition acceptance criteria
 
@@ -516,41 +423,23 @@ prepared candidates and technical publication actions. The visual composition
 may frame their product views inside one browser workspace, but it does not
 merge repository ownership, backend data, credentials or release state.
 
-### <a id="ui-int-007"></a>UI-INT-007 — Producer perspectives only
+### <a id="ui-int-007"></a>UI-INT-007 — Independent producer contexts
 
-Only Platform, Brake and Tire are selectable perspectives. Selecting one shows
-that team's independently evolving release story and results. It never grants
-the team's publication identity to the browser or presenter and never makes
-the selected team authoritative for another team's state.
+Platform, Brake and Tire are three producer contexts, not three Cloud accounts.
+They own independent platform/service releases and results. Installed use maps
+Brake and Tire to one associated SP while preserving separate service IDs,
+permissions, histories, Reset operations and backend storage. Expanded use
+adds distinct SP organizations. OEM deployment authority is a different role,
+not a fourth producer or a permission inferred from the selected perspective.
 
-### <a id="ui-int-008"></a>UI-INT-008 — Non-selectable OEM Release Authority
+### <a id="ui-int-008"></a>UI-INT-008 — OEM deployment authority
 
-`OEM Release Authority` is an independent OEM governance role outside all three
-producer teams. It is not a team, a fourth perspective or a product owner. The
-fixed team-context region keeps a visually separate, non-selectable compact
-governance line below the team heading with the meaning:
-
-> OEM Release Authority — independent from producer teams; reviews required
-> evidence and authorizes the exact Test or Production deployment.
-
-The line uses a neutral treatment and governance/shield symbol rather than any
-team color. It has no decorative `Authorization not execution` badge; the
-authority/execution distinction remains explicit in the text and release
-stages. Every authority-owned stage repeats the same actor label and visual
-identity. The Release Authority:
-
-- reviews the required verification, validation, integration and applicable
-  homologation evidence;
-- explicitly authorizes the exact Test or Production deployment operation;
-- does not prepare, sign or technically publish a team candidate;
-- does not develop or own Platform, Brake or Tire software; and
-- does not execute the resulting lifecycle transition itself — AosCloud records
-  and executes the authorized operation.
-
-One human presenter may exercise several demo roles, but the UI always exposes
-the active organizational role and separate authorization context. The
-`oem-delivery` context remains distinct from the `platform-oem`, `brake-sp1`
-and `tire-sp2` publication profiles.
+The UI identifies OEM deployment authority separately from producer acceptance
+and technical publication. Installed Test verification recipients use native
+delivery: no fictional per-version approval button is required. Expanded
+Production rollout requires the exact independent OEM authorization and its
+evidence/recipient preflight. Passing a test never auto-approves, and a browser
+never obtains signing keys or independent Cloud authority.
 
 ### <a id="ui-int-009"></a>UI-INT-009 — Perspective switching is navigation only
 
@@ -570,89 +459,43 @@ An open modal confirmation or `Details` overlay retains focus until explicitly
 closed or cancelled. After that local overlay is closed, perspective switching
 is immediately available even if the underlying external operation continues.
 
-### <a id="ui-int-010"></a>UI-INT-010 — Independent per-team view context
+### <a id="ui-int-010"></a>UI-INT-010 — Retained view context
 
-For the current presenter session the browser preserves, independently for
-each team:
+Changing actor context is navigation only. Preserve its selected profile,
+inspected result, open/closed detail and applicable scroll anchor without
+changing vehicle binding or lifecycle. On reentry reread the owning source;
+view state cannot turn an old observation into current evidence or silently
+select a different release after an unavailable response.
 
-- the last focused release card;
-- the release/version-region scroll position; and
-- the last locally selected non-mutating drill-down context, if one exists.
+### <a id="ui-int-011"></a>UI-INT-011 — Actor-scoped status summaries
 
-The fixed team-context region itself has no presenter-managed scroll position.
-Returning to a team restores the release/version position and focus context.
-It does not restore an old
-authoritative snapshot: card state is refreshed from the accepted source and
-may have changed while the perspective was hidden. Modal overlays and
-unsubmitted confirmations are not preserved across a completed perspective
-switch.
+Summaries remain on their owning actor/card and distinguish uncertainty,
+failure/staleness, pending work, blockers and observed results. They never
+declare a whole team healthy from one completed action or hide a conflicting
+error. Keep the shared header compact; do not duplicate connection diagnostics
+or team-status summaries there. Detail retains exact source/time/scope.
 
-This local view context is disposable UI state. It is not written to AosCloud,
-either Function backend, the demo run journal or retained demo history, and it
-is cleared when the browser session ends or R0 completes.
+### <a id="ui-int-012"></a>UI-INT-012 — Hidden-surface observation
 
-### <a id="ui-int-011"></a>UI-INT-011 — Compact team status in the header
+Visible surfaces use the shared bounded observers. Leaving a panel or hiding
+the document suspends scheduling; an already in-flight read or operation may
+finish without opening a dialog, switching context or stealing focus. Reentry
+coalesces the required fresh read and preserves disposable context. Late or
+failed reads retain labelled last-known facts, not invented Offline/empty
+inventory. A retained snapshot is never a current vehicle report.
 
-Every team selector shows the team name plus one compact, human-readable resume
-summary such as `VDP v2 · Ready for validation`, `Brake v1 · Waiting for Cloud`
-or `Tire v1 · Blocked: requires VDP v3`. It is a derived navigation summary,
-not an AosCloud lifecycle field.
+### <a id="ui-int-013"></a>UI-INT-013 — Independent ownership and mutation conflicts
 
-When several releases need attention, the summary selects one deterministically
-in this order:
+Installed operator mutations are serialized by the existing owner/writer.
+Read-only navigation and independent observations remain available. Each
+operation retains exact team, candidate, profile, external-object and resource
+identity; uncertainty blocks conflicting effects and never queues blind replay.
 
-1. `UNCERTAIN` or `RECONCILING`;
-2. `FAILED` or stale authoritative state;
-3. `SUBMITTING` or `WAITING`;
-4. blocked next action;
-5. first actionable incomplete release; and
-6. latest completed release when nothing requires action.
-
-The complete release cards remain the authoritative presentation of the team's
-visible state. The compact summary never hides an error, claims that the whole
-team is complete or implies that visual focus owns lifecycle state.
-
-### <a id="ui-int-012"></a>UI-INT-012 — Hidden-team updates
-
-Authoritative reads and accepted subscriptions may update a team while another
-perspective is visible. Such an update changes that team's compact header
-summary but shall not auto-switch perspective, move another team's scroll,
-open a modal or produce an interrupting success popup.
-
-When the presenter returns, the preserved release anchor is restored and its
-cards render the fresh state. If the previously focused release no longer has
-an applicable action, it remains visible with its factual completed, superseded
-or blocked state; the UI does not silently select a different version.
-
-### <a id="ui-int-013"></a>UI-INT-013 — Independent operations and resource-scoped conflicts
-
-Platform, Brake and Tire use distinct publication profiles and may independently
-sign, publish and reconcile different candidates and Cloud objects. The demo
-shall not disable a protected action solely because another producer team has
-an unrelated operation in flight.
-
-Operation state and recovery are recorded per owning team, candidate and exact
-external object. A second action is blocked only when its conflict scope
-overlaps an active or unresolved operation, including:
-
-- the same candidate, digest, publication profile or resulting Cloud object;
-- the same Verification Batch, Fleet Validation Batch or Campaign;
-- a desired-state mutation of the same Unit or Unit Set;
-- provisioning, deprovisioning or identity retirement for either current Unit;
-- exclusive live-source handover or reset; and
-- global R0 freeze and cleanup.
-
-Read-only navigation and authoritative reads remain available. A bounded helper
-capacity condition may return `WAITING` or `BUSY` for the affected request, but
-it shall not be presented as an AosCloud limitation or a cross-team lifecycle
-dependency. No operation automatically queues or triggers another team's next
-action; each protected mutation still requires its own explicit confirmation.
-
-This rule replaces the former over-broad single-global-mutation assumption.
-The accepted Level-B cascade is recorded by revised D4-021.2/.3, the
-[Demo Run State 1.1.0 contract](../../../contracts/demo-run-state/README.md),
-`SYS-REL-012`, `REQ-DEMO-022` and `UT-DEMO-020`. It does not change HLA,
-component ownership, interfaces or authority boundaries.
+The expanded concurrent profile allows disjoint producer operations only when
+candidate/digest/profile, resulting Cloud object, Batch/Campaign, Unit and Set
+scopes do not overlap. Provisioning, identity retirement, source handover/reset
+and Finish are run-exclusive in either profile. Helper BUSY/WAITING describes
+local capacity, not an invented Aos Cloud lifecycle restriction.
 
 ### <a id="ui-int-014"></a>UI-INT-014 — Perspective-local source failure
 
@@ -664,13 +507,11 @@ defines the exact visible failure vocabulary and recovery actions.
 
 ### 2.2 Section 2 acceptance criteria
 
-The review accepted all six decisions: exactly three producer perspectives;
+The interaction requires: exactly three producer perspectives;
 OEM Release Authority as a persistent non-selectable governance role outside
 the teams; per-team focus/scroll preservation; independent operations with
 exact resource-scoped conflicts; the deterministic compact-summary priority;
-and silent hidden-team refresh limited to the header summary. No additional
-team, global step control, global operation lock or interrupting success popup
-was accepted.
+and silent hidden-team refresh limited to the header summary. No additional producer, automatic global step or interrupting success popup is introduced.
 
 ## 3. Current Vehicle and Test-to-Production Handover
 
@@ -686,37 +527,25 @@ technical Production Unit (`PU`) assigned to the non-validation Unit Set titled
 technical terms remain available in Details and evidence where exact Cloud
 objects are relevant, but they are not the primary audience labels.
 
-### <a id="ui-int-015"></a>UI-INT-015 — Global Current Vehicle
+### <a id="ui-int-015"></a>UI-INT-015 — One selected vehicle binding
 
-`Current Vehicle` is one global presentation and live-source state shared by
-all three team perspectives. In a stable state it is exactly one of:
+Installed use has exactly one owned Test and one selected live CARLA/Gateway
+binding. Header, release actions and product evidence refer to that same
+binding; actor navigation cannot change it. Before attachment or during
+uncertainty, display not assigned/changing/unavailable truthfully. Expanded
+use adds a Production role but still permits only one source owner at a time.
+Neither retained identity nor Cloud Online proves live attachment.
 
-- `Test Vehicle`; or
-- `Production Vehicle`.
+### <a id="ui-int-016"></a>UI-INT-016 — Expanded-profile vehicle handover
 
-Changing Platform, Brake or Tire perspective never changes Current Vehicle.
-Each release card may separately state its intended deployment target; that
-target is not the Current Vehicle until the accepted handover completes. Both
-Cloud Units may be Online while only one is attached to the single live CARLA
-and Gateway source.
-
-### <a id="ui-int-016"></a>UI-INT-016 — Explicit, repeatable handover
-
-The presenter changes Current Vehicle only through an explicit audience action:
-
-- `Continue with Production Vehicle`; or
-- `Continue testing on Test Vehicle`.
-
-The first action is offered after the Test Vehicle evidence required for the
-exact release has been accepted. The return action is available when the next
-release requires another Test Vehicle cycle. The demo therefore supports
-repeated `Test -> Production -> Test` cycles without implying a second CARLA
-actor, replay or simultaneous vehicle driving.
-
-The visible handover represents the accepted D4-005 protocol: enter a stable
-stop, detach the old Unit, perform the canonical reset/new generation, attach
-the selected Unit and prove one exclusive live source. These technical steps
-remain summarized for the audience and are available through Details.
+Scope: expanded Validation/Production use. Handover explicitly detaches the
+old Unit, proves release of its source, performs the canonical reset/new
+generation and then assigns the same source exclusively to the other Unit.
+Bind exact authenticated peer, contract, generation, time and frame range.
+Uncertain detach/reset or overlapping evidence blocks the next assignment.
+The sequence is repeatable in both directions and never changes software
+versions, provisions again, mixes event histories or claims two CARLA vehicles.
+The installed single-Test flow exposes no fictitious Production continuation.
 
 ### <a id="ui-int-017"></a>UI-INT-017 — Honest transition and failure state
 
@@ -777,149 +606,94 @@ vehicle is moving. All other authority, dependency, recipient, evidence and
 readiness gates remain unchanged. The UI never generalizes this QM demo claim
 to arbitrary services or automotive software.
 
-### <a id="ui-int-020"></a>UI-INT-020 — Production rollout presentation order
+### <a id="ui-int-020"></a>UI-INT-020 — Expanded-profile Production rollout order
 
-For a Platform release promoted to the Production Vehicle, the visible order is:
-
-1. select `Continue with Production Vehicle` and complete the source handover;
-2. show that the Production Vehicle operates normally on its current baseline;
-3. show the independent OEM Release Authority decision and authorize rollout;
-4. show the OEM runtime waiting for Safe Stop, with an empty slot for a first
-   install or the previous healthy release still active for a replacement;
-5. use the fixed Vehicle Controller to enter Safe Stop, then show runtime
-   application plus AosCore readiness while stopped; and
-6. explicitly resume driving and show the released Platform capability in
-   normal operation.
-
-This order makes the audience claim concrete without suggesting that AosCloud
-evaluates physical motion. Authorization may be recorded while the vehicle is
-moving; the OEM Component Runtime waits for Safe Stop before application. Test Vehicle Platform
-FOTA follows the same application rule before its validation drive.
+Scope: expanded release governance. Show owning-team acceptance and exact OEM
+authorization before Production rollout. Apply the accepted VDP before a
+dependent service and independently observe readiness. G3/G4 remain derived
+capability milestones, not combined releases/Campaigns or automatic approval.
+Production demonstrates released behavior with the same accepted bytes, not
+a second product-validation lane.
 
 ### 3.3 Section 3 acceptance criteria
 
-The review accepted the audience terms `Test Vehicle` and `Production
-Vehicle`, a single global Current Vehicle independent of team navigation,
-repeatable explicit handovers, honest transition/failure presentation, and the
-update-state split: Vehicle Data Platform Component FOTA is applied only under
-OEM-runtime-enforced Safe Stop, while the two accepted QM Service SOTA lifecycles
-may be demonstrated in motion. No duplicate UI safety mechanism and no claim
-that AosCloud evaluates physical vehicle motion were accepted.
+Verify one exact selected vehicle/source independent of actor navigation,
+truthful transition/failure state and the motion-policy split: native OEM
+Safe Stop gates Platform FOTA; accepted QM SOTA may apply while moving.
+Expanded use additionally proves repeatable exclusive Test/Production handover.
+No UI safety duplicate or Cloud physical-motion inference is allowed.
 
 ## 4. Platform, Brake and Tire Linear Release Stories
 
 
 ### 4.1 Common audience release story
 
-Every Platform, Brake and Tire release is shown as one expanded linear card.
-All versions for the selected team remain visible from oldest to newest; there
-is no version switcher and vertical order alone imposes no execution gate.
+Installed use shows actor-scoped prepare/sign/publish, first service assignment
+and exact installation/result observations through contextual controls.
+Functional V1/V2/V3 and allocated Cloud release numbers remain distinct. The
+UI does not force all versions into five-stage cards or invent missing Pending
+transitions. Expanded governance adds its exact acceptance/authorization steps
+without changing product ownership, native lifecycle or motion policy.
 
-Before the first audience action, the producer-owned candidate is already
-built, content-frozen and subjected to the internal checks required before an
-OEM may consider Test Vehicle deployment. `Details` exposes that prepared
-evidence without compiling, rebuilding or qualifying the candidate during the
-presentation.
+### <a id="ui-int-021"></a>UI-INT-021 — Distinct release facts
 
-### <a id="ui-int-021"></a>UI-INT-021 — Five visible release stages
+Keep preparation, signing, publication, assignment/delivery, installed state
+and functional evidence distinct. The installed Presenter uses contextual
+actions and observations, not mandatory five-stage cards. First service
+deployment assigns its identity once; later versions reuse it. A missed
+intermediate Pending state may be replaced by an authoritative terminal read,
+never by fabricated historical transitions. Expanded governance additionally
+records Test acceptance and Production authorization without merging them.
 
-Each release uses exactly five audience-visible stages:
+### <a id="ui-int-022"></a>UI-INT-022 — Test validation and acceptance
 
-1. **Producer Team publishes candidate.** The owning Platform, Brake or Tire
-   Team selects the prepared artifact, inspects Details and explicitly signs
-   and submits it through its fixed publication profile. Publication happens
-   once and is not deployment approval.
-2. **OEM Release Authority authorizes Test Vehicle deployment.** The
-   independent governance role reviews candidate identity, the effective Test
-   target and required pre-deployment evidence, then authorizes the exact
-   operation. AosCloud executes the decision.
-3. **Test Vehicle validation and Producer Team acceptance.** AosCloud delivers
-   to the Test Vehicle. The owning team runs its accepted CARLA, integration
-   and component/service checks, then explicitly accepts the exact artifact and
-   result. The stage may change its single primary action from `Run validation`
-   to `Accept validation result`; both actions are never enabled together.
-4. **OEM Release Authority authorizes Production rollout.** After explicit
-   handover to the Production Vehicle, the Release Authority reviews the
-   accepted Test Vehicle result, exact unchanged artifact, current target and
-   applicable verification, validation, integration and homologation evidence,
-   then authorizes rollout.
-5. **Production rollout and live operation.** AosCloud delivers the identical
-   accepted artifact with no rebuild, re-sign or re-publication. The UI confirms
-   delivery and readiness, then shows the released capability operating in the
-   Production Vehicle.
+Test is the validation role. A qualifying test binds exact artifact/profile,
+Unit/native instance, source interval and result; Cloud Running or a completed
+button request is insufficient. Owning-team acceptance is a separate explicit
+engineering decision. Expanded Production promotion requires that accepted
+evidence. An ordinary installed demonstration is not a complete qualification
+dossier or permission to promote.
 
-The UI shows no global stage number or `Next` control. Completed, current,
-blocked and waiting stages remain visible inside the release card.
+### <a id="ui-int-023"></a>UI-INT-023 — Expanded-profile released operation
 
-### <a id="ui-int-022"></a>UI-INT-022 — Validation ends on the Test Vehicle
+Scope: expanded Production operation. Deliver the identical Test-accepted
+artifact without rebuild, re-sign or re-upload. Independently confirm native
+delivery/readiness and show live released behavior. Do not call this a second
+product test, substitute replay or present one vehicle rehearsal as fleet-scale
+or hardware-safety qualification.
 
-All product validation, integration checks and producer acceptance occur on
-the Test Vehicle. A failed, incomplete, stale or unaccepted Test Vehicle result
-blocks Production authorization. Producer acceptance and OEM Release Authority
-authorization are separate decisions even when one presenter exercises both
-roles during the demo.
+### <a id="ui-int-024"></a>UI-INT-024 — Platform component release story
 
-`Continue testing on Test Vehicle` appears whenever a later release cycle needs
-the Test Vehicle while Production is current. The handover is global and does
-not publish, deploy, validate or accept software by itself.
+Platform release actions use the selected OEM context and verified unsigned
+prepared VDP content. The full story publishes V1 before provisioning; a
+deliberately selected warehouse variant may publish a higher profile and must
+not claim skipped chapters. Reconcile publication, exact installation/profile
+and real functional behavior separately. Native component application waits
+for Safe Stop; Cloud inventory has no VDP process-health field. Publish each
+next version only after the preceding one is installed and checked. Expanded
+Production authorization uses the accepted governance path, not another
+Platform authority or a combined G3/G4 release.
 
-### <a id="ui-int-023"></a>UI-INT-023 — Production is operation, not a second test lane
+### <a id="ui-int-025"></a>UI-INT-025 — Brake service release story
 
-After Production authorization, the UI uses `Production rollout and live
-operation`, `Show released behavior` and `Drive Production Vehicle`. It shall
-not use `Production test`, `Production validation`, `Run production test` or
-`Accept Production result` in the audience flow.
+Brake V1 captures bounded vehicle-derived windows, V2 adds local condition
+analysis, and V3 preserves that model and adds typed advisory. Publish with
+the associated SP; assign the exact Brake identity to Test through OEM once,
+preserving Tire. Later higher versions reuse that identity. Installation,
+input/episode readiness, backend receipt and Gateway application are different
+facts. QM service updates may occur while moving; Reset affects only Brake
+model/advisory and preserves history/queues. Expanded promotion retains its
+independent acceptance and same-byte rollout obligations.
 
-Authoritative delivery, actual-state and readiness re-reads confirm that the
-authorized rollout completed; they are operational confirmation, not a second
-product-validation cycle. CARLA Scenario, Manual and Autopilot runs on the
-Production Vehicle demonstrate ordinary released behavior: vehicle data is
-available, functional results reach the team backend, advisories reach the
-Engineering Telematics Dashboard and accepted local behavior continues during
-the selected external-connectivity loss.
+### <a id="ui-int-026"></a>UI-INT-026 — Independent Tire service story
 
-Formal PU rehearsal or checks performed while qualifying the demo solution
-itself occur before audience presentation under `CR-E2E`. They do not appear
-as Production product validation in this interaction model.
-
-### <a id="ui-int-024"></a>UI-INT-024 — Platform release story
-
-The Platform perspective shows three independent FOTA cards:
-
-| Release | Audience purpose | Enables |
-| --- | --- | --- |
-| VDP v1 | Publish the baseline read-only braking telemetry contract into KUKSA | Brake Health v1 bounded braking-window acquisition |
-| VDP v2 | Add the backward-compatible inputs required for local brake analysis | Brake Health v2 derived assessment/event behavior |
-| VDP v3 | Add tire-related telemetry and the controlled bidirectional advisory path | Brake Health v3 and Tire Health v1 maintenance advisories |
-
-Both Test and Production Platform deployments obey Section 3 Safe Stop. On the
-Test Vehicle, driving resumes to run validation. On the Production Vehicle,
-driving resumes only to show the released capability in normal operation.
-
-### <a id="ui-int-025"></a>UI-INT-025 — Brake release story
-
-The Brake perspective shows three independent QM Service SOTA cards:
-
-| Release | Required platform | Production live behavior |
-| --- | --- | --- |
-| Brake v1 | VDP v1 | A visible braking episode produces one bounded pre/active/post telemetry window in the Brake backend |
-| Brake v2 | VDP v2 | Local analysis sends bounded derived assessments/events rather than the normal v1 high-detail window |
-| Brake v3 | VDP v3 | A local maintenance advisory reaches KUKSA, Gateway and the Engineering Telematics Dashboard while derived state reaches the Brake backend |
-
-Brake v2/v3 local analysis and v3 advisory behavior remain visible during the
-accepted Production Vehicle external-connectivity loss. Brake SOTA may be
-applied in motion subject to every non-motion gate.
-
-### <a id="ui-int-026"></a>UI-INT-026 — Tire release story
-
-The Tire perspective shows one mature Tire Health v1 QM Service SOTA card. It
-requires VDP v3, performs local condition analysis, sends bounded derived
-results to its independent backend and presents a maintenance advisory through
-the accepted in-vehicle path. Its fixed optional CPU-isolation proof may load
-only the real Tire tenant; AosCore quota enforcement shall preserve Brake and
-platform continuity. This synthetic proof is not represented as real-hardware
-performance evidence. Tire SOTA may be applied in motion subject to every
-non-motion gate.
+Tire has one functional V1 profile consuming the VDP V3 dynamics contract.
+It estimates locally, retains bounded state/outbox, delivers to its own backend
+and requests its own typed inspection advisory. It neither depends on Brake
+service state nor requests another platform capability. Sharing the installed
+SP does not merge product storage or authority. Reset is Tire-only. The fixed
+CPU-load/isolation experiment is a retained qualification obligation, not an
+implemented action or an inference from a CPU graph.
 
 ### <a id="ui-int-027"></a>UI-INT-027 — Dependencies and independent evolution
 
@@ -970,23 +744,16 @@ back as Cloud lifecycle state.
 
 ### 4.2 Section 4 acceptance criteria
 
-The review accepted the five-stage audience story, one-time publication,
-separate Test deployment authorization, Test-only validation and producer
-acceptance, separate Production rollout authorization, identical-artifact
-rollout and Production live operation without a second product test. Platform
-v1-v3, Brake v1-v3 and Tire v1 purposes, dependencies, motion policy and
-independent evolution are accepted as defined above. G3 and G4 are accepted as
-derived capability milestones over two independently governed releases, never
-as combined Cloud release groups or approval actions.
+Verify independent Platform/Brake/Tire purposes, profile prerequisites, serial
+version publication, actual installation and corresponding live results.
+G3/G4 derive from the compatible installed graph and behavior, not a combined
+Cloud release group or approval. Expanded governance additionally requires
+one-time publication, Test validation/producer acceptance, separate exact OEM
+Production authorization and identical-artifact released operation, not a
+second product test.
 
 ## 5. Action, Authority and Authoritative-Result Contract
 
-- Review state: `ACCEPTED`
-- Prepared: 2026-08-25
-- Accepted: 2026-08-25
-- Accepted disposition: actor/credential separation, protected-action
-  confirmation, authoritative-result reconciliation, resource-scoped
-  concurrency and complete first-demo action inventory approved
 
 Section 5 defines the contract behind a visible button. It does not define
 modal layout or error styling, which belong to Sections 6 and 7. A button is
@@ -1027,13 +794,13 @@ mutation confirmation. Every publication, Cloud lifecycle mutation,
 producer-acceptance mutation, Unit Set change, provisioning, retirement,
 functional proof command or destructive cleanup is a protected action.
 
-Accepted 20 September amendment: `backend-reset` alone executes with one
+`backend-reset` executes with one
 explicit click on the named Brake/Tire backend card's **Reset Driver Advisory**
 button. It still uses protected session/request-ID/serialization and uncertain
 outcome reconciliation; it is not a read. The detail popup retains outcome
 and history but no duplicate reset action. Only a correlated Gateway CLEAR
 establishes completion. All other protected actions retain confirmation.
-The accepted wording follow-up uses **Resetting driver advisory…** during
+Use **Resetting driver advisory…** during
 submission/waiting and **Driver advisory reset** after that confirmation;
 the native `backend-reset` / `reset-scenario` commands and behavior are unchanged.
 
@@ -1065,31 +832,22 @@ parameters to an authenticated Mac-local application surface. That surface
 delegates to the fixed native helper, Demo Orchestrator, Vehicle Controller or
 matching Function backend adapter.
 
-The accepted first-demo control-plane topology is exactly three Cloud user
-certificates:
+Installed first use needs one OEM certificate and one associated SP certificate.
+Platform publication/delivery profiles share the OEM identity but remain
+non-interchangeable allowlists. Brake and Tire have independent service,
+publication and backend identities even when both profiles use the same SP.
+The expanded two-provider profile additionally requires independent SP owner
+domains/certificates and proof of cross-provider isolation; one shared SP is
+not that proof.
 
-| Cloud identity | Certificate boundary | Fixed demo use |
-| --- | --- | --- |
-| OEM | One OEM user certificate | `platform-oem` publishes only VDP candidates; `oem-delivery` performs only the accepted OEM lifecycle operations exercised by OEM Release Authority or another explicitly identified OEM actor |
-| Brake Service Provider | One SP1 user certificate belonging to the Brake Service Provider owner domain | `brake-sp1` publishes only Brake Health candidates and reads only the accepted Brake-owned Cloud surfaces |
-| Tire Service Provider | One separate SP2 user certificate belonging to the Tire Service Provider owner domain | `tire-sp2` publishes only Tire Health candidates and reads only the accepted Tire-owned Cloud surfaces |
-
-`platform-oem` and `oem-delivery` are two local operation profiles over the
-same OEM certificate, not two AosCloud identities. They remain non-
-interchangeable through fixed helper allowlists. Brake and Tire are two
-different AosCloud Service Provider owners, not merely two users or products
-under one Service Provider. Their certificates, service ownership, publication
-profiles, Cloud objects and backend data remain separate.
-
-The browser cannot select a certificate, path, URL, publication profile or
-arbitrary artifact. The native helper selects only the fixed certificate and
-profile bound to that action surface. The once-issued OEM, Brake SP1 and Tire
-SP2 certificates remain protected infrastructure outside the browser,
-containers, VM overlays and demo-run journal. The Admin certificate is outside
-the demo and shall not be used as a fallback. A second independent Service
-Provider certificate is therefore an environment prerequisite before
-implementation acceptance; the currently available single SP certificate
-cannot prove the accepted two-provider topology.
+The browser receives no certificate, secret, path, arbitrary URL/profile or
+artifact selector. The native helper binds each action to its fixed configured
+credential/profile. Setup's native certificate selection is a separate local
+configuration boundary, not a credential input to the Presenter browser.
+Credentials remain outside containers, VM overlays, journals and Git. Admin
+credentials are never a fallback. Keep actor/release authority distinct from
+certificate identity; these local profiles do not create cryptographic
+separation between two actors sharing one OEM certificate.
 
 ### 5.2 Fresh prerequisites and authoritative completion
 
@@ -1102,10 +860,11 @@ candidate, role, permission, target, Unit Set membership, pending recipient,
 dependency, evidence result, current vehicle or vehicle state cancels the
 prepared intent and returns it to `BLOCKED` with a factual reason.
 
-For a Test deployment the fresh Cloud proof includes the exact Verification
-Batch, Verification Unit Set=`{VU}`, Production Unit Set=`{PU}`, effective
-pending recipients=`{VU}` and no matching Production pending reference. For a
-Production rollout it includes the accepted Fleet Validation Batch, unchanged
+For installed Test deployment, fresh proof binds the exact configured
+verification Set/current Test and effective pending recipients. Expanded
+deployment additionally proves Verification Unit Set=`{VU}`, Production
+Unit Set=`{PU}` and no matching Production pending reference. Expanded
+Production rollout requires the accepted Fleet Validation Batch, unchanged
 artifact identity, expected Fleet, sole Production Unit Set target and current
 membership=`{PU}`.
 
@@ -1171,152 +930,94 @@ classify the external effect as `APPLIED`, `NOT_APPLIED`, `CONTRADICTORY` or
 
 Section 7 defines the exact wording and visual treatment of these states.
 
-### <a id="ui-int-034"></a>UI-INT-034 — Resource-scoped concurrency
+### <a id="ui-int-034"></a>UI-INT-034 — Serialization and expanded concurrency
 
-There is no global lock across all producer teams. Platform, Brake and Tire
-may submit or reconcile independent external operations concurrently when
-their exact conflict-key sets are disjoint. An unresolved operation blocks
-only another mutation involving the same candidate, digest, publication
-profile, resulting Cloud object, Batch, Campaign, Unit or Unit Set.
+Installed protected mutations share one existing writer. Conflicting or
+uncertain operations block another effect while read-only views remain usable.
+For expanded disjoint-resource concurrency apply the exact conflict scopes in
+UI-INT-013; never infer permission from different tabs/directories. No automatic
+cross-team queue, broad global status failure or silent mutation replay is
+introduced. Run-exclusive identity/source/cleanup operations remain exclusive.
 
-Provisioning, identity retirement, current-vehicle handover/reset and R0 use
-run-exclusive scopes and wait until every conflicting operation is reconciled.
-Read-only navigation and fresh authoritative reads remain available. Helper
-capacity `BUSY` affects only that request, is shown as a local capacity
-condition and never creates an automatic queue.
+### <a id="ui-int-035"></a>UI-INT-035 — Explicit composition and no blind retry
 
-### <a id="ui-int-035"></a>UI-INT-035 — No hidden chaining or blind retry
-
-One successful action never triggers the next audience decision. In
-particular:
-
-- publication never authorizes Test deployment;
-- passing Test evidence never accepts the result;
-- producer acceptance never authorizes Production rollout;
-- Production authorization never claims application or readiness;
-- reaching Safe Stop never issues an OEM authorization; and
-- a completed drive never advances another team or release.
-
-One audience authorization may delegate a bounded multi-call technical
-workflow, such as create/read/approve/re-read for one exact Production
-Campaign, only when the confirmation exposes that purpose and every external
-mutation has its own journal entry and reconciliation boundary. A timeout or
-unknown result stops the sequence. There is no blind retry, automatic
-fallback, automatic rollback or just-in-case re-submission.
+Only the accepted composed actions may execute their declared bounded steps:
+Create prepares the owned controller/backends; Provision connects the same
+Unit/source; Finish retires the exact Test. Their progress exposes distinct
+owner results and persists intent before external effects. A response loss
+requires authoritative reconciliation, not another create/upload/provision.
+No action silently advances another release, accepts evidence, approves
+Production or starts the next run. Expanded multi-call Campaign authorization
+retains per-call journal and reconciliation boundaries.
 
 ### 5.3 Visible action matrix
 
 ### <a id="ui-int-036"></a>UI-INT-036 — Action-to-authority matrix
 
-| Visible action | Organizational actor | Execution surface | Required result before UI advances |
-| --- | --- | --- | --- |
-| Select Platform/Brake/Tire perspective | Presenter | Browser-local navigation | Selected view rendered from fresh sources; no lifecycle mutation |
-| Open Demo Lifecycle | Presenter | Browser-local navigation through the shared title | Global Qualification/Prepare/current-lifecycle/R0 view rendered in the right region; no team or lifecycle state changes |
-| Details / Close | Presenter | Browser-local read-only overlay | Same release, scroll and Current Vehicle context preserved |
-| Recheck current state | Presenter | Read-only adapters for the relevant Cloud, vehicle, backend and run-state owners | Fresh facts replace the displayed snapshot without retrying or submitting any mutation |
-| Start or Restore Demo Environment | Demo Solution operator | Session helper / Demo Orchestrator | At `READY_FOR_M0`, the local support stack is ready without requiring vehicle VMs or Cloud Units; during an active run, the exact existing VMs are restored and their current Units are freshly proved `Online`. No vehicle creation or provisioning occurs |
-| Restore workspace layout | Demo Solution operator | Presenter Launcher / Demo Orchestrator | The accepted measured header/native/browser geometry is reapplied and every required surface is proved visible, non-overlapping and readable; no Cloud, Unit, VM, vehicle, Current Vehicle or release-lifecycle state changes |
-| Create new Test and Production Vehicles (`M0`) | Demo Solution operator | Run-exclusive Demo Orchestrator | Factory Image digest is proved; exactly two fresh unprovisioned overlays show `Manufactured · Awaiting provisioning`, with no Unit/Node/Cloud credential and no Current Vehicle |
-| Provision vehicles (`M1`) | Demo Solution operator | Run-exclusive Demo Orchestrator plus `oem-delivery` | Fresh unique Unit/Node identities, `Online` state and exact disjoint Verification/Production Unit Set membership are re-read; the initial Test source is then proved and the UI enters `G0` |
-| Sign and submit candidate | Owning producer team | Fixed native publication helper | Exact signed/uploaded digest chain, Cloud object/version and Verification Batch are independently re-read |
-| Authorize Test deployment | OEM Release Authority | `oem-delivery` through protected lifecycle adapter | Exact Verification Batch approval and effective `{VU}` delivery/actual state are re-read |
-| Enter Safe Stop / Resume drive | Presenter | Existing Vehicle Controller | Gateway/CARLA state confirms stopped or driving; for Platform FOTA, AosCore actual/readiness separately confirms application |
-| Run Test validation | Owning producer team | Demo Orchestrator, CARLA/controller and matching evidence surfaces | Exact Test scenario/integration evidence is complete; no acceptance is inferred |
-| Accept validation result | Owning producer team | Protected validation-acceptance workflow using the accepted OEM technical context | Exact team decision and corresponding Fleet Validation state are bound to the same artifact, Test Unit and evidence |
-| Continue with Production/Test Vehicle | Presenter | Run-exclusive Demo Orchestrator | Old source detached, canonical reset/new generation complete and exactly one new Current Vehicle binding proven |
-| Authorize Production rollout | OEM Release Authority | `oem-delivery` through protected Campaign workflow | Exact unchanged artifact, sole Production Unit Set target, Campaign decision, per-Unit result and PU actual/readiness are re-read |
-| Show released behavior | Owning producer team / presenter | CARLA/controller plus Engineering and matching Function backend surfaces | Production live behavior is correlated; no second product-validation result is created |
-| Scenario / Manual / Autopilot / Restart current drive | Presenter | Existing Vehicle Controller | Exactly one accepted drive mode owns control; repeated live runs and deterministic return to the accepted start state are allowed without changing Current Vehicle or software lifecycle state |
-| Simulate / restore external connectivity | Presenter | Single Vehicle Controller external-connectivity action | Unit and Services lose or regain the external world together; Dashboard-to-AosCloud connectivity remains available |
-| Request / view / delete current-run operational logs | Platform/OEM, Brake or Tire actor within its accepted scope | Matching protected native-log adapter | Verbatim Cloud request state and sanitized result are shown; Platform/OEM sees only Unit/system/VDP scope, each Function Team sees only its own Service logs, and no second archive remains |
-| Start / stop Tire CPU isolation proof | Tire Team | Tire backend fixed-profile command path | Same Tire instance, Cloud usage/state samples, Brake/platform continuity and recovery produce the accepted factual verdict |
-| End and Reset Demo (`R0`) | Demo Solution operator | Run-exclusive R0 workflow | Both Units/Nodes absent, persistent role sets empty, functional data and local run resources removed, Factory Image unchanged and `READY_FOR_M0` proven; no next `M0` or `M1` starts automatically |
+| Visible action | Actor and owner | Required independently observed result |
+| --- | --- | --- |
+| Select actor / open or close detail | Presenter, read-only view | Same run/vehicle/profile context; fresh scoped facts, no mutation |
+| Restore workspace layout | Existing host composition owner | Native/browser windows restored; no vehicle journal or Cloud action |
+| Create Controller | Existing run-exclusive Demo Control | Fresh identity-free Test and owned local preparation, not a Cloud Unit |
+| Start simulator | Existing simulation owner | One CARLA/Gateway/native session; detached until Unit attachment |
+| Prepare / sign / publish | Selected producer OEM/SP through native owner | Exact unsigned/signed/Cloud identity chain; known uncertainty is reconciled |
+| Provision Test | Official SDK and Demo Control | Exact same Unit/Node, Online/membership and stationary source attachment |
+| Deploy service to Test | OEM Subject owner | Exact service identity assigned once, peer preserved; actual version/instance reread |
+| Enter Safe Stop / drive / prepared maneuver / Return to road | Native Driving Control | Physical frame confirms state; Return to road preserves models and ends stationary Manual |
+| Reset Driver Advisory | Selected service/backend | One-click protected submission; pending versus correlated applied outcome; history and peer preserved |
+| External network OFF/ON | Existing selected-Unit connectivity owner | Cloud and both backend routes change atomically; in-vehicle/admin paths remain |
+| Start controller / Stop demo and keep data | Existing runtime owner | Same Test retained; no provisioning, deletion or automatic Autopilot |
+| Delete Test / Continue Finish | Existing exact-target retirement owner | Reconciled owned Cloud/backend/file cleanup; no automatic next run |
+| Close Presenter (keep demo running) | Presenter window owner | Window closes without claiming runtime stop |
 
-### <a id="ui-int-073"></a>UI-INT-073 — Infrastructure preflight is lifecycle-aware but non-provisioning
+Expanded governance additionally requires separate Test-validation acceptance,
+exact OEM Production authorization, exclusive Test/Production source handover
+and same-byte released-operation proof. Role-scoped native logs and the fixed
+Tire isolation control retain their allocated requirements; unimplemented or
+unqualified actions are not presented as available or PASS. No action gains
+credentials, arbitrary command selection, a second scheduler or Cloud authority.
 
-`Start or Restore Demo Environment` is one operator preflight with two honest
-source-driven modes:
+### <a id="ui-int-073"></a>UI-INT-073 — Lifecycle-aware infrastructure preflight
 
-- in `READY_FOR_M0`, it starts and checks the session helper, browser/dashboard
-  backends, Function backends, CARLA, Gateway, Controller and other accepted
-  local support without requiring a vehicle VM, Cloud Unit or `Online` state;
-- in an active run, including after a presenter-Mac restart, it starts or
-  restores only the exact current-run overlays already recorded by the
-  orchestrator, exposes their local readiness axes separately and reports the
-  environment ready only after fresh AosCloud reads prove both existing Units
-  `Online`.
+Validate the selected installed package, private instance, saved access,
+backend images and exact owned resources before an action. Open SDV Lab opens
+Presenter only. Start controller restores the same retained Test; it does not
+create/provision again or resume Autopilot. Missing Docker requires an operator
+prerequisite action; normal preflight never opens its Dashboard, restarts the
+shared Engine or adopts another project's containers. An incomplete journal
+enters explicit recovery, not new manufacture. Host sleep/wake recovery is
+outside the current profile.
 
-The action never creates an overlay, invokes provisioning, changes an identity,
-assigns a Unit Set, selects a Current Vehicle or advances `M0`, `M1` or `G0`.
-An incomplete or contradictory current-run record enters recovery rather than
-being treated as a new demo.
+### <a id="ui-int-074"></a>UI-INT-074 — Profile-bound manufacture
 
-This action remains in the native Presenter Launcher. The browser global
-`Demo Lifecycle` page may display its reconciled result but does not duplicate
-or invoke the action.
+Create Controller explicitly makes one fresh identity-free Test from the
+selected immutable Factory, with no VDP/service or Cloud Unit. It may compose
+owned boot/backend preparation but never provisions automatically. Show local
+manufacture separately from Cloud Online and installed software. Expanded
+manufacture additionally requires a distinct Production overlay and evidence
+of non-shared system/Node/SSH/certificate identity. Never clone a provisioned
+overlay or modify the backing image.
 
-### <a id="ui-int-074"></a>UI-INT-074 — M0 is a visible manufacturing result
+### <a id="ui-int-075"></a>UI-INT-075 — Provisioning establishes the Test substrate
 
-The global `Prepare Demo` chapter exposes `Create new Test and Production
-Vehicles` as its first protected action. Its confirmation identifies the
-accepted immutable Factory Image and the two intended local roles without
-showing private paths. Completion requires the verified Factory Image digest
-and exactly two fresh unprovisioned overlays. The audience sees two vehicle
-cards in `Manufactured · Awaiting provisioning`, while Unit ID, Node ID, Cloud
-credentials, VDP and Services are explicitly absent.
+Provision uses the official SDK once for the already created Test, reconciles
+its exact native system UID and Cloud Unit/Main Node, observes Online and
+verification membership, then attaches the same live source in stationary
+Manual. Preserve actor and generation; no duplicate simulator/control panel.
+Partial registration resumes against the same identity, never another SDK
+attempt. Safe Stop for VDP application remains a subsequent explicit vehicle
+action. Expanded use independently provisions its Production role.
 
-During `M0`, the header reads `Current Vehicle: Not assigned`. The UI shall not
-show either vehicle `Online`, infer provisioning from local VM readiness or
-automatically invoke `M1`.
+### <a id="ui-int-076"></a>UI-INT-076 — Finish retires the owned run
 
-The chapter is displayed on the right-hand global `Demo Lifecycle` page.
-
-### <a id="ui-int-075"></a>UI-INT-075 — M1 establishes the visible G0 baseline
-
-`Provision vehicles` is the second explicit protected action in the same
-global chapter and is available only for the exact fresh `M0` pair. It shows
-human-readable Test and Production roles in the main view and keeps full Unit,
-Main Node, `system_uid`, certificate-fingerprint and Unit Set/API evidence in
-`Details`.
-
-Completion requires authoritative validation of the pinned one-time Fleet and
-two Unit Set UUIDs, titles, shared Fleet and validation flags; unique Unit and
-Main Node identities; both Units freshly `Online`; Test assigned to the Test
-role set and no other demo-role set; Production assigned to the Production role
-set and no other demo-role set; preservation of unrelated OEM classifications;
-and exact demo-role membership re-read. Unresolved UUID placeholders or any
-object mismatch are `NOT_READY`. The bounded completion then establishes `G0` by
-proving Test as the initial exclusive Current Vehicle, fresh CARLA/Gateway
-binding and Engineering Telematics, while VDP and both Services remain absent.
-`G0` is displayed as the resulting baseline, not as a third provisioning
-mutation or a release-card action.
-
-### <a id="ui-int-076"></a>UI-INT-076 — R0 terminates the run without starting another
-
-`End and Reset Demo` is one global protected action available after a completed,
-failed or presenter-aborted run; it does not require a `QUALIFIED` verdict. The
-main view presents high-level progress through lifecycle freeze, identity
-retirement, retired-credential rejection, Unit Set cleanup, Unit/Node absence,
-Function/local-data cleanup, overlay removal, CARLA reset and Factory Image
-verification. Exact per-Unit API operations and identifiers remain in
-`Details`.
-
-Success ends at `READY_FOR_M0`, clears the Current Vehicle to `Not assigned`
-and enables a later explicit infrastructure preflight or `M0` action. It never
-creates overlays, provisions Units or begins another run automatically. Any
-unproven step ends in `Reset incomplete · Recovery required`, retains only the
-bounded recovery material and blocks the next `M0` without hiding read-only
-diagnosis.
-
-The action and its run-wide recovery state are displayed on the right-hand
-global `Demo Lifecycle` page.
-
-The first implementation shall not expose a separate `Apply update` button.
-After OEM authorization, Cloud delivery and AosCore application are observed
-authoritatively. For Platform FOTA, the presenter's explicit vehicle action is
-`Enter Safe Stop`; after readiness the explicit presentation action is
-`Resume drive` or `Show released behavior`. Brake/Tire SOTA may continue in
-motion subject to every other gate.
+Finish is a confirmed destructive action naming the exact Test. Quiesce owned
+source/VM/backends, reconcile identity and Subject/Set effects, prove Unit/Node
+absence and exact backend cleanup, dispose of owned working files and journal
+last. Preserve unrelated/Production state, credentials, permanent Subjects/Sets,
+Factory, published releases and release continuity. Continue Finish resumes
+reconciled remaining stages, not repeated effects. Expanded R0 additionally
+retires its explicitly owned Production role. No next Create/Provision starts
+automatically; ordinary Stop/Start instead retains the same run.
 
 ### 5.4 Section 5 acceptance criteria
 
@@ -1349,72 +1050,22 @@ G3/G4 expose no combined authorization. Their VDP and Brake Production
 decisions remain separate, and provider readiness is freshly proved before the
 dependent Service action becomes eligible.
 
-#### Accepted during Section 5 review — no audience `Apply update` action
+#### Application, lifecycle and optional operational actions
 
-The accepted contract is that the first implementation exposes no separate
-audience-facing `Apply update` button. After Test or Production authorization,
-the release card observes Cloud delivery and AosCore actual/readiness state.
-For Platform FOTA it shows native `ACTIVATING`, factual Gateway state and the
-derived `Waiting for Safe Stop before application` explanation while the
-vehicle moves;
-the presenter uses the existing Vehicle Controller to enter Safe Stop, and
-AosCore remains the native application authority. The UI then shows applying
-and ready state from authoritative observations, after which the presenter
-explicitly resumes driving and selects `Run Test validation` or `Show released
-behavior` as applicable.
+There is no audience Apply update button: AosCore applies the authorized
+component under its Safe Stop policy. Driving Control owns physical stop and
+explicit driving resumption. Service SOTA does not wait for Safe Stop.
+UI-INT-073 through UI-INT-076 define preflight, manufacture, provisioning and
+retirement at their exact profile scopes. Recheck is read-only; native logs
+remain optional and role-scoped; a drive restart preserves vehicle identity
+and software lifecycle. Recovery cannot introduce another product decision.
 
-Any required low-level `ApplyUpdate` lifecycle operation remains an internal
-step of the accepted protected workflow rather than a second organizational
-decision. Brake and Tire QM Service SOTA do not enter a Safe-Stop waiting state
-solely because the vehicle moves.
-
-#### Accepted during Section 5 review — global demo lifecycle chapters
-
-The review accepts `Prepare Demo` and `End and Reset Demo` as global,
-run-exclusive chapters outside the Platform, Brake and Tire release cards and
-outside selectable team perspectives. `Prepare Demo` separates the visible
-`M0` manufacturing result from the explicit `M1` provisioning operation.
-Only after exact provisioning and Unit Set evidence does the UI enter the
-read-only `G0` baseline with Test as the initial Current Vehicle.
-
-`Start or Restore Demo Environment` is an operator preflight rather than a
-producer-team or audience release action. At `READY_FOR_M0` it proves the local
-support stack without requiring VMs or Cloud Units; during an active run it may
-restore only the exact existing provisioned VMs and then requires fresh dual-
-Unit `Online` proof. It never creates a vehicle, provisions, reprovisions,
-changes identity or advances the lifecycle. `End and Reset Demo` is available
-after completed, failed or aborted execution, ends only at `READY_FOR_M0` and
-never starts the next cycle automatically. During a run-exclusive operation,
-team views remain available for read-only inspection while every conflicting
-protected action is blocked. Interrupted global operations resume only from
-reconciled current-run state and never repeat an unproven destructive action
-blindly.
-
-#### Accepted during Section 5 review — complete first-demo action inventory
-
-The review adds `Recheck current state` as a strictly read-only reconciliation
-action, the role-scoped native operational-log lifecycle as an optional
-audience extension and `Restart current drive` to the existing Controller
-mode action. Recheck never retries a mutation. Log access creates no ELK path
-or second archive. Drive restart preserves Current Vehicle and every software
-lifecycle state.
-
-With those additions, Section 5 is accepted. It fixes the complete action and
-authority inventory for the first implementation, including global demo
-lifecycle chapters, but authorizes no UI implementation, credential creation,
-Cloud mutation, provisioning, vehicle operation or R0 execution. Section 7
-defines recovery controls for accepted failure states, but it may not introduce
-a new product or lifecycle decision without reopening this section.
+<a id="accepted-during-section-5-review--no-audience-apply-update-action"></a>
+<a id="accepted-during-section-5-review--global-demo-lifecycle-chapters"></a>
+<a id="accepted-during-section-5-review--complete-first-demo-action-inventory"></a>
 
 ## 6. Details Modal and Disclosed Information
 
-- Review state: `ACCEPTED`
-- Prepared: 2026-08-26
-- Accepted: 2026-08-26
-- Accepted disposition: human-first read-only Details, Service-only quota
-  disclosure, separate runtime-isolation evidence and role-scoped operational
-  logs
-- Implementation authorized: no
 
 ### 6.1 Purpose and interaction boundary
 
@@ -1661,7 +1312,7 @@ from that team's sanitized projection; modal state is not shared across teams.
 
 ### <a id="ui-int-047"></a>UI-INT-047 — Copy boundary
 
-The first implementation provides no `Export all`, raw JSON, evidence-bundle
+The installed profile provides no `Export all`, raw JSON, evidence-bundle
 download or unrestricted copy action in Details. It may copy only an
 allowlisted candidate ID, semantic version, full release digest, sanitized
 evidence reference or sanitized object fingerprint. Copying uses the value
@@ -1766,13 +1417,6 @@ their authority, sources, scopes or disclosed data without reopening Section
 
 ## 7. Failure, Offline and Recovery States
 
-- Review state: `ACCEPTED`
-- Prepared: 2026-08-26
-- Accepted: 2026-08-26
-- Accepted disposition: source-separated state layers, fixed recovery-safe
-  vocabulary, expected Safe Stop/dependency/connectivity behavior,
-  resource-scoped reconciliation and exact auxiliary-panel verdicts
-- Implementation authorized: no
 
 ### 7.1 State layers and scope
 
@@ -2078,15 +1722,6 @@ reopening Section 7.
 
 ## 8. Vehicle and Function-Backend Correlation
 
-- Review state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Prepared: 2026-08-26
-- Accepted disposition: one Current Vehicle/release/live-exercise evidence
-  context, the four-link human-readable causal chain, Test-versus-Production
-  drive-mode/evidence split, release-specific Platform/Brake/Tire evidence,
-  sanitized correlation/time model, externally honest offline/synchronization
-  presentation and bidirectional release-cycle handover are approved
-- Implementation authorized: no
 
 ### 8.1 One audience evidence context
 
@@ -2113,8 +1748,9 @@ reuse another team's backend result.
 
 ### <a id="ui-int-063"></a>UI-INT-063 — Sequential live exercises, not replay
 
-The first implementation uses one live CARLA/Gateway source at a time. Test and
-Production evidence comes from separate fresh live exercises after the explicit
+The installed Test uses one live CARLA/Gateway source and fresh live exercises.
+In the expanded profile, Test and Production evidence comes from separate
+fresh live exercises after the explicit
 Current Vehicle handover. It does not record one drive and replay its telemetry
 into another Unit.
 
@@ -2253,7 +1889,8 @@ correlation conflict as a successful current event.
 
 ### <a id="ui-int-069"></a>UI-INT-069 — Offline view proves local behavior and delayed delivery
 
-During the accepted Production Vehicle external-connectivity loss, the left
+During selected-Test external-connectivity loss (or the expanded Production
+Vehicle exercise), the native
 surfaces continue to show the live CARLA stimulus, local signals and local
 advisory. The selected Function backend panel shows `No new cloud events` and
 its last durable receipt time. It does not pretend to observe the Service's
@@ -2352,13 +1989,6 @@ remain repeatable without replay, with Manual/Autopilot normal driving separate.
 
 ## 9. Traceability and UI Acceptance Cases
 
-- Review state: `ACCEPTED`
-- Prepared: 2026-08-26
-- Accepted: 2026-08-26
-- Accepted disposition: forward/reverse traceability, the common case format,
-  three verification levels and `UI-AT-001` through `UI-AT-050` with their
-  parameterized release/action/state instances are approved
-- Implementation authorized: no
 
 ### 9.1 Stable traceability model
 
@@ -2434,16 +2064,16 @@ state, and `Details` assertions remain bound to the same release/stage context.
 
 ### 9.3 Global workspace and navigation cases
 
-The following seven cases are mandatory:
+The following cases apply to the named installed or expanded profile:
 
 | Case | Main coverage | Required levels | Accepted purpose |
 | --- | --- | --- | --- |
 | <a id="ui-at-001"></a>`UI-AT-001` — Qualified full-screen composition | `UI-INT-001` | `FIXTURE`, `HUMAN` | One measured presenter display, approximately equal regions, readable real surfaces and no tab/Space/horizontal-scroll dependency |
-| <a id="ui-at-002"></a>`UI-AT-002` — Fixed evidence, fixed team context and version-only scrolling | `UI-INT-003`, `UI-INT-004` | `FIXTURE`, `HUMAN` | At the qualified presenter viewport, long release/version stories scroll only inside their team release region while the shared header, complete left evidence workspace, one-line team heading, compact Release Authority line, state summaries and current team evidence panels remain fully visible and unscrolled; Engineering Telematics remains the native text-only Terminal with no bitmap or inline-image injection |
+| <a id="ui-at-002"></a>`UI-AT-002` — Stable native evidence and selected context | `UI-INT-003`, `UI-INT-004` | `FIXTURE`, `HUMAN` | At the qualified presenter viewport, visible CARLA, combined native Driving Control/Telemetry and Presenter remain readable; integrated cards/dialogs preserve selected team, component, focus and relevant scroll without a mandatory text-only Terminal or five-stage layout |
 | <a id="ui-at-003"></a>`UI-AT-003` — Shared header and audience terminology | `UI-INT-002`, `UI-INT-006` | `FIXTURE`, `HUMAN` | Exact title, one Current Vehicle and three producer selectors with `Test Vehicle` normalization and no technical/global-step clutter |
 | <a id="ui-at-004"></a>`UI-AT-004` — Independent team-perspective navigation | `UI-INT-007`, `UI-INT-009`–`UI-INT-012` | `FIXTURE`, `INTEGRATED` | Navigation restores each team's independent release/version scroll and focus with fresh fixed-context state and causes no external, vehicle or lifecycle action |
 | <a id="ui-at-005"></a>`UI-AT-005` — Release Authority remains separate | `UI-INT-008` | `FIXTURE`, `HUMAN` | Compact fixed neutral non-selectable governance line outside all producer teams, no redundant decorative authority badge, and explicit actor identity on its stages |
-| <a id="ui-at-006"></a>`UI-AT-006` — Independent operations and scoped conflicts | `UI-INT-013`, `UI-INT-014` | `FIXTURE`, `INTEGRATED` | Disjoint producer operations remain independent; only exact conflicts block and one source failure does not contaminate another owner |
+| <a id="ui-at-006"></a>`UI-AT-006` — Mutation serialization and expanded scoped conflicts | `UI-INT-013`, `UI-INT-014` | `FIXTURE`, `INTEGRATED` | Installed protected mutations are serialized without blocking read-only diagnosis/navigation; expanded disjoint-operation qualification additionally proves exact conflict scopes and owner-local failures |
 | <a id="ui-at-007"></a>`UI-AT-007` — Details overlay preserves context | `UI-INT-005` | `FIXTURE`, `HUMAN` | Right-side read-only modal preserves vehicle/team/release/scroll/focus and fixed evidence, then closes without an external side effect |
 
 The mandatory negatives cover horizontal page scroll, a scrolling or clipped
@@ -2467,7 +2097,7 @@ parameterized instances where releases or actions repeat the same contract:
 | <a id="ui-at-011"></a>`UI-AT-011` — Failed or uncertain handover | `UI-INT-017`, `UI-INT-070` | `FIXTURE`, `INTEGRATED` | No new Current Vehicle, cross-role evidence or automatic lifecycle continuation after uncertain detach/reset/attach |
 | <a id="ui-at-012"></a>`UI-AT-012` — Platform FOTA and Safe Stop | `UI-INT-018`, `UI-INT-020` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Authorization may precede stop, AosCore owns apply enforcement, readiness precedes explicit resumed driving |
 | <a id="ui-at-013"></a>`UI-AT-013` — Service SOTA while driving | `UI-INT-019` | `FIXTURE`, `INTEGRATED` | QM Service update is not motion-gated, vehicle evidence remains continuous and no motion authority is gained |
-| <a id="ui-at-014"></a>`UI-AT-014` — Common five-stage release template | `UI-INT-021`–`023` | `FIXTURE`, `HUMAN` | Prepared candidate, Test authorization, Test acceptance, Production authorization and Production live operation remain distinct |
+| <a id="ui-at-014"></a>`UI-AT-014` — Common release evidence and authority | `UI-INT-021`–`023` | `FIXTURE`, `HUMAN` | Prepared identity, authorized Test assignment, actual installation/readiness and owner evidence remain distinct; expanded Test acceptance, Production authorization and Production live operation add their own separate decisions, not a required five-card layout |
 | <a id="ui-at-015"></a>`UI-AT-015` — VDP v1-v3 story | `UI-INT-024` | `FIXTURE`, `INTEGRATED` | Parameterized `VDP-v1`, `VDP-v2`, `VDP-v3` instances prove additive capability and Platform ownership |
 | <a id="ui-at-016"></a>`UI-AT-016` — Brake v1-v3 story | `UI-INT-025` | `FIXTURE`, `INTEGRATED` | Parameterized `Brake-v1`, `Brake-v2`, `Brake-v3` instances prove one independent Service's product evolution |
 | <a id="ui-at-017"></a>`UI-AT-017` — Tire v1 story | `UI-INT-026` | `FIXTURE`, `INTEGRATED` | One independent `Tire-v1` release shows the second tenant and distinct lifecycle/result |
@@ -2582,9 +2212,9 @@ environment startup, manufacturing, provisioning and run retirement:
 
 | Case | Main coverage | Required levels | Accepted purpose |
 | --- | --- | --- | --- |
-| <a id="ui-at-044"></a>`UI-AT-044` — Lifecycle-aware environment preflight | `UI-INT-073` | `FIXTURE`, `INTEGRATED`, `HUMAN` | `READY_FOR_M0` starts only the support stack without VM/Cloud requirements; an active run restores only its exact VMs and requires fresh dual-Unit `Online` proof, with no provisioning or stage advance |
-| <a id="ui-at-045"></a>`UI-AT-045` — M0 manufacturing output | `UI-INT-002`, `UI-INT-074` | `FIXTURE`, `INTEGRATED`, `HUMAN` | One explicit action proves the Factory Image and two fresh unprovisioned overlays, shows both as `Manufactured · Awaiting provisioning` and keeps Current Vehicle `Not assigned` |
-| <a id="ui-at-046"></a>`UI-AT-046` — M1 provisioning establishes G0 | `UI-INT-002`, `UI-INT-075` | `FIXTURE`, `INTEGRATED`, `HUMAN` | A separate action proves unique Unit/Node identities, fresh `Online`, exact disjoint role-set membership and then the initial Test source/telematics baseline with VDP and Services absent |
+| <a id="ui-at-044"></a>`UI-AT-044` — Lifecycle-aware environment preflight | `UI-INT-073` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Environment preflight restores only required owned surfaces and the same current Test when present; it does not create/provision a controller, advance a stage, initialize a run journal from layout or require nonexistent Units. Expanded use checks both owned roles |
+| <a id="ui-at-045"></a>`UI-AT-045` — M0 manufacturing output | `UI-INT-002`, `UI-INT-074` | `FIXTURE`, `INTEGRATED`, `HUMAN` | An explicit Create Controller/M0 verifies the selected immutable Factory and one fresh unprovisioned Test overlay; expanded use adds an independent Production overlay. Each is manufactured and awaiting provisioning, with no assigned source or auto-M1 |
+| <a id="ui-at-046"></a>`UI-AT-046` — M1 provisioning establishes G0 | `UI-INT-002`, `UI-INT-075` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Separate Provision reconciles exact Unit/Node/system UID, configured membership and fresh Online/source evidence, with VDP/Services absent; expanded use additionally verifies both disjoint role Sets |
 | <a id="ui-at-047"></a>`UI-AT-047` — R0 terminal reset and recovery | `UI-INT-035`, `UI-INT-059`, `UI-INT-076` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Completed, failed and aborted run instances may reset; success ends at `READY_FOR_M0` with no Current Vehicle and no automatic M0/M1, while any unproven cleanup remains `Reset incomplete · Recovery required` |
 
 Mandatory negatives cover requiring nonexistent Units at `READY_FOR_M0`,

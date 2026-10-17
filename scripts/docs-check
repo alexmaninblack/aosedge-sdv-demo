@@ -574,7 +574,7 @@ def check_reader_traceability(root: Path, documents: dict[Path, str]) -> list[Is
     ).resolve()
     text = documents.get(register, "")
     retired_register_ids = retired_identifiers(text)
-    packages_start = text.find("## Provisional Component Requirement Packages")
+    packages_start = text.find("## Component requirement packages")
     details_start = text.find("## Detailed Package Traceability", packages_start)
     details_end = text.find(BOUNDARY_DECISION_HEADING, details_start)
     if packages_start < 0 or details_start < 0 or details_end < 0:

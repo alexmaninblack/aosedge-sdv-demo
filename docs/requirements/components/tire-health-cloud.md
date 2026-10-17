@@ -36,7 +36,8 @@ integrated Presenter views. Expanded dual-role/two-SP promotion and resource
 proof obligations remain where allocated; they are not first-use prerequisites.
 The [implementation map](../../architecture/current-implementation.md) and
 [baseline](../../qualification/current-baseline.md) own current source/proof.
-Accepted requirement Statements and stable UT IDs below are unchanged.
+Stable requirement/test IDs are retained; the owning clauses below state the
+effective obligations and profile-specific scope.
 
 ## Purpose
 
@@ -161,7 +162,7 @@ readiness remain explicit.
 
 The catalogue also shows the accepted provisional in-vehicle envelope from
 the current [CR-TIRE package](tire-health-service.md#accepted-provisional-resource-envelope):
-600 DMIPS CPU (staging requalification candidate), 16 MiB RAM, 4 MiB persistent
+600 DMIPS CPU (declared native request; full isolation proof separately required), 16 MiB RAM, 4 MiB persistent
 storage, 2 MiB persistent model state, 2 MiB temporary storage, 1024 open files,
 and 16 processes. It separately labels the
 normal summary cadence of at most one per 30 seconds and the offline queue
@@ -262,10 +263,11 @@ imply concurrent vehicle evidence.
 | QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Selected VU/PU reaches the Tire local endpoint without LAN exposure; reported `system_uid` is correlation-only | Unit data stays queued and dashboard shows offline |
 | Native `tire-sp2` publication helper | Function Team 2 release owner | Common session-scoped helper available through a local authenticated boundary; fixed PKCS#12 exists with mode `0600` outside Git and every browser/container/VM/artifact | Sign/publish control disabled with a factual reason |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -456,7 +458,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-010"></a>
 
 - ID: `REQ-TIRE-CLOUD-010`
-- Statement: The dashboard shall label VU and PU evidence as separate exclusive sequential live bindings, including detach/reset/new-generation boundaries, and shall block comparison when overlap, uncertain cleanup or ambiguous binding could imply two simultaneous CARLA vehicles. Telemetry replay is outside the first implementation.
+- Statement: In the expanded Validation/Production profile, the dashboard shall label VU and PU evidence as separate exclusive sequential live bindings, including detach/reset/new-generation boundaries, and shall block comparison when overlap, uncertain cleanup or ambiguous binding could imply two simultaneous CARLA vehicles. Telemetry replay is outside the current profile.
 - Parent: [honest single-source presentation (`SYS-SRC-002`)](../system-requirements-and-traceability.md#sys-src-002)
 - Flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Verification: Unit, Component, Integration, End-to-end
@@ -516,7 +518,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-015"></a>
 
 - ID: `REQ-TIRE-CLOUD-015`
-- Statement: The Tire Function Dashboard shall expose only one demo-only `Start CPU Isolation Proof` control plus its stop action. Its Mac-local backend shall bind only fixed idempotent `START_FIXED_CPU_LOAD`/`STOP_FIXED_CPU_LOAD` commands to the exact current `system_uid`, Tire Service version/artifact digest and `TIRE_CPU_ISOLATION_PROOF_V1`; accept no caller-selected shell, worker count, intensity or duration; and make the command available only through the Tire Service's existing service-initiated outbound route. The Service shall run at most one worker in its own Aos-managed cgroup. Dashboard/backend lease loss or the unconditional 180-second ceiling shall stop the worker; Service/VM restart shall return it to `INACTIVE` without persistence or resume. The control shall be disabled while the selected vehicle is externally offline. Its `INACTIVE`, `STARTING`, `ACTIVE`, `STOPPING`, `AUTO_STOPPED` and `FAILED` states are Function Team facts and shall never be presented as evidence that AosCore enforced the quota. SSH, runtime exec, signals, an administrator bypass, another load container and a project resource manager are forbidden.
+- Statement: The Tire Function Dashboard shall expose only one demo-only `Start CPU Isolation Proof` control plus its stop action. Its Mac-local backend shall bind only fixed idempotent `START_FIXED_CPU_LOAD`/`STOP_FIXED_CPU_LOAD` commands to the exact current `system_uid`, Tire Service release/native instance and `TIRE_CPU_ISOLATION_PROOF_V1`; accept no caller-selected shell, worker count, intensity or duration; and make the command available only through the Tire Service's existing service-initiated outbound route. The Service shall run at most one worker in its own Aos-managed cgroup. Dashboard/backend lease loss or the unconditional 180-second ceiling shall stop the worker; Service/VM restart shall return it to `INACTIVE` without persistence or resume. The control shall be disabled while the selected vehicle is externally offline. Its `INACTIVE`, `STARTING`, `ACTIVE`, `STOPPING`, `AUTO_STOPPED` and `FAILED` states are Function Team facts and shall never be presented as evidence that AosCore enforced the quota. SSH, runtime exec, signals, an administrator bypass, another load container and a project resource manager are forbidden.
 - Parent: [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](../system-requirements-and-traceability.md#sys-res-001)
 - Flow: [AosCore tenant isolation (`AF-TIRE-RES`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-res)
 - Verification: Unit, Component, Contract, Integration
@@ -600,9 +602,9 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 - Adding a future Tire candidate extends the catalogue explicitly; it never
   silently converts v1.0 into an untraceable mutable entry.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/tire-health-cloud.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

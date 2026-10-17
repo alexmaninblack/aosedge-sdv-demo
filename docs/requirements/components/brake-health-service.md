@@ -14,7 +14,6 @@
 - System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
-- Previous accepted package: Version 0.8
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
@@ -36,7 +35,8 @@ integrated Presenter views. Expanded dual-role/two-SP promotion and resource
 proof obligations remain where allocated; they are not first-use prerequisites.
 The [implementation map](../../architecture/current-implementation.md) and
 [baseline](../../qualification/current-baseline.md) own current source/proof.
-Accepted requirement Statements and stable UT IDs below are unchanged.
+Stable requirement/test IDs are retained; the owning clauses below state the
+effective obligations and profile-specific scope.
 
 ## Purpose
 
@@ -107,10 +107,11 @@ rollout affecting OEM Units.
 | Aos runtime and resource enforcement | `CR-AOS` | Service install/start/stop/update state and declared quotas enforced | Service reports unavailable/error; platform and vehicle-data path remain active |
 | Accepted advisory capability | `CR-VDP` and `CR-GATEWAY` | Typed target, permission, payload, freshness, correlation and factual status contract | Service v3 remains not ready for advisory or reports rejection without fallback command |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -274,7 +275,7 @@ readiness remain separate controls.
 <a id="req-bhs-005"></a>
 
 - ID: `REQ-BHS-005`
-- Statement: Service v1 shall implement the accepted [Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md). It consumes its six-path Brake acquisition subset of VDP v1—speed, longitudinal/lateral/vertical acceleration and accelerator/brake pedal positions—and not the otherwise available VDP v1 steering-angle path; deterministically retains the first complete valid frame in each 100-ms source-time bucket at qualified 20/30-Hz input (18 September amendment) while preserving source time/quality/freshness; and detects only `HARD_BRAKING_EPISODE_V1` after speed at least 10 km/h and brake pedal at least 50% for 200 ms. Longitudinal acceleration is evidence, not an alternate trigger. One UUIDv4 event contains 3 seconds PRE, at most 10 seconds ACTIVE and 2 seconds POST, bounded to 15 seconds/150 samples. ACTIVE clears after 500 ms with pedal below 10% or speed below 0.5 km/h; POST retrigger resumes the same event. The Service durably writes RFC-8785/SHA-256 logical chunks of at most ten samples and 64 KiB canonical uncompressed JSON plus exactly one completion before transport eligibility. Its mode-`0700`/`0600` service-local spool is bounded to eight unacknowledged windows or 4 MiB, needs no database runtime, never evicts retained events for a new one and deletes an event only after D4-017 proves durable acknowledgement of every chunk and completion.
+- Statement: Service v1 shall implement the accepted [Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md). It consumes its six-path Brake acquisition subset of VDP v1—speed, longitudinal/lateral/vertical acceleration and accelerator/brake pedal positions—and not the otherwise available VDP v1 steering-angle path; deterministically retains the first complete valid frame in each 100-ms source-time bucket at qualified 20/30-Hz input  while preserving source time/quality/freshness; and detects only `HARD_BRAKING_EPISODE_V1` after speed at least 10 km/h and brake pedal at least 50% for 200 ms. Longitudinal acceleration is evidence, not an alternate trigger. One UUIDv4 event contains 3 seconds PRE, at most 10 seconds ACTIVE and 2 seconds POST, bounded to 15 seconds/150 samples. ACTIVE clears after 500 ms with pedal below 10% or speed below 0.5 km/h; POST retrigger resumes the same event. The Service durably writes RFC-8785/SHA-256 logical chunks of at most ten samples and 64 KiB canonical uncompressed JSON plus exactly one completion before transport eligibility. Its mode-`0700`/`0600` service-local spool is bounded to eight unacknowledged windows or 4 MiB, needs no database runtime, never evicts retained events for a new one and deletes an event only after D4-017 proves durable acknowledgement of every chunk and completion.
 - Rationale: G2 makes acquisition visible and supplies high-detail event evidence for later model work without continuously streaming vehicle telemetry to Cloud.
 - Parent system requirement: [Bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005)
 - Architecture flows: [Service v1 lifecycle (`AF-G2-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-lc), [bounded event acquisition (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt) and [first-service proof (`AF-G2-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-ob)
@@ -535,9 +536,9 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 - Implementation function/test names may change, but accepted obligation IDs
   and their mappings remain stable until deliberately retired.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/brake-health-service.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

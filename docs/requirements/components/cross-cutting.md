@@ -8,7 +8,6 @@
 - Version: 0.4
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
-- Previous accepted package: Version 0.3
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -20,10 +19,11 @@
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 Cloud authority decision: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -36,7 +36,8 @@ scope; accepted design or a source fixture is not live acceptance. Use the
 [implementation map](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [baseline](../../qualification/current-baseline.md) for current source/evidence.
-Stable Statements, test IDs and unclosed obligations below remain unchanged.
+Stable requirement/test IDs and unclosed obligations remain binding; the
+owning clauses state effective installed and expanded scope.
 
 ## Purpose
 
@@ -110,7 +111,7 @@ acceptance over those owner boundaries.
 | Dependency or assumption | Owner | Required state | Failure consequence |
 | --- | --- | --- | --- |
 | Aos Service Manager and IAM permission lifecycle | External AosEdge platform | Per-instance identity, `AOS_SECRET` and registered `kuksa` permissions are authoritative | No SOTA KUKSA credential is issued |
-| Unmodified Eclipse KUKSA | Platform Team integration / upstream Eclipse | Accepted verifier, audience and path-level authorization | KUKSA access fails closed |
+| Factory-owned Eclipse KUKSA | Platform Team integration / upstream Eclipse | Accepted verifier, audience and path-level authorization | KUKSA access fails closed |
 | KUKSA Authorization Compatibility helper | Platform Team / `CMP-KAC` | Separate removable fixed-resource IAM translation; no parallel identity/policy store and no telemetry proxy | Services remain not ready; no static-token fallback |
 | Gateway QM advisory handler | Vehicle Gateway owner | Final deny-by-default typed non-safety boundary | Advisory is rejected with factual status |
 | Native Aos logging path | AosCore/AosCloud | OEM Unit logs and SP1/SP2 Service logs are role-separated; request, status, result, deletion and offline behavior qualified; retention explicitly not exposed when absent from API | Evidence is unavailable or explicitly unqualified |
@@ -485,14 +486,15 @@ repositories and are composed by the cross-package contract/integration gate.
 | Vehicle external connectivity | One control changes only the selected VU/PU external QEMU plane and interrupts its AosCloud/service-backend paths together; the other VM, presenter and in-vehicle plane remain available; normative presentation uses PU | Demo Orchestrator/native-helper fixed QMP operation, AosCloud/AosCore state and Function Team queues/backends | Exact selected-role/netdev proof, local advisory, delayed dashboards, synchronization and same-Unit reconnect |
 | Service resources | AosCore is the sole in-vehicle enforcement/monitor authority; applications declare quotas and own bounded behavior | Aos Service Manager/container runtime/cgroups | Tire CPU cap, authoritative Cloud evidence, concurrent Brake event and healthy platform graph |
 
-## D3 Review Decisions
+<a id="d3-review-decisions"></a>
+## Design allocations
 
-| Decision | Proposed resolution | Review state |
-| --- | --- | --- |
-| `CROSS-D1` — Package nature | `CR-CROSS` is a no-code assurance package, not a deployable component, shared runtime service, identity provider, policy store or product repository | **Confirmed 2026-08-20** |
-| `CROSS-D2` — Test ownership | Reuse owner-package unit obligations rather than duplicate them as `UT-CROSS-*`; keep shared versioned fixtures and orchestration in `aosedge-sdv-demo`; prove composition through contract/integration gates and pass their evidence to `CR-E2E` without duplicating the negative matrix | **Confirmed 2026-08-20** |
-| `CROSS-D3` — Connectivity allocation | The only deliberate first-demo fault is one atomic loss of Production Unit external connectivity: Unit-to-AosCloud and installed service-to-functional-backend paths are interrupted/restored together by one stateful control; presenter-to-AosCloud and simulated in-vehicle links remain available; separate per-channel switches are prohibited | **Confirmed 2026-08-20** |
-| `CROSS-D4` — Resource allocation | Use one prepared bounded CPU load inside the actual Tire instance; AosCore/Service Manager alone enforces and monitors its approved quota; Brake is the healthy control tenant. The Dashboard only presents authoritative state. Mac-local backends and aggregate multi-service-per-provider quotas are outside the claim; memory/storage/PID/network limits remain qualification evidence | **Confirmed 2026-08-20** |
+| Decision | Effective allocation |
+| --- | --- |
+| `CROSS-D1` — Package nature | `CR-CROSS` is a no-code assurance package, not a deployable component, shared runtime service, identity provider, policy store or product repository |
+| `CROSS-D2` — Test ownership | Reuse owner-package unit obligations rather than duplicate them as `UT-CROSS-*`; keep shared versioned fixtures and orchestration in `aosedge-sdv-demo`; prove composition through contract/integration gates and pass their evidence to `CR-E2E` without duplicating the negative matrix |
+| `CROSS-D3` — Connectivity allocation | The connectivity exercise is one atomic loss of the selected Test external connectivity (expanded use: Production Unit): Unit-to-AosCloud and installed service-to-functional-backend paths are interrupted/restored together by one stateful control; presenter-to-AosCloud and simulated in-vehicle links remain available; separate per-channel switches are prohibited |
+| `CROSS-D4` — Resource allocation | Use one prepared bounded CPU load inside the actual Tire instance; AosCore/Service Manager alone enforces and monitors its approved quota; Brake is the healthy control tenant. The Dashboard only presents authoritative state. Mac-local backends and aggregate multi-service-per-provider quotas are outside the claim; memory/storage/PID/network limits remain qualification evidence |
 
 ## Open D4 Gates
 
@@ -539,9 +541,9 @@ current implementation and full-qualification limits follow the shared status ma
 - This package may reference owner tests but never silently reassign their
   implementation ownership.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/cross-cutting.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

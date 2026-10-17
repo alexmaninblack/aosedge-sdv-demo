@@ -91,8 +91,7 @@ unverified or mismatched workload receives no token.
 ### Use local, short-lived and narrowly scoped tokens
 
 For KUKSA, a platform-owned policy adapter issues short-lived tokens from a
-protected per-device/Unit signer. KUKSA remains a generic unmodified resource
-server that trusts the configured public verifier and enforces only claims
+protected per-device/Unit signer. KUKSA remains a generic resource server with documented compatibility patches that trusts the configured public verifier and enforces only claims
 supported by the pinned implementation.
 
 The token profile shall include, where supported by the resource server:

@@ -137,7 +137,8 @@ Files:
 This accepted design contract authorizes no repository creation, backend
 implementation, signing, Cloud call, Unit mutation or deployment by itself.
 
-## Native product provenance — 2026-09-11
+<a id="native-product-provenance--2026-09-11"></a>
+## Current and legacy product provenance
 
 For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
 defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.

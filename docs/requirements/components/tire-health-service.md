@@ -9,7 +9,6 @@
 - Version: 0.7
 - Prepared: 2026-08-21
 - Accepted: 2026-08-31
-- Previous accepted package: Version 0.5
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -38,7 +37,8 @@ integrated Presenter views. Expanded dual-role/two-SP promotion and resource
 proof obligations remain where allocated; they are not first-use prerequisites.
 The [implementation map](../../architecture/current-implementation.md) and
 [baseline](../../qualification/current-baseline.md) own current source/proof.
-Accepted requirement Statements and stable UT IDs below are unchanged.
+Stable requirement/test IDs are retained; the owning clauses below state the
+effective obligations and profile-specific scope.
 
 ## Purpose
 
@@ -128,14 +128,16 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 | Aos runtime and resource enforcement | `CR-AOS` | SOTA install/start/stop/uninstall/readiness and declared quotas enforced | Service reports unavailable/error; VDP and Brake Health remain active |
 | One source and two Unit roles | [`CR-DEMO`](demo-orchestration.md) | Exact sequential live VU attach/run/detach, deterministic reset/new generation and PU attach/run/detach correlation | Evidence is incomplete and cannot support promotion |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
-## Accepted Provisional Resource Envelope
+<a id="accepted-provisional-resource-envelope"></a>
+## Declared native resource envelope
 
 Tire Health deliberately uses a different resource profile from Brake Health.
 Brake Health requires burst-oriented event-window buffering and processing;
@@ -143,13 +145,14 @@ Tire Health performs a lower-rate continuous incremental estimate, retains a
 slightly larger persistent model state, and never stores or transfers a normal
 raw-telemetry stream.
 
-The current Tire Health V1 candidate uses the provisional envelope below.
-The 3 October D4-023 amendment supersedes the original 150-DMIPS value;
-600 DMIPS is a requalification candidate, not a production acceptance claim.
+The selected Tire V1 requests the envelope below through its signed native
+package. It is not a completed quota-isolation or production acceptance verdict;
+the full D4-023 qualification profile must bind the same quota and technical
+baseline.
 
 | Resource | Tire Health v1.0 | Design intent |
 | --- | ---: | --- |
-| CPU | 600 DMIPS | Authorized 3 October staging requalification envelope; not a completed isolation verdict |
+| CPU | 600 DMIPS | Declared request; exact native mapping/headroom and full isolation proof remain required |
 | RAM | 16 MiB | Small estimator and transport runtime; must be confirmed with the selected implementation |
 | Persistent storage | 4 MiB | Bounded functional outbox and supporting database metadata |
 | Persistent model state | 2 MiB | Versioned cumulative condition state |
@@ -503,9 +506,9 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 - Adding a future Tire service release does not rewrite v1.0; it creates a new
   immutable candidate with explicit compatibility and state-migration rules.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/tire-health-service.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

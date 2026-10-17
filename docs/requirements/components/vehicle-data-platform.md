@@ -15,7 +15,6 @@
 - System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
-- Previous accepted package: Version 0.8, design-reviewed on 2026-08-28
 - Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
 - Accepted D4 VISS input: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
@@ -75,15 +74,15 @@ authorized deployment remain lifecycle decisions. The Provider's trusted
 platform configuration is not reusable by SOTA services and is not presented
 as the generic workload-authorization model.
 
-The accepted requirements retain the original unmodified-KUKSA design target.
-The current implementation uses the explicitly documented
+The accepted KUKSA VAL boundary uses the explicitly documented
 [KUKSA compatibility patches](https://github.com/alexmaninblack/aos-vehicle-platform/blob/main/authorization/aos-kuksa-compat/README.md);
 do not describe these retained binaries as stock upstream builds.
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -92,7 +91,7 @@ does not claim full acceptance.
 Owned mapping, freshness, advisory validation, readiness, retry and recovery
 decisions shall be testable without
 CARLA, QEMU, AosCloud or a real KUKSA Databroker. VISS, KUKSA, component
-runtime, persistence and clocks are deterministic test seams. The unmodified
+runtime, persistence and clocks are deterministic test seams. The Factory-owned
 Eclipse KUKSA executable and the separate authorization helper are not
 unit-tested by this package.
 
@@ -139,8 +138,8 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 
 The Platform Team shall build each VDP release as an immutable, versioned and
 digest-addressed component FOTA artifact targeting only the accepted
-provider-specific runtime. The exact accepted bytes shall move from Validation
-to Production without rebuild. On both Units, the factory-installed OEM
+provider-specific runtime. Expanded Validation-to-Production promotion shall retain identical accepted
+bytes without rebuild. On each selected controller, the factory-installed OEM
 Component Runtime inside AosCore Service Manager shall apply the Platform FOTA
 only after Gateway samples fresh at acquisition form the accepted 12-sample
 stability history and the latest complete sample is fresh at gate opening and
@@ -332,7 +331,8 @@ The Platform Team shall deliver and qualify the inbound and outbound Provider
 as trusted OEM platform integration within the VDP component. Its KUKSA-side
 connection configuration shall be bounded to the Provider's accepted data and
 advisory contract, isolated from SOTA-service bootstrap material and validated
-with the exact VDP artifact on both Unit roles. The first demo shall not add a
+with the exact VDP artifact on the installed Test and on each expanded Unit
+role when that profile is qualified. The first demo shall not add a
 dynamic Provider IAM/JWT exchange, per-component attestation or a claim that a
 malicious or substituted Provider is contained. A Service JWT shall never
 grant Provider publication authority.
@@ -412,20 +412,18 @@ required integration evidence.
 
 ## D3 Review Closure and Product Acceptance
 
-Version 0.7 and its ten requirement obligations were design-reviewed on
-2026-08-19. Version 0.8 was design-reviewed on 2026-08-28. It moves Service
-authorization and KUKSA trust out of VDP, retires dynamic Provider IAM/JWT for
-the first demo and adds the trusted OEM Provider integration obligation
-`REQ-VDP-011`. Version 0.9, accepted on 2026-08-28, clarifies native journal
-and AosEdge log delivery, removes a false tenant-quota expectation and assigns
-A/B working storage to the OEM Component Runtime rather than to VDP. Version
-0.9 replaces Version 0.8 as the current architectural requirement baseline.
+The accepted package separates VDP Provider integration from KUKSA trust and
+Service authorization (`CR-KAC`). VDP emits native journal evidence retrieved
+through AosEdge log delivery; the OEM Component Runtime, not the VDP payload,
+owns A/B working storage and Safe Stop enforcement. The trusted OEM Provider
+assumption and `REQ-VDP-011` remain explicit; no dynamic Provider IAM exchange,
+generic tenant-quota or malicious-Provider containment claim is introduced.
 
-Product acceptance remains open until the gates below are resolved, D4
-contracts are executable, required unit/component/contract/integration tests
-are green, and identical accepted bytes complete Validation-to-Production
-promotion. This closure does not authorize implementation, image rebuild,
-signing, Cloud upload, VM restart, provisioning or Unit mutation.
+Full product acceptance requires executable owner contracts, the required
+unit/component/contract/integration matrix and the remaining gates below.
+Expanded promotion additionally proves identical accepted bytes across its two
+roles. Accepted design is not evidence of a successful image rebuild, live
+deployment or exhaustive qualification.
 
 ## Open Design and Qualification Gates
 

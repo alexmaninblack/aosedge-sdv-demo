@@ -4,8 +4,7 @@
 # Architecture and Repository Ownership
 
 The accepted boundary is [High-Level Architecture 1.8](high-level-architecture.md),
-with later Test-only, native-input, signing and lifecycle amendments. HLA 1.4
-is not the current baseline. The [implemented architecture](current-implementation.md)
+including installed Test, native-input, signing and lifecycle boundaries. The [implemented architecture](current-implementation.md)
 and [current release evidence](../qualification/current-baseline.md) distinguish
 expanded design obligations from the installed first-demo scope.
 
@@ -85,8 +84,8 @@ and pre-integration candidate descriptions do not describe the current state.
 - VISS listens only on the macOS loopback path used by the VM bridge.
 - The provider verifies TLS and receives credentials through systemd, not its
   payload or command line.
-- Upstream Eclipse KUKSA remains unchanged as the in-vehicle data interface
-  exposed to services, is factory-installed outside the VDP FOTA payload, and
+- The KUKSA VAL interface remains the in-vehicle data boundary exposed to
+  services (with documented compatibility/source-time patches), is factory-installed outside the VDP FOTA payload, and
   verifies only the Platform Team's configured current-release public key.
 - Aos Service Manager and IAM own SOTA instance identity, `AOS_SECRET` and
   registered permissions. The separately packaged current-release helper

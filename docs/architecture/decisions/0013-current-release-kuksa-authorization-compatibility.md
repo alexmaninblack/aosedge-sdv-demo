@@ -48,7 +48,7 @@ The permanent trusted-platform boundary shall:
 - expose that credential through a platform-controlled mechanism;
 - renew or replace it without allowing the Service to select its own
   authority; and
-- leave unmodified Eclipse KUKSA as the final enforcement point for supported
+- leave Factory-owned Eclipse KUKSA as the final enforcement point for supported
   paths and operations.
 
 The target HLA shall not predict the future native AosCore API, credential

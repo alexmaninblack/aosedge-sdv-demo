@@ -76,10 +76,11 @@ or safety-critical authority to either service.
 | Vehicle Data Platform client | Platform Team | TLS VISS contract and, for Set, accepted advisory identity/policy | Unauthorized or malformed request fails closed |
 | Engineering Dashboard | Demo Engineering Tooling | Independent read-only VISS subscription | Display becomes disconnected/stale without changing Gateway state |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -509,18 +510,13 @@ profile before the Platform Team selects a narrower service-facing contract.
 
 ## D3 Review Closure and Product Acceptance
 
-The component boundary, fifteen requirement obligations, interface ownership,
-verification levels and stable `UT-GATEWAY-*` obligations were design-reviewed
-on 2026-08-19 and are accepted as input to D4. This closes the `CR-GATEWAY` D3
-package; it does not claim that the target advisory path, complete manifest
-coverage or every transition behavior is implemented.
-
-Product acceptance remains open until the remaining D4 work freezes the
-source-handover/VISS/control-mode/advisory/status contracts, explicit
-source-loss and VU/PU binding are qualified, the typed advisory and factual
-dashboard extension pass their complete negative matrix, all `UT-*`
-obligations are green, and live CARLA plus Validation-Unit integration
-evidence is retained.
+The accepted package defines fifteen requirements, stable unit-test IDs and
+Gateway interface/authority boundaries. Full acceptance requires complete
+hardware-manifest accounting, explicit source-loss behavior, control-context
+and typed advisory/status negative matrices, required unit tests and live
+CARLA/controller evidence. Expanded use additionally qualifies sequential
+VU/PU source binding. Existing positive Test results do not close these wider
+obligations or imply that every transition is implemented.
 
 ## Open Issues
 

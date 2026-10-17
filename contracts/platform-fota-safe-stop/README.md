@@ -54,7 +54,8 @@ removal waiting, while first install exposes no active capability.
 
 <a id="native-stop-completion"></a>
 
-### Native stop-completion correction — accepted 2026-09-06
+<a id="native-stop-completion-correction--accepted-2026-09-06"></a>
+### Native stop-completion boundary
 
 The operator approved correcting the mismatch with the pinned AosCore launch
 pool: `StopInstance` must not return success until the provider is actually
@@ -110,7 +111,8 @@ revalidates fresh evidence; no cached frame or durable sample creates authority.
 The earlier temporary `.29`/`.31` probes and asymmetric exception are Git
 history, not another active timing profile.
 
-## Queued cold-boot recovery correction — accepted 2026-09-10
+<a id="queued-cold-boot-recovery-correction--accepted-2026-09-10"></a>
+## Queued cold-boot recovery boundary
 
 For a waiting transaction with a validated committed predecessor, recovery
 checks provider health and, when inactive, starts and rechecks that provider

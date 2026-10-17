@@ -5,30 +5,28 @@
 
 Implementation and qualification: [protocol status](../implementation-status.md).
 
-## Authorized source-cadence amendment — 18 September 2026
+## Acquisition and freshness
 
-The accepted versioned-service work packet supersedes the historical 30-Hz /
-every-third-valid-frame assumption with the first actual complete valid frame
-in each 100-ms source-time bucket (`floor(sourceEpochMs / 100)`). At both
-20-Hz and 30-Hz input this retains 10 samples per second. Validation happens
-before selection; invalid, duplicate or reordered inputs cannot fill buckets.
-An empty bucket stays a gap. No interpolation or timestamp rewriting occurs.
-Trigger/clear timing, 3/10/2-second windows, 150 samples, spool/receipt bounds
-and legacy/native logical message schemas are unchanged. The explicit
-[machine-readable amendment](source-time-retention-amendment.v1.json) overrides
-only `input.sourceCadenceHz` and `input.selection` in the retained base profile;
-the original profile and golden message files are preserved as baseline evidence.
+At qualified 20/30-Hz input, retain the first complete valid frame in each
+100-ms source-time bucket, at most 10 Hz. An empty bucket remains a gap; no
+interpolation, duplicate filling or timestamp rewriting. The
+[executable cadence record](source-time-retention-amendment.v1.json) declares
+this selection; retained base/golden files preserve their exact fixture bytes,
+not an alternative every-third-frame runtime algorithm.
 
+The accepted single-Mac Brake V1 input source-age/stream-idle limit is 5000 ms
+through service ingress, raw-window messages (both provenance revisions) and
+backend validation. Missing, future, mixed-time or physically invalid samples
+remain invalid. PRE/ACTIVE/POST durations, trigger hold/clear rules, resource
+bounds, authorization lease, V2/V3 model timing and advisory expiry are
+independent and unchanged. This is a validation budget, not a new payload shape.
 
-## Authorized demo freshness amendment — 15 September 2026
+Current product messages use the explicit v2 provenance schemas; legacy queues
+retain their original discriminator and bytes. The final provenance section
+defines that wire boundary rather than overriding the acquisition rules.
 
-For the single-Mac Brake V1 real-data trial, source age and stream idle use
-5000 ms, replacing the earlier 250-ms budget. Service ingress, V1 validation,
-raw-window schemas (both provenance revisions) and backend validation use
-the same bound. Missing, future, mixed-timestamp and physically invalid data
-remain invalid; no values/timestamps are synthesized. Capture hold/durations,
-authorization lease, V2/V3 model timing and advisory expiry are unchanged.
-This is a validation-budget change, not a payload-shape/version change.
+<a id="authorized-source-cadence-amendment--18-september-2026"></a>
+<a id="authorized-demo-freshness-amendment--15-september-2026"></a>
 
 - Decision: [`D4-016`](../../docs/requirements/d4-decision-register.md#d4-016)
 - Accepted subdecisions: D4-016.1 and D4-016.2
@@ -87,7 +85,8 @@ R0 removes remaining spool state with its disposable Unit overlay.
 No SQLite, external database or additional persistence runtime is required by
 this contract.
 
-## Native product provenance — 2026-09-11
+<a id="native-product-provenance--2026-09-11"></a>
+## Current and legacy product provenance
 
 For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
 defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.

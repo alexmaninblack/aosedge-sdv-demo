@@ -15,7 +15,6 @@
 - System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
-- Previous accepted package: Version 0.4
 - Current image: [controller input lock](../../../workspace/inputs/controller-images.lock.json)
 - Implementation and proof: [current map](../../architecture/current-implementation.md)
   and [baseline](../../qualification/current-baseline.md); old image numbers do
@@ -41,7 +40,7 @@ from the accepted OEM Demo Factory Image before provisioning.
 
 | Question | Answer |
 | --- | --- |
-| What this package owns | Reproducible pre-SOP composition, the full bootable Factory Image, its immutable evidence, clean identity/key-free content, one stock Aos IAM configuration with `enablePermissionsHandler: true`, unmodified KUKSA, the separately packaged removable `CMP-KAC` helper and non-secret protected-signer/verifier wiring, and the provider-specific empty-slot runtime including its Platform FOTA Safe Stop gate |
+| What this package owns | Reproducible pre-SOP composition, the full bootable Factory Image, its immutable evidence, clean identity/key-free content, one stock Aos IAM configuration with `enablePermissionsHandler: true`, Factory-owned KUKSA, the separately packaged removable `CMP-KAC` helper and non-secret protected-signer/verifier wiring, and the provider-specific empty-slot runtime including its Platform FOTA Safe Stop gate |
 | What this package does not own | Cloud provisioning transactions, runtime Service authority, helper request/JWT behavior, Vehicle Data Platform payload behavior, functional SOTA services, demo-stage orchestration or production storage selection |
 | Intended result | Two fresh unprovisioned Domain Controller deployments can be created from one accepted image and later receive the Vehicle Data Platform Component without another rootfs update |
 | Accountable lifecycle owner | Platform Team; pre-SOP factory/build lifecycle and later platform/rootfs FOTA lifecycle when explicitly required |
@@ -55,7 +54,7 @@ lifecycle object.
 
 | Artifact | Contents | Normal lifecycle | Installed through | Role in this demo |
 | --- | --- | --- | --- | --- |
-| OEM Demo Factory Image | Complete bootable, unprovisioned VM disk with AosCore, one IAM configuration containing `enablePermissionsHandler: true`, unmodified KUKSA, separately packaged removable `CMP-KAC`, dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and public-verifier preparation wiring, the empty-slot runtime with the accepted read-only Gateway vehicle-state provider and Platform FOTA Safe Stop policy, and D4-022.1 two-plane networking (`vehicle0` without default route/Cloud DNS plus `external0` owning default route/DNS); no pre-populated service permission, `AOS_SECRET`, per-Unit key, shared static verifier or token. The handler, Safe Stop policy and network-plane settings are independent of provisioning state. | Pre-SOP manufacturing | Fresh read-only base plus a new copy-on-write overlay | Required source for M0; exact accepted bytes come from the controller input lock |
+| OEM Demo Factory Image | Complete bootable, unprovisioned VM disk with AosCore, one IAM configuration containing `enablePermissionsHandler: true`, Factory-owned KUKSA, separately packaged removable `CMP-KAC`, dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and public-verifier preparation wiring, the empty-slot runtime with the accepted read-only Gateway vehicle-state provider and Platform FOTA Safe Stop policy, and D4-022.1 two-plane networking (`vehicle0` without default route/Cloud DNS plus `external0` owning default route/DNS); no pre-populated service permission, `AOS_SECRET`, per-Unit key, shared static verifier or token. The handler, Safe Stop policy and network-plane settings are independent of provisioning state. | Pre-SOP manufacturing | Fresh read-only base plus a new copy-on-write overlay | Required source for M0; exact accepted bytes come from the controller input lock |
 | Rootfs platform-update envelope | Complete rootfs payload containing a selected platform revision | Post-SOP platform/rootfs FOTA | The factory-installed AosVM rootfs A/B runtime | Optional retrofit or later platform maintenance; not used to add the initial runtime in the normal M0-M1 flow |
 | Vehicle Data Platform Component | Independently versioned provider payload and its component metadata | Post-SOP component FOTA | The provider-specific `systemd-slot-component` A/B runtime | Required at G1 and later |
 
@@ -110,10 +109,11 @@ replace its digest with a newly computed one or rewrite a completed receipt.
 | Aos IAM permission handling | AosCore plus OEM factory integration | `enablePermissionsHandler: true` in the effective shared configuration for both IAM modes; no pre-populated permission, `AOS_SECRET` or project-owned service secret store | Missing/false setting, baked permission/secret state, or failed stock `RegisterInstance`/`GetPermissions` behavior rejects the factory candidate |
 | Signing-key facility | Aos IAM/certificate module plus PKCS#11 integration | Dedicated non-secret `kuksa-jwt` module/token/PIN and `aos-kuksa-verifier-prepare.service` wiring in the image; provisioning establishes the unique per-Unit key and preparation atomically publishes only `/run/aos-kuksa-verifier/kuksa-jwt-public.pem` | `CMP-KAC` and KUKSA readiness fail closed; KUKSA always receives the exact `--jwt-public-key` argument and no shared verifier, file-key fallback or baked key is permitted |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -498,7 +498,7 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
-| Implemented Factory | Factory41 includes native IAM permissions, KAC/signer/verifier integration, empty-slot runtime/Safe Stop, native boot/storage corrections, VLAN allocation, original KUKSA source timestamps and public-input recovery. .21 is historical evidence, not the selected image. |
+| Implemented Factory | The selected image includes native IAM permissions, KAC/signer/verifier integration, empty-slot runtime/Safe Stop, boot/storage recovery, VLAN allocation, original KUKSA source timestamps and public-input recovery. Exact bytes come from the controller lock and current baseline. |
 | Remaining acceptance | The immutable Factory build manifest retains its original result. Separate current runtime/native Setup evidence is selected by the baseline; cold externalOFF, nonempty-outbox power loss and independent reproduction remain unqualified. |
 | Security limits | Retained patches are explicit, not a stock-mainline claim. Scoped AVC receipts do not substitute for all security/negative cases. |
 | Production storage | Nested ext4 is the accepted demo backend, not a production vehicle storage architecture. Production .31 is retained unchanged. |
@@ -514,6 +514,6 @@ Stable Statements and UT obligations above retain their accepted meaning.
 [D4-001](../d4-decision-register.md#d4-001) requires immutable release identity,
 no post-build patching and controlled canonical same-source rebuild equivalence.
 Current source/image selection and scoped runtime proof come from their linked
-authorities, not `.11`/`.21` review chronology. Independent reproducibility and
+authorities, not prior image examples. Independent reproducibility and
 all remaining negative cases are not waived by this consolidation. No build,
 signature, publication or VM/Unit mutation is authorized here.

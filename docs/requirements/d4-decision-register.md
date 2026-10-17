@@ -8,66 +8,49 @@
 - Prepared: 2026-08-22
 - Reading baseline: HLA 1.8, Scenario 2.1, Flows/System/Register 2.2 and
   current component packages; installed and expanded profiles are distinguished
-- Editorial consolidation: 2026-10-16; stable decisions and unclosed proof retained
+- Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
 <a id="current-implementation-view--24-september-2026"></a>
 ## Current implementation and scope
 
 Current package selection and qualification are owned by the
-[current baseline](../qualification/current-baseline.md), reviewed 15 October 2026.
+[current baseline](../qualification/current-baseline.md).
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
-the accepted requirements, amendments, protocols, component owners and proof.
-Earlier allocation/implementation statuses in this design are dated review
-history, not a claim that today's services, permissions or UI are absent.
+the effective requirements, protocols, component owners and proof.
+Decision state and implementation proof are separate: an accepted design does
+not close its remaining expanded-profile or negative qualification cases.
 Full acceptance still requires the explicitly outstanding tests; this view
 does not change stable IDs or grant deployment authority.
 
-## Lifecycle and service-input compatibility
+## Design profiles and contract ownership
 
-[ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
-defines non-destructive Stop/Start, removal of Park/Resume and guarded ignition
-recovery. Current proof/exclusions belong to the baseline. The
-[protocol map](../../contracts/implementation-status.md) distinguishes current
-contracts, legacy decoders and outstanding design/verification scope.
+Installed use has one Test, one OEM and one associated SP, independent Brake
+and Tire identities, serialized protected mutations and integrated Presenter
+cards/dialogs. Stop/Start preserves that Test; Finish retires only its owned
+identity/data. Controller ignition is guarded same-identity recovery, not host
+sleep/wake or operator Park/Resume.
+
+Expanded-profile decisions separately require Validation/Production promotion,
+independent SP organizations, cross-provider/resource isolation and the complete
+qualification dossier. Their obligations remain binding for that scope and
+must not be reported as completed by a single-Test run.
+
+Current product provenance uses immutable package release and native Aos
+instance identity. Public metadata v2 carries only Unit/role/VDP compatibility;
+credentials live in a bootstrap-private 0700 session on the native 1777 tmpfs,
+with a regular 0400 token. No final OCI digest, fixed shared token leaf or
+service-discovered exact VDP profile gates analytics. Presenter binds exact
+installed profiles through native Cloud plus verified package evidence;
+services validate actual local inputs independently of Cloud.
+
+Legacy message validators remain strict for persisted records. The
+[protocol map](../../contracts/implementation-status.md) identifies exact wire
+owners and retained machine-profile differences; schemas are not rewritten by
+this editorial consolidation.
 
 <a id="native-service-inputs-replacement--2026-09-11"></a>
-
-[ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
-is accepted. The [runtime-input contract](../architecture/demo-control-service-inputs.md)
-defines the effective replacement mapping for retained legacy input shapes:
-
-| Earlier obligation | Accepted replacement |
-| --- | --- |
-| D4-027.2 fixed token leaf in owner-only tmpfs | Native 1777 per-container tmpfs; bootstrap-created 0700 session; regular 0400 token; dynamic path-only environment |
-| D4-016 product service/artifact provenance | Package release and native identity; new versioned messages without mandatory final OCI digest |
-| D4-016 modelArtifactSha256 alias of service artifact | Remove this mandatory alias too; retain modelConfigSha256 and existing model/state semantics |
-| D4-014/D4-017/D4-024 product log/query/evidence correlation | Version-aware old/new decoding; optional sourced artifact evidence is not a startup or readiness dependency |
-| D4-023 Tire fixed-load command binding | Current Unit, service, version and instance; command identity, authorization, fixed profile, leases and 180-second stop bound unchanged |
-
-Old schemaVersion 1 product records remain explicitly legacy and readable.
-Do not weaken their validator in place or relabel stored provenance. Freeze
-new wire discriminators and migrate producers/backends together before a new
-service publication. Unrelated quotas, algorithms, model hashes, KAC wire
-protocol, IAM decisions and audience flow are not redefined by this table.
-The two input shapes and credential placement are executable under
-[service-runtime-inputs](../../contracts/service-runtime-inputs/README.md).
-
-## Studio Test scope amendment — 2026-09-09
-
-[UI-STUDIO-026](../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
-is the accepted current Test interaction amendment and includes the explicit
-replacement map. For this milestone, it supersedes conflicting two-vehicle,
-dedicated-demo-Fleet, terminal-only, mandatory-approval, independent-concurrent
-writer and routine-history-retention provisions below. Keep original stable IDs
-and their unchanged authority/product/safety obligations; Production remains
-future scope rather than a prerequisite for Test. D4-012.1 and D4-026's earlier
-presentation/order provisions must not be applied as simultaneous requirements
-against that amendment. Both backend handlers implement Test context and cleanup. The retained Tire
-legacy executable profile/preview schema still needs synchronization; see the
-[protocol map](../../contracts/implementation-status.md). This scoped
-amendment does not authorize implementation, live calls or deletion.
-
+<a id="studio-test-scope-amendment--2026-09-09"></a>
 
 ## Purpose
 
@@ -125,11 +108,12 @@ Research inside a later workstream may proceed early, but a decision may not
 assume an unresolved upstream contract. Parallel packages shall reference the
 same decision ID rather than create local variants.
 
-## W1 — Factory, Vehicle and Source Contracts
+<a id="w1--factory-vehicle-and-source-contracts"></a>
+## Factory, Vehicle and Source Contracts
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
-| <a id="d4-001"></a>`D4-001` — Factory artifact acceptance | Freeze reproducibility semantics, required Factory Image contents/manifest, immutable release identity and whether `.11` can qualify unchanged | Platform Team / System Architecture | `CR-FACTORY`, `CR-DEMO`, `CR-E2E` | `DECIDED` |
+| <a id="d4-001"></a>`D4-001` — Factory artifact acceptance | Freeze reproducibility semantics, required Factory Image contents/manifest, immutable release identity and exact source/input qualification | Platform Team / System Architecture | `CR-FACTORY`, `CR-DEMO`, `CR-E2E` | `DECIDED` |
 | <a id="d4-002"></a>`D4-002` — Vehicle hardware capability profile | Freeze the selected CARLA revision/blueprint, installed signals/sensors/actuators, provenance and complete Simulator↔Gateway accounting manifest | Vehicle Simulation + Gateway | `CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-VDP` | `DECIDED` |
 | <a id="d4-003"></a>`D4-003` — Deterministic stimuli and calibration | Freeze Brake obstacle/event stimulus, Tire pre-aged/accelerated stimulus, hidden qualification truth, repeat count and tolerances | Vehicle Simulation + both Function Teams | `CR-VEHICLE-SIM`, `CR-BHS`, `CR-TIRE`, `CR-E2E` | `RESEARCHING` |
 | <a id="d4-004"></a>`D4-004` — Drive-mode and scenario context | Freeze scenario/manual/autopilot transitions, obstacle ownership, reverse/reset behavior, mode/context/status VSS paths and discontinuity semantics | Vehicle Simulation + Gateway | `CR-VEHICLE-SIM`, `CR-GATEWAY`, Engineering Dashboard | `DECIDED` |
@@ -146,9 +130,10 @@ same decision ID rather than create local variants.
 
 The accepted Factory Image contract is:
 
-1. Candidate `.11` remains immutable engineering evidence and the input to an
-   incremental successor build; it is not accepted unchanged as the final OEM
-   Demo Factory Image.
+1. The accepted Factory input is selected by the controller lock. Completed
+   artifacts and receipts are immutable; a new source/image requires its own
+   identity and evidence and cannot inherit an older candidate's acceptance.
+
 2. The existing provider-specific empty-slot runtime is the accepted pre-SOP
    runtime model. A generic multi-provider runtime is not required by HLA 1.4
    and is not a reason to rebuild the image.
@@ -180,31 +165,17 @@ The accepted Factory Image contract is:
 8. The actual successor version and digest are implementation/qualification
    outputs. They are not invented by this D4 decision.
 
-Consequences:
+#### Image selection and proof
 
-- preserve the isolated Yocto builder and incremental caches;
-- do not modify, sign, upload, provision from or relabel `.11` as accepted;
-- do not start the successor build until `D4-027` and the required `D4-010`
-  signer/publication portions are decided;
-- that D4 decision prerequisite is now satisfied by D4-027, D4-010.1 and
-  D4-010.3, but the decision does not itself authorize the successor build;
-- qualify two fresh overlays, clean first boot, distinct identities, empty-slot
-  health and unchanged backing-image digest against the successor candidate;
-- retain production provider-store selection as deferred `D4-X03` work.
-
-#### Factory selection and qualification
-
-This decision defines image acceptance, not a permanent `.21` selector. The
-[controller input lock](../../workspace/inputs/controller-images.lock.json)
-selects exact prebuilt/rebuilt bytes independently. The
-[baseline](../qualification/current-baseline.md) maps the delivered image to
-current evidence. Earlier `.11`/`.21` candidates are not current build inputs
-merely because they once closed a gate. The controlled same-source canonical
-reproducibility proof remains a separate obligation; editorial/source changes
-do not authorize rebuilding or relabeling an accepted image.
-
-Exact former `.21` provenance is retained in the
-[decision history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/1a0d66f4b340bfc7b487062f7bb316623ad86af8/docs/requirements/d4-decision-register.md).
+The [controller input lock](../../workspace/inputs/controller-images.lock.json)
+selects exact prebuilt/rebuilt bytes. Factory identity and warm Builder caches
+remain immutable inputs. A new Factory requires independent empty-slot, clean
+boot, identity/secret-negative, backing-image preservation and controlled
+same-source reproducibility evidence. Expanded use additionally proves two
+independent role overlays. Editorial changes authorize no image build or
+relabeling. Current evidence belongs to the
+[baseline](../qualification/current-baseline.md); production provider-store
+selection remains the deferred D4-X03 obligation.
 
 ### D4-002 Decision Record — Vehicle Hardware Capability Profile
 
@@ -324,8 +295,6 @@ evidence.
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-21
-- Controller/Gateway handoff refinement accepted: 2026-08-29
-- Cross-platform macOS/Linux transport correction accepted: 2026-08-30
 - Owners: Vehicle Simulation / Vehicle Gateway
 - Canonical contract:
   [Simulator Control and Context Contract 1.1.1](../../contracts/simulator-control-context/simulator-control-context.v1.json)
@@ -389,14 +358,11 @@ the requested mode or newly requested context.
 
 ### D4-005 Decision Record — Exclusive Live-Source Assignment
 
-- Local CLI demo amendment, accepted by the operator on 2026-09-05:
-  [defer per-Unit VISS mTLS](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
-  Both logical demo VM roles may use the explicit server-authenticated local
-  profile. CARLA does not identify Cloud Units; the Orchestrator must still
-  enforce zero-or-one connected VM and confirmed detach/reset. The strict
-  authenticated-peer contract remains a future target, not a prerequisite or
-  qualification claim for this local exception. AosCloud/IAM authentication
-  and TLS server verification are unchanged.
+The installed Test workflow requires strict selected-Unit mTLS and distinct
+read-only observer/safety roles. Server-authenticated-only engineering fixtures
+are not an installed trust mode or evidence of mTLS qualification. The
+expanded two-role handover below retains the same authenticated-peer and
+exclusive-source requirements.
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-21
@@ -404,7 +370,7 @@ the requested mode or newly requested context.
 - Canonical contract:
   [Exclusive Live-Source Assignment 1.0.0](../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 
-The accepted contract deliberately separates two views:
+The expanded Validation/Production contract separates two views:
 
 1. The audience sees a **Test Vehicle** and a **Production Vehicle**. `Test
    Vehicle` is a Representation Layer alias for the technical **Validation
@@ -414,7 +380,7 @@ The accepted contract deliberately separates two views:
    Production Unit Domain Controllers. Exactly one is the `CURRENT VEHICLE`.
    The Production Vehicle means a vehicle already released from manufacturing;
    the demo represents that role with the Production Unit VM.
-2. The first-demo implementation uses one live CARLA/Gateway source and the
+2. This expanded profile uses one live CARLA/Gateway source and the
    host Demo Orchestrator assigns it sequentially and exclusively to those
    Units. This mechanism is demo infrastructure, not in-vehicle behavior or an
    AosCloud vehicle lifecycle operation.
@@ -457,11 +423,9 @@ though the assignment and audience contract are decided.
 - Canonical contract:
   [Platform FOTA Safe Stop 1.1.1](../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 
-The former profile required twelve samples at an expected 50-ms period while
-also saying that every sample was at most 250 ms old at the final evaluation.
-That literal interpretation is impossible: eleven intervals span about
-550 ms. The accepted correction retains all twelve observations and defines
-two distinct uses of time.
+Safe Stop uses twelve complete samples for stability, not twelve simultaneous
+claims of current freshness. Acquisition freshness, retained history and the
+latest-sample destructive-step revalidation are distinct checks:
 
 1. Every complete sample is source-fresh, at most 250 ms old, when admitted to
    the window.
@@ -480,7 +444,8 @@ The correction changes no authority, component ownership, lifecycle direction
 or Service SOTA motion policy. Implementation and live qualification remain
 open.
 
-## W2 — Vehicle Data, Advisory and Identity Contracts
+<a id="w2--vehicle-data-advisory-and-identity-contracts"></a>
+## Vehicle Data, Advisory and Identity Contracts
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
@@ -629,27 +594,19 @@ Consequences:
 
 The accepted advisory contract freezes:
 
-Profile `1.2.0`, approved by the operator on 20 September 2026, permits at most
-100 ms of future-clock skew at both VDP and Gateway for these two QM targets.
-Greater future offsets and past ages over 2000 ms remain rejected. The declared
-lease stays at most 30000 ms; effective Gateway activation ends at the earlier
-of original expiry and acceptance plus 30000 ms, using both UTC and monotonic
-deadlines. Original request bytes/timestamps and replay identity are unchanged;
-duplicates do not renew either deadline. Wire schema, authority, service/model
-behavior, AosCore and readiness-heartbeat timing are unchanged.
+Profile `1.2.0` permits at most 100 ms of future-clock skew at VDP and Gateway
+for the two QM targets. Greater future offsets and past ages over 2000 ms are
+rejected. Declared leases are at most 30000 ms; effective activation ends at
+the earlier of original expiry and acceptance plus 30000 ms, bounded by UTC
+and monotonic deadlines. Original bytes/timestamps and replay identity remain
+immutable; duplicates renew neither deadline.
 
-Profile `1.1.0`, approved by the operator on 16 September 2026, separates
-Brake v3 / Tire v1 functional compatibility from allocated package releases.
-`serviceVersion` retains the actual installed release; it is not caller
-authority or a functional-profile selector. Native IAM/KUKSA exact-path
-authorization, endpoint isolation and all existing temporal protections
-remain unchanged. The wire fields remain unchanged. This amendment does not
-rewrite already released manifests/bundles or qualify the live transport.
-
-Profile `1.0.2` is a metadata-only repin to VDP Compatibility Profile 1.0.1.
-Profile `1.0.1` replaced the retired `D4-009` authorization reference with
-`D4-027`. Neither revision changed an advisory path, schema, payload,
-authority, timing or replay semantic from `1.0.0`.
+Brake V3 and Tire V1 functional compatibility is distinct from allocated
+package release. `serviceVersion` records the actual release, not caller
+authority or a profile selector. Native IAM/KUKSA exact-path authorization,
+endpoint isolation and temporal protections apply. Frozen earlier wire
+profiles remain exact compatibility inputs, not competing active policies;
+no manifest rewrite or live qualification is implied.
 
 1. Exactly two OEM-overlay actuator paths exist:
    `Vehicle.OEM.BrakeHealth.Advisory.Request` for Brake Health v3 and
@@ -742,7 +699,7 @@ The accepted first-demo signing lifecycle is:
    closed when the key, verifier or protected signing operation is missing or
    malformed;
 4. `CMP-KAC` signs bounded short-lived `RS256` JWTs by invoking
-   the PKCS#11 operation directly. The pinned unmodified KUKSA loads one public
+   the PKCS#11 operation directly. The pinned Factory-owned KUKSA loads one public
    key at process start and enforces signature, fixed audience `kuksa.val`,
    expiry and path permissions. Its current implementation does not enforce
    the JWT `iss` claim; `iss` is therefore informational/audit metadata, not a
@@ -948,7 +905,6 @@ The effective contract is:
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
-- Current-release simplification accepted: 2026-08-28
 - Owners: Platform Team / Aos IAM and security owners
 
 The accepted current-release deployment boundary is:
@@ -1002,8 +958,6 @@ D4-027.8. D4-027 has no remaining subdecision.
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
-- Native-IAM transport correction accepted: 2026-08-28
-- CPU/RAM envelope correction accepted: 2026-08-28
 - Owners: Platform Team / Aos IAM and security owners / both Function Teams
 
 The accepted current-release local transport and credential-delivery boundary
@@ -1248,7 +1202,6 @@ temporary compatibility helper.
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
-- Native-IAM transport correction accepted: 2026-08-28
 - Owners: Platform Team / both Function Teams
 - Machine-readable contract:
   [`kuksa-auth-compat.v1.json`](../../contracts/kuksa-current-demo-authorization/kuksa-auth-compat.v1.json)
@@ -1294,8 +1247,7 @@ The accepted current-release operational envelope is:
    demo ceiling. Measurement may prove a reviewed limit necessary, but
    implementation shall not add one silently or truncate authority to fit.
 
-The 2026-08-28 transport correction reconciles this envelope with the pinned
-AosCore implementation, whose `IAMPublicPermissionsService/GetPermissions`
+The transport uses the pinned AosCore implementation, whose `IAMPublicPermissionsService/GetPermissions`
 interface is a TLS-capable gRPC listener on port `8090`. Replacing it with a
 Unix-domain socket would require an invasive Aos IAM/Service Manager change.
 The fixed loopback client exception therefore preserves native IAM authority
@@ -1306,10 +1258,11 @@ D4-027 is now complete and authorizes no source, image, Cloud or Unit mutation
 by itself. Implementation remains governed by the active change plan and the
 other unresolved D4 owners.
 
-This working record authorizes no helper implementation, image build, signing,
-Cloud call or Unit mutation.
+Design acceptance does not itself execute or qualify a deployment. The
+current baseline records scoped implementation and remaining live gates.
 
-## W3 — AosCloud Lifecycle and Operational APIs
+<a id="w3--aoscloud-lifecycle-and-operational-apis"></a>
+## AosCloud Lifecycle and Operational APIs
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
@@ -1478,59 +1431,35 @@ and it does not close D4-013 candidate identity or D4-015 recovery semantics.
 <a id="d4-012-1"></a>
 ### D4-012.1 Decision Record — Dedicated Demo Fleet and Unit Set Identity
 
-- Decision state: `DECIDED`; one-time Cloud creation and identifier
-  qualification completed 2026-08-30
-- Accepted: 2026-08-30
+- Decision state: `DECIDED`
 - Owners: OEM/AosCloud administration / Demo Solution / System Acceptance
-- Supersedes: only the implicit `Default` Fleet and historical Unit Set naming
-  assumptions used while qualifying D4-012; all D4-012 API, recipient and
-  fresh-object guards remain normative
 
-The demo shall use one dedicated, persistent OEM Cloud topology:
+The installed Test workflow binds the exact configured Fleet/verification Set
+and authoritative Unit/Node/system UID. It preserves unrelated and Production
+objects. Exact configuration and current evidence, not a sample UUID/title,
+select the target.
 
-| Cloud object | Exact display title | Required invariant | Identifier state |
-| --- | --- | --- | --- |
-| Fleet | `AosEdge SDV Demo Fleet` | Contains both current demo-role Units and both role Unit Sets | `52cadaf9-5294-4d32-937f-16e3f441b81b` — live-created and authoritatively validated 2026-08-30 |
-| Test role Unit Set | `AosEdge SDV Demo / Test Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=true` | `a3399102-3b62-4874-89a4-f2a0206b9ea7` — live-created and authoritatively validated 2026-08-30 |
-| Production role Unit Set | `AosEdge SDV Demo / Production Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=false` | `a8bfc280-1146-4b99-90cf-3058a5e21730` — live-created and authoritatively validated 2026-08-30 |
+The expanded Validation/Production profile additionally requires a persistent
+dedicated Fleet and two disjoint role Sets: Test with
+`is_validation_set=true`, Production with `is_validation_set=false`. The
+technical Validation Unit / Verification Batch lane is labelled Test Vehicle
+to the audience; the Production role is not a Cloud-environment selector.
 
-`Test Vehicle` is the Cloud and audience-facing vehicle-role term. The Test
-role still implements the technical Validation Unit / Verification Batch lane;
-renaming the Cloud cohort does not change validation, verification, Fleet
-Validation or acceptance semantics. Technical evidence may therefore say
-`Validation Unit` / `VU` and `Verification Unit Set` while also showing the
-exact Cloud object title and UUID.
+Separate OEM administration creates and reviews these objects once and pins
+their exact UUIDs, expected titles, shared Fleet ownership and flags in the
+deployment configuration. The orchestrator verifies those bindings before M1
+and release actions; it never creates, renames, reconfigures, moves or deletes
+the persistent topology as a run side effect. Absence or mismatch is
+`NOT_READY`, not permission to infer a replacement from a similar title.
 
-The Fleet and both Unit Set objects are created exactly once through a separate
-OEM/AosCloud administrative bootstrap. Their authoritative UUIDs are captured,
-reviewed and pinned in deployment configuration before M1 or any release action
-is enabled. The Demo Orchestrator shall not create, rename, reconfigure, move or
-delete these three objects. In each demo cycle it may only:
-
-1. verify the pinned UUIDs, exact titles, shared Fleet ownership and validation
-   flags through authoritative reads;
-2. add the current Test and Production Unit `system_uid` values to their exact
-   role Unit Sets and re-read complete membership; and
-3. remove those memberships during R0 and prove both sets empty while retaining
-   the Fleet and Unit Set objects.
-
-No UUID is inferred from a title or copied from the historical `Default` Fleet,
-`R6.1 Vehicle Data Validation`, `Demo / Release Candidate`, canary or blue/green
-objects. If any pinned object becomes absent or fails its UUID/title/Fleet/flag
-validation, the topology gate is `NOT_READY` and every membership, batch and
-Campaign mutation is blocked. A Unit may retain unrelated OEM classification
-memberships; exact disjointness means that it belongs to exactly one of these
-two demo-role Unit Sets, while D4-012 still requires full Fleet/OEM
-effective-recipient scanning.
-
-The live bootstrap qualification used the dedicated Fleet Owner
-`aosedge-sdv-demo-fleet-owner`, scoped only to the dedicated Fleet. The
-authoritative accepted `.21` Unit is
-`ba74a1e6-5496-496b-8e4b-e8beb0af27ad` with `system_uid`
-`7cec239e6ab348b4b1c7961186cfd978` and Main Node
-`4f3be6c7-d50e-4c60-ab39-db25a6614358`. The Test role Set contained exactly
-that Unit and the Production role Set was empty. This bootstrap proof does not
-replace the later two-Unit M1 membership and recipient qualification.
+Each expanded run assigns current VU/PU `system_uid` values to their respective
+Sets through scoped membership operations, re-reads complete membership and
+removes only those memberships on R0. Exactly one of the two role Sets may
+contain each Unit; unrelated OEM classification memberships are preserved.
+Do not use the all-membership replacement API. D4-012 full Fleet/OEM
+effective-recipient scans, pagination, current-target and fresh-object guards
+remain mandatory. Capture exact reviewed identity, role and ownership proof
+for the selected configuration; old staging receipts are not current proof.
 
 ### D4-013 Decision Record — Candidate Identity and Metadata
 
@@ -1857,7 +1786,8 @@ This decision authorizes recovery/retirement adapters, state machines and test
 design. It authorizes no live update, Service removal, deprovision, membership
 mutation, Unit deletion, VM stop or overlay disposal.
 
-## W4 — Functional Products and Local Hosting
+<a id="w4--functional-products-and-local-hosting"></a>
+## Functional Products and Local Hosting
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
@@ -1871,27 +1801,20 @@ mutation, Unit deletion, VM stop or overlay disposal.
 ### D4-016 Accepted Decision Record — Brake In-Vehicle Product
 
 - Decision state: `ACCEPTED`; D4-016.1 through D4-016.5 accepted
-- D4-016.1/.2 and D4-016.3 structure accepted: 2026-08-22
-- Exact D4-016.3 accepted: 2026-08-23
-- D4-016.3 byte/arithmetic/fixture closure accepted: 2026-08-29
 - Accepted D4-016.3 profile SHA-256:
   `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53`
-- Exact D4-016.4 accepted: 2026-08-23
 - Accepted D4-016.4 policy SHA-256:
   `13216b51647525d48b83eb79bd47444ccb392d1a51a7ffd18b593d4c91f52467`
-- Exact D4-016.5 accepted: 2026-08-23
 - Accepted D4-016.5 profile SHA-256:
   `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4`
 - Owners: Function Team 1 / Vehicle Simulation / Platform Team
 
 #### D4-016.1 — Service v1 bounded braking acquisition
 
-18 September accepted work-packet amendment: item 3's historical 30-Hz /
-every-third-frame choice is superseded by first-valid-sample selection in
-100-ms source-time buckets at qualified 20/30-Hz input. No interpolation,
-timestamp changes or other acquisition/resource changes. The executable
-[cadence amendment](../../contracts/brake-telemetry-window/source-time-retention-amendment.v1.json)
-and its tests preserve the original logical wire and retained history.
+The acquisition definition below uses the current source-time bucket policy.
+The [executable cadence record](../../contracts/brake-telemetry-window/source-time-retention-amendment.v1.json)
+binds that policy independently from retained base-profile/golden fixtures;
+old examples are not a second active sampling rule.
 
 1. The audience and schemas call the detected condition
    `HARD_BRAKING_EPISODE_V1`. It is an observation derived from available
@@ -1903,11 +1826,11 @@ and its tests preserve the original logical wire and retained history.
    brake-pedal position. The VDP v1 steering-angle path remains available but
    is not consumed by Brake Service v1. The mandatory trigger inputs are
    speed, longitudinal acceleration and brake-pedal position.
-3. The accepted source cadence is 30 Hz. Service v1 retains every third
-   complete valid source frame, producing a deterministic 10 Hz window while
-   preserving original source time, quality and freshness. It never
-   interpolates, fabricates zero or activates a trigger from incomplete/stale
-   mandatory input.
+3. At qualified 20/30-Hz source input, Service v1 retains the first complete
+   valid frame in each 100-ms source-time bucket, producing at most 10 Hz.
+   Empty buckets remain gaps. Original source time/quality/freshness is
+   preserved; no interpolation, fabricated zero, duplicate reuse or trigger
+   from incomplete/stale mandatory input is allowed.
 4. Trigger activation requires `Vehicle.Speed >= 10 km/h` and
    `Vehicle.Chassis.Brake.PedalPosition >= 50%` continuously for 200 ms.
    Longitudinal acceleration remains captured evidence but does not activate
@@ -2083,11 +2006,13 @@ in these canonical contracts:
    UUIDv5 encodes exact ordered UTF-8 fields, rejects CR/LF/NUL, joins with one
    LF byte and has no trailing LF. It is identification only. Same key/same
    digest is a retry and different content is quarantined.
-8. `modelArtifactSha256` is the injected immutable deployed Brake Health
-   Service artifact digest containing the compiled model;
-   `modelConfigSha256` is the distinct exact accepted model-profile SHA-256.
-   The core neither discovers/hashes installation nor invents a separate model
-   file. A separately packaged future model requires a versioned contract.
+8. Current product v2 identifies the service by immutable package release and
+   native Aos instance identity; it neither requires `serviceArtifactSha256`
+   nor its `modelArtifactSha256` alias. Legacy messages retain those fields
+   only under their original discriminator. `modelConfigSha256` remains the
+   exact accepted model-profile digest. Never discover/hash installation,
+   fabricate an OCI digest or relabel queued records; a separately packaged
+   future model requires a versioned contract.
 9. The source window is the first through last retained PRE/ACTIVE/POST sample;
    features use ACTIVE only and wheel dispersion its qualified subset.
    `assessedAt` is one injected processing time not earlier than the end and is
@@ -2149,7 +2074,7 @@ in these canonical contracts:
    insufficient-input result or one rejected/expired/failed advisory is an
    outcome, not by itself a readiness failure. Invalid state cannot report
    ready.
-2. The candidate requests the current scaffold quota envelope: CPU 250,
+2. The candidate requests the declared service quota envelope: CPU 250,
    RAM 16 MiB, storage 8 MiB, state 1 MiB, tmp 8 MiB, 64 files and 16 PIDs.
    These are requested—not qualified—until D4-023 measurement and isolation
    pass. AosCore is the only enforcement authority.
@@ -2190,24 +2115,13 @@ not itself authorize artifact publication, Cloud mutation or Unit deployment.
 
 - Decision state: `ACCEPTED`
 - Prepared: 2026-08-22
-- Functional-backend security scope simplified: 2026-08-23
-- Transport and first-demo security boundary accepted: 2026-08-23
-- Idempotency and advisory-fact schema accepted: 2026-08-23
-- Durable acknowledgement accepted: 2026-08-23
-- SQLite persistence accepted: 2026-08-23
-- Dashboard query and authority boundary accepted: 2026-08-23
-- Exact current-run cleanup accepted: 2026-08-23
-- Brake Cloud data-contract clarifications accepted: 2026-08-29
-- Query/SSE/Admin API 1.0.0 annex accepted: 2026-08-29
-- Advisory fixture erratum accepted: 2026-08-29
-- Independent Brake Data review corrections accepted: 2026-08-29
 - Owners: Function Team 1 / Demo Solution local integration
 - Machine-readable contract:
   [Brake Health Cloud API 1.0.0](../../contracts/brake-cloud-api/README.md)
 - Query/SSE/Admin wire annex:
   [Brake Cloud Query/SSE/Admin API 1.0.0](../../contracts/brake-cloud-api/brake-cloud-query-admin-profile.v1.json)
 
-The proposed exact decision is:
+The contract requires:
 
 1. Brake Service sends one existing canonical D4-016 logical message per
    `POST /api/v1/brake/messages` request over the isolated local HTTP 1.1
@@ -2331,7 +2245,6 @@ The proposed exact decision is:
 - Amendment ID: `BC-WINDOW-DETAIL-DEC-01`
 - Amendment state: `ACCEPTED`
 - Prepared: 2026-08-31
-- Independently reviewed and accepted: 2026-08-31
 - Accepted base: D4-017 Query/SSE/Admin API 1.0.0
 - Proposed machine-readable profile: Query/SSE/Admin API 1.1.0
 
@@ -2365,34 +2278,26 @@ The accepted additive decision is:
    a current success. The existing first-demo local/loopback and
    correlation-only `system_uid` boundary is unchanged and no production
    authentication claim is added.
-5. No database migration is required or allowed for this amendment. Migration
+5. The window-detail point read requires and permits no database migration. Migration
    `002_brake_data.sql` already durably stores the validated canonical
    `window_chunks.content_json` and indexes exact
    `(unit_system_uid,event_id,chunk_index)` lookup. Implementation must verify
    stored content against its accepted message identity/digest before returning
    it and fail closed on mismatch.
 
-This amendment changes no accepted 1.0.0 collection behavior. Its exact
-five-path source-only implementation packet is separately accepted and
-authorized; packaging, network, live, merge and push remain outside it.
+The point read leaves accepted collection behavior unchanged. Current source
+and protocol evidence determine implementation/qualification; a retired
+execution packet does not restrict the present contract or prove a missing route.
 
 ### D4-018 Accepted Decision Record — Tire In-Vehicle Product
 
 - Decision state: `ACCEPTED`
 - Prepared: 2026-08-22
-- Exact VDP v3 input and incompatibility behavior accepted: 2026-08-23
-- Bounded dynamics episode accepted: 2026-08-23
-- Deterministic synthetic estimator accepted: 2026-08-23
-- Persistent hysteresis and idempotency accepted: 2026-08-23
-- Pre-demo calibration and qualification policy accepted: 2026-08-23
-- Local Tire advisory chain accepted: 2026-08-23
-- Persistence, offline, readiness and resource boundary accepted: 2026-08-23
-- Operational logs and final fault isolation accepted: 2026-08-23
 - Owners: Function Team 2 / Platform / Gateway / Vehicle Simulation
 - Machine-readable contract:
   [Tire Health In-Vehicle Product Contract 1.0.0](../../contracts/tire-health-model/README.md)
 
-The proposed exact decision is:
+The contract requires:
 
 1. The one Tire Service v1.0 requires VDP v3 and consumes exactly speed,
    lateral acceleration, steering angle, four wheel linear speeds, four
@@ -2474,7 +2379,7 @@ The proposed exact decision is:
    Unknown state is quarantined without silent reset. External-connectivity
    loss is `DEGRADED`, not local `NOT_READY`; readiness separately reports Aos
    process, VDP compatibility, local estimator, backend sync and advisory.
-   Requested quotas are 150 DMIPS CPU, 16 MiB RAM, 4 MiB storage, 2 MiB
+   Requested quotas are 600 DMIPS CPU, 16 MiB RAM, 4 MiB storage, 2 MiB
    state, 2 MiB temporary storage, 32 files and 8 PIDs, with no Service resource manager,
    AosCore as sole authority and D4-023 as the qualification gate. The first
    demo saturates CPU only inside Tire Health; AosCore throttles without
@@ -2501,12 +2406,6 @@ mutation or deployment.
 
 - Decision state: `ACCEPTED`
 - Prepared: 2026-08-22
-- Functional-backend security scope simplified: 2026-08-23
-- Transport, first-demo security and tenant boundary accepted: 2026-08-23
-- Exact logical product set accepted: 2026-08-23
-- Durable acknowledgement and SQLite persistence accepted: 2026-08-23
-- Dashboard query and authority boundary accepted: 2026-08-23
-- Exact current-run cleanup accepted: 2026-08-23
 - Owners: Function Team 2 / Demo Solution local integration
 - Machine-readable contract:
   [Tire Health Cloud API 1.0.0](../../contracts/tire-cloud-api/README.md)
@@ -2589,261 +2488,136 @@ D4-019 is accepted as a design contract. Implementation and D4-020 live route/
 LAN-negative qualification remain open; acceptance alone authorizes no build,
 publication, Cloud mutation or deployment.
 
-### D4-020 Design Reviewed — Local Hosting, Helper and VM Route
+### D4-020 — Local hosting and controller routes
 
 - Decision state: `DESIGN_REVIEWED`
-- Prepared: 2026-08-22
-- Functional-backend route scope simplified: 2026-08-23
-- Prebuilt container topology and presentation packaging accepted: 2026-08-23
-- Host/toolchain qualification policy accepted: 2026-08-23
-- Local demo container minimum security hygiene accepted: 2026-08-23
-- Native helper boundary accepted: 2026-08-23
-- Concurrent dual-VM and local functional route model accepted: 2026-08-23
-- Simplified local functional backend transport accepted: 2026-08-23
-- Startup, shutdown and R0-local-data behavior accepted: 2026-08-23
-- Post-reboot dual-VM startup and shared DNS ownership accepted: 2026-08-24
 - Owners: Demo Solution / both Function Teams / Security
-- Machine-readable contract:
-  [Local Demo Hosting and VM Route 1.0.0](../../contracts/local-demo-hosting/README.md)
+- Contract: [Local hosting and controller routes](../../contracts/local-demo-hosting/README.md)
 
-The proposed exact decision is:
+1. The Mac runs two independent digest-pinned Linux/arm64 backend containers,
+   Brake and Tire, with separate APIs, stores, networks, health/failure scopes
+   and fixed ingestion ports 18091/18092. Presenter/Demo Control and native
+   CARLA/Driving Control run on the host; no third dashboard container is
+   required. Setup imports the pinned backend archive explicitly. Runtime
+   start uses existing immutable image identities without build, pull, latest
+   selection, repackaging or automatic import on navigation.
+2. Host compatibility comes from selected manifests and required capabilities:
+   Apple Silicon/HVF, the exact QEMU machine/firmware contract, native ARM64
+   Docker and supported network/volume/security behavior. Recorded tool
+   versions are evidence, not universal hardcoded requirements. QUALIFIED,
+   COMPATIBLE_UNQUALIFIED and INCOMPATIBLE retain distinct meanings; a new
+   combination needs actual proof rather than a cosmetic container rebuild.
+3. Browser surfaces are loopback-only. No privileged/host-network container,
+   Docker socket, broad filesystem/private-PKCS#12 mount or credential in an
+   image/frontend is allowed. Product data remains separate. Use non-root
+   execution where supported. This trusted-Mac demonstration claims neither
+   production backend authentication nor production RBAC/TLS/secret-manager
+   hardening or safety certification.
+4. Signing/Cloud operations stay in the existing protected native boundary.
+   Callers cannot select credential paths, profiles, URLs, arbitrary commands
+   or recipients, and browsers/containers receive no private key or reusable
+   capability. Each external effect is journaled and independently reconciled;
+   response loss remains UNCERTAIN, not permission for blind retry. Expanded
+   helper capability-isolation cases remain qualification duties, not an
+   additional installed helper/listener topology.
+5. The controller reaches the Mac-local backends through its accepted
+   guest-visible 10.0.0.1 route. Separate product namespaces/schemas/stores
+   correlate by native system_uid, not source IP. No per-Unit backend client
+   credential is issued. Expanded VU/PU networks are independent and may reuse
+   guest addresses; their control ports/sockets and identities remain distinct
+   and only one owns the live source at a time.
+6. External OFF/ON changes the selected Unit's Cloud and both backend routes
+   together, preserving in-vehicle and presenter administrative access and any
+   unrelated/Production peer. Local isolated HTTP is correlation transport,
+   not cryptographic client authentication. Each Function Team owns future
+   production backend authentication; it cannot be inferred from signed SOTA.
+7. Startup/partial-start cleanup and normal Stop use exact existing owners.
+   Stop preserves durable product/run data. Confirmed Finish cleans exact Test
+   records through each accepted backend preview/confirm/prove-empty path;
+   it does not remove peer data or permanent infrastructure. Verify restart
+   persistence, owned listener/process release, LAN negatives and helper-loss
+   denial. Expanded dual-VM routes require their own proof.
+8. Shared DNS is owned independently of either guest; preserve it while any
+   managed VM still needs it. Reconcile exact PID/socket/overlay ownership
+   before restart. Open Presenter creates no controller. Start controller
+   restores only the retained Test under current guards. Neither operation
+   restarts shared Docker or introduces a boot/login daemon or automatic host
+   sleep/wake recovery. Frozen older hosting fixtures are not a generated
+   specification for this installed topology.
 
-1. The Mac runs three prebuilt digest-pinned ARM64 containers with no demo-time
-   build/pull/repackage: stateless `aosedge-demo-software-delivery` on
-   `127.0.0.1:18080`, `aosedge-demo-brake-cloud` on UI `18081` and ingestion
-   `18091`, and `aosedge-demo-tire-cloud` on UI `18082` and ingestion `18092`.
-   `latest` and fallback are forbidden; Compose uses detach, no-build,
-   pull-never and wait semantics. Software Delivery stores no authoritative
-   lifecycle state and re-reads AosCloud; the native Demo Orchestrator owns the
-   current-run journal. Brake/Tire use distinct named volumes, Docker networks,
-   namespaces, ports, healthchecks and failure boundaries. Browser surfaces
-   are macOS-loopback-only. Normal shutdown preserves functional volumes; R0
-   may reset them only after accepted exact backend cleanup.
-2. The observed candidate baseline is Docker Desktop 4.87.0, Engine 29.7.2,
-   Compose 5.4.0 and QEMU 11.0.3 on Apple Silicon macOS 26.5.2/25F84. QEMU
-   11.0.3 and 11.1.0 are allowlisted by the existing VM machine contract;
-   exact macOS is recorded evidence, not a universal gate. Host state is
-   `QUALIFIED`, `COMPATIBLE_UNQUALIFIED` or `INCOMPATIBLE`: official demo
-   requires the first, development may use the second, and any override is
-   explicit/visible but forbidden in official presentation. Required
-   capabilities include ARM64/HVF, qualified QEMU machine contract, native
-   ARM64 Docker, required Compose flags and network/volume/security features.
-   The observed candidate remains unqualified until packaged startup/restart,
-   persistence, both-VM route and LAN-negative tests pass. New versions require
-   complete qualification and manifest update, not container rebuild.
-3. These containers are local demonstration infrastructure on one trusted Mac,
-   not a production deployment architecture. Mandatory low-cost hygiene is:
-   loopback-only publication; no privileged mode, host networking, Docker
-   socket, broad host-filesystem mount or protected PKCS#12 mount; no real
-   credential embedded in an image/frontend; separate Brake/Tire data volumes;
-   and non-root execution when supported without additional demo complexity.
-   Browsers receive no credential or native-helper capability. Read-only root
-   filesystems, dedicated tmpfs policy, local container RBAC,
-   browser-to-backend TLS, a production secret manager and production-grade
-   container security qualification are deliberately not first-demo
-   requirements. Healthchecks, digest pinning and controlled restart remain
-   reproducibility/operability rules. The demonstrated security remains signed
-   FOTA/SOTA, AosCloud lifecycle and OEM approval, AosCore isolation/quotas and
-   in-vehicle Service permission enforcement.
-4. One launcher-supervised non-root native helper binds only
-   `127.0.0.1:18600`. Separate 256-bit, mode-`0400`, session-file capabilities
-   pre-bind Software Delivery, Brake and Tire backends to `platform-oem`,
-   `brake-sp1` and `tire-sp2`. Callers cannot select profile, credential path,
-   Cloud URL, candidate path, arbitrary method/API or shell command. The helper
-   is started and supervised by the Demo Launcher for the current session and
-   is not installed as a persistent daemon. Session stop deletes the
-   capabilities; keys remain outside Git, Docker, VMs and artifacts. The
-   helper owns no lifecycle state: a successful mutation requires independent
-   AosCloud re-read, and an ambiguous response becomes `UNCERTAIN` without
-   blind retry. This boundary protects real signing credentials and Cloud
-   lifecycle operations rather than imposing production hardening on local
-   demo data.
-5. Both independent QEMU user networks expose the Mac as `10.0.0.1`; Services
-   use `http://10.0.0.1:18091/...` or `:18092/...`. Docker ports remain bound
-   to macOS loopback and require no functional `hostfwd`. Separate API
-   namespaces, schemas, containers and stores preserve the Brake/Tire product
-   boundary but are not presented as a production authentication mechanism.
-   VU and PU may run concurrently and may both use guest address `10.0.0.100`
-   because they occupy independent network namespaces; every host-side control
-   port/socket remains unique per VM. Both are clients of the shared functional
-   backends, which correlate by `system_uid` rather than source IP, while
-   exactly one VM owns the live CARLA/Gateway source. One Vehicle External
-   Connectivity control applies to the currently selected vehicle: it removes
-   that VM's AosCloud and both functional-backend routes together, without
-   affecting the other VM, local CARLA/Gateway/VISS/KUKSA processing and
-   advisory, or Mac-dashboard connectivity to AosCloud.
-6. The first demo creates, mounts, rotates and revokes no functional-backend
-   client credential. Exact two-VM route behavior and LAN-negative exposure
-   remain blocking live qualification gates. Production backend authentication
-   is a future implementation choice owned independently by each Function
-   Team. HTTP over the controlled local demo route and a reported `system_uid`
-   support transport and VU/PU correlation only; neither is presented as
-   cryptographic client identity or production authentication. Separate
-   endpoint/schema/container/store boundaries reject cross-function message
-   shapes without changing signed FOTA/SOTA, Aos IAM/KUKSA authorization,
-   Gateway enforcement or AosCore isolation/quotas.
-7. Startup is preflight → helper → containers → health gates → browser.
-   Normal shutdown retains functional volumes; R0 first executes exact backend
-   cleanup and only then resets owned volumes. Partial startup and session
-   resources are cleaned without deleting functional data. This sequence covers
-   only the local support stack; VM provisioning and Cloud lifecycle remain
-   explicit Demo Orchestrator operations. No historical demo-run archive is
-   required. Implementation acceptance proves clean/partial-failure startup,
-   restart persistence, helper-loss denial, normal shutdown, exact R0 cleanup,
-   no remaining session resource/listener, both-VM routes and LAN-negative
-   exposure.
-8. One explicit `Start or Restore Demo Environment` operation owns local
-   support-stack startup and post-reboot restoration of an active run. It
-   starts one session-scoped shared DNS bridge on
-   `127.0.0.1:18053` before either VM; both independent guest networks continue
-   to use the accepted `10.0.0.1:18053` upstream, and no VM may depend on a DNS
-   process owned by the other VM. Before restart, the launcher may remove only
-   exact owned PID or socket runtime files after proving that the corresponding
-   process and listener are absent and no process holds the overlay; any
-   ambiguous state blocks startup. At local `READY_FOR_M0`, no VU/PU overlay or
-   Cloud Unit is required and the action proves only the accepted support
-   stack. During an active run, it starts only the exact recorded VU and PU,
-   exposes `VM Running`, `Guest Ready`, `DNS Ready`, `AosCore Connected` and
-   `Unit Online` separately, and reports the environment ready only after fresh
-   AosCloud reads prove both existing Units Online. This operation creates no
-   overlay and performs no provisioning, reprovisioning, identity, certificate,
-   key, Unit Set, Current Vehicle or lifecycle-stage change. It is owned by the
-   existing session helper and does not introduce a macOS boot or login daemon.
+Design approval alone performs no host, VM, signing or Cloud operation.
+Current runtime proof and remaining negative/expanded matrices belong to the
+[baseline](../qualification/current-baseline.md).
 
-D4-017 through D4-020 are design reviewed. The remaining D4-020 live checks are
-implementation qualification gates rather than open design questions. None of
-these design decisions alone authorizes implementation, repository creation,
-signing, Cloud/Unit/VM mutation or deployment.
-
-### D4-021 Design Reviewed — Run State, Overlays and Cleanup
+### D4-021 — Current-run state, overlays and cleanup
 
 - Decision state: `DESIGN_REVIEWED`
-- Prepared: 2026-08-23
-- Factory Image and overlay layout accepted: 2026-08-23
-- Minimal current-run journal accepted: 2026-08-23
-- Interrupted and uncertain operation recovery accepted: 2026-08-23
-- Complete R0 ordering accepted: 2026-08-23
-- Functional data and CARLA/Gateway cleanup accepted: 2026-08-23
-- Next-run readiness proof accepted: 2026-08-23
-- Per-operation registry and resource-scoped conflict model revalidated:
-  2026-08-25
-- Interaction input:
-  [I0-DEC-002](../demo/mockups/README.md#i0-dec-002)
 - Owners: Demo Solution / Platform / Simulator / both Function Teams
-- Machine-readable contract:
-  [Demo Run State, Overlays and Cleanup 1.2.0](../../contracts/demo-run-state/README.md)
+- Contract: [Current-run state and retirement](../../contracts/demo-run-state/README.md)
 
-D4-021.1 fixes one Git-excluded qualified local Factory Image at
-`.local/factory/oem-demo-factory.qcow2` (or format-preserving .img for raw,
-per the 2026-09-05 [local creation amendment](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md#agreed-cli-surface))
-with its manifest, mode `0444`, no
-symlink/hard-link relationship to mutable build output and digest verification
-at M0 and R0. M0 creates exactly two mode-`0600` copy-on-write overlays at
-`.local/demo-current/validation.qcow2` and
-`.local/demo-current/production.qcow2`. A provisioned overlay is never
-copied or reused. No ordinary-run history directory exists: an incomplete
-`.local/demo-current`/`.run/demo-current` blocks the next M0 until reconciled,
-and successful R0 deletes current-run state while retaining the unchanged
-Factory Image and manifest.
+**D4-021.1 — Factory and overlays.** Preserve the regular immutable Factory and
+its manifest in the selected instance, retaining the declared raw/qcow2 format
+and digest. Create a fresh mode-0600 Test overlay; expanded manufacture adds
+independent Production. A provisioned overlay is never a source template.
+Unknown files, conflicting journals, links/handles or an absent/replaced volume
+block creation. Working data is separate from immutable programs/inputs.
 
-Remaining D4-021 subdecisions will freeze uncertain-operation recovery, total
-R0 ordering, functional/simulation cleanup and final next-run proof. The
-accepted layout and journal alone authorize no filesystem, VM, Cloud or reset
-mutation.
+**D4-021.2 — Journal.** One writer atomically maintains mode-0600
+`.run/demo-current/journal.json` in a private directory. It records only current
+stage/time, image/manifest, owned relative paths, exact Unit/Node/system UID,
+role/source binding, VISS fingerprint and bounded operation/reconciliation
+facts. No keys/certificates/passwords/tokens, raw Cloud responses, telemetry,
+products/logs, VIN, backend confirmation tokens, personal paths or previous-run
+history. Window-layout metadata is separate; opening windows creates no run.
 
-D4-021.2 fixes `.run/demo-current/journal.json` as the only restart-safe local
-run record. A single Demo Orchestrator atomically replaces the mode-`0600` file
-inside a mode-`0700` project directory. It keeps only the current stage and
-start time, factory/manifest digests, repo-relative overlay roles, exact VU/PU
-identity references, VISS fingerprint, selected live source and a bounded
-per-operation registry. Each non-terminal operation entry binds one stable
-local operation ID to its owning team, exact candidate or operation class,
-authority context, target, request fingerprint, resource-conflict keys, known
-external IDs, local state, reconciliation classification and sanitized last
-authoritative re-read. It is not authoritative and restart always triggers
-fresh Cloud/backend reads for every non-terminal entry.
-It stores no secret, credential/certificate content, raw response, telemetry,
-functional payload, log, VIN, personal absolute path, backend confirmation
-token or previous-run history. `UNCERTAIN` forbids blind retry; a missing or
-corrupt journal beside overlays blocks M0. Successful R0 deletes the journal,
-while incomplete R0 retains it. No audience-visible Demo Run ID is introduced.
+**D4-021.3 — Operations and recovery.** Persist exact intent before each effect,
+including actor/candidate/authority/target/request/conflict keys and known
+external IDs. HTTP acceptance enters RECONCILING; response/process loss enters
+UNCERTAIN. Fresh owner reads classify APPLIED, NOT_APPLIED, CONTRADICTORY or
+UNOBSERVABLE; only proved APPLIED advances. NOT_APPLIED needs new explicit
+intent. A 404 needs visibility proof. Corrupt state blocks mutations, not
+read-only diagnosis. Installed mutations serialize; expanded disjoint-resource
+concurrency retains exact candidate/profile/Cloud object/Batch/Campaign/Unit/
+Set conflicts. Identity, source handover/reset and Finish are run-exclusive.
+Helper BUSY never creates a replay queue or a Cloud restriction.
 
-D4-021.3 permits independent Platform, Brake and Tire external mutations when
-their exact resource-conflict key sets are disjoint. An active or unresolved
-operation blocks only another mutation that addresses the same candidate,
-digest, publication profile, resulting Cloud object, Verification Batch,
-Fleet Validation Batch, Campaign, Unit or Unit Set. Provisioning, identity
-retirement, exclusive live-source handover/reset and the R0 freeze/cleanup
-sequence use run-exclusive scopes and therefore require every other mutation
-to be reconciled first. Read-only navigation and authoritative reads remain
-available.
+**D4-021.4 — Finish ordering.** Freeze mutations, retain exact identity/evidence
+and quiesce owned simulation, VM and backend consumers. Retire the current Test
+once, reconcile deprovision/Unit/Node absence and exact Subject/Set bindings,
+then prove exact product cleanup before owned local files and journal disposal.
+Known failure or incomplete installation does not prevent confirmed exact-Test
+retirement; uncertainty about ownership/effects still blocks destructive work.
+Published services/releases, permanent Subjects/Sets/Fleet, audit history,
+credentials, original Factory and release continuity survive. Expanded R0
+additionally retires its owned Production role. Routine Finish uses accepted
+authoritative absence proof, not a reconnect with old credentials; explicit
+revocation/security-negative qualification remains independently required.
 
-The journal records each exact intent before its call. HTTP success enters
-`RECONCILING`, while response/process loss enters `UNCERTAIN`. Restart takes
-only the journal-writer lock, validates the complete registry and local state,
-performs no mutation before authoritative re-read, and independently
-classifies every non-terminal entry as `APPLIED`, `NOT_APPLIED`,
-`CONTRADICTORY` or `UNOBSERVABLE`. Only proven `APPLIED` advances that exact
-operation automatically; `NOT_APPLIED` needs exact proof and new confirmation,
-while the other outcomes continue to block only overlapping resource scopes.
-A `404` needs independent visibility proof. A corrupt registry becomes
-`RECOVERY_REQUIRED` and blocks all mutations, but not read-only diagnosis.
+**D4-021.5 — Functional/source/file cleanup.** Each product owns its exact
+preview/count/digest/confirm/delete/prove-empty protocol. Tokens stay in memory;
+interruption requires a new preview. Preserve peer records and require literal
+success before discarding ownership references. Stop only owned actors,
+processes, windows, listeners and source bindings through their normal owners;
+no broad kill/shared Docker shutdown. Verify released handles/backing bindings
+and journal per-file unlink intent. The four narrow local exceptions in the
+contract (identity-free collision, unprovisioned create, pre-runner source
+failure and owned DNS log) retain all their exact guards; missing IDs alone
+never prove cleanup. Installation, source, maps, assets and scenarios survive.
 
-Helper capacity may return `BUSY` and leave only the affected request visibly
-`WAITING`; it is not presented as an AosCloud restriction and never
-automatically submits when capacity becomes available. No operation queues or
-triggers another team's next action. Partial provisioning reconciles both
-roles; partial R0 resumes at the first unproven step without repeating a
-proven destructive action. Overlays remain until Cloud retirement and backend
-cleanup are proven. Automatic rollback and just-in-case deletion are
-forbidden.
-
-D4-021.4 freezes total R0 ordering. New actions are blocked and final
-identities/live-source state captured; Validation then Production is made
-Cloud-`Offline`, deprovisioned/re-read, old-credential-negative tested, stopped,
-cleaned of exact current-run native-log requests, removed by `system_uid` from
-its exact persistent role set, deleted and proved absent with its Node
-inaccessible. Both persistent Unit Set objects remain but must be empty;
-AosCloud audit/Batch/Campaign history remains. Only then are exact Brake and
-Tire current-Unit data cleaned, empty owned volumes reset, CARLA/controller/
-Gateway reset/stopped, run-specific VISS/host material and released overlays
-removed, factory/manifest digests rechecked and the journal deleted last. Any
-uncertainty retains recovery material and blocks M0. This is Unit retirement,
-not FOTA/SOTA rollback.
-
-D4-021.5 permits only the Demo Orchestrator to clean functional data, using
-final-Cloud-verified current VU/PU `system_uid` equality. Brake then Tire each
-run preview/exact-set-count-digest proof/confirm/delete/prove-empty; confirmation
-tokens remain memory-only and restart requires a new preview. Cross-Function
-deletion is forbidden, and backend containers/volumes stop/reset only after
-both prove clean. Simulator cleanup applies `SAFE_STOP`, aborts scenario and
-Autopilot/Traffic Manager, performs the accepted canonical free-drive reset,
-removes the obstacle, proves reset generation, detaches live source and uses
-one bounded unified shutdown for Control UI, controller, Gateway and CARLA.
-`ESC` uses the same path. Escalation targets only exact Launcher-owned PIDs/
-process group; no broad kill is allowed. Remaining process/window/listener/
-socket/source/actor/run-state evidence blocks overlay deletion and M0, while
-installation, maps, assets, source and prepared scenarios remain.
-
-D4-021.6 defines local `READY_FOR_M0`, not an AosCloud state. It requires exact
-proof that retired Units/Nodes are absent, persistent role Unit Sets exist
-empty, old credentials fail, Cloud audit/history remains, the regular read-only
-Factory Image matches its manifest, all current-run files/identities/processes/
-listeners/data/source/actors are absent and all prebuilt candidate artifacts
-remain. Missing proof is `BLOCKED`. M0 creates no Cloud identity; next M1 must
-prove new `system_uid`, Unit UUID, Node UUID and VISS fingerprint. Repeatability
-requires two consecutive complete cycles, not an ordinary-run history store;
-only an explicitly designated formal run may retain its sanitized dossier.
-
-D4-021 is design reviewed. Implementation, interruption tests and two-cycle
-live qualification remain required; this decision authorizes no mutation.
+**D4-021.6 — Completion.** READY_FOR_M0 is a local proved condition, not a Cloud
+state: applicable retired identities/bindings/data/files/owners are absent,
+required permanent references and immutable inputs remain, and unknown effects
+are resolved. Journal is removed last. Stop/Start instead retains the same
+Test. New manufacture obtains new identities; it cannot reuse a retired overlay
+or inherit peer credentials. Full expanded/security/partial-failure and two-
+consecutive-cycle evidence remains required for its designated qualification
+scope. Only that formal scope retains a sanitized dossier; ordinary use adds
+no historical run database or automatic next Create/Provision.
 
 <a id="d4-w4-review-package"></a>
-The completed W4 review agenda is retained in the [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/d4-decision-register.md).
-The accepted decisions and their outstanding verification obligations remain
-in their owning sections; the old agenda is not another execution plan.
+<a id="w5--resilience-connectivity-and-resource-isolation"></a>
 
-## W5 — Resilience, Connectivity and Resource Isolation
+## Resilience, Connectivity and Resource Isolation
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
@@ -2855,17 +2629,13 @@ in their owning sections; the old agenda is not another execution plan.
 
 - Decision state: `DESIGN_REVIEWED`
 - Prepared: 2026-08-23
-- Dual-network QMP mechanism accepted: 2026-08-23
-- Probe set and UI state machine accepted: 2026-08-23
-- Compensation, reconciliation and recovery accepted: 2026-08-23
-- Qualification plan accepted: 2026-08-23
 - Owners: Demo Solution / AosCloud integration / both Function Teams
 - Machine-readable contract:
   [Vehicle External Connectivity 1.0.0](../../contracts/vehicle-external-connectivity/README.md)
 
-D4-022.1 rejects the current single-NIC launcher as incapable of preserving
-the simulated in-vehicle path during an external-connectivity fault. The
-successor OEM Demo Factory Image and launcher provide `vehicle-net`/`vehicle0`
+D4-022.1 requires separate vehicle and external planes so a connectivity
+fault cannot sever the simulated in-vehicle path. The Factory image and
+launcher provide `vehicle-net`/`vehicle0`
 for VDP-to-VISS/Gateway only, with no default route or Cloud DNS, and
 `external-net`/`external0` for default route, DNS, AosCloud and Brake/Tire
 backends. The native helper resolves the current VU/PU role and exact QMP socket
@@ -2873,8 +2643,8 @@ from the current journal and exposes only one fixed `set_link` operation for
 that VM's external plane; the other VM and vehicle plane remain up. QMP/serial
 are out of band, browser/arbitrary QMP and host/guest firewall mutation are
 forbidden. This is an OEM pre-SOP Factory Image network configuration and demo
-launcher change, not an upstream AosCore source change. The normative offline
-presentation uses PU.
+launcher boundary, not an upstream AosCore source change. The installed
+offline exercise uses its current Test; expanded two-role presentation uses PU.
 
 The design is closed. Implementation and live acceptance must still freeze
 Cloud/backend convergence bounds and produce the required evidence; accepted
@@ -2919,12 +2689,6 @@ not.
 
 - Decision state: `DESIGN_REVIEWED`
 - Prepared: 2026-08-23
-- Metadata and authority accepted: 2026-08-23
-- Exact requested envelopes and native mapping design accepted: 2026-08-23
-- Fixed Tire CPU-load control accepted: 2026-08-23
-- Authoritative Cloud/native evidence split accepted: 2026-08-23
-- Sample-driven verdict and unaffected criteria accepted: 2026-08-23
-- Qualification matrix and requalification triggers accepted: 2026-08-23
 - Owners: AosCore integration / both Function Teams / Demo Solution
 - Machine-readable contract:
   [Service Tenant Quota Proof 1.0.1](../../contracts/service-tenant-quota-proof/README.md)
@@ -2936,49 +2700,22 @@ Orchestrator code is read-only with respect to quotas and shall not set,
 override, emulate or enforce them; no project resource manager is introduced.
 The exact Service version/digest and OEM-approved metadata remain visible.
 
-The current `aos-signer` 2.0.1 `configuration.quotas` input fields are
-`cpuLimit`, `ramLimit`, `storageLimit`, `stateLimit`, `tmpLimit`,
-`noFileLimit` and `pidsLimit`. D4-023.2 fixes CPU input to DMIPS and its signed
-native field to `cpuDmipsLimit`; byte-size fields normalize to bytes. It
-accepts Brake `250/16/8/1/8/64/16` and Tire `150/16/4/2/2/32/8` for CPU DMIPS,
-RAM MiB, storage MiB, state MiB, tmp MiB, open files and PIDs respectively.
-Tire storage owns its persistent outbox/database metadata, state owns the
-versioned estimator and tmp owns temporary computation. No network quota is
-requested and silent inflation is forbidden.
+The `aos-signer` configuration.quotas fields are cpuLimit, ramLimit,
+storageLimit, stateLimit, tmpLimit, noFileLimit and pidsLimit. CPU input is
+DMIPS, signed as cpuDmipsLimit; byte-size fields normalize to bytes.
 
-Operator amendment, 16 September 2026: Brake `pidsLimit` is **24**, replacing
-16 in its current executable profile and package. The measured failing V3
-instance used one bootstrap plus 15 product threads and reported thread
-creation failure. The new release must demonstrate actual task consumption
-and headroom. No other quota or model threshold changes in this amendment;
-prior approved `noFileLimit: 1024` and Tire `pidsLimit: 16` remain in force.
-Only the native signed package requests the quota; no guest-side override is
-permitted. The historical initial envelope above is retained as provenance.
-Current Brake runtime profile SHA-256:
-`bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820`.
+| Service | CPU DMIPS | RAM MiB | Storage MiB | State MiB | Tmp MiB | Files | PIDs |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Brake | 250 | 16 | 8 | 1 | 8 | 1024 | 24 |
+| Tire | 600 | 16 | 4 | 2 | 2 | 1024 | 16 |
 
-Operator amendment, 3 October 2026: CPU-budget measurement and requalification
-for Tire are authorized through native signed releases to the retained M1 Test
-in staging. The first requested candidate is **300 DMIPS**, replacing 150 in
-the executable packaging profile. This is permission to qualify the candidate,
-not a live acceptance verdict. At 150 DMIPS, native `cpu.max` was `1500 100000`;
-a 25.009 s observation measured 231226 us CPU, 22 throttled periods and 1037207 us
-throttled time. Durable state operations sometimes held the shared input lock
-for 300–500 ms despite average use below the cap. The storage-replay, watchdog
-and unnecessary-copy corrections are independently tested. Qualify the new
-signed metadata/native mapping and repeat maneuvers, token renewal, restart,
-SOTA, unaffected Brake and security checks before selecting a final envelope.
-The existing 250 ms freshness, estimator, storage durability, other quotas and
-AosCore-only enforcement stay unchanged; manual cgroup overrides remain
-forbidden. Any prior quota-isolation dossier is stale for this candidate.
-
-Measured follow-up on the same day: the signed 300-DMIPS Tire 56 candidate
-completed three Tire products (including post-renewal) and an unaffected Brake
-product, but a 300.635 s soak still measured 69 throttled periods / 4245785 us
-throttled time and three readiness gaps. Average CPU was 1.020% of one core.
-The next executable candidate requests **600 DMIPS** using the same tested
-binary and native signed SOTA path. This remains requalification, not acceptance;
-no new timing tolerance or enforcement owner is introduced.
+These are declared native signed-package requests, not manual cgroup overrides
+or a completed isolation verdict. Tire's 600-DMIPS envelope requires its exact
+qualification binding; an older 150/300-DMIPS experiment or dossier cannot prove
+it. Tire storage owns bounded outbox/database metadata, state its estimator
+and tmp temporary computation. No network quota is requested. Freshness,
+algorithm, storage durability, other quotas and AosCore-only enforcement are
+unchanged; unsupported fields and silent quota inflation remain forbidden.
 
 Signed-config inspection plus post-deployment OCI/cgroup/file/storage evidence
 must prove the live mapping, including the Node DMIPS capacity used for CPU.
@@ -3024,8 +2761,8 @@ test. Freshness, saturation/recovery bands and cgroup mapping tolerance are
 measured during live characterization and frozen in the exact baseline-bound
 qualification profile; arbitrary percentage tolerance is forbidden.
 
-`PASS` requires exact Tire/approved-DMIPS identity (600-DMIPS candidate after the
-3 October measured follow-up), three saturation samples, bound
+`PASS` requires exact Tire identity and the quota frozen by its reviewed
+qualification profile, three saturation samples, bound
 cgroup cap/throttle proof, no Tire restart/replacement, one completed
 deterministic Brake event with Brake and VDP/KUKSA/Gateway/AosCore/Unit healthy,
 then three recovery samples without reinstall/restart. Existing scenario
@@ -3063,11 +2800,6 @@ VM operation.
 
 - Decision state: `DESIGN_REVIEWED`
 - Prepared: 2026-08-23
-- Canonical correlation context accepted: 2026-08-23
-- Timestamp semantics, causal order and demo-only claim boundary accepted: 2026-08-23
-- Structured evidence and pre-UI redaction accepted: 2026-08-23
-- Duplicate, out-of-order and clock-anomaly behavior accepted: 2026-08-23
-- Conformance and qualification matrix accepted: 2026-08-23
 - Owners: Demo Solution / Gateway / both Function Teams
 - Machine-readable contract:
   [Shared Evidence, Correlation and Chronology 1.0.0](../../contracts/shared-evidence-correlation/README.md)
@@ -3079,8 +2811,8 @@ provisioning, operational evidence binds the exact Validation or Production
 role, current `system_uid`, AosCloud Unit UUID, main Node UUID, source
 generation/frame or event range and the same bounded current-session window.
 
-Function messages carry only `unitSystemUid`, `unitRole`, their Service
-version/digest, VDP contract version/digest, source exercise/generation/event
+Current function messages carry `unitSystemUid`, `unitRole`, immutable Service
+release and native instance identity, VDP contract version/digest, source exercise/generation/event
 identity and their domain `eventId`, `assessmentId` or `requestId`. Cloud Unit
 and Node UUIDs and local run correlation do not enter Function Team payloads;
 demo surfaces join `system_uid` to current authoritative AosCloud state when
@@ -3128,9 +2860,11 @@ an owner contract explicitly requires it.
 D4-024.4 makes an identical key+digest retry idempotent: it reuses the original
 receipt/result and creates no new action or Dashboard row. Same key with a
 different digest is `IDEMPOTENCY_CONFLICT` and cannot replace accepted data.
-Producer epoch and sequence order state changes; receipt time does not. Restart
-creates a new epoch, and delayed old-epoch evidence may remain visible but
-cannot change current state or advisory.
+Producer epoch and sequence order state changes; receipt time does not. Ordinary process/container/VM restart preserves the advisory producer epoch
+and its next sequence. Producer replacement rotates that epoch once. Function
+observation reserves its own persisted generation per producer process; it
+never borrows or advances advisory sequence numbers. Delayed older evidence
+cannot replace current state or advisory.
 
 Reconnect retries only unacknowledged immutable messages and completes
 synchronization only after every sequence through the declared watermark is
@@ -3148,7 +2882,8 @@ retired-run input, digest conflicts, sequence rollback, late old epochs,
 invalid or owner-impossible time, missing watermarks and forbidden/unknown UI
 fields. Clock anomalies use fixtures rather than changing Mac or VM clocks.
 
-VU integration proves normal Brake/Tire chains, restart/new epoch, the atomic
+Expanded VU integration proves normal Brake/Tire chains, ordinary restart
+with epoch preservation, explicit producer replacement with epoch rotation, the atomic
 vehicle external-connectivity fault, local offline decisions, immutable retry
 and acknowledged reconnect synchronization without duplicate rows or current
 state rollback. PU rehearses one normal and one offline/reconnect chain with
@@ -3156,13 +2891,15 @@ the same reviewed contracts and prepared artifacts.
 
 `PASS` requires exact Unit/role/source/team binding, valid causality, the full
 idempotency/ordering matrix, no forbidden data in browser state, R0 cleanup and
-no demo-history database. Evidence is consumed by the future D4-025 common
+no demo-history database. Evidence is consumed by the D4-025 common
 acceptance dossier; D4-024 creates no separate archive.
 
-The design is closed. Implementation and live qualification remain open. No
-implementation or external mutation is authorized by this review.
+The contract defines acceptance obligations. Selected implementation/live
+evidence is in the current baseline; the full matrix is not inferred from it.
+This decision alone authorizes no external mutation.
 
-## W6 — End-to-End Assertions and Qualification Plan
+<a id="w6--end-to-end-assertions-and-qualification-plan"></a>
+## End-to-End Assertions and Qualification Plan
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
@@ -3173,11 +2910,6 @@ implementation or external mutation is authorized by this review.
 
 - Decision state: `DESIGN_REVIEWED`
 - Prepared: 2026-08-23
-- Canonical acceptance-case/atomic-stage model accepted: 2026-08-23
-- Assertion predicates and authoritative evidence references accepted: 2026-08-23
-- Demo Solution Qualification Run and Demo Baseline Qualification Dossier accepted: 2026-08-23
-- Exact parameterized AT-E2E stage map accepted: 2026-08-23
-- Verdict composition and framework qualification accepted: 2026-08-23
 - Owners: System Acceptance / Demo Solution / all evidence owners
 - Machine-readable contract:
   [End-to-End Stage Evidence 1.4.0](../../contracts/e2e-stage-evidence/README.md)
@@ -3316,7 +3048,7 @@ authorizes no implementation or external mutation.
   [Demo Run State, Overlays and Cleanup](../../contracts/demo-run-state/README.md)
 
 All four D4-026.1 modes use the one existing non-production AosCloud
-environment used by this demo. The first implementation does not introduce a
+environment used by this demo. The installed profile does not introduce a
 second tenant or a third vehicle role. Identity lifetime is divided into three
 non-interchangeable classes:
 
@@ -3547,7 +3279,7 @@ A formal run writes only to `.local/qualification/candidate/`. After schema,
 forbidden-data, digest/reference, R0 and human-review checks pass, the candidate
 is sealed and atomically replaces `current/`. The previous current dossier is
 preserved until the replacement has been completely validated and installed;
-only then is it deleted. The first implementation keeps no dossier history and
+only then is it deleted. The installed profile keeps no dossier history and
 never cherry-picks records from failed attempts into a later candidate.
 
 A failed, aborted, incomplete or interrupted candidate does not replace the
@@ -3617,539 +3349,162 @@ This closes D4-026.6. Implementation, UI mockups, measured presenter rehearsal
 and qualification against the real baseline remain open; the decision
 authorizes no external mutation.
 
-### <a id="d4-026-7"></a>D4-026.7 Accepted — Linear Audience Interaction Model
+### <a id="d4-026-7"></a>D4-026.7 — Linear Audience Interaction Model
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Owners: Demo owner / Demo Solution Team / component presenters
-- Canonical presentation decision:
-  [I0-DEC-001 Linear Audience Interaction Model](../demo/mockups/README.md#i0-dec-001)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-The first implementation uses one composed full-screen audience workspace with
-fixed CARLA, Vehicle Controller and Engineering Telematics evidence on the left
-and the selected team workspace on the right. As refined by D4-026.19, the
-team context remains fixed and only its release/version story scrolls. All
-versions for the selected Platform, Brake or Tire team remain visible in one
-linear narrative. Vertical order explains product evolution but does not
-impose execution order, disable versions or merge the teams' independent
-lifecycle state.
+Keep live native evidence visible beside factual producer context. Navigation cannot impose a global release state machine or fabricate a missing dependency.
 
-The presenter may change team perspective at any stage. Action availability
-comes only from fresh authoritative state and accepted dependency rules; a
-missing required Vehicle Data Platform Component version blocks the dependent
-Service deployment with a factual reason rather than hiding or disabling the
-Service version itself. The global current Test or Production Vehicle remains
-visible, and optional details use a modal overlay that returns to the unchanged
-story. D4-X01 remains authoritative for implementation availability: until an
-implementing AosCloud release is qualified, the UI labels this dependency path
-unavailable/deferred and shall not add a project-side admission controller or
-claim that a local preflight is native Cloud enforcement.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [I0-DEC-001 Linear Audience Interaction Model](../demo/mockups/README.md#i0-dec-001)
 
-This is a Level-A presentation decision. HLA, Demo Scenario, Architecture
-Flows, system behavior and authority boundaries are revalidated without
-semantic change. The switch-based comparison mockup is not an active baseline.
-Detailed Interaction Specification Sections 1–7 are accepted; its remaining
-sections, implementation and real-system qualification remain open. This
-closes the linear-model choice and authorizes no implementation or external
-mutation.
-
-### <a id="d4-026-8"></a>D4-026.8 Accepted — Current Vehicle and Update-State Presentation
+### <a id="d4-026-8"></a>D4-026.8 — Current Vehicle and Update-State Presentation
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Owners: Demo owner / Demo Solution Team / Platform Team / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 3](../demo/mockups/aosedge-demo-interaction-specification.md#3-current-vehicle-and-test-to-production-handover)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-`Current Vehicle` is one global presentation/live-source state independent of
-Platform, Brake or Tire perspective. The audience explicitly selects
-`Continue with Production Vehicle` or `Continue testing on Test Vehicle`; the
-header changes only after D4-005 source handover succeeds and otherwise shows
-an honest transition, unavailable or reconciliation state. Repeated
-Test-to-Production-to-Test release cycles remain supported without replay or a
-second CARLA actor.
+One selected source/vehicle context is independent of actor navigation. Native Safe Stop gates Platform FOTA; moving QM SOTA retains all other authority/readiness checks.
 
-Vehicle Data Platform Component FOTA is vehicle-critical in this demo. Its
-card visibly requires `Safe Stop` before application. OEM Release Authority may
-record the Test or Production authorization while the current vehicle moves;
-AosCloud owns that authorized desired update and delivery record but is not
-claimed to evaluate physical motion. AosCore inside the vehicle is the native
-enforcement point that waits for Safe Stop before applying Platform FOTA. The
-Demo UI presents the policy and factual state; it implements no duplicate
-safety gate.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 3](../demo/mockups/aosedge-demo-interaction-specification.md#3-current-vehicle-and-test-to-production-handover)
 
-Brake and Tire are QM Service SOTA. Their accepted updates may be shown while
-the vehicle moves, subject to every existing authority, dependency, recipient,
-evidence and readiness gate. The Production Platform proof first demonstrates
-the current baseline in motion, records the independent rollout authorization,
-then enters Safe Stop for AosCore application, proves readiness while stopped
-and resumes driving only through an explicit control.
-
-This is a Level-B clarification because it corrects the former undifferentiated
-VDP/Service in-motion claim while preserving HLA ownership and native AosEdge
-enforcement. The affected architecture prose, scenario, flows, requirements
-and audience mockup are updated together. Migration of machine-readable
-qualification profiles remains a separately reviewed executable-contract
-change; this decision does not silently version those producer/consumer
-interfaces. It authorizes no external mutation.
-
-### <a id="d4-026-9"></a>D4-026.9 Accepted — Test Validation and Production Live Operation
+### <a id="d4-026-9"></a>D4-026.9 — Test Validation and Production Live Operation
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Owners: Demo owner / Platform, Brake and Tire producer teams / OEM Release
-  Authority / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-Every audience release uses one prepared immutable candidate. The owning team
-publishes it once; the independent OEM Release Authority authorizes deployment
-to the Test Vehicle after pre-deployment evidence review; the owning team
-validates and accepts the exact artifact on that vehicle; and OEM Release
-Authority separately authorizes rollout of the unchanged artifact to the
-Production Vehicle. Publication, producer acceptance, OEM authorization and
-AosCloud execution remain distinct decisions and operations.
+Test evidence, owning-team acceptance, OEM authorization and expanded Production operation are different decisions/facts. Expanded promotion reuses accepted bytes without another product test.
 
-The Production Vehicle is not a second product-validation lane. AosCloud and
-AosCore delivery, actual-state and readiness re-reads confirm rollout health,
-after which Scenario, Manual or Autopilot driving shows the released capability
-in ordinary operation. The audience UI uses `Production rollout and live
-operation`, `Show released behavior` and `Drive Production Vehicle`; it does
-not request a Production test or producer acceptance of a Production result.
-Any PU rehearsal used to qualify the demo solution occurs before audience
-presentation under `CR-E2E` and does not alter this product lifecycle.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
 
-This Level-B clarification corrects legacy role wording in which a producer
-team appeared to authorize its own Unit deployment and legacy presentation
-wording that could make Production driving look like another validation run.
-HLA ownership, VU-first acceptance, identical PU promotion, native update-state
-enforcement and AosCloud authority remain unchanged. It authorizes no code,
-Cloud or Unit mutation.
-
-### <a id="d4-026-10"></a>D4-026.10 Accepted — Action, Authority and Authoritative Results
+### <a id="d4-026-10"></a>D4-026.10 — Action, Authority and Authoritative Results
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-25
-- Owners: Demo owner / Platform, Brake and Tire producer teams / OEM Release
-  Authority / Demo Solution Team / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-The first demo has no Cloud identity or generic demo credential. Its protected
-native helper uses one OEM user certificate through the non-interchangeable
-`platform-oem` and `oem-delivery` operation profiles, plus two independent
-Service Provider owner identities and certificates for Brake and Tire. The
-Admin certificate is outside the demo. This preserves organizational actor
-separation without claiming two cryptographically distinct OEM identities in
-the first iteration.
+Name the actor and exact target; keep intent, local operation, external result and function evidence separate. Reconcile uncertainty before another effect; no browser keys or hidden auto-approval.
 
-Every protected action binds an explicit actor, exact bounded intent, fresh
-prerequisites, resource-conflict keys and authoritative post-read. Disjoint
-producer operations may progress independently. One visible `Authorize
-Production rollout` decision may execute the bounded Campaign
-create/read/approve/reconcile sequence, but each external mutation retains its
-own journal/reconciliation boundary and any uncertainty stops the sequence.
-Blind retry, hidden cross-team chaining and HTTP-success-as-completion are
-forbidden.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
 
-The audience has no separate `Apply update` action. After OEM authorization,
-the UI observes Cloud delivery and AosCore actual/readiness. Platform FOTA
-waits for presenter-selected Safe Stop and native AosCore application before
-driving resumes; Brake/Tire QM SOTA remains subject to the accepted in-motion
-policy. `Prepare Demo` and `End and Reset Demo` are global run-exclusive
-chapters, while `Start or Restore Demo Environment` is a non-provisioning
-operator preflight. D4-026.15 owns their exact M0/M1/G0/R0 visual boundary.
-
-The accepted first-demo action inventory additionally includes read-only
-authoritative recheck, role-scoped native operational logs without ELK or a
-second archive, repeatable Scenario/Manual/Autopilot/current-drive restart,
-the single vehicle-external-connectivity control and the fixed Tire CPU proof.
-This Level-B decision closes Interaction Specification Section 5 and
-authorizes no implementation, certificate issuance, Cloud mutation,
-provisioning, vehicle operation or cleanup.
-
-### <a id="d4-026-11"></a>D4-026.11 Accepted — Details, Runtime Isolation and Operational Logs
+### <a id="d4-026-11"></a>D4-026.11 — Details, Runtime Isolation and Operational Logs
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / Platform, Brake and Tire producer
-  teams / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 6](../demo/mockups/aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-`Details` is a read-only right-workspace explanation of one exact release
-stage. It uses a human-first summary and collapsed technical disclosure,
-preserves the fixed CARLA/Controller/Engineering workspace and exposes no
-lifecycle action. Complete non-secret release digests may be shown, while full
-private Unit, Node, `system_uid` and Cloud-object identities remain behind the
-Representation Layer and appear only as sanitized fingerprints.
+Read-only detail preserves context and source/freshness. Quota proof is not a Details field; native logs remain optional, role-scoped and bounded without another archive.
 
-Only Brake and Tire Service Details show signed requested and OEM-approved
-Service quotas. Vehicle Data Platform Component Details show their capability
-delta, data contract, compatibility, Safe Stop policy, lifecycle and integrity
-without a Service-quota or substitute component-resource table. The live Tire
-CPU proof is a separate sticky `Runtime Isolation Evidence` panel sourced from
-fresh AosCloud/AosCore facts, accepted cgroup qualification and concurrent
-Brake/platform continuity. Engineering Telematics remains limited to its
-Gateway/KUKSA vehicle-signal and advisory role.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 6](../demo/mockups/aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
 
-Native operational logs use a separate context-bound right-workspace overlay
-for installed/running software at Test validation or Production live-operation
-stages. Platform, Brake and Tire use only their accepted disjoint scopes. The
-overlay supports protected request, read-only authoritative status recheck,
-bounded sanitized result and exact deletion, with R0 fallback cleanup. It adds
-no ELK path, second archive, arbitrary selector, raw Cloud response or
-unrestricted log output.
-
-VDP is a trusted native platform component rather than a quota-managed SOTA
-tenant. Its diagnostics originate only from standard output/error captured by
-the native systemd journal; VDP owns no log file, log database or archive. The
-Platform action uses the fixed label `Platform Logs` and delegates only the
-accepted Unit/system/VDP request scope to AosEdge/AosCloud delivery. VDP
-Details show neither a Service quota nor a substitute component-resource or
-storage table. The persistent slots/state/credentials tree belongs to OEM
-Component Runtime A/B working storage, not to VDP application state.
-
-This Level-B decision closes Interaction Specification Section 6 and changes
-no HLA component ownership or authoritative source. It authorizes no UI
-implementation, CPU load, log request, Cloud mutation or vehicle operation.
-
-### <a id="d4-026-12"></a>D4-026.12 Accepted — Failure, Offline and Recovery Presentation
+### <a id="d4-026-12"></a>D4-026.12 — Failure, Offline and Recovery Presentation
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / Platform, Brake and Tire producer
-  teams / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 7](../demo/mockups/aosedge-demo-interaction-specification.md#7-failure-offline-and-recovery-states)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-The audience UI preserves exact external-source state, local orchestration
-state and evidence/acceptance result as separate layers. `AosEdge Platform` is
-the prominent source for current software lifecycle, deployment and managed
-runtime state, with exact AosCloud/AosCore ownership retained in technical
-disclosure. Gateway/CARLA and Function facts keep their actual sources, and no
-stale value remains a current success.
+Scope failure to its owner and give a factual reason/safe next action. Vehicle external loss is not presenter Cloud failure. Unknown, stale and measured zero remain distinct.
 
-The accepted vocabulary distinguishes `BLOCKED`, `WAITING`, `UNCERTAIN`,
-`RECONCILING` and `RECOVERY REQUIRED` without generic retry, force, ignore or
-continue-anyway controls. Platform FOTA may wait normally for Safe Stop after
-authorization. Service incompatibility is governed by OEM evidence sequencing
-and process-healthy/functional-`NOT_READY` runtime defense without simulating
-the deferred native Cloud rejection.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 7](../demo/mockups/aosedge-demo-interaction-specification.md#7-failure-offline-and-recovery-states)
 
-One Current Vehicle external-connectivity action removes only the selected
-Unit's external AosCloud and Service-backend paths. Demo UI-to-AosCloud and the
-local in-vehicle plane remain available. Ordinary uncertainty blocks only
-overlapping conflict keys; provisioning, identity, current-source and R0
-uncertainty plus corrupt registry remain global. Operational Logs and Runtime
-Isolation use the exact accepted auxiliary state/verdict models and never infer
-success from partial evidence.
-
-This Level-B decision closes Interaction Specification Section 7 and changes
-no HLA component ownership or authoritative state owner. It authorizes no UI
-implementation, retry/recovery mutation, connectivity fault, log request, CPU
-proof, Cloud mutation or vehicle operation.
-
-### <a id="d4-026-13"></a>D4-026.13 Accepted — Live Vehicle and Function Evidence Correlation
+### <a id="d4-026-13"></a>D4-026.13 — Live Vehicle and Function Evidence Correlation
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / Platform, Brake and Tire producer
-  teams / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 8](../demo/mockups/aosedge-demo-interaction-specification.md#8-vehicle-and-function-backend-correlation)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-One audience context binds the exact Current Vehicle, selected release,
-installed graph, fresh CARLA exercise/generation and external-connectivity
-state. A human-first chain links the visible vehicle event, Gateway/KUKSA
-signals, on-vehicle Service behavior and matching Function result without
-merging their authoritative owners. Platform releases show capability evidence
-without an invented Function backend; Brake and Tire remain isolated.
+Correlate native vehicle event, service decision, backend receipt and display by exact scope/source times. Receipt time is not a new event or a latency benchmark; replay is not live proof.
 
-Test acceptance uses the previously qualified deterministic Brake or Tire
-stimulus. Production normally uses Autopilot or Manual to demonstrate released
-operation; a deterministic Production exercise is allowed only when a
-guaranteed audience event is needed and never creates a second validation or
-acceptance result. No telemetry replay or second CARLA actor is introduced.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 8](../demo/mockups/aosedge-demo-interaction-specification.md#8-vehicle-and-function-backend-correlation)
 
-Sanitized vehicle, release, source-generation, event and result fingerprints
-bind the same evidence across surfaces. Source-owned event, local-decision,
-Gateway-application, backend-receipt and synchronization times remain separate
-and create no cross-clock latency KPI or demo-run ID.
-
-While the Current Vehicle is externally offline, CARLA, local signals,
-assessment and advisory remain locally observable, while the matching backend
-shows no new events. Current Service queue occupancy, storage use and overflow
-are explicitly not observable from outside. The UI may show configured bounds
-and last-observed facts but learns delivered, pending or dropped counts only
-after a matching post-reconnect synchronization summary or overflow fact; no
-out-of-band monitoring bypass is added.
-
-Current Vehicle handover is bidirectional for repeated release cycles. Both
-`Test -> Production` and `Production -> Test` use safe stop, exclusive detach,
-canonical reset/new generation, exclusive attach and first-fresh-frame proof.
-Handover changes no installed software graph: each Unit retains its releases,
-accepted Test evidence remains a sealed decision reference, and Production
-live evidence always starts fresh. Full graph/identity reset remains R0-only.
-
-This Level-B decision closes Interaction Specification Section 8 and changes
-no HLA component ownership, Cloud lifecycle authority or Service data contract.
-It authorizes no UI implementation, vehicle handover, scenario execution,
-connectivity fault, Cloud mutation or Unit operation.
-
-### <a id="d4-026-14"></a>D4-026.14 Accepted — UI Traceability and Acceptance Cases
+### <a id="d4-026-14"></a>D4-026.14 — UI Traceability and Acceptance Cases
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / all visible-surface owners / System
-  Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 9](../demo/mockups/aosedge-demo-interaction-specification.md#9-traceability-and-ui-acceptance-cases)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-Every `UI-INT-001` through `UI-INT-079` maps bidirectionally to its actual
-architecture/requirement owner and at least one stable `UI-AT-*` case. The
-accepted suite has 50 mandatory cases with parameterized release, action,
-state, drive-mode and owner instances rather than copied requirements.
+All stable UI interactions map to upstream requirements, owning surfaces and acceptance cases. Mechanical fixtures, API proof and visible/native UI qualification remain separate verdicts.
 
-Each case has one primary source event or presenter action, explicit source
-preconditions, expected and forbidden visible results, authoritative evidence
-and cleanup where state changes. Required verification levels are deterministic
-`FIXTURE`, real-source `INTEGRATED` and qualified-presenter-Mac `HUMAN`.
-Machine/source failure cannot be overridden; required human presentation review
-may reject an otherwise machine-passing case.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 9](../demo/mockups/aosedge-demo-interaction-specification.md#9-traceability-and-ui-acceptance-cases)
 
-The suite covers composed layout/navigation, independent actor/credential
-boundaries, bidirectional Current Vehicle handover, seven release stories,
-Safe Stop/in-motion update policy, authoritative result/reconciliation,
-Details/redaction/log/isolation behavior, all fixed failure states, external
-vehicle offline/reconnect, and the full live vehicle-to-Function correlation
-chain. Screenshots are supporting evidence only. Automated documentation checks
-must reject invalid links, duplicate/orphan IDs and uncovered interaction
-rules.
-
-This Level-B decision closes Interaction Specification Section 9 and completes
-version 2.3 review. It changes no HLA ownership, lifecycle authority, product
-contract or qualification truth and authorizes no UI implementation, external
-operation or vehicle/Unit mutation.
-
-### <a id="d4-026-15"></a>D4-026.15 Accepted — Global M0/M1/G0/R0 Interaction Model
+### <a id="d4-026-15"></a>D4-026.15 — Global M0/M1/G0/R0 Interaction Model
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / OEM Release Authority / System
-  Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-The operator-facing lifecycle separates infrastructure readiness from vehicle
-manufacturing and provisioning. `Start or Restore Demo Environment` is a
-non-provisioning preflight. At `READY_FOR_M0` it starts and checks the local
-support stack without requiring vehicle VMs or Cloud Units; during an active
-run it may restore only the exact existing overlays and reports readiness only
-after fresh AosCloud reads prove both existing Units `Online`. It creates no
-overlay, identity, Unit Set membership or Current Vehicle.
+Installed Create makes one Test; Provision connects its same identity/source; Stop preserves it and Finish retires only owned data. Expanded use additionally requires independent Production manufacture and retirement.
 
-`Prepare Demo` contains two explicit run-exclusive operations. `M0` verifies
-the immutable Factory Image and creates exactly two fresh unprovisioned Test
-and Production overlays, visibly `Manufactured · Awaiting provisioning` with
-no Cloud identity and no Current Vehicle. `M1` provisions only that pair,
-proves unique Unit/Main Node identities, fresh dual-Unit `Online` state and
-exact disjoint Verification/Production Unit Set membership. Its bounded
-completion establishes the visible `G0` baseline by making Test the initial
-exclusive Current Vehicle and proving CARLA/Gateway/Engineering operation with
-VDP and both Services absent. `G0` is a resulting state, not another
-provisioning or release mutation.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 5](../demo/mockups/aosedge-demo-interaction-specification.md#5-action-authority-and-authoritative-result-contract)
 
-`End and Reset Demo` is available after a completed, failed or aborted run and
-does not require a qualification verdict. It presents high-level progress while
-retaining exact API/identity evidence in Details. Successful R0 ends at local
-`READY_FOR_M0`, clears the Current Vehicle and starts neither M0 nor M1. Any
-unproven step remains `Reset incomplete · Recovery required`, preserves bounded
-recovery material and blocks the next M0 without blocking read-only diagnosis.
-
-This Level-B clarification removes the former collapsed Prepare operation and
-automatic next-run transition while preserving the accepted Factory Image,
-provisioning, Unit Set, source-handover and retirement authorities. It extends
-the interaction suite to `UI-INT-076` and `UI-AT-047`; implementation and live
-qualification remain open, and no external mutation is authorized.
-
-### <a id="d4-026-16"></a>D4-026.16 Accepted — Independent Releases and Derived G3/G4 Milestones
+### <a id="d4-026-16"></a>D4-026.16 — Independent Releases and Derived G3/G4 Milestones
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Platform Team / Brake Function Team / OEM Release Authority / Demo
-  Solution Team / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-G3 and G4 are human-readable capability milestones, not deployable AosCloud
-release groups. Every VDP FOTA and Brake SOTA retains its own candidate,
-publication, Verification Batch, Test authorization, owning-team acceptance,
-Fleet Validation state, OEM Production authorization, Campaign/per-Unit result
-and readiness. OEM Release Authority authorizes one exact artifact at a time;
-there is no `Approve G3/G4`, combined Campaign, atomic multi-artifact operation
-or cross-team rollback.
+VDP, Brake and Tire retain separate release objects and acceptance. G3/G4 summarize observed compatible graphs; no combined approval, Campaign or automatically advanced release is introduced.
 
-Production applies the provider first. VDP v2/v3 is separately authorized,
-enters Safe Stop for FOTA application and becomes actually ready while the
-previous backward-compatible Brake Service continues to operate. Only fresh
-required-VDP readiness may enable the separately authorized dependent Brake
-Service rollout. Brake delay or failure leaves the VDP release intact and the
-derived milestone incomplete.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 4](../demo/mockups/aosedge-demo-interaction-specification.md#4-platform-brake-and-tire-linear-release-stories)
 
-The audience summary may show `G3/G4 capability · 0 of 2`, `1 of 2` or `2 of
-2 releases ready`. It is calculated from fresh authoritative release/readiness
-facts plus matching live Function evidence and is never written back as Cloud
-lifecycle state. Platform cards say what they enable; Brake cards say which VDP
-they require. Team perspective switching, operations and failures remain
-independent.
-
-This Level-B decision replaces the former combined-graph promotion wording in
-`SYS-REL-009`, `REQ-AOS-008`, G3/G4 flows and acceptance requirements while
-preserving provider-first compatibility, Test-before-Production and explicit
-OEM authority. It extends the UI suite to `UI-INT-077` and `UI-AT-048`;
-implementation and live qualification remain open, and no external mutation is
-authorized.
-
-### <a id="d4-026-17"></a>D4-026.17 Accepted — Workspace Composition and Shared Header Ownership
+### <a id="d4-026-17"></a>D4-026.17 — Workspace Composition and Shared Header Ownership
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / OEM Software Delivery Dashboard
-  owner / visible-surface owners / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, Section 1](../demo/mockups/aosedge-demo-interaction-specification.md#1-screen-composition-and-global-interaction-invariants)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-The composed one-display workspace has an explicit responsibility split.
-`CMP-ORCH` through the trusted Presenter Launcher owns only the physical shell:
-exact owned-window discovery and launch order, the measured display profile,
-reserved compact header geometry, placement of CARLA, Controller, Engineering
-Telematics and the browser, visibility/non-overlap/readability proof and safe
-local layout restoration after a surface or presenter-Mac restart.
+The host owner places native/browser windows; Presenter owns factual content/navigation. Workspace state is separate from the vehicle journal and restores no Cloud authority.
 
-`CMP-SW-DASH` through its stateless Representation Layer owns the shared
-header's meaning: title, one Current Vehicle projection, Platform/Brake/Tire
-summaries and perspective navigation. It uses the same read model as the
-right-hand browser workspace and creates no second Cloud read, lifecycle store
-or authority. Every native/browser surface retains ownership of its content.
-CARLA and Controller remain native windows and are not embedded, streamed or
-screen-captured into the browser.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, Section 1](../demo/mockups/aosedge-demo-interaction-specification.md#1-screen-composition-and-global-interaction-invariants)
+- [native setup contract](../../contracts/distribution-installation/native-setup.md#independent-window-metadata--accepted-29-september-2026)
 
-Composition is a local substep of `Start or Restore Demo Environment`, not an
-audience lifecycle action. A local `Restore workspace layout` may reapply only
-the accepted geometry and shall make no Cloud, VM, Unit, vehicle, Current
-Vehicle or release mutation. A missing, duplicated, off-screen, overlapped or
-unreadable required surface is `Workspace incomplete`, not a Cloud/vehicle/
-release failure or success. The exact macOS mechanism remains live
-implementation qualification on the presenter Mac.
-
-This Level-B clarification adds `IF-DEMO-002`, `REQ-DEMO-023`,
-`UT-DEMO-021`, `UI-INT-078` and `UI-AT-049`. It introduces no new HLA
-component, repository, persistent privileged daemon, product-content owner or
-lifecycle authority. Implementation and presenter-Mac qualification remain
-open, and no external mutation is authorized.
-
-Accepted 29 September 2026 installed-workstation amendment: preserve physical
-window metadata separately in the existing workspace directory. First/repeat/
-restarted Open Presenter must not create a vehicle-run journal; old journals
-remain read-only to layout operations and their validation stays strict.
-This refines physical persistence only, not lifecycle authority. The accepted
-[native setup contract](../../contracts/distribution-installation/native-setup.md#independent-window-metadata--accepted-29-september-2026)
-defines the file/schema boundary and negative/restart evidence.
-
-### <a id="d4-026-18"></a>D4-026.18 Accepted — Global Lifecycle Workspace and Qualification Status
+### <a id="d4-026-18"></a>D4-026.18 — Global Lifecycle Workspace and Qualification Status
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / OEM Software Delivery Dashboard
-  owner / System Acceptance
-- Canonical interaction contract:
-  [Interaction Specification, UI-INT-079](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-079)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-Selecting the shared title `AosEdge Software Evolution Demo` opens the global
-`Demo Lifecycle` page only in the right browser region. The shared header and
-fixed CARLA, Vehicle Controller and Engineering Telematics surfaces remain
-visible. The page is not a fourth producer perspective, changes no producer
-state and uses the same stateless Representation Layer read model as the team
-views.
+Installed runtime/Stop/Start/Finish controls reuse existing owners. Expanded qualification and lifecycle views add evidence, not a second orchestrator or automatic next run.
 
-The page composes the run-wide Qualification Status, Prepare Demo M0/M1 and
-resulting G0 baseline, current global lifecycle and recovery, and End and Reset
-Demo R0. Qualification Status is the bounded state accepted by D4-026.5 and is
-derived from the current sealed dossier plus exact baseline comparison. It has
-no lifecycle or release authority and no manual green override. The official
-audience baseline must be `QUALIFIED`; diagnostic use of another status is
-shown honestly and is not presented as audience-ready.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [Interaction Specification, UI-INT-079](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-079)
 
-`Start or Restore Demo Environment` and `Restore workspace layout` remain
-native Presenter Launcher actions. The browser may display their reconciled
-results but shall not duplicate or invoke them. This Level-B clarification adds
-`REQ-DEMO-024`, `UT-DEMO-022`, `UI-INT-079` and `UI-AT-050`. It changes no HLA
-component, Cloud authority, lifecycle state machine or physical workspace
-owner. Implementation and live qualification remain open, and no external
-mutation is authorized.
-
-### <a id="d4-026-19"></a>D4-026.19 Accepted — Fixed Team Context and Version-Only Scrolling
+### <a id="d4-026-19"></a>D4-026.19 — Fixed Team Context and Version-Only Scrolling
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-26
-- Owners: Demo owner / Demo Solution Team / OEM Software Delivery Dashboard
-  owner
-- Canonical presentation decision:
-  [I0-DEC-014 Fixed Team Context and Version-Only Scrolling](../demo/mockups/README.md#i0-dec-014)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-Each Platform, Brake or Tire perspective keeps one compact team-context region
-fixed inside the right browser workspace. That region contains the one-line
-team name and purpose, compact non-selectable OEM Release Authority line, three
-current-state summaries and the applicable Platform capability, Function
-backend or Runtime Isolation evidence panel. Only the release/version region
-below it scrolls.
+Keep selected context and readable native evidence stable. Installed integrated cards/dialogs replace mandatory five-stage scrolling cards; view state never substitutes for fresh owner facts.
 
-Each producer perspective preserves its own release/version scroll and focus
-context. The fixed team region has no presenter-managed scroll or expansion
-step. The global Demo Lifecycle page retains its own independent whole-page
-scroll inside the right region. Decorative `Linear Release Story` and
-`Authorization not execution` badges are removed without changing the
-underlying producer, Release Authority or AosCloud execution semantics.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [I0-DEC-014 Fixed Team Context and Version-Only Scrolling](../demo/mockups/README.md#i0-dec-014)
 
-This is a Level-A presentation refinement. It amends `UI-INT-004`,
-`UI-INT-008`, `UI-INT-010`, `UI-AT-002` and `UI-AT-004` and strengthens the
-existing `REQ-DEMO-023`/`REQ-E2E-012` workspace qualification. It changes no
-HLA component, scenario, Architecture Flow, system requirement, interface,
-credential, release state, authority or external mutation.
-
-### <a id="d4-026-20"></a>D4-026.20 Accepted — Icon Vocabulary and Native Terminal Boundary
+### <a id="d4-026-20"></a>D4-026.20 — Icon Vocabulary and Native Terminal Boundary
 
 - Subdecision state: `ACCEPTED`
-- Accepted: 2026-08-27
-- Owners: Demo owner / Demo Solution Team / Engineering Telematics owner / OEM
-  Software Delivery Dashboard owner
-- Canonical presentation decision:
-  [I0-DEC-015 Icon Vocabulary and Native Terminal Boundary](../demo/mockups/README.md#i0-dec-015)
-- Canonical interaction rules:
-  [UI-INT-003 Fixed Vehicle-Evidence Workspace](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-003)
-  and
-  [UI-INT-051 Fixed Audience Vocabulary](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-051)
+- Owner: Demo Solution / System Architecture and the affected product owners
 
-The repository-local icon family may be used in the browser Demo UI, shared
-composition chrome, team/release/lifecycle cards, `Details` and protected
-actions, and the native Vehicle Controller where that surface supports image
-assets. An icon always supplements explicit text. It never replaces a stable
-label and never becomes authoritative evidence for lifecycle, vehicle,
-telemetry or release state.
+Icons/colour supplement readable labels without changing evidence semantics. Native Driving Control/Telemetry is not a browser rendering or required text-only Terminal dashboard.
 
-The Engineering Telematics Dashboard remains the existing native macOS
-Terminal renderer with monospaced text and optional ANSI color. Its output
-does not receive PNG/bitmap assets, terminal inline-image escape protocols, an
-HTML overlay inside the terminal content or a second Representation Layer
-renderer. A Vehicle Signals icon may label the surrounding composed surface,
-but it remains outside Terminal content and carries no evidence semantics.
-
-This is a Level-A presentation and rendering-ownership clarification. It
-amends `UI-INT-003`, `UI-INT-051`, `UI-AT-002` and `UI-I0-003`. It changes no
-HLA component, scenario, Architecture Flow, system requirement, interface,
-credential, release state, authority or external mutation and authorizes no
-implementation.
+Detailed rules, case allocation and exact interaction behavior remain in
+the owning specification; no review narrative is a second normative copy.
+- [I0-DEC-015 Icon Vocabulary and Native Terminal Boundary](../demo/mockups/README.md#i0-dec-015)
+- [UI-INT-003 Fixed Vehicle-Evidence Workspace](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-003)
+- [UI-INT-051 Fixed Audience Vocabulary](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-051)
 
 ## Explicitly Deferred or Out-of-Scope Items
 

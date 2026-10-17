@@ -105,7 +105,7 @@ for a first install, the slot shall remain empty. The runtime then reconstructs
 the pending transaction, obtains fresh evidence and either resumes the same
 candidate idempotently or fails it without activating.
 
-Operator-approved correction, 2026-09-06: `StartInstance` returns Activating
+The native completion boundary requires: `StartInstance` returns Activating
 asynchronously; `StopInstance` waits for actual worker completion before
 returning success/Inactive, as required by the pinned native launcher. Its
 completion barrier never owns the main runtime mutex. A stopped predecessor

@@ -5,12 +5,11 @@
 
 Implementation and qualification: [protocol status](../implementation-status.md).
 
-The 5 September server-TLS-only local exception is historical. The current
-Test workflow uses strict selected-Unit mTLS and separate safety/observer roles;
-scoped proof is in the [Factory39 ignition receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-ignition-2026-09-24.md).
-Legacy engineering exception support is not the normal Studio trust mode and
-must not be represented as strict-mTLS qualification. The original dual-role
-contract remains broader than the current Test-only milestone.
+The installed Test uses strict selected-Unit mTLS with separate observer and
+safety roles. Use [implementation status](../implementation-status.md) and its
+exact baseline for scoped proof. Legacy server-only fixtures are neither an
+installed trust mode nor mTLS qualification. Expanded two-role use adds
+independent credential/binding and handover proof.
 
 - Decision: [`D4-006`](../../docs/requirements/d4-decision-register.md#d4-006)
 - Contract version: 1.1.0

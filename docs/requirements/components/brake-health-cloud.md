@@ -39,7 +39,8 @@ integrated Presenter views. Expanded dual-role/two-SP promotion and resource
 proof obligations remain where allocated; they are not first-use prerequisites.
 The [implementation map](../../architecture/current-implementation.md) and
 [baseline](../../qualification/current-baseline.md) own current source/proof.
-Accepted requirement Statements and stable UT IDs below are unchanged.
+Stable requirement/test IDs are retained; the owning clauses below state the
+effective obligations and profile-specific scope.
 
 ## Purpose
 
@@ -261,10 +262,11 @@ source/Unit/run correlation supplied to it.
 | QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Selected VU/PU reaches the correct local endpoint without LAN exposure; reported `system_uid` is correlation-only | Integration gate fails; Unit data stays queued and the dashboard shows offline |
 | Native `brake-sp1` publication helper | Function Team 1 release owner | Common session-scoped helper available through a local authenticated boundary; fixed PKCS#12 exists with mode `0600` outside Git and every browser/container/VM/artifact | Sign/publish control is disabled with a factual reason |
 
-## Current Implementation Baseline
+<a id="current-implementation-baseline"></a>
+## Implementation and verification boundary
 
 Use the [shared status authorities](README.md#implementation-and-qualification)
-for selected evidence, code ownership and protocol amendments. Requirement and
+for selected evidence, code ownership and protocol definitions. Requirement and
 verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
@@ -636,7 +638,7 @@ components.
 <a id="req-brake-cloud-012"></a>
 
 - ID: `REQ-BRAKE-CLOUD-012`
-- Statement: The Function Dashboard shall present Test Vehicle and Production Vehicle observations as separate sequential live source bindings with distinct execution intervals and generation/frame ranges, and shall not imply that two CARLA vehicles were simultaneously connected when one source was reused. The internal wire role for the Test Vehicle remains `VALIDATION`. Telemetry replay is outside the first implementation.
+- Statement: In the expanded Validation/Production profile, the Function Dashboard shall present Test Vehicle and Production Vehicle observations as separate sequential live source bindings with distinct execution intervals and generation/frame ranges, and shall not imply that two CARLA vehicles were simultaneously connected when one source was reused. The internal wire role for the Test Vehicle remains `VALIDATION`. Telemetry replay is outside the current profile.
 - Rationale: The demo must show honest qualification/promotion evidence despite one visible simulated vehicle source.
 - Parent system requirements: [Exact source-to-Unit binding (`SYS-SRC-001`)](../system-requirements-and-traceability.md#sys-src-001), [Honest single-source presentation (`SYS-SRC-002`)](../system-requirements-and-traceability.md#sys-src-002)
 - Architecture flow: [One visible source, two Unit roles (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
@@ -829,9 +831,9 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
   obligation IDs and their `REQ-BRAKE-CLOUD-*` mappings remain stable until
   deliberately retired.
 
-## Review provenance
+<a id="review-provenance"></a>
+## Authority and verification
 
-The [accepted review history](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/7691072c88de9558f6c9a88687d304462c759d34/docs/requirements/components/brake-health-cloud.md) preserves prior version deltas and review dates.
-Current obligations, stable identifiers, acceptance criteria and outstanding
-verification gates remain in this document; a historical approval is not a
-claim that its implementation or full live matrix has passed.
+This document owns its current obligations, stable IDs and acceptance criteria.
+Use the linked current baseline for exact scoped evidence. Accepted design is
+not a claim that the complete implementation or live matrix has passed.

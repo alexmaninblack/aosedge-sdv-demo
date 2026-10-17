@@ -5,18 +5,18 @@
 
 Implementation and qualification: [protocol status](../implementation-status.md).
 
-The 5 September server-TLS-only local exception is historical. The current
-Test workflow uses strict selected-Unit mTLS and separate safety/observer roles;
-scoped proof is in the [Factory39 ignition receipt](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/qualification/factory-39-ignition-2026-09-24.md).
-Legacy engineering exception support is not the normal Studio trust mode and
-must not be represented as strict-mTLS qualification. The original dual-role
-contract remains broader than the current Test-only milestone.
+The installed Test uses strict selected-Unit mTLS with separate observer and
+safety roles. Its exact current proof is linked from
+[implementation status](../implementation-status.md); legacy server-only
+fixtures are not an installed trust mode or strict-mTLS evidence.
+The expanded dual-role contract below adds sequential Validation/Production
+handover; those additional duties are not ordinary single-Test prerequisites.
 
 - Decision: [`D4-005`](../../docs/requirements/d4-decision-register.md#d4-005)
 - Contract version: 1.0.0
 - Lifecycle state: accepted contract; implementation and qualification remain open
 
-This contract separates the audience story from the first-demo implementation
+The expanded profile separates the audience story from its source-assignment
 constraint:
 
 - the audience sees a **Test Vehicle** and a **Production Vehicle**;
@@ -40,7 +40,7 @@ Unit/source information behind technical details.
 
 The logical vehicle role is orchestration/presentation state. It shall not be
 published into the in-vehicle VSS/KUKSA production data path. The technical
-view remains honest that the first implementation reuses one visual CARLA
+view remains honest that the current profile reuses one visual CARLA
 source sequentially and implements no telemetry replay.
 
 Exclusivity applies to the selected **Unit** peer. The independently

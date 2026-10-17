@@ -7,19 +7,14 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 
 - Decision: `D4-018`
 - Lifecycle state: `ACCEPTED`
-- Contract version: `1.1.2` (authorized Tire CPU requalification candidate;
-  model thresholds, 250 ms freshness and all other quotas unchanged)
-- Subdecision state: exact VDP v3 input/incompatibility, bounded dynamics
-  episode, deterministic synthetic estimator and persistent hysteresis/
-  idempotency plus pre-demo calibration/qualification policy accepted
-  2026-08-23; local advisory chain plus persistence/offline/readiness/resource
-  boundary and logs/fault isolation accepted 2026-08-23
+- Contract version: `1.1.2`
 
-Current packages request 600 DMIPS through signed native metadata. The earlier
-150/300-DMIPS measurements do not select a live quota or authorize an in-guest
-override. The fixed CPU-isolation demonstration and full resource acceptance
-remain separate D4-023 obligations; declaration/monitoring is not proof.
-No input-quality, freshness, model or other quota change follows.
+Current packages request 600 DMIPS through signed native metadata. Full
+resource acceptance and the fixed CPU-isolation demonstration remain separate
+D4-023 obligations; a quota declaration or monitoring is not enforcement proof.
+The synthetic model, 250-ms input freshness, other quotas, dynamics episode,
+persistent hysteresis/idempotency, advisory, offline/readiness and isolation
+requirements below retain their accepted meanings.
 
 This package defines the accepted current-demo contract for the single
 Tire Health Service v1.0. It consumes only the accepted VDP v3 native dynamics
@@ -28,7 +23,7 @@ are qualification truth and are forbidden from the Service, KUKSA, backend and
 dashboard.
 
 Service v1.0 is compatible only with VDP v3 and consumes the exact 15-path
-subset frozen in the product profile. Under the accepted [option-A amendment](../service-runtime-inputs/active-vdp-capability-amendment.md),
+subset frozen in the product profile. Under the [active-capability evidence contract](../service-runtime-inputs/active-vdp-capability-amendment.md),
 Presenter establishes exact VDP compatibility from Cloud/artifact evidence.
 The service validates real local inputs, remains waiting/not-ready on absent
 or invalid data, and recovers automatically; absence alone must not be called
@@ -146,7 +141,8 @@ Files:
 This accepted design contract authorizes no implementation, repository
 creation, artifact publication, Cloud mutation or Unit deployment by itself.
 
-## Native product provenance — 2026-09-11
+<a id="native-product-provenance--2026-09-11"></a>
+## Current and legacy product provenance
 
 For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
 defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.

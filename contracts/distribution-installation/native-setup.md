@@ -378,7 +378,8 @@ or Cloud access, request Full Disk Access/recording, or alter existing owners.
 After an operator grants the OS permission, a new explicit Open rechecks it.
 
 <a id="independent-window-metadata--accepted-29-september-2026"></a>
-### Independent window metadata — accepted 29 September 2026
+<a id="independent-window-metadata--accepted-29-september-2026"></a>
+### Independent window metadata
 
 Opening/restoring/closing Presenter must not create a vehicle-run journal.
 Create Controller remains the vehicle-journal initialization boundary. The
@@ -435,7 +436,8 @@ Do not reset TCC, request Full Disk Access, disable Gatekeeper or promise that a
 other permission categories/apps share this one consent. The first transition
 from an ad-hoc preview to the stable signer can legitimately require consent.
 
-### Direct distribution signing — accepted 29 September 2026
+<a id="direct-distribution-signing--accepted-29-september-2026"></a>
+### Direct distribution signing
 
 The [accepted channel](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
 is Developer ID Application and Apple notarization, not TestFlight. Preserve
