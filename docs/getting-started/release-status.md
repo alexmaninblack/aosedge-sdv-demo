@@ -22,6 +22,7 @@ DMG just because its filename or product version looks the same.
 Keep a verified local copy for another installation. The app is Apple
 Development signed, not notarized. Do not disable macOS security controls to
 open it. Continue with [installation and Cloud access](installed-preview-cloud-first-use.md).
+No personal Apple signing identity is needed to install the selected package.
 
 ## Build the installer
 
@@ -34,6 +35,12 @@ The [developer build selection](../../workspace/current-developer-build.json)
 is separate from route A's downloadable DMG. It determines the producer plan
 and compatible inputs. Public inputs need no Google login. Have Xcode and an
 authorized Apple Development signing identity available.
+See [obtaining your signing identity](macos-developer-tools.md#apple-signing-access).
+
+B reproduces its reviewed component/producer selection, not arbitrary local
+edits. To install its result, use [that DMG's Setup](reproduce-demo.md#install-your-build)
+rather than returning to A. For your own source revisions, use the
+[contributor path](../../CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
 
 This route reuses the vehicle simulator and **Factory image**, the clean
 Linux/AosEdge base for the ARM64 virtual controller. To prepare tools for
@@ -50,7 +57,8 @@ account; Brake and Tire are separate services under that SP.
 Setup accepts existing certificate files or requests new ones using OEM/SP
 issuance tokens from the official Cloud flow. Existing certificates determine
 the environment. For new certificates, choose **Production** or **Staging**.
-Register accounts and obtain invitations through the official Cloud process.
+For exact registration, welcome-email and token steps, follow
+[Cloud access from scratch](installed-preview-cloud-first-use.md#new-cloud-access).
 No credentials, account sessions or provisioned controller are included in
 the DMG or a source clone.
 

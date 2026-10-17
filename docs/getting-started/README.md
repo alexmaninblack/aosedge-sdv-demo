@@ -21,6 +21,11 @@ and Cloud credentials. The [launcher reference](unified-macos-launcher.md)
 covers saved choices, repeats and optional controls.
 For a system overview, use the [component map](../architecture/product-map.md).
 
+For first-time access, use [Cloud registration and token steps](installed-preview-cloud-first-use.md#new-cloud-access).
+For a B result, [install that exact DMG](reproduce-demo.md#install-your-build),
+not the published A package. Editing components is a separate
+[contributor workflow](../../CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
+
 ## When something stops
 
 Use [troubleshooting](troubleshooting.md). Keep the failed operation's message

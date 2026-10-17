@@ -37,6 +37,29 @@ isolated Python/Node, downloads, caches and results use the selected workspace.
 Preparation does not change shell profiles, upgrade unrelated tools, move
 shared storage or restart Docker Engine.
 
+<a id="apple-signing-access"></a>
+
+## Apple signing access
+
+Only the **B build** needs your own Apple Development signing identity; A uses
+the package publisher's signature. Neither is an OEM/SP Cloud certificate.
+
+1. Install compatible Xcode, open it and complete Apple's license/components.
+2. In **Xcode → Settings → Accounts**, sign in with your own Apple Account and
+   select the development team you are authorized to use.
+3. Open **Manage Certificates…**. Reuse a usable **Apple Development** identity,
+   or use **+ → Apple Development** if you need to create one and have that
+   permission. If your organization manages signing, ask its administrator;
+   do not revoke somebody else's certificate or import the publisher's key.
+4. Rerun B and select the listed identity. Its private key must also be in this
+   Mac's unlocked login Keychain; downloading a public certificate alone is
+   insufficient. Review any normal Keychain signing prompt locally.
+
+See Apple's [certificate types and account guidance](https://developer.apple.com/help/account/certificates/certificates-overview/).
+The launcher neither creates this identity nor exports its key. An Apple
+Development signature is for the engineering workflow; it does not make your
+DMG a Developer ID/notarized public distribution.
+
 ## Storage and completion
 
 A writable APFS parent may be on the internal disk or an external SSD.
@@ -45,6 +68,24 @@ checks host-tool locations before installing there. This reserve is not the
 complete build's size. After cloning, the build-space planner checks workspace
 and Docker capacity against the selected build. Docker may use a separate
 local volume; neither preparation nor the build relocates its data.
+
+<a id="capacity-planning"></a>
+
+### Capacity planning before a fresh build
+
+| Resource | What to allow for |
+| --- | --- |
+| Selected APFS workspace | Verified compressed downloads, extracted inputs, pinned source/tool checkouts, intermediate components, packaging scratch and the final DMG, plus the reserve. Expect a several-hundred-GiB working budget for a fresh B run, not a 90 GiB total allowance. |
+| Docker's backing disk | ARM64 backend/service build layers and exports. If it is on another disk, free space on the workspace does not solve a Docker-disk shortage. Unrelated projects also share its capacity. |
+| Internal tool disk | Xcode, Homebrew and Docker applications keep their normal locations even with an external workspace. Allow their own installation/update space. |
+| Memory | Ordinary installed-demo operation has a 16 GiB Apple Silicon reference configuration. B compilation has no established universal RAM minimum or measured clean-host peak; do not infer it from A. Avoid parallel builds and unrelated memory-heavy work. Full-source Factory has its separate 32 GiB host requirement. |
+
+This is planning guidance, not a measured cold-build upper bound. The workflow
+prints **Binary inputs: … to download if uncached; … unpacked** and performs
+separate workspace/Docker checks before large stages. Those checks and each
+owner's headroom guard remain authoritative; they cannot guarantee that other
+applications will not consume space or memory later. No heavy build begins
+just to measure capacity. If you only want to run the demo, choose A instead.
 
 `READY FOR SOURCE PREPARATION` means the host checks completed. The default
 route then checks out sources, downloads and fully verifies the archives,

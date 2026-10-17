@@ -4,6 +4,7 @@
 """Check current reader claims against source paths, without executing owners."""
 import ast
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -11,6 +12,112 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class DocumentationReaderModelTests(unittest.TestCase):
+    def test_cloud_first_use_explains_role_emails_and_real_certificate_limits(self):
+        guide = ' '.join((ROOT / 'docs/getting-started/installed-preview-cloud-first-use.md').read_text().split())
+        for term in ('id="new-cloud-access"', 'two welcome emails',
+                     'OEM issuance token', 'Service Provider issuance token',
+                     'Copy **only that token**', 'Do not run the email',
+                     'unencrypted `.p12`', 'RSA package-signing',
+                     'not your email password', 'cannot approve your registration'):
+            self.assertIn(term, guide)
+        for url in ('https://aoscloud.io/',
+                    'https://aws-stage.epmp-aos.projects.epam.com/',
+                    'https://docs.aosedge.tech/docs/how-to/register-your-users/create-first-account'):
+            self.assertIn(url, guide)
+        native = (ROOT / 'scripts/distribution/native/Setup.swift').read_text()
+        self.assertIn('OEM issuance token', native)
+        self.assertIn('Service Provider issuance token', native)
+        self.assertIn('CLOUD_PACKAGE_SIGNING_RSA_KEY_REQUIRED', native)
+        self.assertIn('unencrypted PKCS#12', native)
+
+    def test_vm_password_is_a_scoped_public_development_default(self):
+        helper = (ROOT / 'scripts/host/aosvm-expect-password').read_text()
+        public_default = re.search(r'^set password "([^"\n]+)"$', helper, re.M).group(1)
+        guide = ' '.join((ROOT / 'docs/getting-started/installed-preview-cloud-first-use.md').read_text().split())
+        self.assertIn('`' + public_default + '`', guide)
+        for text in ('public test password', 'not your Mac, Apple or Aos Cloud password',
+                     'Save in Keychain', 'different/custom image',
+                     'not suitable for a real vehicle'):
+            self.assertIn(text, guide)
+
+    def test_first_drive_uses_actual_controls_and_separates_quick_preparation(self):
+        guide = ' '.join((ROOT / 'docs/operations/current-demo-workflow.md').read_text().split())
+        studio = (ROOT / 'apps/presenter-ui/src/app/StudioWorkspace.tsx').read_text()
+        for label in ('Full story', 'Quick preparation', 'Create controller',
+                      'Start simulator', 'Sign & publish', 'Provision to Test',
+                      'Connect in Manual', 'Assign to Test', 'Refresh publication',
+                      'Refresh Cloud state', 'Continue preparation'):
+            with self.subTest(label=label):
+                self.assertIn(label, guide)
+                self.assertIn(label, studio)
+        self.assertIn('Expected result / next step', guide)
+        self.assertIn('No manual certificate or Gateway configuration is needed', guide)
+        self.assertIn('Do not also repeat Full story', guide)
+        self.assertIn('only after the preceding version has installed', guide)
+        native = ROOT.parent / 'carla-ego-runtime/tools/KeyboardControl.swift'
+        if native.is_file():
+            for label in ('BRAKE MANEUVER', 'TIRE MANEUVER'):
+                self.assertIn(label, native.read_text())
+                self.assertIn(label, guide)
+
+    def test_own_dmg_installation_does_not_reenter_published_route_a(self):
+        guide = ' '.join((ROOT / 'docs/getting-started/reproduce-demo.md').read_text().split())
+        for text in ('id="install-your-build"', 'double-click that DMG',
+                     'AosEdge SDV Lab Setup',
+                     'Do **not** return to route A', 'exact checksum',
+                     'Do not change the public catalog'):
+            self.assertIn(text, guide)
+        install = (ROOT / 'scripts/launcher/install-macos.sh').read_text()
+        self.assertIn('size=$(route_field operator.bytes)', install)
+        self.assertIn('digest=$(route_field operator.sha256)', install)
+        self.assertIn('DMG checksum differs', install)
+        first_use = (ROOT / 'docs/getting-started/installed-preview-cloud-first-use.md').read_text()
+        self.assertIn('reproduce-demo.md#install-your-build', first_use)
+
+    def test_source_changes_are_not_claimed_as_an_arbitrary_b_working_tree_build(self):
+        contribution = ' '.join((ROOT / 'CONTRIBUTING.md').read_text().split())
+        for text in ('id="from-a-source-change-to-your-own-installer"',
+                     'git clone https://github.com/alexmaninblack/aosedge-sdv-demo.git',
+                     'frozen build inputs', 'nativeSources', 'producers',
+                     'repository-map.json', 'successor cache namespace',
+                     'no downloaded-launcher option to build arbitrary dirty working trees'):
+            self.assertIn(text, contribution)
+        readme = ' '.join((ROOT / 'README.md').read_text().split())
+        self.assertIn('reproduce the selected project build', readme)
+        self.assertNotIn('You want to change project components or build an installer', readme)
+        bootstrap = (ROOT / 'scripts/developer_bootstrap.py').read_text()
+        self.assertIn('Existing source has local changes', bootstrap)
+
+    def test_fresh_source_selection_keeps_old_receipts_and_caches(self):
+        guide = ' '.join((ROOT / 'docs/getting-started/unified-macos-launcher.md').read_text().split())
+        for text in ('id="start-a-new-build-selection"', '**new empty parent folder**',
+                     '--route B --parent', 'Keep the prior workspace, caches and outputs intact',
+                     'Do not edit `root-source.json`'):
+            self.assertIn(text, guide)
+        build = (ROOT / 'docs/getting-started/reproduce-demo.md').read_text()
+        self.assertIn('unified-macos-launcher.md#start-a-new-build-selection', build)
+
+    def test_resource_and_signing_guidance_does_not_claim_a_cold_build_peak(self):
+        guide = ' '.join((ROOT / 'docs/getting-started/macos-developer-tools.md').read_text().split())
+        for text in ('id="apple-signing-access"', 'Settings → Accounts',
+                     'Manage Certificates', 'private key',
+                     'id="capacity-planning"', 'not a 90 GiB total allowance',
+                     'not a measured cold-build upper bound',
+                     'no established universal RAM minimum',
+                     "Docker's backing disk"):
+            self.assertIn(text, guide)
+
+    def test_contributor_and_fresh_parent_commands_parse_without_running_them(self):
+        for relative in ('CONTRIBUTING.md',
+                         'docs/getting-started/unified-macos-launcher.md'):
+            blocks = re.findall(r'```sh\n(.*?)```', (ROOT / relative).read_text(), re.S)
+            self.assertTrue(blocks)
+            for block in blocks:
+                with self.subTest(document=relative, block=block):
+                    result = subprocess.run(['/bin/sh', '-n'], input=block,
+                                            text=True, capture_output=True, timeout=5)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_component_entries_delegate_complete_demo_to_the_launcher(self):
         components = [
             'aos-vehicle-platform', 'carla-ego-runtime',

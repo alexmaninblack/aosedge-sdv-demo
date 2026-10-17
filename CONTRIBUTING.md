@@ -20,6 +20,62 @@ policy and keep one writer per checkout. External contributions require review;
 the single-maintainer direct-main convention is not permission to bypass it.
 Never reset or clean another contributor's files.
 
+<a id="from-a-source-change-to-your-own-installer"></a>
+
+## From a source change to your own installer
+
+There are two different tasks: **B reproduces the reviewed build**, whereas
+**component development changes the source selection**. Prepared sources under
+`<parent>/sdv/source` and `<parent>/sdv/build/sources` are frozen build inputs,
+not editable development workspaces. Neither local edits nor a component's
+new `main` automatically enter the next DMG.
+
+For an integration change, open Terminal in an existing development folder
+outside those prepared trees and create your own working checkout:
+
+```sh
+git clone https://github.com/alexmaninblack/aosedge-sdv-demo.git aosedge-sdv-demo-work
+cd aosedge-sdv-demo-work
+git switch -c feature/my-lab-change
+```
+
+For a component change, clone its owning repository from the
+[component map](docs/architecture/product-map.md#source-ownership) into a separate
+working folder instead. Then:
+
+1. Make and test the change in that working checkout using the owner's local
+   instructions below. Commit it; never edit installed programs or use their
+   private Python as a build environment.
+2. Submit the exact commit for review. Until it is accepted into a successor
+   build selection, ordinary B continues reproducing the existing selection.
+   A working branch is not automatically a selectable installer candidate.
+3. The integration owner creates the reviewed successor input selection from
+   `workspace/build-definition.json` and its declared input closure. The
+   source lock is `workspace/inputs/sources.lock.json`; the
+   ordered producer plan is `workspace/releases/build-plan.json` and its
+   selector is `workspace/current-developer-build.json`. For Presenter/Setup
+   and native UI changes, the plan's `nativeSources` selects exact integration
+   and Gateway commits; its `producers` selects packaging tool commits. The
+   maintenance-only `repository-map.json` does not select package code.
+4. Keep unchanged CARLA/Factory/input identities and verified cache objects.
+   A changed input closure needs an explicitly reviewed successor cache
+   namespace; do not rebind the old one. Follow
+   [workspace projection maintenance](workspace/README.md) for an authorized
+   definition change and [release source selection](docs/development/release-campaign.md#current-ui-source-selection)
+   for current UI/native inputs. Review the dependent catalog/source pins
+   together; do not guess checksums, rewrite published descriptors or rebind
+   an old completed build to new source. Incompatible dependency changes need
+   their own reviewed inputs before packaging.
+5. After the matching selection/tools are published, start B in a
+   [fresh workspace](docs/getting-started/unified-macos-launcher.md#start-a-new-build-selection)
+   and install its exact result through [that DMG's Setup](docs/getting-started/reproduce-demo.md#install-your-build).
+   Public option A changes only through separate release acceptance/promotion.
+
+There is no downloaded-launcher option to build arbitrary dirty working trees
+or choose an unreviewed branch. Use the component's local build for development;
+use the reviewed selection above for an integrated installer. This distinction
+preserves reproducibility rather than silently shipping different source.
+
 ## Make and verify a change
 
 1. Read the accepted requirements and interface contract for the affected

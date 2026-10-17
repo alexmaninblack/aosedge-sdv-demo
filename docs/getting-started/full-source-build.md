@@ -9,7 +9,9 @@ clean Linux/AosEdge base from which a controller VM is created, not a running
 or provisioned vehicle.
 
 For UI, Gateway, services and backends, use the [developer route](reproduce-demo.md)
-and reuse those heavy dependencies. To run a prebuilt package, use
+to reproduce the reviewed build and reuse those heavy dependencies. To include
+your own changes, use the [contributor workflow](../../CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
+To run a prebuilt package, use
 [installation](installed-preview-cloud-first-use.md).
 
 ## What option C prepares

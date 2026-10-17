@@ -96,7 +96,7 @@ The menu offers:
 | Choice | Use it when | What you receive |
 | --- | --- | --- |
 | **A / 1** | You want to use the demo without compiling | The selected DMG is downloaded and verified, then Setup opens for installation and Cloud access |
-| **B / 2** | You want to change project components or build an installer | A new engineering DMG, reusing the prebuilt simulator and controller image |
+| **B / 2** | You want to reproduce the selected project build and installer | A new engineering DMG, reusing the prebuilt simulator and controller image |
 | **C / 3** | You need to rebuild the controller image or vehicle simulator | Tools prepared for the selected component; source, Builder and full-build prerequisites remain separate |
 
 The launcher shows the selected route and its plan. Existing compatible tools
@@ -104,6 +104,14 @@ and verified files are reused. Resolve a reported prerequisite, then rerun the
 same downloaded file; it remembers your last route. It never silently updates
 a retained checkout, formats storage, deletes your Test, moves Docker data or
 publishes software to Cloud.
+
+For a first visit, choose **A / 1** unless you need to compile. Have Docker
+Desktop initialized and internet access available. You need your own Aos Cloud
+OEM/SP access to operate the vehicle, but no Apple signing identity to install.
+See [before you start](docs/getting-started/installed-preview-cloud-first-use.md#before-opening-setup)
+for storage/memory planning and [Cloud access from scratch](docs/getting-started/installed-preview-cloud-first-use.md#new-cloud-access)
+if you have no certificates. To edit source rather than reproduce a selected
+build, follow [making your own changes](CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
 
 <a id="release-status"></a>
 
@@ -141,7 +149,7 @@ It does not restart a running Engine or interfere with another project's data.
 In **Setup**, follow **Install SDV Lab → Connect to Aos Cloud → Open SDV Lab**.
 The complete DMG already contains its matching Runtime Kit; leave it beside
 Setup in the mounted image. Opening the lab displays **Presenter**, the operator
-interface. **Create Controller** begins the vehicle workflow; opening Presenter
+interface. **Create controller** begins the vehicle workflow; opening Presenter
 alone does not start the controller, CARLA or Driving Control.
 
 Cloud access requires one vehicle manufacturer (**OEM**) and one associated
@@ -149,7 +157,8 @@ Cloud access requires one vehicle manufacturer (**OEM**) and one associated
 new certificates in Setup using OEM/SP issuance tokens from the official Cloud
 flow. Existing certificates identify the Cloud environment; for new certificates
 choose **Production** or **Staging**. Account registration remains a separate
-Cloud process. Credentials are not included in the DMG.
+Cloud process; the [first-use guide](docs/getting-started/installed-preview-cloud-first-use.md#new-cloud-access)
+explains the two welcome emails and token fields. Credentials are not included in the DMG.
 
 macOS may request its normal permissions during setup. Keep the image mounted
 until Setup quits; afterward you can eject it and use the installed application.
@@ -182,7 +191,8 @@ Choose **2**. The developer workflow prepares tools, records the root repository
 checks storage, then builds and signs the engineering DMG. No additional clone
 or build commands need to be copied. Have compatible Xcode and your Apple
 Development signing identity available; first-run/license/system prompts remain
-explicit. The old standalone `prepare-macos.sh` command remains supported.
+explicit. The [preparation reference](docs/getting-started/macos-developer-tools.md#apple-signing-access)
+explains how to obtain your signing identity.
 
 Choose an existing writable APFS parent folder on either the internal disk or
 an external disk. An external SSD is useful, not mandatory. Capacity is checked
@@ -197,6 +207,9 @@ Its result is a readable DMG path under
 `<workspace>/output/`, labelled `BUILD COMPLETE / CHAIN_BUILT_NOT_QUALIFIED`.
 It does not install, start or upload the resulting demo. Installation is a
 separate deliberate route using that candidate's matching approved inputs.
+For your own result, mount the reported DMG and open **its** Setup; do not
+return to A, which selects the published package. Follow
+[install your build](docs/getting-started/reproduce-demo.md#install-your-build).
 
 Downloads show the artifact name and progress. Measurable work shows byte/step
 progress; other long work shows activity without an invented ETA. Temporary
@@ -205,7 +218,9 @@ results and compact diagnostic logs remain reusable after interruption.
 
 See the optional [preparation reference](docs/getting-started/macos-developer-tools.md)
 or [developer build guide](docs/getting-started/reproduce-demo.md) for diagnosis,
-not another required checklist.
+not another required checklist. B does not build arbitrary edits in prepared
+checkouts: [source changes](CONTRIBUTING.md#from-a-source-change-to-your-own-installer)
+need their own committed, reviewed input selection.
 
 <a id="heavy-dependencies"></a>
 <a id="c--prepare-factory-or-simulator-tools"></a>

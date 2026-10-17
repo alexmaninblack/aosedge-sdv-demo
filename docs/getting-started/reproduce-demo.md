@@ -15,6 +15,10 @@ Unreal/CARLA or the controller image. For those tools, see the
 [specialist route](full-source-build.md). To run the demo without compiling,
 use [route A](installed-preview-cloud-first-use.md).
 
+B reproduces the **reviewed source selection**, not every component's latest
+`main` and not edits in your current directory. To develop your own changes,
+start with [source change to installer](../../CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
+
 ## 1 Prepare the host and access
 
 Have these prerequisites available; the launcher checks versions and explains
@@ -29,10 +33,18 @@ any required action before continuing:
 | Existing writable local APFS parent folder | Sources, downloads, caches, temporary work and results |
 | Authorized Apple Development identity in Keychain | Signing the Setup application |
 
+You do not have to install Git, CMake, Python or Node by hand before starting:
+the launcher checks/reuses them and offers its supported preparation path.
+Xcode's first-run setup, Docker initialization and your signing identity need
+your own consent. Follow [Apple signing access](macos-developer-tools.md#apple-signing-access)
+if you have no identity yet. Apple signing is not Aos Cloud access.
+
 The parent folder may be on the internal disk or an external SSD. Leave room
 for the complete build, not just the downloaded archives: the launcher checks
 the workspace and Docker's actual backing storage separately before large
 stages. It does not move Docker storage or restart a running Engine.
+See [capacity planning](macos-developer-tools.md#capacity-planning) before a
+fresh build; the 90 GiB preparation reserve is not a whole-build estimate.
 
 No Google account, input-binding JSON files, Cloud certificates or old
 installed kit are needed for this build. Xcode, Homebrew and Docker may
@@ -49,6 +61,8 @@ follow the preparation prompts. Confirm the workflow and signing identity.
 
 The launcher records the integration repository's `main` revision at the
 start and obtains the component revisions from its selected build plan.
+That root revision supplies workflow/selection metadata; it does not mean
+all packaged components are built from that same current `main`.
 It checks the compatible public dependency catalog automatically; do not
 collect the component repositories or select input JSON files by hand.
 
@@ -92,11 +106,30 @@ interruption; owned temporary files are cleaned separately.
 
 Do not start another build in the same workspace while one is active.
 For a deliberate new source selection or a storage change, use the
-[launcher reference](unified-macos-launcher.md) rather than editing saved state.
+[fresh workspace procedure](unified-macos-launcher.md#start-a-new-build-selection)
+rather than editing saved state. Rerunning an existing workspace resumes its
+old selection; downloading a newer launcher alone does not advance it.
 
-## Next steps
+<a id="install-your-build"></a>
+<a id="next-steps"></a>
 
-Install the resulting DMG through its matching Setup application using the
-[installation guide](installed-preview-cloud-first-use.md). Building does not
-create a Cloud Unit, publish services, launch the simulator or upload the DMG.
-For source changes and release publication, see [Contributing](../../CONTRIBUTING.md).
+## Install your build
+
+1. Copy the exact **DMG** output path printed at **BUILD COMPLETE**. Open its
+   enclosing `output` folder in Finder and double-click that DMG. For another
+   Mac, transfer this complete file, not the app extracted on its own.
+2. In that mounted image, open **AosEdge SDV Lab Setup**. Leave its matching
+   **Runtime Kit** beside it. Respect normal macOS security decisions; a
+   successful build is not notarization or permission to bypass Gatekeeper.
+3. Join the [installation guide at Install and select local data](installed-preview-cloud-first-use.md#install-and-select-local-data),
+   then connect your own OEM/SP access and open Presenter.
+
+Do **not** return to route A for this step. A selects the published package,
+and even its `--dmg` option accepts only that package's exact checksum and
+identity, not an arbitrary local B result. Do not change the public catalog
+or expected checksum to make your candidate pass A.
+
+Building creates no Cloud Unit and does not publish services, launch the
+simulator or upload the DMG. Those are separate explicit actions. A local
+engineering candidate is not automatically the public release. For source
+changes and release publication, see [Contributing](../../CONTRIBUTING.md).

@@ -22,6 +22,11 @@ is not accepted automatically. Keep Setup and Runtime Kit together. The image
 stays mounted for Setup; quit Setup before ejecting it. If handoff fails, the
 launcher detaches only an image it mounted itself.
 
+To install your own B result, open its reported DMG and its matching Setup
+directly: see [install your build](reproduce-demo.md#install-your-build).
+`--dmg` is only a way to supply the selected A package locally; it does not
+switch the approved release or authorize arbitrary developer output.
+
 A's public download requires no storage-provider login. Unexpected sign-in or
 warning pages, incorrect sizes and checksum mismatches stop the download;
 there is no automatic private-download or alternate-provider fallback.
@@ -57,6 +62,30 @@ Temporary files use `.tmp` and are cleaned separately from sources, verified
 caches, logs and results. Host applications and Homebrew stay in their normal
 locations. Selecting an external workspace does not move those tools or
 shared Docker storage.
+
+<a id="start-a-new-build-selection"></a>
+
+### Start a new build selection
+
+Resuming and updating are different actions. To select current `main` again,
+finish or cancel the active build, download the launcher again using README,
+then create a **new empty parent folder** in Finder on your chosen APFS disk.
+Run the launcher and pass that folder with `--parent`, or choose it at the B
+storage prompt. It must be a different parent, not the existing `sdv` child:
+the workflow creates a new `<parent>/sdv` and records a new root revision.
+
+For example, with your actual existing new folder substituted for the path:
+
+```sh
+/bin/bash "$HOME/Downloads/aosedge-sdv-lab.sh" --route B --parent "/absolute/existing/new-parent"
+```
+
+Keep the prior workspace, caches and outputs intact; this procedure does not
+erase or move them. The new selection still uses the reviewed component/producer
+plan in that root, not every component's latest branch. To include your own
+source commits, follow [the contributor path](../../CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
+Do not edit `root-source.json`, ownership markers or completed build receipts,
+and do not pull inside a frozen prepared checkout to force an update.
 
 Ctrl+C stops the current owned transfer/tool process and removes its temporary
 files and lock. It does not erase a Test or stop Docker Engine. Keep the first

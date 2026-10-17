@@ -13,33 +13,68 @@ Aos Cloud does not mean promoting a Test into the separate Production vehicle ro
 
 ## Preparation and version sequence
 
-1. Select the intended Cloud instance, OEM and one associated SP configuration for both independent services.
-   Check access and first-use tenant prerequisites before publication. Prepared
-   packages are unsigned; sign with the selected instance's current certificate.
-   Neither an old signature nor a previous tenant's identity is reusable authority.
-2. Use **Create Controller** to create an empty ARM64 virtual controller from
-   the selected **Factory image**, its clean Linux/AosEdge base. This Test run
-   has its own VM, Cloud identity and data; VDP and services are installed later.
-   Any retained Production identity/backing image is outside the Test workflow.
-3. Start or reuse CARLA and native Driving Control / Telemetry in detached mode.
-   A not-yet-provisioned controller is not a usable Gateway destination.
-4. Prepare and publish VDP V1, provision the selected Test and observe Cloud
-   Online. Attach the existing Gateway to that same Unit using strict mTLS.
-   Attachment starts stationary in Manual; it must not reload the CARLA scene
-   or create a second simulator/control panel.
-5. Use explicit Safe Stop to permit VDP application. Upload accepted by Cloud,
-   pending update, installed release and confirmed profile are separate states.
-   Wait for the exact version and verify its function before advancing.
-6. Publish and assign Brake V1. Exercise the native brake maneuver and verify
-   a vehicle-derived capture at its backend. Autopilot stopping at an obstacle
-   is not, by itself, proof that a complete qualifying brake event was captured.
-7. Progress through the selected scenario: VDP V2 then Brake V2; VDP V3 then
-   Brake V3; Tire V1 requires VDP V3 inputs. Publish each next version only
-   after the preceding version has installed and passed its check. Publishing
-   all versions at once can cause the Unit to receive only the latest version.
-8. Check products, native advisory, independent Reset Driver Advisory and
-   renewed results; use the dedicated Brake and Tire physical maneuvers.
-   Do not substitute telemetry or lower model thresholds to obtain a warning.
+First complete **Setup → Connect to Aos Cloud** with one OEM and its associated
+SP, then **Open SDV Lab**. You do not need another Cloud setup in Presenter.
+Use the **Vehicle**, **Platform**, **Brake** and **Tire** views and the **Next
+step** guide; **Activity** shows the current operation and its result.
+
+### First drive: Full story
+
+Leave **Advanced preparation → Preparation → Full story** selected. This is
+the default and exposes each lifecycle step. Complete one row before the next:
+
+| Where | Action | Expected result / next step |
+| --- | --- | --- |
+| Vehicle | Keep the supplied Factory firmware and choose **Create controller**; confirm and supply VM access if requested | A new Test controller is created from the clean Linux/AosEdge base. It has no installed VDP/services. Wait for completion and **Start simulator**. |
+| Vehicle → Next step | Choose **Start simulator** | CARLA and native Driving Control / Telemetry appear. They can run before Cloud provisioning, without a controller data connection. Do not open another simulator manually. |
+| Platform | Select **v1**, choose **Prepare v1**, then **Sign & publish** and confirm the selected Cloud/release | Wait for the publication to become ready. Uploaded/processing is not yet ready or installed. The Vehicle guide then offers **Provision to Test**. |
+| Vehicle → Next step | Choose **Provision to Test** and confirm; use **Continue registration** only if the same attempt needs continuation | Demo Control registers this Test, observes Cloud Online and connects the existing simulator in stationary Manual. If offered, **Connect in Manual** completes that connection. No manual certificate or Gateway configuration is needed. |
+| Native Driving Control | Drive using the displayed controls if desired, then choose **Safe Stop** | VDP FOTA may apply while stopped. In Platform, use **Refresh Cloud state** until the exact release is installed and its V1 profile is confirmed. No separate Apply button is needed. |
+| Brake | Select **v1**, choose **Prepare v1**, then **Sign & publish**; after publication is ready, choose **Assign to Test** | Wait for the exact service release to be running. First assignment is explicit; subsequent updates keep this assignment. |
+| Driving Control, then Brake | Choose **BRAKE MANEUVER**, wait for completion, then choose **Open Brake backend** or open the Brake backend card | A vehicle-derived capture appears. A running container alone is not proof of a captured event; simply stopping behind an obstacle may not produce one. |
+
+If an action reports **Incomplete** or **Needs attention**, read its reason and
+the Next step/Activity result before continuing. A displayed **Continue
+preparation** resumes the recorded unfinished work; it is not an instruction
+to delete the Test or submit the same publication again. See
+[troubleshooting](../getting-started/troubleshooting.md).
+
+### Evolve the platform and services
+
+Repeat the same view/profile controls in this order:
+
+| Next profile | View and controls | Completion before advancing |
+| --- | --- | --- |
+| VDP V2 | Platform → **v2 → Prepare v2 → Sign & publish** | Use native **Safe Stop** and confirm the exact installed V2 release. |
+| Brake V2 | Brake → **v2 → Prepare v2 → Sign & publish** | Confirm the running release, use **BRAKE MANEUVER**, then observe a condition-analysis result at the backend. |
+| VDP V3 | Platform → **v3 → Prepare v3 → Sign & publish** | Use native **Safe Stop** and confirm the exact installed V3 release. |
+| Brake V3 | Brake → **v3 → Prepare v3 → Sign & publish** | Confirm the running release, then observe its advisory/readiness in Driving Control and results at the backend. |
+| Tire V1 | Tire → **v1 → Prepare v1 → Sign & publish**, then **Assign to Test** after publication is ready | With VDP V3 installed, confirm the running Tire release, use **TIRE MANEUVER** and observe condition/advisory data. |
+
+Use **Refresh publication** for a submitted service still processing, and
+**Refresh Cloud state** for installed software observations. Switch back to
+**Platform** after service publication when checking the shared VDP prerequisite;
+the service and its required platform profile are separate observations.
+Publish each next version only after the preceding version has installed and
+passed its functional check. Publishing all versions at once can cause the
+Unit to receive only the latest version. Demo Control signs unsigned prepared
+content with the selected OEM for VDP and SP for services; no separate signing
+CLI or old signature is needed.
+
+### Optional Quick preparation
+
+Before creating a Test, **Advanced preparation → Preparation → Quick
+preparation → Prepare demo** composes controller/simulator startup, VDP V1
+preparation/publication and Test registration/connection. It does **not**
+install all future profiles or services. Wait for its completed result, use
+native **Safe Stop** to permit VDP V1 installation, then join the Brake V1 row
+above. Do not also repeat Full story's VDP publication or provisioning.
+
+For either mode, use the dedicated Brake and Tire physical maneuvers to obtain
+real products and advisory observations. **Reset Driver Advisory** on a service's
+backend card affects that service only and preserves history. Do not substitute
+telemetry or lower model thresholds to force a warning. Any retained Production
+identity/backing image is outside this Test workflow.
 
 VDP is an OEM platform component delivered by FOTA and gated by Safe Stop.
 Brake and Tire are independently delivered QM SOTA containers: their updates
