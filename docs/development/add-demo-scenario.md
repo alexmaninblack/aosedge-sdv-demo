@@ -27,9 +27,11 @@ and uses a short-lived architecture branch for the complete document cascade.
 
 ## 3. Add Architecture Flows
 
-Describe normal, validation, promotion, unavailable, offline, failure and
-cleanup paths. Separate Validation and Production Units and preserve the
-independence of Platform/FOTA and each Function Team/SOTA lifecycle.
+Declare the scenario's profile first: the installed single Test, or expanded
+Validation/Production use. Describe applicable normal, validation, unavailable,
+offline, failure and cleanup paths. Expanded promotion additionally separates
+Validation and Production identities and evidence. Preserve Platform/FOTA and
+each Function Team/SOTA lifecycle independence in either profile.
 
 ## 4. Derive System Requirements and Gaps
 
@@ -78,9 +80,10 @@ not start the affected UI implementation until this review gate is accepted.
 
 ## 9. Implement in the Owning Repositories
 
-Build and test each component independently, then qualify its interfaces.
-Promote the same accepted artifact bytes and digest from the Validation Unit
-to the Production Unit. Do not rebuild a release for promotion.
+Build and test each affected component independently, then qualify its
+interfaces in the declared profile. Expanded Validation-to-Production
+promotion uses the same accepted artifact bytes and digest without rebuild;
+an installed-Test scenario does not require a separate Production controller.
 
 ## 10. Add Reproduction and Acceptance Material
 

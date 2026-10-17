@@ -234,8 +234,9 @@ only on the reviewed CDN with the exact approved length; a complete consumer
 SHA-256 and signed Setup identity remain mandatory before use. HTML, foreign
 redirects, wrong lengths and cross-provider fallbacks are rejected.
 
-The old Drive selection remains supported for developer inputs and existing
-campaigns. A storage move updates active paths and UUIDs explicitly; it does
+Legacy Drive selections remain readable for explicitly retained configurations;
+the current developer dependency catalog and option A payloads use Dropbox.
+A storage move updates active paths and UUIDs explicitly; it does
 not rewrite frozen build manifests or resume a differently bound campaign.
 
 For a consumer-tool defect before any media bytes were downloaded, an explicit

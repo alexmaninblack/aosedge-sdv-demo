@@ -93,13 +93,38 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
 
     def test_source_bucket_definition_is_integrated_not_overridden(self):
         for path in ["contracts/brake-telemetry-window/README.md",
-                     "docs/requirements/d4-decision-register.md"]:
+                     "docs/requirements/d4-decision-register.md",
+                     "docs/architecture/demo-scenario-architecture-flows.md",
+                     "docs/demo/staged-post-sop-brake-health-demo-scenarios.md"]:
             with self.subTest(path=path):
                 text = prose(path)
                 self.assertIn("100-ms source-time bucket", text)
                 self.assertIn("20/30-Hz", text)
                 self.assertNotIn("Service v1 retains every third", text)
+                self.assertNotIn("selects every third", text)
         self.assertIn("5000 ms", prose("contracts/brake-telemetry-window/README.md"))
+
+    def test_kac_design_does_not_claim_existing_units_are_missing(self):
+        for path in ["docs/requirements/d4-decision-register.md",
+                     "docs/requirements/components/kuksa-authorization-compatibility.md",
+                     "contracts/kuksa-current-demo-authorization/README.md"]:
+            with self.subTest(path=path):
+                text = prose(path)
+                self.assertNotIn("No helper or public-verifier-preparation unit exists", text)
+                self.assertNotIn("but no helper or verifier-preparation unit", text)
+                self.assertNotIn("Unmodified KUKSA", text)
+                self.assertIn("aos-kuksa-verifier-prepare", text)
+
+    def test_launcher_recovery_does_not_require_manual_shell_reconstruction(self):
+        text = prose("docs/getting-started/troubleshooting.md")
+        self.assertIn("It restores the selected workspace environment", text)
+        self.assertNotIn("Restore declared values after a terminal restart", text)
+
+    def test_scenario_authoring_does_not_require_a_second_controller(self):
+        text = prose("docs/development/add-demo-scenario.md")
+        self.assertIn("installed single Test", text)
+        self.assertIn("does not require a separate Production controller", text)
+        self.assertIn("same accepted artifact bytes and digest without rebuild", text)
 
     def test_resource_declarations_match_current_profiles_without_claiming_proof(self):
         brake = json.loads(read("contracts/brake-health-runtime/brake-health-runtime-profile.v1.json"))

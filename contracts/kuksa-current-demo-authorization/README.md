@@ -53,7 +53,7 @@ Each provisioned Unit owns one protected `kuksa-jwt` RSA key pair. The private
 key remains non-exportable behind PKCS#11. After provisioning,
 `aos-kuksa-verifier-prepare.service` proves the protected sign/verify path and
 atomically publishes only the root-owned mode-`0444` public key at
-`/run/aos-kuksa-verifier/kuksa-jwt-public.pem`. Unmodified KUKSA must start
+`/run/aos-kuksa-verifier/kuksa-jwt-public.pem`. Factory-owned KUKSA must start
 with that exact file through `--jwt-public-key`; absence or malformed content
 blocks KUKSA and the helper rather than allowing KUKSA's authorization-disabled
 fallback. Reboot regenerates the runtime verifier from the same Unit key and

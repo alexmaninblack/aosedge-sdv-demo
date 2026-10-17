@@ -938,7 +938,7 @@ The accepted current-release deployment boundary is:
    functionally `NOT_READY` and uses only bounded retry until its private
    credential is prepared;
 6. the helper is not a proxy and does not require
-   `kuksa-databroker.service` to issue a credential. Unmodified KUKSA and the
+   `kuksa-databroker.service` to issue a credential. Factory-owned KUKSA and the
    helper independently require successful public-verifier preparation; direct
    Service-to-KUKSA connectivity begins only after both are ready; and
 7. the package boundary is independently removable. Migration to a released
@@ -946,10 +946,11 @@ The accepted current-release deployment boundary is:
    compatibility wiring without changing the VDP FOTA payload or either SOTA
    analytics implementation.
 
-Read-only source inspection confirmed the pinned platform unit names
-`aos-iam.service`, `aos-sm.service` and `kuksa-databroker.service`. No helper or
-public-verifier-preparation unit exists in the current repository; their source
-and recipe are therefore new implementation work, not renamed current units.
+Factory integration supplies native `aos-iam.service`, `aos-sm.service` and
+`kuksa-databroker.service` alongside the separately packaged KAC and
+`aos-kuksa-verifier-prepare.service`. Their current source and scoped runtime
+proof are mapped by the implementation view; accepted deployment does not
+close every startup, expiry, isolation and recovery obligation.
 The exact wire schema, signer-preparation integration, trustworthy-time
 behavior, sandbox and operational bounds are accepted in D4-027.3 through
 D4-027.8. D4-027 has no remaining subdecision.
@@ -2240,7 +2241,8 @@ The contract requires:
    `a2dc0c016d5281c9accead1d6447600d4a2c3736acaef1f725a2831efe334cad`.
    Brake Cloud API remains version 1.0.0.
 
-#### D4-017 Accepted Additive Amendment — Brake Window Detail
+<a id="d4-017-accepted-additive-amendment--brake-window-detail"></a>
+#### D4-017 — Brake Window Detail
 
 - Amendment ID: `BC-WINDOW-DETAIL-DEC-01`
 - Amendment state: `ACCEPTED`

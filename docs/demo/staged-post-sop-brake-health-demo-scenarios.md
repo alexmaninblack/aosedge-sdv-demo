@@ -730,9 +730,11 @@ VDP Component v1 is a platform capability, not a finished customer feature.
 
 Service v1 is a deliberately simple event recorder rather than a diagnostic
 model. It reads its six accepted Brake acquisition signals from VDP Component
-v1, excluding the available steering-angle path, and selects every third
-complete valid 30 Hz source frame into a 10 Hz bounded in-memory ring
-buffer, and does not continuously upload vehicle data. It calls the observed
+v1, excluding the available steering-angle path. At qualified 20/30-Hz input,
+it retains the first complete valid frame in each 100-ms source-time bucket,
+at most 10 Hz, in a bounded ring buffer. Empty buckets remain gaps, with no
+interpolation or timestamp rewriting. It does not continuously upload vehicle
+data. It calls the observed
 condition `HARD_BRAKING_EPISODE_V1`, not native ABS/AEB/EBS activation. The
 trigger requires speed at least 10 km/h and brake pedal at least 50% for
 200 ms. It creates one finite `BrakeTelemetryWindow` containing 3 seconds

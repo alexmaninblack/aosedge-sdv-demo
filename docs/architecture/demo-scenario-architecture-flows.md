@@ -832,8 +832,10 @@ flowchart LR
 
 `HARD_BRAKING_EPISODE_V1` is a Service observation, not native ABS/AEB/EBS
 activation. Service v1 consumes its six-path Brake subset of VDP v1, excluding
-the available steering-angle path, selects every third
-complete valid 30 Hz frame and retains 10 Hz samples. The trigger requires
+the available steering-angle path, and retains the first complete valid frame
+in each 100-ms source-time bucket at qualified 20/30-Hz input, at most 10 Hz.
+Empty buckets remain gaps; no interpolation, duplicate filling or source-time
+rewriting is permitted. The trigger requires
 speed at least 10 km/h and brake pedal at least 50% for 200 ms. Its one event
 contains 3 seconds PRE, no more than 10 seconds ACTIVE and 2 seconds POST,
 bounded to 150 samples. ACTIVE clears after 500 ms with pedal below 10% or

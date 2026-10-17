@@ -46,8 +46,8 @@ Follow the [installation steps](installed-preview-cloud-first-use.md) and
 | Failure | Next action |
 | --- | --- |
 | Root or producer commit missing | Obtain the exact source-handoff revision. An old tag or latest branch is not an implicit substitute. |
-| A command/variable is missing from a fresh Terminal | Complete [macOS preparation](macos-developer-tools.md) and keep that session open. Restore declared values after a terminal restart; do not guess tool or returned artifact paths. |
-| Node/npm version differs | Use exact Node 26.0.0 / npm 11.12.1 from the official ARM64 archive, then recheck PATH. A floating Homebrew Node is not the declared toolchain. |
+| A build command/tool is missing from a fresh Terminal | Rerun the same downloaded launcher and choose **2 / B**. It restores the selected workspace environment and checks tools; no manual shell-variable reconstruction or sourcing is required. See [preparation](macos-developer-tools.md). |
+| Node/npm version differs | Rerun **2 / B** and use its version check and isolated workspace installation. Do not replace a global Node or guess a newer version; the launcher owns the exact selected toolchain. |
 | Public input catalog or archive unavailable | Check internet access and the reported provider error. Ordinary builds need no Google login or binding JSON files; contact the release owner if a public link is unavailable. |
 | Interrupted transfer | Inspect the operation; reconcile its remote ID or reuse verified ranges/cache. Never create a duplicate or retry blindly. |
 | Checksum/metadata mismatch | Preserve and investigate the exact object. Do not promote it or accept a new expected hash from the download itself. |
