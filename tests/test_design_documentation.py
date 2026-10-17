@@ -115,6 +115,29 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
                 self.assertNotIn("Unmodified KUKSA", text)
                 self.assertIn("aos-kuksa-verifier-prepare", text)
 
+    def test_factory_compatibility_is_consistent_in_decisions_and_flows(self):
+        for path in ["docs/architecture/demo-scenario-architecture-flows.md",
+                     "docs/requirements/d4-decision-register.md",
+                     "docs/architecture/decisions/0005-kuksa-vehicle-data-boundary.md"]:
+            with self.subTest(path=path):
+                text = prose(path)
+                self.assertNotIn("KUKSA remains unchanged", text)
+                self.assertNotIn("KUKSA remains an unchanged", text)
+                self.assertIn("scope-path", text)
+                self.assertIn("source-timestamp", text)
+        d4 = prose("docs/requirements/d4-decision-register.md")
+        self.assertNotIn("the current baked", d4)
+        self.assertIn("Factory Image shall contain no shared static verifier", d4)
+
+    def test_backend_ownership_does_not_describe_fixture_dashboards_as_installed(self):
+        text = prose("docs/architecture/repository-boundaries.md")
+        self.assertIn("integrated Presenter", text)
+        self.assertIn("source-only Dashboard is a non-live fixture", text)
+        self.assertIn("Tire has no standalone web dashboard", text)
+        self.assertNotIn("repositories are now present", text)
+        self.assertNotIn("public repository exists", text)
+        self.assertIn("not a requirement for two SP accounts", text)
+
     def test_launcher_recovery_does_not_require_manual_shell_reconstruction(self):
         text = prose("docs/getting-started/troubleshooting.md")
         self.assertIn("It restores the selected workspace environment", text)

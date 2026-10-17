@@ -717,12 +717,14 @@ The accepted first-demo signing lifecycle is:
 
 Consequences:
 
-- upstream KUKSA remains unchanged; JWKS, multiple simultaneous verifiers,
+- KUKSA remains Factory-owned with the documented scope-path and VAL v1
+  source-timestamp compatibility patches; JWKS, multiple simultaneous verifiers,
   hot reload and live key rotation are explicitly outside the first demo;
 - short token lifetime and permission revalidation limit authorization
   lifetime, but do not replace final overlay destruction at R0;
-- the current baked `/etc/kuksa-val/jwt.key.pub` pattern is qualification
-  history and shall be removed from the successor Factory Image; and
+- the Factory Image shall contain no shared static verifier at
+  `/etc/kuksa-val/jwt.key.pub`; the per-Unit public verifier is prepared only
+  through the lifecycle above; and
 - accepting D4-010.1 does not add dynamic Provider IAM/JWT; the separate
   OEM/Service Provider credentials used to sign and publish artifacts are
   selected by D4-010.3.

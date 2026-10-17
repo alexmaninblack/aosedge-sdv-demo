@@ -76,20 +76,17 @@ roles and VSS-facing interface.
 5. Treat the official `kuksa-test-client` as a connectivity and packaging
    reference, not as the final consumer implementation.
 
-## Authorization Decision Follow-up
+<a id="authorization-decision-follow-up"></a>
+## Authorization boundary
 
-The qualification described by this ADR used separately issued, path-scoped
-KUKSA JWTs because the baseline had no Aos IAM integration. That remains valid
-historical evidence, but it is not the target architecture.
-
-[ADR 0010](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/decisions/0010-aos-kuksa-credential-broker.md) superseded the former AOS-5
-standalone Authorization Adapter plan for the 1.3/1.4 architecture. Accepted
-[ADR 0013](0013-current-release-kuksa-authorization-compatibility.md) now
-corrects that later ownership without changing this ADR's CARLA/VISS/KUKSA
-data boundary: upstream KUKSA remains unchanged and factory-installed outside
-the VDP FOTA payload; a removable current-release helper outside the VDP and
-SOTA artifacts derives only active Aos IAM permissions into Service-private
-short-lived JWTs. For the first demo, the privileged Provider is a fixed,
+[ADR 0013](0013-current-release-kuksa-authorization-compatibility.md) owns the
+current credential boundary without changing this ADR's CARLA/VISS/KUKSA
+data boundary. KUKSA is Factory-installed outside the VDP FOTA payload, with
+the documented scope-path and VAL v1 source-timestamp
+[compatibility patches](https://github.com/alexmaninblack/aos-vehicle-platform/blob/main/docs/contract-compatibility.md#kuksa-authorization-compatibility-seam).
+A removable current-release helper outside the VDP and SOTA artifacts derives
+only active Aos IAM permissions into Service-private short-lived JWTs.
+Manually issued prototype tokens are not the runtime setup. The Provider is a fixed,
 OEM-qualified trusted platform integration; it does not participate in the
 Service JWT exchange, and Service credentials cannot grant Provider authority.
 No private signing key, secret, or issued token may be committed to Git or
@@ -127,7 +124,7 @@ The lifecycle-based repository decision and migration gate are defined by
 - The official demo service needs ARM64 and dependency-layer qualification.
 - Service authorization uses the accepted ADR 0013 current-release compatibility
   flow; manually issued prototype tokens are not the runtime setup. Image-bound
-  proof follow the [implementation map](../current-implementation.md).
+  proof follows the [implementation map](../current-implementation.md).
 - The provider must expose data age and failure state without replacing stale
   values with fabricated zeroes.
 

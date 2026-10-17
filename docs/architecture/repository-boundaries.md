@@ -61,23 +61,26 @@ remain the stable service boundary.
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
 | `aos-vehicle-platform` | Vehicle Data Platform Component source and FOTA payload; factory/rootfs integration for KUKSA with documented compatibility patches, Service Manager/IAM, the current-release removable `aos-kuksa-auth-compat` helper under `authorization/aos-kuksa-compat/`, and the OEM-trusted Provider-side KUKSA integration | OEM Platform Team; VDP FOTA and separately governed factory/system-integration artifacts |
-| `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
-| `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; public repository exists and its accepted revision is pinned in the workspace contract |
-| `brake-health-cloud` | Function Team 1 backend, Brake Health Function Dashboard and client integration with the common publication helper surface pre-bound to `brake-sp1` | Function Team 1 Cloud product; public repository exists and its accepted revision is pinned in the workspace contract; its current local PKCS#12 remains outside the repository, browser and container |
-| `tire-health-cloud` | Function Team 2 backend, separated Tire Health candidate/data views, native ARM64 local-demo container and client integration with the common publication helper surface pre-bound to `tire-sp2` | Function Team 2 Cloud product; public repository exists and its accepted revision is pinned in the workspace contract; separate volume, API/helper identity and state from Brake Health; its current local PKCS#12 remains outside the repository, browser and container |
-| `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
+| `brake-health-service` | Function Team 1 Brake capture, local analysis, durable outboxes and typed advisory | Independent Brake SOTA; profile `brake-sp1` |
+| `tire-health-service` | Function Team 2 local tire-condition estimation, durable outbox and typed advisory | Independent Tire SOTA; profile `tire-sp2` |
+| `brake-health-cloud` | Brake backend image, ingestion/query API, durable store, notifications and scoped advisory control | Function Team 1 backend; separate container and data |
+| `tire-health-cloud` | Tire backend image, ingestion/query API, durable store, notifications and scoped advisory control | Function Team 2 backend; separate container and data |
+| `aosedge-sdv-demo` | Setup, integrated Presenter, VM lifecycle, provisioning, signing/publication orchestration, contracts and end-to-end qualification | Solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
 not become the source repository for those components. No Git submodule or
 private local checkout path is part of a public baseline.
 
-Both Function Teams' service and Cloud repositories are now present in the
-[machine-readable workspace contract](../../workspace/repository-map.json).
-Functional backends and dashboards remain separate products: each Function
-Team owns one Cloud-product repository, distinct from its in-vehicle SOTA
-repository. Current revisions and qualification boundaries are recorded in the
-[working baseline](../qualification/current-baseline.md); historical scaffold
-and pre-integration candidate descriptions do not describe the current state.
+The [repository map](../../workspace/repository-map.json) identifies maintained
+owners; immutable build selections separately pin their source revisions.
+Each Function Team owns a backend repository distinct from its in-vehicle SOTA
+repository. The installed lab displays both teams' results in the integrated
+Presenter. Brake's source-only Dashboard is a non-live fixture; Tire has no
+standalone web dashboard. Neither is another installed operator interface.
+The `brake-sp1` and `tire-sp2` profile names identify independent service
+bindings, not a requirement for two SP accounts in the installed topology.
+See the [working baseline](../qualification/current-baseline.md) for actual
+artifact and qualification boundaries.
 
 ## Trust and Network Boundary
 
@@ -101,13 +104,13 @@ and pre-integration candidate descriptions do not describe the current state.
   migration deletes the current helper package and compatibility wiring.
 - VM provisioning identity, OEM signing identity, user certificates, private
   keys, Cloud tokens, and raw operational evidence remain outside Git.
-- D4-010.3 technical artifact publication is implemented once in the
-  session-scoped native demo helper, while the Platform, Brake and Tire
-  dashboard surfaces are statically pre-bound to `platform-oem`, `brake-sp1`
-  and `tire-sp2` respectively. The installed `aos-signer` 2.0.1 path uses one
-  local mode-`0600` passwordless PKCS#12 per profile for signing and mTLS
-  upload; no repository owns or stores those files, and publication never
-  performs OEM deployment approval.
+- D4-010.3 technical artifact publication is implemented once through Demo
+  Control. The integrated Platform, Brake and Tire surfaces use the fixed
+  `platform-oem`, `brake-sp1` and `tire-sp2` bindings. The current OEM signs VDP;
+  the associated SP signs both independent services. Signing/mTLS use the
+  selected owner-only PKCS#12 references, never browser or container copies.
+  No repository stores those files, and technical publication never performs
+  later OEM deployment approval.
 
 ## Update Boundary
 

@@ -35,8 +35,3 @@ Stop demo and keep data stops the two owned backend containers and preserves
 their state. Start controller restores the retained Test and backends.
 Confirmed Test retirement alone removes exact run-scoped data, preserving
 peer/unrelated records. Docker Engine is shared infrastructure and stays running.
-
-Earlier foundation-only images, two-role cleanup examples and Park/Resume
-tables are [historical design evidence](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control-backends.md),
-not current behavior. The package reference retains engineering commands;
-current accepted transaction/security constraints are unchanged.

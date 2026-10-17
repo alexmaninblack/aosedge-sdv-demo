@@ -18,7 +18,7 @@ never implicit.
 ## Demo Control — shared CLI and Presenter implementation
 
 The [Demo Control design](../architecture/demo-control.md) records the shared
-CLI/UI contract and dated amendments. Lifecycle, preparation/publication,
+CLI/UI contract and current authority boundaries. Lifecycle, preparation/publication,
 assignment, observation and guarded Finish are implemented. See the
 [package README](../../apps/demo-orchestrator/README.md) for commands and local
 configuration. Do not run standalone legacy launchers over an active

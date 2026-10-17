@@ -83,7 +83,3 @@ Use [Contributing](../../CONTRIBUTING.md) and the
 need their targeted isolated tests; installed/live checks run on the dedicated
 M1, not the development Mac. Actual scenarios own preflight, actions, independent
 effects, timings, diagnostics and verified final closure.
-
-The [earlier detailed command and experiment record](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/apps/demo-orchestrator/README.md)
-is retained in Git. Old .28/.29/.31/.33 experiments, permissions-disabled
-synthetic paths and Park/Resume examples are not the current setup recipe.

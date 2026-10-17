@@ -91,9 +91,3 @@ provide laptop sleep/wake, cold externalOFF or nonempty-queue power-loss proof.
 Each qualification scenario owns its sequence, independent effects, timing,
 bounded diagnostics and final verified shutdown. Source checks do not mutate
 Cloud or qualify installation. Preserve shared Docker and unrelated processes.
-
-## Earlier implementation detail
-
-The [original detailed design and execution amendments](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/architecture/demo-control.md)
-remain in Git. Historical section citations refer to that exact snapshot;
-old prototype command lists are not today's operation guide.

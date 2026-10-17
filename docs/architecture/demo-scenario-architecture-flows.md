@@ -253,8 +253,10 @@ All flows below preserve these rules:
 15. Passing qualification evidence never auto-approves a candidate. A combined
     FOTA/SOTA graph requires separate explicit acceptance by the Platform Team
     and the relevant Function Team before AosCloud executes promotion.
-16. Upstream Eclipse KUKSA remains an unchanged factory-installed resource
-    server outside VDP. Each SOTA Service presents only its per-instance
+16. Eclipse KUKSA remains a Factory-installed resource server outside VDP,
+    with the documented scope-path and VAL v1 source-timestamp compatibility
+    patches. These patches do not move credential authority into VDP or a
+    Service. Each SOTA Service presents only its per-instance
     `AOS_SECRET` and a fixed KUKSA resource identifier to the separately
     packaged current-release helper. The helper resolves current authority
     through Aos IAM, maps only `r` to `read` and `rw` to `actuate` into a
