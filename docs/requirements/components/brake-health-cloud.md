@@ -3,8 +3,8 @@
 
 # Brake Health Cloud Product Component Requirements
 
-- Status: D4 design accepted; source foundation and Data backend integrated;
-  bounded window-detail contract/packet accepted and implementation authorized
+- Status: D4 design accepted; Data backend, window detail and integrated Presenter
+  implemented with scoped evidence; complete acceptance remains open
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
 - Version: 0.8
 - Prepared: 2026-08-19
@@ -289,12 +289,13 @@ a separate live dashboard or an additional container.
 Repository responsibilities are separated into `apps/backend`,
 `apps/dashboard`, framework-independent `packages/domain`, closed contract
 types/validators in `packages/contracts`, deterministic fixtures in
-`packages/test-support`, forward-only `migrations`, and later deployment files
+`packages/test-support`, forward-only `migrations`, and deployment files
 under `deploy`. The Dashboard may reuse the accepted visual language and exact
 dependency versions but must not import Presenter UI source or become an OEM
 lifecycle authority.
 
-Implementation proceeds through bounded packets:
+The stable packet IDs identify responsibility and verification boundaries,
+not pending repository creation or a second installation procedure:
 
 1. `BRAKE-CLOUD-FOUNDATION-001` — governance completion, npm workspace,
    TypeScript boundaries, SQLite/migration seam, deterministic test
@@ -309,9 +310,12 @@ Implementation proceeds through bounded packets:
 5. `BRAKE-CLOUD-QUALIFICATION-001` — restart, two-VM route, LAN-negative,
    current-run cleanup and human UI qualification.
 
-Foundation, data and UI work remain inside this repository. Live helper,
-Docker/QEMU route, Cloud and reset operations require their later explicit
-gates.
+Foundation, data and fixture-UI work remain inside this repository; integrated
+Presenter consumption belongs to the integration owner. The qualification
+responsibility retains all outstanding restart, two-VM/LAN-negative, cleanup
+and human-acceptance cases beyond the current scoped proof. Live helper,
+Docker/QEMU route, Cloud and reset operations require their explicit authority;
+this decomposition grants none.
 
 ## Testability Boundary
 
@@ -528,8 +532,9 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: deterministic progress-state tests and VU/PU dashboard capture
-- State: D4-017 factual v1 collection/presentation and additive window-detail
-  contracts accepted; exact source packet authorized; qualification open
+- State: D4-017 factual v1 collection/presentation and window detail implemented
+  with scoped Test proof; complete boundary/negative and VU/PU comparative
+  qualification remain required
 
 #### Acceptance criteria
 

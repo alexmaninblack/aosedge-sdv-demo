@@ -435,9 +435,9 @@ the real supported APIs and launchers.
 | [Protected Platform publication (`REQ-DEMO-019`)](#req-demo-019) | Delegate one confirmed sign/publish operation over the available presenter control plane | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Atomic vehicle external-connectivity control (`REQ-DEMO-020`)](#req-demo-020) | Use one stateful control to disconnect or reconnect all currently selected VU/PU external paths together; installed use selects Test and expanded use selects PU | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed; D4-022.1 mechanism accepted |
 | [AosCore tenant-isolation proof (`REQ-DEMO-021`)](#req-demo-021) | Trigger one prepared Tire CPU load and present authoritative quota/isolation evidence without managing resources | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
-| [Independent resource-scoped operations (`REQ-DEMO-022`)](#req-demo-022) | Preserve independent Platform/Brake/Tire mutations while blocking exact conflicts and reconciling every non-terminal operation | Unit, Component, Contract, Integration, End-to-end | D4-021.2/.3 revalidated; implementation open |
-| [Deterministic presenter workspace composition (`REQ-DEMO-023`)](#req-demo-023) | Compose and restore one measured native/browser workspace while preserving separate physical-shell, header-meaning and surface-content ownership | Unit, Component, Integration, End-to-end | D4-026.17 design accepted; implementation qualification open |
-| [Global lifecycle workspace (`REQ-DEMO-024`)](#req-demo-024) | Present Qualification, M0/M1/G0, current lifecycle, R0 and recovery in the right browser region without creating a fourth producer or duplicating launcher actions | Unit, Component, Integration, End-to-end | D4-026.18 design accepted; implementation qualification open |
+| [Independent resource-scoped operations (`REQ-DEMO-022`)](#req-demo-022) | Preserve independent Platform/Brake/Tire mutations while blocking exact conflicts and reconciling every non-terminal operation | Unit, Component, Contract, Integration, End-to-end | D4-021.2/.3 revalidated; installed serialization implemented, expanded concurrency/registry qualification remains open |
+| [Deterministic presenter workspace composition (`REQ-DEMO-023`)](#req-demo-023) | Compose and restore one measured native/browser workspace while preserving separate physical-shell, header-meaning and surface-content ownership | Unit, Component, Integration, End-to-end | D4-026.17 design accepted; installed layout implemented with scoped proof, full geometry/recovery acceptance remains required |
+| [Global lifecycle workspace (`REQ-DEMO-024`)](#req-demo-024) | Present Qualification, M0/M1/G0, current lifecycle, R0 and recovery in the right browser region without creating a fourth producer or duplicating launcher actions | Unit, Component, Integration, End-to-end | D4-026.18 design accepted; installed header/lifecycle implemented, expanded workspace and full acceptance remain separate |
 
 ## Detailed Requirements
 
@@ -576,7 +576,7 @@ the real supported APIs and launchers.
 - Executable contract: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Verification: Unit, Contract, Integration, End-to-end
 - Evidence: ordered bidirectional VU/PU attach/run/detach records, deterministic reset/new-generation evidence, exact frame ranges, collision lock, global current-vehicle state and honest changing/unavailable label
-- State: D3 design-reviewed; D4-005 contract accepted, implementation and qualification open
+- State: D3 design-reviewed; D4-005 installed selected-Test binding implemented; expanded bidirectional VU/PU handover qualification remains required
 
 ### Native log request presentation
 
@@ -750,7 +750,7 @@ the real supported APIs and launchers.
 - Components/interfaces: `CMP-ORCH`, `CMP-SW-DASH`, `CMP-CARLA`, `CMP-GW`, `IF-DEMO-002`
 - Verification: Unit, Component, Integration, End-to-end
 - Evidence: measured viewport profile; exact window-selector inventory; clean start and per-surface/host-restart fixtures; missing/duplicate/off-screen/overlap/readability negatives; shared-header same-read-model and navigation proof; fixed team-context and version-only-scroll fixtures at the qualified viewport; independent per-team release scroll/focus restoration; local restore/no-lifecycle-mutation proof; native-window/no-capture inspection; qualified presenter-Mac screenshots plus machine geometry report
-- State: D4-026.17/.19 design accepted; implementation and presenter-Mac qualification remain open
+- State: D4-026.17/.19 design accepted; installed native/browser layout and restore implemented with scoped target-host proof; full geometry/recovery and expanded acceptance remain required
 
 ### Global lifecycle workspace
 
@@ -764,7 +764,7 @@ the real supported APIs and launchers.
 - Interaction contract: [`UI-INT-079`](../../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-079) and [`UI-AT-050`](../../demo/mockups/aosedge-demo-interaction-specification.md#ui-at-050)
 - Verification: Unit, Component, Integration, End-to-end
 - Evidence: title/global/team navigation fixtures; preserved scroll/focus and independent team state; exact Qualification Status vocabulary/source and no-override negatives; M0/M1/G0/R0/recovery rendering; fixed-left-surface geometry proof; launcher-action non-duplication and lifecycle-call spies; qualified presenter-Mac human review
-- State: D4-026.18 design accepted; implementation and live qualification remain open
+- State: D4-026.18 design accepted; installed shared header/lifecycle implemented with scoped proof; complete qualification-status and expanded-workspace acceptance remain required
 
 ## Unit-Test Obligations
 

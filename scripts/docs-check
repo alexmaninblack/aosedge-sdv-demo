@@ -1108,13 +1108,36 @@ def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Is
     # quotations in immutable evidence URLs. Each is scoped to its owning file.
     forbidden = {
         d4path: ("only after a future accepted state/model", "cannot select or use credentials bound",
-                 "FOTA reconciliation searches the", "No source edit, build, package generation"),
-        "docs/requirements/components/brake-health-service.md": ("verify installed identity/capabilities",),
-        "docs/requirements/components/tire-health-service.md": ("verify the installed identity, capability manifest",),
+                 "FOTA reconciliation searches the", "No source edit, build, package generation",
+                 "normative presentation uses PU"),
+        "docs/requirements/component-decomposition-and-interface-register.md": (
+            "Unmodified external executable", "fresh serial .39 qualification open",
+            "scoped .39 proof", "proof on .39"),
+        "docs/requirements/components/vehicle-gateway.md": (
+            "future advisory validator", "D4 contract freeze required",
+            "Candidate correction not started", "No implementation | `TARGET`"),
+        "docs/requirements/components/brake-health-service.md": (
+            "verify installed identity/capabilities", "implementation/qualification open",
+            "implementation and qualification remain open", "implementation review open"),
+        "docs/requirements/components/tire-health-service.md": (
+            "verify the installed identity, capability manifest", "implementation and integration open"),
+        "docs/requirements/components/factory-substrate.md": ("awaits prepared VDP artifacts",),
+        "docs/requirements/components/README.md": ("legacy cleanup schema drift",),
         "docs/requirements/components/tire-health-cloud.md": ("When that status reports `INCOMPATIBLE_VDP`",),
         "docs/requirements/components/cross-cutting.md": ("the normative `G4/X-OFFLINE` presentation uses PU",
                                                          "The normative presentation selects PU"),
-        "contracts/distribution-installation/version-selection.md": ("consume it later",),
+        "contracts/distribution-installation/version-selection.md": (
+            "consume it later", "Kit 005 and earlier",
+            "Native activation, installed live E2E, migration"),
+        "contracts/qm-advisory-profile/README.md": (
+            "Version 1.1.0 separated", "Earlier 1.0.2", "1.0.1 replaced retired"),
+        "contracts/kuksa-current-demo-authorization/README.md": ("implemented in Factory39",),
+        "contracts/platform-fota-safe-stop/README.md": (
+            "Every admitted sample must carry source time and be no older than 250 ms",
+            "newest complete sample must again be no older than 250 ms"),
+        "contracts/vehicle-external-connectivity/README.md": (
+            "and an unchanged other VM", "unchanged other-VM/in-vehicle paths",
+            "Live acceptance starts with both VU and PU"),
         "contracts/viss-trust-telemetry-profile/README.md": ("value therefore needs an explicit target conversion",),
     }
     for name, patterns in forbidden.items():
@@ -1126,6 +1149,26 @@ def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Is
         body = " ".join(documents.get((root / name).resolve(), "").split())
         if body and not all(token in body for token in ("demo-5s", "250", "1000", "-5000..+5000")):
             issue(name, "standard and explicit Test Safe Stop profiles must remain distinct")
+    register = "docs/requirements/component-decomposition-and-interface-register.md"
+    register_body = documents.get((root / register).resolve(), "")
+    kuksa = next((line for line in register_body.splitlines() if '<a id="cmp-kuksa">' in line), "")
+    if register_body and not all(term in kuksa for term in ("scope-path", "source-timestamp")):
+        issue(register, "KUKSA source boundary must name its Factory compatibility patches")
+    scoped_profiles = {
+        "contracts/platform-fota-safe-stop/README.md": (
+            "| Standard / Production role / missing role | 0 through 250 ms; future values rejected | 250 ms |",
+            "| Explicit Test role, `demo-5s` | -5000 through +5000 ms, inclusive | 1000 ms maximum, not a fixed wait |",
+            "satisfy its selected timing profile at acquisition",
+            "satisfy that same profile at gate opening"),
+        "contracts/vehicle-external-connectivity/README.md": (
+            "installed single-Test profile requires no second VM",
+            "preservation of every existing peer VM",
+            "Expanded two-role acceptance starts with both VU and PU"),
+    }
+    for name, facts in scoped_profiles.items():
+        body = " ".join(documents.get((root / name).resolve(), "").split())
+        if body and not all(fact in body for fact in facts):
+            issue(name, "effective installed/expanded profile applicability is missing or contradictory")
     aliases = (
         (r'\b(?:Demo )?Scenarios? (\d+\.\d+)\b', "docs/demo/staged-post-sop-brake-health-demo-scenarios.md"),
         (r'\b(?:Architecture )?Flows (\d+\.\d+)\b', "docs/architecture/demo-scenario-architecture-flows.md"),

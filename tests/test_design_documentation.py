@@ -323,6 +323,106 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
         self.assertNotIn("Parent: [Stage 3]", installation)
         self.assertNotIn("installable-distribution-and-reproducibility.md", installation)
 
+    def test_effective_gate_rejects_superseded_source_status_and_history(self):
+        cases = (
+            ("docs/requirements/d4-decision-register.md", "normative presentation uses PU"),
+            ("docs/requirements/component-decomposition-and-interface-register.md",
+             "Unmodified external executable"),
+            ("docs/requirements/component-decomposition-and-interface-register.md",
+             "fresh serial .39 qualification open"),
+            ("docs/requirements/components/vehicle-gateway.md", "No implementation | `TARGET`"),
+            ("docs/requirements/components/vehicle-gateway.md", "Candidate correction not started"),
+            ("docs/requirements/components/brake-health-service.md", "implementation/qualification open"),
+            ("docs/requirements/components/tire-health-service.md", "implementation and integration open"),
+            ("docs/requirements/components/factory-substrate.md", "awaits prepared VDP artifacts"),
+            ("docs/requirements/components/README.md", "legacy cleanup schema drift"),
+            ("contracts/qm-advisory-profile/README.md", "Earlier 1.0.2 repinned the profile"),
+            ("contracts/kuksa-current-demo-authorization/README.md", "implemented in Factory39"),
+            ("contracts/distribution-installation/version-selection.md",
+             "Native activation, installed live E2E, migration"),
+        )
+        for name, stale in cases:
+            with self.subTest(path=name, stale=stale):
+                documents = CHECK["markdown_documents"](ROOT)
+                documents[(ROOT / name).resolve()] += "\n" + stale + "\n"
+                issues = CHECK["check_effective_contracts"](ROOT, documents)
+                self.assertTrue(any(x.path == name and "superseded normative rule" in x.message
+                                    for x in issues), issues)
+
+    def test_kuksa_owner_row_cannot_hide_patch_details_in_another_section(self):
+        path = "docs/requirements/component-decomposition-and-interface-register.md"
+        documents = CHECK["markdown_documents"](ROOT)
+        source = (ROOT / path).resolve()
+        row = next(line for line in documents[source].splitlines() if '<a id="cmp-kuksa">' in line)
+        documents[source] = documents[source].replace(row, row.replace("scope-path", "authorization"))
+        self.assertTrue(any("KUKSA source boundary" in x.message
+                            for x in CHECK["check_effective_contracts"](ROOT, documents)))
+
+    def test_timing_table_does_not_allow_an_unscoped_competing_rule(self):
+        path = "contracts/platform-fota-safe-stop/README.md"
+        documents = CHECK["markdown_documents"](ROOT)
+        source = (ROOT / path).resolve()
+        documents[source] += "\nEvery admitted sample must carry source time and be no older than 250 ms.\n"
+        self.assertTrue(any(x.path == path and "superseded normative rule" in x.message
+                            for x in CHECK["check_effective_contracts"](ROOT, documents)))
+
+    def test_effective_profiles_reject_missing_test_timing_and_peer_applicability(self):
+        cases = (
+            ("contracts/platform-fota-safe-stop/README.md", "-5000 through +5000 ms", "0 through 250 ms"),
+            ("contracts/vehicle-external-connectivity/README.md",
+             "installed single-Test profile\nrequires no second VM", "installed profile requires a second VM"),
+            ("contracts/vehicle-external-connectivity/README.md",
+             "preservation of every existing peer VM", "preservation of the selected VM only"),
+            ("contracts/vehicle-external-connectivity/README.md",
+             "Expanded two-role acceptance starts", "Live acceptance starts"),
+        )
+        for path, old, new in cases:
+            with self.subTest(path=path, old=old):
+                issues = self.effective_issues(path, old, new)
+                self.assertTrue(any("profile applicability" in x.message for x in issues), issues)
+
+    def test_updated_status_distinguishes_source_from_full_acceptance(self):
+        gateway = prose("docs/requirements/components/vehicle-gateway.md")
+        brake = prose("docs/requirements/components/brake-health-service.md")
+        factory = prose("docs/requirements/components/factory-substrate.md")
+        selection = prose("contracts/distribution-installation/version-selection.md")
+        for source in ("qm_advisory_test.cpp", "simulator_control_channel_test.cpp"):
+            self.assertIn(source, gateway)
+        for source in ("tests/cpp/v1/v1_tests.cpp", "tests/cpp/v2/v2_tests.cpp",
+                       "tests/token_session_tests.cpp"):
+            self.assertIn(source, brake)
+        self.assertIn("complete chronology obligation remains open", gateway)
+        self.assertIn("complete conformance, calibration and failure-matrix acceptance remain required", brake)
+        self.assertIn("complete interruption/negative/recovery acceptance remains required", factory)
+        self.assertIn("not blanket selection/recovery acceptance", selection)
+        self.assertIn("destructive pruning/uninstall", selection)
+        self.assertIn("not unfinished delivery phases", brake)
+        for packet in ("BHS-CORE-001", "BHS-CORE-002", "BHS-CORE-003",
+                       "BHS-ADAPTERS-001", "BHS-PACKAGING-001"):
+            self.assertIn(packet, brake)
+
+    def test_profile_applicability_keeps_timing_and_expanded_proofs_unchanged(self):
+        timing = prose("contracts/platform-fota-safe-stop/README.md")
+        connectivity = prose("contracts/vehicle-external-connectivity/README.md")
+        self.assertLess(timing.index("## Effective timing profiles"),
+                        timing.index("Every admitted sample must carry source time"))
+        for term in ("twelve distinct coherent advancing frames", "unknown profile values are rejected",
+                     "immediately before every destructive runtime operation"):
+            self.assertIn(term, timing)
+        for term in ("both VU and PU concurrently running", "two complete disconnect/ restore cycles for each role",
+                     "an unchanged online peer VM", "Complete negative/recovery and expanded acceptance remain explicit gates"):
+            self.assertIn(term, connectivity)
+        decision = prose("docs/requirements/d4-decision-register.md")
+        self.assertIn("installed presentation uses Test, expanded presentation uses PU", decision)
+        self.assertIn("For expanded two-role acceptance, D4-022.4 requires two complete live", decision)
+
+    def test_current_admin_summary_does_not_retire_compatibility_or_cpu_obligations(self):
+        text = prose("docs/requirements/components/README.md")
+        self.assertIn("separate current admin schemas describe the handler", text)
+        self.assertIn("legacy fixtures remain compatibility inputs", text)
+        self.assertIn("CPU control is not implemented", text)
+        self.assertIn("formal calibration and CPU worker remain open", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,7 +24,7 @@ The fixed compatibility identity is `aosedge-demo-installed-state/1`, carried
 by the independently pinned application manifest as `installedStateContract`.
 It covers the installed instance and existing retained Demo Control state
 formats, not vehicle firmware or Cloud releases. Only exact supported identity
-is accepted. Missing declarations (including Kit 005 and earlier), unknown
+is accepted. Missing declarations, unknown
 versions or an instance bound to another contract block managed selection.
 There is no schema migration or compatibility inference from application names.
 
@@ -61,8 +61,8 @@ packages require explicit selection; legacy engineering probes remain separate.
 
 Selection also blocks on current-run journals, working VM overlays and any
 other owned process holding files under the instance or store. Inspection must
-succeed completely; failure is not treated as idle. This intentionally permits
-only quiescent instances without a retained current run in the first slice.
+succeed completely; failure is not treated as idle. Managed selection permits
+only quiescent instances without a retained current run.
 It does not force Finish or erase a journal to unblock an update. Supporting
 an update around a retained provisioned run requires a later exact-owner proof.
 Open-handle checks catch detached native consumers after a CLI has returned.
@@ -91,7 +91,7 @@ A healthy repeat verifies/reuses the installed version. A wrong source pin,
 busy package, disk/volume failure or undeclared source leaves the selection and
 user data unchanged. Preserve the 90 GiB engineering installation reserve.
 
-The shared store now permits a private `quarantine` directory; receipts may
+The shared store permits a private `quarantine` directory; receipts may
 also contain `<digest>.use.lock`. Neither is runtime/model state. Keep one
 compatible predecessor; do not prune additional versions or Factory references
 until the separate all-instance retention/removal gate is implemented.
@@ -109,5 +109,8 @@ Then test a complete new kit in an isolated store: explicit selection, fixed
 read-only installed CLI, old-version rejection, quiescence block, repeat and
 unselect. Real repair/rollback fault injection remains on tiny disposable
 fixtures; do not corrupt large retained packages or the working demo merely
-to demonstrate this engine. Native activation, installed live E2E, migration,
-destructive pruning/uninstall and clean-Mac acceptance remain open gates.
+to demonstrate this engine. Native Setup activation and installed live profiles
+have scoped proof in the [current baseline](../../docs/qualification/current-baseline.md),
+not blanket selection/recovery acceptance. Target-host interruption, repair,
+rollback/update around a retained run, migration, destructive pruning/uninstall
+and the complete clean-macOS consent/recovery matrix remain separate gates.

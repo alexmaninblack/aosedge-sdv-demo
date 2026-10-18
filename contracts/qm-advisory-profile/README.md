@@ -10,11 +10,9 @@ This directory is the canonical cross-component contract for
 the two non-safety QM maintenance-advisory paths, schema-bound Request/Status
 envelopes, authority, freshness, replay/rate limits and clear/expiry behavior.
 
-- [accepted profile 1.2.0](qm-advisory-profile.v1.json) — operator-approved
-  100 ms future-clock tolerance for the two QM advisory endpoints on
-  20 September 2026. Version 1.1.0 separated functional profiles from package
-  release numbers on 16 September 2026. Earlier 1.0.2 repinned VDP Compatibility Profile 1.0.1;
-  1.0.1 replaced retired `D4-009` authorization with `D4-027`.
+- [accepted profile 1.2.0](qm-advisory-profile.v1.json) — the two fixed QM
+  endpoints, independent functional/package identities and 100 ms
+  future-clock tolerance under native IAM/KUKSA authorization.
 - [Request schema](qm-advisory-request.schema.json)
 - [Gateway Status schema](qm-advisory-status.schema.json)
 - [Readiness and independent Reset](readiness-and-reset.md) — maintained

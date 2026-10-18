@@ -35,7 +35,7 @@ for owning source and dated evidence, and each package's current baseline/gates.
 | 7 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service](brake-health-service.md) | `BHS` | V1 windows, V2 model and V3 advisory implemented; independent calibration and full fault/resource matrix remain open |
 | 8 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product](brake-health-cloud.md) | `BRAKE-CLOUD` | Real ingest/query/reset/cleanup implemented; integrated Presenter is live, standalone Dashboard remains fixtures |
 | 9 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service](tire-health-service.md) | `TIRE` | Real V1 model, advisory and durable delivery implemented; formal calibration and CPU worker remain open |
-| 10 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product](tire-health-cloud.md) | `TIRE-CLOUD` | Real API, SQLite, Test-scoped cleanup and observation implemented; legacy cleanup schema drift and CPU control remain open |
+| 10 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product](tire-health-cloud.md) | `TIRE-CLOUD` | Real API, SQLite, Test-scoped cleanup and observation implemented; separate current admin schemas describe the handler, legacy fixtures remain compatibility inputs, and CPU control is not implemented |
 | 11 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | [Demo Orchestration](demo-orchestration.md) | `DEMO` | Presenter, CLI, lifecycle, monitoring, Reset and guarded ignition recovery implemented; host sleep/wake remains planned |
 | 12 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations](cross-cutting.md) | `CROSS` | Native trust, isolation and scoped offline/recovery proof; complete security/resource qualification not claimed |
 | 13 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance](end-to-end-acceptance.md) | `E2E` | Dated receipts and source gates exist; current 118 API/42 visible UI and separate native Setup profiles passed; broader negative/dossier matrices remain |
@@ -46,7 +46,7 @@ The [current baseline](../../qualification/current-baseline.md) selects exact
 runtime, native Setup and public-consumer evidence. The
 [implementation matrix](../../architecture/current-implementation.md) maps
 owning code and proof; the [protocol map](../../../contracts/implementation-status.md)
-owns effective contract profiles and executable-profile drift. These status authorities apply
+owns effective contract profiles and the current-versus-retained compatibility boundary. These status authorities apply
 to every package, without copying historical kit/version stamps into each one.
 
 State fields record accepted design allocation, not a second deployment-status

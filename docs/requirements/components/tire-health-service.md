@@ -233,7 +233,7 @@ executable against controlled adjacent components.
 | --- | --- | --- | --- |
 | [One immutable mature v1.0 candidate (`REQ-TIRE-001`)](#req-tire-001) | Produce exactly one prepared credential-free ARM64 Tire Health candidate for this demo | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [VDP v3 compatibility and fail-closed readiness (`REQ-TIRE-002`)](#req-tire-002) | Run only against the accepted VDP v3 contract without claiming native Cloud admission | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Fixed-resource KUKSA authorization lifecycle (`REQ-TIRE-013`)](#req-tire-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D4-027 accepted; implementation and integration open |
+| [Fixed-resource KUKSA authorization lifecycle (`REQ-TIRE-013`)](#req-tire-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D4-027 bootstrap/private token lifecycle implemented; source tests and scoped native proof exist, full lifecycle/negative integration remains required |
 | [Validated native dynamics subscription (`REQ-TIRE-004`)](#req-tire-004) | Consume only accepted dynamics and never consume hidden simulation truth | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Bounded persistent local condition estimate (`REQ-TIRE-005`)](#req-tire-005) | Deterministically maintain a versioned synthetic condition band without exact tread claims | Unit, Component, Analysis, End-to-end | D3 design-reviewed |
 | [Explicit degraded behavior (`REQ-TIRE-006`)](#req-tire-006) | Never turn stale, missing or inconsistent data into a healthy result | Unit, Component, Contract, Integration | D3 design-reviewed |
@@ -459,7 +459,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 - Interfaces: [fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) and [private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009)
 - Verification: Unit, Component, Contract, Integration
 - Evidence: no-caller-selected-authority negative cases, bounded refresh/expiry trace, stop/unregister/reboot cleanup, cross-Service isolation and secret/JWT-negative artifacts/logs/state
-- State: D4-027 accepted; implementation and integration open
+- State: D4-027 bootstrap/private token lifecycle implemented; source tests and scoped native proof exist, full lifecycle/negative integration remains required
 
 ## Stable Unit-Test Obligations
 

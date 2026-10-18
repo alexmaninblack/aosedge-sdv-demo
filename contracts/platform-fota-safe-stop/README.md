@@ -37,57 +37,6 @@ is incomplete and therefore follows the profile's existing
 `missingOrContradictoryEvidence = NOT_SAFE` rule. The local 250-ms join bound is
 not the OEM Runtime's Safe Stop freshness limit and cannot authorize an update.
 
-Version 1.1.1 clarifies the accepted freshness semantics. Every admitted
-sample must carry source time and be no older than 250 ms when it is acquired.
-The twelve-sample history proves only consecutive stability; it is not reused
-as current vehicle state. The newest complete sample must again be no older
-than 250 ms when the gate opens and immediately before every destructive
-runtime operation. This deliberately permits a twelve-sample window to span
-more than 250 ms while preventing buffered history from authorizing a current
-transition.
-
-Waiting uses a single bounded runtime worker. The durable
-record contains transaction metadata, never Safe Stop samples; the runtime
-does not hold its main mutex while waiting, and shutdown performs bounded
-cancel-and-join. The current healthy VDP remains active during replacement or
-removal waiting, while first install exposes no active capability.
-
-<a id="native-stop-completion"></a>
-
-<a id="native-stop-completion-correction--accepted-2026-09-06"></a>
-### Native stop-completion boundary
-
-The operator approved correcting the mismatch with the pinned AosCore launch
-pool: `StopInstance` must not return success until the provider is actually
-stopped. It waits for its worker without holding the runtime's main mutex and
-returns `Inactive` only after durable stop completion. Cancellation or failure
-returns an error, never a successful asynchronous stop. The completion bound
-is 590 seconds plus the existing two-second cancellation bound, below CM's
-600-second node-status timeout; successful completion returns immediately,
-not after that limit. The Safe Stop collection deadline remains 480 seconds.
-
-`StartInstance` retains its asynchronous `Activating` contract. A completed
-stop retains a private `stopped.json` predecessor record and its existing A/B
-slot for version checks and rollback. It is not an active installation and is
-not automatically started by reboot. A subsequent candidate uses the other
-slot; successful replacement clears the stopped record, while failed
-replacement restores the predecessor. No Safe Stop evidence is persisted.
-This supersedes the earlier implication that StopInstance could return while
-its remove worker was still active. No upstream launcher fork is introduced.
-
-While Safe Stop is not yet established, AosCore's native lifecycle state is
-`ACTIVATING`. A first install leaves the empty VDP slot empty; a replacement
-keeps the previous healthy release active; a removal keeps the current healthy
-release active. The audience phrase `Waiting for Safe Stop before application`
-is a bounded Representation Layer interpretation of that native state plus a
-fresh Gateway `Safe Stop not established` fact. It is not a native AosCloud or
-AosCore state. Native runtime reason codes remain available through explicit
-on-demand Aos log requests.
-
-The profile is specific to the first demonstration qualification. A production
-vehicle may use a different Vehicle State Manager and different homologated
-thresholds behind the same runtime-owned policy boundary.
-
 ## Effective timing profiles
 
 | Vehicle role | Source-age interval at acquisition and each destructive gate | Read deadline |
@@ -108,8 +57,55 @@ Both profiles require twelve distinct coherent advancing frames, actual
 SAFE_STOP/STABLE, physical thresholds, generation/reset checks, strict transport
 identity, cancellation and transaction deadlines. Every destructive operation
 revalidates fresh evidence; no cached frame or durable sample creates authority.
-The earlier temporary `.29`/`.31` probes and asymmetric exception are Git
-history, not another active timing profile.
+
+Every admitted sample must carry source time and satisfy its selected timing
+profile at acquisition. The twelve-sample history proves only consecutive
+stability; it is not reused as current vehicle state. The newest complete
+sample must satisfy that same profile at gate opening and immediately before
+every destructive runtime operation. The window may span longer than the
+selected source-age limit, but buffered history never authorizes current state.
+
+## Lifecycle and Safe Stop waiting
+
+Waiting uses a single bounded runtime worker. The durable
+record contains transaction metadata, never Safe Stop samples; the runtime
+does not hold its main mutex while waiting, and shutdown performs bounded
+cancel-and-join. The current healthy VDP remains active during replacement or
+removal waiting, while first install exposes no active capability.
+
+<a id="native-stop-completion"></a>
+
+<a id="native-stop-completion-correction--accepted-2026-09-06"></a>
+### Native stop-completion boundary
+
+`StopInstance` must not return success until the provider is actually stopped.
+It waits for its worker without holding the runtime's main mutex and
+returns `Inactive` only after durable stop completion. Cancellation or failure
+returns an error, never a successful asynchronous stop. The completion bound
+is 590 seconds plus the existing two-second cancellation bound, below CM's
+600-second node-status timeout; successful completion returns immediately,
+not after that limit. The Safe Stop collection deadline remains 480 seconds.
+
+`StartInstance` retains its asynchronous `Activating` contract. A completed
+stop retains a private `stopped.json` predecessor record and its existing A/B
+slot for version checks and rollback. It is not an active installation and is
+not automatically started by reboot. A subsequent candidate uses the other
+slot; successful replacement clears the stopped record, while failed
+replacement restores the predecessor. No Safe Stop evidence is persisted.
+Stop completion is native runtime integration, not an upstream launcher fork.
+
+While Safe Stop is not yet established, AosCore's native lifecycle state is
+`ACTIVATING`. A first install leaves the empty VDP slot empty; a replacement
+keeps the previous healthy release active; a removal keeps the current healthy
+release active. The audience phrase `Waiting for Safe Stop before application`
+is a bounded Representation Layer interpretation of that native state plus a
+fresh Gateway `Safe Stop not established` fact. It is not a native AosCloud or
+AosCore state. Native runtime reason codes remain available through explicit
+on-demand Aos log requests.
+
+The profile is specific to the first demonstration qualification. A production
+vehicle may use a different Vehicle State Manager and different homologated
+thresholds behind the same runtime-owned policy boundary.
 
 <a id="queued-cold-boot-recovery-correction--accepted-2026-09-10"></a>
 ## Queued cold-boot recovery boundary
@@ -123,8 +119,8 @@ The intentionally stopped predecessor and empty first-install branches are
 unchanged; all resumed destructive steps reconstruct fresh Safe Stop evidence.
 
 The runtime never invents a missing active selector. Recovery failure retains
-diagnostic/transaction state for exact reconciliation; a one-off historical
-selector repair is not a normal boot or installation instruction.
+diagnostic/transaction state for exact reconciliation; it does not authorize
+selector repair or adoption of an unverified slot.
 
 ## Durable local-demo input integration
 

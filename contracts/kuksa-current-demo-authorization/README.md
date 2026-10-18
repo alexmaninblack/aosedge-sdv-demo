@@ -115,9 +115,11 @@ client, denies external IP traffic and logs only fixed event code,
 correlation, outcome and retryability. Secrets, tokens, claims, paths,
 permission content, signing input and raw frames are forbidden.
 
-D4-027 design is complete and its helper is implemented in Factory39. Full
-negative/resource qualification remains scoped by the current evidence; this
-contract itself authorizes no source, image or Unit mutation.
+D4-027 design is complete and its helper is implemented in the Factory-owned
+platform integration. The [current baseline](../../docs/qualification/current-baseline.md)
+selects the exact image and scoped authorization/renewal/offline evidence.
+Full negative/resource qualification remains separate; this contract itself
+authorizes no source, image or Unit mutation.
 
 The package is deleted together with `CMP-KAC` after equivalent released native
 AosCore support passes the same authorization and negative qualification.

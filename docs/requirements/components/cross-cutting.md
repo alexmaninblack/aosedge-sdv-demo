@@ -316,7 +316,7 @@ dependency.
 - Components: `CMP-BHS`, `CMP-TIRE`, `CMP-KUKSA`, `CMP-VDP`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH`
 - Interfaces: `IF-ADV-001` through `IF-ADV-005` and `IF-TIRE-002`
 - Executable contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- State: D3 design-reviewed; D4-008 contract accepted, implementation and qualification open
+- State: D3 design-reviewed; D4-008 typed advisory chain implemented with scoped proof; full containment/negative qualification remains required
 
 #### Acceptance criteria
 

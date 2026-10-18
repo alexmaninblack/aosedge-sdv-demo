@@ -932,7 +932,7 @@ The effective contract is:
 The accepted current-release deployment boundary is:
 
 1. source belongs in the existing `aos-vehicle-platform` repository under the
-   planned `authorization/aos-kuksa-compat/` boundary; Yocto integration uses
+   `authorization/aos-kuksa-compat/` boundary; Yocto integration uses
    a separate `aos-kuksa-auth-compat` recipe/package rather than adding files
    to the VDP component recipe;
 2. the package owns `aos-kuksa-auth-compat.service`, its executable,
@@ -2698,9 +2698,9 @@ no historical run database or automatic next Create/Provision.
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
-| <a id="d4-022"></a>`D4-022` — Atomic vehicle external-connectivity fault | Freeze one QEMU operation that interrupts the selected VU/PU external AosCloud and service-backend plane together while preserving the other VM and in-vehicle plane, plus probes, privilege boundary, compensation, recovery timeout, idempotent synchronization and same-Unit reconnect; normative presentation uses PU | Demo Solution + AosCloud integration + both Function Teams | `CR-DEMO`, `CR-CROSS`, `CR-E2E` | `DESIGN_REVIEWED`; implementation/live evidence open |
+| <a id="d4-022"></a>`D4-022` — Atomic vehicle external-connectivity fault | Freeze one QEMU operation that interrupts the selected VU/PU external AosCloud and service-backend plane together while preserving every existing peer VM and the in-vehicle plane, plus probes, privilege boundary, compensation, recovery timeout, idempotent synchronization and same-Unit reconnect; installed presentation uses Test, expanded presentation uses PU | Demo Solution + AosCloud integration + both Function Teams | `CR-DEMO`, `CR-CROSS`, `CR-E2E` | `DESIGN_REVIEWED`; installed externalOFF/ON implemented with scoped proof; complete expanded/negative qualification remains required |
 | <a id="d4-023"></a>`D4-023` — AosCore service-tenant quota proof | Freeze service-metadata mapping, CPU DMIPS/tolerance, approved Brake/Tire envelopes, Cloud usage/status or alert API, Tire in-instance load trigger and unaffected Brake/platform thresholds | AosCore integration + both Function Teams + Demo Solution | `CR-TIRE`, `CR-BHS`, `CR-AOS`, `CR-DEMO`, `CR-CROSS`, `CR-E2E` | `DESIGN_REVIEWED`; implementation and live qualification dossier open |
-| <a id="d4-024"></a>`D4-024` — Shared evidence, correlation and chronology | Freeze run/Unit/source/event IDs, source/local/receipt/sync timestamps, structured log/redaction fields and cross-team collision/out-of-order behavior | Demo Solution + Gateway + both Function Teams | All dashboards, `CR-CROSS`, `CR-E2E` | `DESIGN_REVIEWED`; implementation and live qualification open |
+| <a id="d4-024"></a>`D4-024` — Shared evidence, correlation and chronology | Freeze run/Unit/source/event IDs, source/local/receipt/sync timestamps, structured log/redaction fields and cross-team collision/out-of-order behavior | Demo Solution + Gateway + both Function Teams | All dashboards, `CR-CROSS`, `CR-E2E` | `DESIGN_REVIEWED`; correlation/observation implemented with scoped proof; complete source/watermark/expanded qualification remains required |
 
 ### D4-022 Design Reviewed — Atomic Vehicle External Connectivity
 
@@ -2717,22 +2717,26 @@ for VDP-to-VISS/Gateway only, with no default route or Cloud DNS, and
 `external-net`/`external0` for default route, DNS, AosCloud and Brake/Tire
 backends. The native helper resolves the current VU/PU role and exact QMP socket
 from the current journal and exposes only one fixed `set_link` operation for
-that VM's external plane; the other VM and vehicle plane remain up. QMP/serial
+that VM's external plane; every existing peer VM and the vehicle plane remain
+up. QMP/serial
 are out of band, browser/arbitrary QMP and host/guest firewall mutation are
 forbidden. This is an OEM pre-SOP Factory Image network configuration and demo
 launcher boundary, not an upstream AosCore source change. The installed
 offline exercise uses its current Test; expanded two-role presentation uses PU.
 
-The design is closed. Implementation and live acceptance must still freeze
-Cloud/backend convergence bounds and produce the required evidence; accepted
-subdecisions authorize no network, VM, Factory Image or Cloud mutation.
+The design is closed and the installed mechanism has scoped proof in the
+[current baseline](../qualification/current-baseline.md). Complete controlled
+negative/recovery and expanded acceptance still require their exact operational
+bounds and evidence; accepted subdecisions authorize no network, VM, Factory
+Image or Cloud mutation.
 
 D4-022.2 exposes one disabled-during-transition control with `ONLINE`,
 `TRANSITIONING`, `OFFLINE`, `RECOVERING` and `FAILED/PARTIAL`; no per-channel
 control or single-probe success is allowed. `OFFLINE` requires external link
 down, authoritative selected-Unit Cloud offline, no post-disconnect backend
 receipt, continued local VISS/KUKSA analytics/advisory/telemetry, Mac Cloud
-access and unchanged other VM. Function Dashboards retain the last actual
+access and preservation of every existing peer VM. Installed single-Test use
+requires no second VM. Function Dashboards retain the last actual
 result and show connectivity unavailable. Recovered `ONLINE` requires the same
 Unit identity, no reprovision/reinstall/restart, idempotent bounded message
 synchronization with separate event/receipt/sync times and unchanged excluded
@@ -2751,7 +2755,8 @@ idempotently without reprovision, reinstall or service restart. QMP
 acknowledgement is bounded at five seconds; D4-022.4 must derive Cloud/backend
 bounds from live qualification, and no bound is presented as a performance KPI.
 
-D4-022.4 requires two complete live disconnect/restore cycles for each of VU
+For expanded two-role acceptance, D4-022.4 requires two complete live
+disconnect/restore cycles for each of VU
 and PU while both run concurrently with distinct identities and correct
 disjoint Unit Sets. Each cycle proves a new post-disconnect deterministic
 CARLA event, selected-Unit Cloud/backend loss, uninterrupted local behavior,

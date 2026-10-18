@@ -6,11 +6,11 @@
 Implementation and qualification: [protocol status](../implementation-status.md).
 
 - Decision: `D4-022`
-- Lifecycle state: `DESIGN_REVIEWED`
+- Lifecycle state: `DESIGN_REVIEWED`; installed path implemented, full expanded acceptance separate
 - Contract version: `1.0.0`
 - Accepted subdecisions: D4-022.1 dual-network mechanism, D4-022.2 probe/UI
   state machine, D4-022.3 transition/recovery behavior and D4-022.4
-  qualification plan, 2026-08-23
+  qualification plan
 
 The Factory image and QEMU launcher provide separate vehicle and external
 planes per controller. A connectivity fault must preserve the simulated
@@ -18,8 +18,8 @@ in-vehicle VDP-to-VISS/Gateway path.
 
 `vehicle-net`/`vehicle0` carries only the VDP-to-VISS/Gateway route, has no
 default route or Cloud DNS and remains up. `external-net`/`external0` owns the
-default route, DNS, AosCloud and Brake/Tire backend routes. The installed Test owns these planes; expanded two-role use gives each VM
-an independent instance.
+default route, DNS, AosCloud and Brake/Tire backend routes. The installed Test
+owns these planes; expanded two-role use gives each VM an independent instance.
 
 The protected native helper resolves the currently selected Validation or
 Production role from the current-run journal and issues one fixed QMP
@@ -36,13 +36,15 @@ backend switch exists, and no single probe may establish success. `OFFLINE`
 requires the selected external link down, authoritative selected-Unit Cloud
 offline, no post-disconnect Brake/Tire backend receipt, continued local
 VISS/KUKSA analytics/advisory and telemetry, continued presenter Cloud access
-and an unchanged other VM. Function Dashboards keep the last actual result and
+and preservation of every existing peer VM. The installed single-Test profile
+requires no second VM. Function Dashboards keep the last actual result and
 show external connectivity unavailable without fabricating current data.
 
 Recovered `ONLINE` requires the same Unit UUID/`system_uid` online, no
 reprovision/reinstall/service restart, idempotent bounded outbox
 synchronization with original event time distinct from receipt/sync time, and
-unchanged other-VM/in-vehicle paths. Any mismatch is `FAILED/PARTIAL`. The
+unchanged in-vehicle paths and every existing peer VM. Any mismatch is
+`FAILED/PARTIAL`. The
 installed presentation selects its current Test; expanded two-role presentation
 selects PU. The retained machine profile's Production presentation field belongs
 to that expanded design, not an instruction to create a Production-role vehicle.
@@ -71,7 +73,14 @@ No wait is unbounded. QEMU 11.0.3 exposes the required `set_link` command but
 no dedicated `query-netdev`, while `query-rx-filter` does not expose link
 state; therefore no single QEMU query is accepted as transition truth.
 
-Live acceptance starts with both VU and PU concurrently running, uniquely
+## Acceptance profiles
+
+Installed Test OFF/ON and local continuity/delivery-recovery have scoped proof
+in the [current baseline](../../docs/qualification/current-baseline.md). It does
+not close the complete negative/recovery matrix or expanded two-role proof.
+All existing peer and unrelated resources remain protected in either profile.
+
+Expanded two-role acceptance starts with both VU and PU concurrently running, uniquely
 identified, in their correct disjoint Unit Sets and online with the expected
 software graph and local dashboard stack. It runs two complete disconnect/
 restore cycles for each role. Every offline cycle creates a new deterministic
@@ -86,7 +95,8 @@ duplicate achieved-state request, stale/contradictory probes, forbidden peer
 or vehicle-path effects and failed compensation. Live evidence freezes the
 Cloud/backend operational bounds before acceptance. One sanitized engineering
 qualification record is retained; ordinary demo-run history is not. The
-design is reviewed, while implementation and live evidence remain an explicit
-acceptance gate.
+design is reviewed and the installed mechanism is implemented. Complete
+negative/recovery and expanded acceptance remain explicit gates; the current
+Test receipts do not waive them or change the retained machine profile.
 
 This contract authorizes no VM, network, Factory Image or Cloud mutation.
