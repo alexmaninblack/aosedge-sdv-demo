@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 
 from release_automation import ROOT, require, atomic, read
-from release_owners import git, metadata, sha
+from release_owners import command, git, metadata, sha
 
 
 def remote_main(repo):
@@ -20,10 +20,22 @@ def active_sources(owner):
     from reproduction.chain import read_plan
     from reproduction.core import Release
     path=selected_plan(ROOT);plan=read_plan(Release(),path)
-    require(plan.get('schemaVersion')==3 and
-            plan['nativeSources']['vehicle-gateway']['revision']==git(owner.gateway,'rev-parse','HEAD'),
-            'DEVELOPER_BUILD_SELECTION_STILL_HISTORICAL')
-    return dict(plan=path.relative_to(ROOT).as_posix(),sha256=sha(path),nativeSources=plan['nativeSources'])
+    require(plan.get('schemaVersion')==3,'DEVELOPER_BUILD_SELECTION_STILL_HISTORICAL')
+    selected=plan['nativeSources']['vehicle-gateway']['revision']
+    current=git(owner.gateway,'rev-parse','HEAD')
+    documentation_advance=current!=selected
+    if documentation_advance:
+        # A's checked media and B's immutable producer selection are separate.
+        # Permit only descendant documentation cleanup, with the ordinary
+        # exact application/UI/Setup byte-equivalence proof still mandatory.
+        ancestor=command(['/usr/bin/git','-C',owner.gateway,'merge-base','--is-ancestor',selected,current])
+        paths=git(owner.gateway,'diff','--name-only',selected,current).splitlines()
+        require(ancestor.returncode==0 and paths and all(
+            p=='README.md' or p.startswith('docs/') and p.endswith('.md') for p in paths),
+            'DEVELOPER_GATEWAY_PRODUCT_SOURCE_CHANGED')
+        owner.product()
+    return dict(plan=path.relative_to(ROOT).as_posix(),sha256=sha(path),nativeSources=plan['nativeSources'],
+                gatewayHead=current,gatewayDocumentationAdvance=documentation_advance)
 
 
 def integrate(owner):

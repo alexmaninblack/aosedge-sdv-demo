@@ -86,6 +86,14 @@ for explicit rollback. Apple Development preview status, lack of notarization
 and remaining first-use/native acceptance limits are retained rather than
 removed by a green unit test or an upload.
 
+Option B's frozen Gateway revision need not advance for documentation-only
+mainline cleanup. Release fan-in accepts a descendant Gateway revision only
+when its entire difference from that selection consists of `README.md` and
+Markdown files under `docs/`, and the normal exact application/UI/Setup
+byte-equivalence proof passes. Product-source changes, foreign history and
+changed candidate bytes still stop promotion. This exception neither rewrites
+the B plan nor substitutes older binaries for changed runtime source.
+
 The current consumer adapter downloads the frozen public launcher generation
 on M1 without Google credentials or developer tools, verifies the DMG and signed
 Setup, then uses Setup's ordinary install/prepare/open owners. It preserves the
