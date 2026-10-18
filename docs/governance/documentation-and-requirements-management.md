@@ -238,6 +238,11 @@ accepted D4 profile hashes and declared Brake quotas against their canonical
 profiles. Effective Safe Stop, Reset, compatibility and publication rules have
 negative regression cases. Current administrative schemas/fixtures are checked
 separately from retained compatibility fixtures; neither is live acceptance.
+Markdown link-label checks recognize both `Version` and `Contract version`
+metadata, including cross-repository links. Focused negative cases also cover
+transport-authentication summaries, local installed/expanded applicability and
+current native provenance/observation ordering. Browser disclosure is verified
+by isolated server/projection and consumer tests, not by a wording check.
 Frozen producer/source checkouts use their own revision-matched checks; they
 are not the maintained current-documentation workspace.
 

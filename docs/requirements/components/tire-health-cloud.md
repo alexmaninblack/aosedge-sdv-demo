@@ -368,7 +368,7 @@ packaged product and protected helper against controlled adjacent components.
 <a id="req-tire-cloud-003"></a>
 
 - ID: `REQ-TIRE-CLOUD-003`
-- Statement: Before sign/publish is enabled, the dashboard shall show and validate the producer candidate ID, purpose, semantic version, prepared artifact SHA-256, RFC-8785 canonical manifest SHA-256, ARM64 target, VDP v3 compatibility, requested KUKSA paths/modes, the accepted CR-TIRE 0.2 in-vehicle resource envelope and application-level reporting/queue bounds, local outputs, functional message family, advisory target and required evidence; Cloud-container hosting limits shall be labelled separately.
+- Statement: Before sign/publish is enabled, the dashboard shall show and validate the producer candidate ID, purpose, semantic version, prepared artifact SHA-256, RFC-8785 canonical manifest SHA-256, ARM64 target, VDP v3 compatibility, requested KUKSA paths/modes, the current [in-vehicle resource envelope](../../../contracts/tire-health-model/tire-health-product-profile.v1.json) and application-level reporting/queue bounds, local outputs, functional message family, advisory target and required evidence; Cloud-container hosting limits shall be labelled separately.
 - Parent: [evidence-backed OEM approval (`SYS-REL-010`)](../system-requirements-and-traceability.md#sys-rel-010)
 - Flow: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Contract

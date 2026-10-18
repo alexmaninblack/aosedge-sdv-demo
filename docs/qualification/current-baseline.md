@@ -73,6 +73,12 @@ Current Brake/Tire private admin schemas and negative fixtures describe the
 implemented handlers separately from retained legacy compatibility inputs.
 Their source conformance is not a new live result or a change to this DMG.
 
+Current source includes the accepted fingerprint-only Presenter boundary:
+private identities are projected server-side before browser JSON, with bounded
+opaque selectors and isolated regression coverage. This is not incorporated
+into the selected DMG by a documentation/source commit. No rebuilt media or
+new M1 runtime result is claimed for that correction.
+
 The [controller image lock](../../workspace/inputs/controller-images.lock.json)
 preserves immutable Factory provenance. It does not select operator media or
 inherit another artifact's qualification. This page summarizes source/evidence,

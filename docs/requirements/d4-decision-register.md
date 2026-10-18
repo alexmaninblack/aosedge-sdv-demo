@@ -2357,7 +2357,7 @@ execution packet does not restrict the present contract or prove a missing route
 - Prepared: 2026-08-22
 - Owners: Function Team 2 / Platform / Gateway / Vehicle Simulation
 - Machine-readable contract:
-  [Tire Health In-Vehicle Product Contract 1.0.0](../../contracts/tire-health-model/README.md)
+  [Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md)
 
 The contract requires:
 
@@ -2885,7 +2885,7 @@ VM operation.
 - Prepared: 2026-08-23
 - Owners: Demo Solution / Gateway / both Function Teams
 - Machine-readable contract:
-  [Shared Evidence, Correlation and Chronology 1.0.0](../../contracts/shared-evidence-correlation/README.md)
+  [Shared Evidence, Correlation and Chronology](../../contracts/shared-evidence-correlation/README.md)
 
 D4-024.1 introduces no global or audience-visible `demoRunId` and no
 historical demo-run database. Before provisioning, current-run facts bind to

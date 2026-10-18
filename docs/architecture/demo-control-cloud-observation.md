@@ -61,6 +61,25 @@ reader does not silently enumerate arbitrary account-sized inventories.
 
 ## Result shape
 
+This is the private server/CLI read model. Exact Unit/Node/system UID and native
+instance joins are validated here, before the audience projection. The
+Presenter HTTP boundary never forwards these exact identity values. It applies
+one bounded process-scoped mapping to all JSON responses (inventory, resources,
+backend facts, snapshots and operation results), replacing identity values,
+dynamic identity keys and composite bindings with `ref_` fingerprints. Full
+IDs and the mapping remain server-side; no salt/map is persisted or logged.
+
+Browser `unitId`, `systemUid`, native-instance fields and corresponding backend
+fields retain their property names for the read adapter, but their values are
+opaque references, not native identities or wire-message provenance. A domain
+window drill-down also uses an issued reference. Only the fixed window read and
+service-assignment selectors resolve references server-side; unknown or
+previous-process references fail closed. Resolution grants no authority and
+does not replace current-Test, ownership, schema or native-session validation.
+Public UI session/request/job IDs remain public protocol generations, not
+Cloud identities or capabilities. Original backend message bytes/hashes remain
+authoritative; the projected view is not an ingestion envelope or hash proof.
+
 Existing `OperationResult` is retained: `operation`, `state`, `message`,
 `target: "test"`, `data`. The outer state is `OBSERVED` when no material
 observation problems remain, otherwise `PARTIAL`; missing local binding is

@@ -4,7 +4,7 @@ import { BrakeWindowDetail, validateWindowDetail } from "../../src/features/serv
 import { readBrakeWindow } from "../../src/adapters/local/LocalPresenterReadAdapter";
 import { nativeInstance } from "./backendFixture";
 import { windowDeliveryLabel } from "../../src/features/service-team/windowPresentation";
-const eventId = "4cba2d80-c04a-4d24-9f03-f4a85d56da13";
+const eventId = "ref_4cba2d80c04a4d249f03f4a85d56da13";
 test("chunk counts alone do not prove durable delivery; unknown totals stay unknown", () => {
   expect(windowDeliveryLabel({ receivedChunkCount: 3, expectedChunkCount: 3, deliveryState: "RECEIVING" })).toContain("unconfirmed");
   expect(windowDeliveryLabel({ receivedChunkCount: 3, expectedChunkCount: null })).toContain("total not yet reported");

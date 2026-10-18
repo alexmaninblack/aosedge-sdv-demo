@@ -125,9 +125,9 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 | Accepted VDP Component v3 contract | `CR-VDP` | Exact compatible contract, required read paths, typed Tire advisory target, units, quality, freshness and factual Gateway status | Service remains not ready, produces no accepted condition result, and sends no advisory |
 | Native Aos service identity and IAM permissions | `CR-AOS` plus `CR-KAC` | Current instance registered, valid `AOS_SECRET`, fixed `kuksa` bootstrap resource and exact registered path/mode permissions | Bootstrap/JWT acquisition fails closed; no reusable or widened authority |
 | Deterministic Tire Health stimulus | `CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-VDP` | Versioned accelerated/pre-aged scenario and accepted native signal provenance; hidden truth remains inaccessible | Qualification is invalid; service must not infer success from oracle data |
-| Tire Health backend contract | [`CR-TIRE-CLOUD`](tire-health-cloud.md) | Authenticated bounded summary/event schemas and idempotent acknowledgement | Messages remain in the bounded queue; local estimate/advisory continues |
+| Tire Health backend contract | [`CR-TIRE-CLOUD`](tire-health-cloud.md) | Isolated local transport, current-Unit correlation, bounded summary/event schemas and idempotent acknowledgement; correlation is not client authentication | Messages remain in the bounded queue; local estimate/advisory continues |
 | Aos runtime and resource enforcement | `CR-AOS` | SOTA install/start/stop/uninstall/readiness and declared quotas enforced | Service reports unavailable/error; VDP and Brake Health remain active |
-| One source and two Unit roles | [`CR-DEMO`](demo-orchestration.md) | Exact sequential live VU attach/run/detach, deterministic reset/new generation and PU attach/run/detach correlation | Evidence is incomplete and cannot support promotion |
+| Exclusive live source | [`CR-DEMO`](demo-orchestration.md) | Installed: exact current-Test attach/run/detach and generation binding. Expanded dual-role proof additionally requires sequential VU/PU attach/run/detach with deterministic reset/new generation | Missing installed binding blocks current-Test evidence; incomplete expanded proof cannot support promotion |
 
 <a id="current-implementation-baseline"></a>
 ## Implementation and verification boundary

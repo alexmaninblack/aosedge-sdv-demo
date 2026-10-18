@@ -13,8 +13,7 @@ All five build dependency archives are delivered from Dropbox: standalone CARLA,
 native host support, Gateway SDK, the controller image and vehicle bases. The
 [public companion folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
 retains supplementary source/notices; it is not the current build-input delivery
-route. The five superseded Drive dependency archives have been retired after
-verifying the Dropbox replacements and current-product independence. The current
+route. The current
 [dependency catalog](../../workspace/dependencies/catalog.json) is maintained with
 the source; it selects Dropbox archives independently of an installer.
 Public test access is authorized; that is not blanket redistribution clearance

@@ -733,7 +733,7 @@ the real supported APIs and launchers.
 - Parents: [independent resource-scoped release operations (`SYS-REL-012`)](../system-requirements-and-traceability.md#sys-rel-012) and [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002)
 - Flow: [common release (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-ORCH`, `IF-LC-001`, `IF-LC-005`, `IF-LC-006`, `IF-LC-007`, `IF-DEMO-001`
-- Executable contract: [Demo Run State, Overlays and Cleanup 1.2.0](../../../contracts/demo-run-state/README.md)
+- Executable contract: [Demo Run State, Overlays and Cleanup](../../../contracts/demo-run-state/README.md)
 - Verification: Unit, Component, Contract, Integration, End-to-end
 - Evidence: disjoint Platform/Brake/Tire operation fixtures; exact candidate/profile/Cloud-object/Batch/Campaign/Unit/Unit-Set conflict matrix; run-exclusive provisioning/source/retirement/R0 cases; registry-capacity and helper-busy cases; atomic-write interruption; restart with several mixed non-terminal outcomes; corrupt-registry diagnosis; no-hidden-success, no-blind-retry and no-automatic-cross-team-queue proof
 - Installed behavior: protected mutations are serialized; authoritative reads and perspective navigation remain available. Finish uses exact owned Test cleanup and journal-last reconciliation under `UI-INT-076`; it does not require the expanded old-credential reconnect qualification as an ordinary deletion prerequisite.

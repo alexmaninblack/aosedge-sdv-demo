@@ -345,6 +345,8 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
     if not (root / "index.html").is_file():
         raise ValueError("PRESENTER_BUILD_REQUIRED")
     cloud_reader = StudioCloudReader()
+    from .browser_projection import BrowserProjection
+    projection = BrowserProjection()
     platform_reader = platform_reader or cloud_reader
     platform_lock = threading.Lock()
     platform_result = None
@@ -368,6 +370,17 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
 
         def log_message(self, *_):
             pass  # Do not log request URLs/headers.
+
+        def reply_json(self, code, value):
+            from .environment import JOURNAL
+            from .status import read_json
+            path = cloud_reader.application.environment_service.root / JOURNAL
+            # Build/session refresh has no identity-bearing data and must keep
+            # working even when a run journal needs separate repair.
+            context = read_json(path) if self.path != "/api/presenter/client-state" and path.is_file() else None
+            value = projection.project(value, context, protocol=self.path in (
+                "/api/presenter/operations", "/api/presenter/client-state"))
+            self.reply(code, json.dumps(value).encode())
 
         def reply(self, code, body, content_type="application/json"):
             self.send_response(code)
@@ -396,46 +409,49 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                 return
             if self.path == "/api/presenter/client-state":
                 try:
-                    self.reply(200, json.dumps(client_state(root, native)).encode())
+                    self.reply_json(200, client_state(root, native))
                 except Exception:
                     self.reply(503, b'{"error":"CLIENT_STATE_UNAVAILABLE"}')
                 return
             if self.path == "/api/presenter/snapshot":
                 try:
-                    self.reply(200, json.dumps(reader()).encode())
+                    self.reply_json(200, reader())
                 except Exception:
                     self.reply(503, b'{"error":"LOCAL_OBSERVATION_UNAVAILABLE"}')
                 return
             if self.path == "/api/presenter/platform":
                 try:
-                    self.reply(200, json.dumps(platform_once()).encode())
+                    self.reply_json(200, platform_once())
                 except Exception:
                     self.reply(503, b'{"error":"AOS_CLOUD_STATE_UNAVAILABLE"}')
                 return
             if self.path in ("/api/presenter/monitoring", "/api/presenter/monitoring-history"):
                 try:
                     resource_read = cloud_reader.monitoring_history if self.path.endswith("monitoring-history") else cloud_reader.monitoring
-                    self.reply(200, json.dumps(resource_read()).encode())
+                    self.reply_json(200, resource_read())
                 except Exception:
                     self.reply(503, b'{"error":"CLOUD_MONITORING_UNAVAILABLE"}')
                 return
             if self.path in ("/api/presenter/backend/brake", "/api/presenter/backend/tire"):
                 try:
-                    self.reply(200, json.dumps(cloud_reader.backend(self.path.rsplit("/", 1)[-1])).encode())
+                    self.reply_json(200, cloud_reader.backend(self.path.rsplit("/", 1)[-1]))
                 except Exception:
                     self.reply(503, b'{"error":"BACKEND_OBSERVATION_UNAVAILABLE"}')
                 return
-            window_detail = re.fullmatch(r"/api/presenter/backend/brake/windows/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})", self.path)
+            window_detail = re.fullmatch(r"/api/presenter/backend/brake/windows/(ref_[0-9a-f]{32})", self.path)
             if window_detail:
                 try:
-                    self.reply(200, json.dumps(cloud_reader.brake_window(window_detail[1])).encode())
+                    event_id = projection.resolve(window_detail[1])
+                    if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", event_id):
+                        raise ValueError("WINDOW_REFERENCE_INVALID")
+                    self.reply_json(200, cloud_reader.brake_window(event_id))
                 except Exception:
                     self.reply(503, b'{"error":"BACKEND_WINDOW_DETAIL_UNAVAILABLE"}')
                 return
             if self.path == "/api/presenter/operations" and native:
                 try:
                     code, result = native.call()
-                    self.reply(code, json.dumps(result).encode())
+                    self.reply_json(code, result)
                 except Exception:
                     self.reply(503, b'{"error":"NATIVE_SESSION_UNAVAILABLE_NO_REPLAY"}')
                 return
@@ -473,7 +489,7 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                 size = int(self.headers.get("Content-Length", "0"))
                 if not 0 < size <= 4096:
                     raise ValueError("INVALID_REQUEST")
-                payload = json.loads(self.rfile.read(size))
+                payload = projection.operation(json.loads(self.rfile.read(size)))
                 # Validate before crossing into the privileged native boundary.
                 from .presenter_operations import operation_plan
                 operation_plan(payload)
@@ -482,7 +498,7 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                 return
             try:
                 code, result = native.call(payload)
-                self.reply(code, json.dumps(result).encode())
+                self.reply_json(code, result)
             except Exception:
                 self.reply(503, b'{"error":"SUBMISSION_UNCERTAIN_DO_NOT_RESUBMIT"}')
 

@@ -95,7 +95,7 @@ async function scenario(page: Page) {
     profileState: "CURRENT", vdpProfile: "v3", profileId: "vdp-78", functionAge: 0, functionInput: "RECEIVING", functionActivity: "ACTIVE", functionConflict: false, windowMode: false, windowInterrupted: false, noResult: false, resetVersion: "58.0.0", resetOutcome: "CLEARED", resetConnected: true };
   const calls: { path: string; method: string; action?: string }[] = [];
   const now = new Date().toISOString();
-  const windowRecord = { unitSystemUid: state.uid, serviceVersion: "56.0.0", eventId: "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
+  const windowRecord = { unitSystemUid: state.uid, serviceVersion: "56.0.0", eventId: "ref_4cba2d80c04a4d249f03f4a85d56da13",
     serviceInstance: { serviceId: "brake-id", subjectId: "brake-subject", instanceIndex: 0, instanceId: "native-brake-v1" },
     windowStartTimestamp: now, terminalState: "COMPLETE", receivedSampleCount: 150, receivedChunkCount: 3, expectedChunkCount: 3,
     backendReceivedAt: new Date(Date.parse(now) + 1).toISOString(), deliveryState: "DURABLY_RECEIVED" };

@@ -768,7 +768,7 @@ Repeat verification checks the unchanged output identities without repeatedly
 hashing the large Factory. A partial owner result without the verified outer
 receipt is preserved and rejected, not silently promoted.
 
-This produces new preparation inputs, not historical Kit028 bytes. Complete
+This produces new preparation inputs, not the bytes of an existing kit. Complete
 packaging must explicitly select the new group manifests in a new candidate;
 its input-lock and Setup pin checks cannot be bypassed. Neither historical
 manifests nor pinned source checkouts may be edited to make a new package

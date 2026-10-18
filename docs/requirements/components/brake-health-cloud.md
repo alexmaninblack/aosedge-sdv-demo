@@ -383,7 +383,7 @@ components.
 | [Complete current-run deletion (`REQ-BRAKE-CLOUD-013`)](#req-brake-cloud-013) | Delete all exact current-run functional data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
 | [Failure, freshness and Service-log visibility (`REQ-BRAKE-CLOUD-014`)](#req-brake-cloud-014) | Show functional failures plus role-scoped native Service-log evidence without fabricated success or a second archive | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-014 design accepted |
 | [Mac-local ARM64 container deployment (`REQ-BRAKE-CLOUD-015`)](#req-brake-cloud-015) | Run a health-checked ARM64 backend with persistent data; live views remain in host Presenter | Unit, Component, Integration | D3 design-reviewed |
-| [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, authenticate VM ingestion and keep the `brake-sp1` credential outside Docker | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-010.3 accepted |
+| [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, isolate VM ingestion with schema/bounds/current-Unit correlation, authenticate the signing helper and keep the `brake-sp1` credential outside Docker | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-010.3 accepted |
 
 ## Detailed Requirements
 
@@ -810,7 +810,7 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | [REQ-BRAKE-CLOUD-013](#req-brake-cloud-013) | [UT-011](#ut-brake-cloud-011) | Required; retention API | N/A; package-local operation | Required; next-run reset | N/A; operational acceptance |
 | [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | [UT-012](#ut-brake-cloud-012) | Required; full functional/log state matrix | Required; D4-014 Service-log role/API fixtures | Required; dependency faults plus live SP1 ownership/lifecycle qualification | Required; G2/G4 negative paths and selected log evidence |
 | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015) | [UT-013](#ut-brake-cloud-013) | Required; real ARM64 backend/health/volume and host views | N/A; packaging boundary | Required; owned-container restart/persistence and scoped cleanup, not shared Engine cycling | N/A; host deployment qualification |
-| [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | [UT-014](#ut-brake-cloud-014) | Required; listener/helper boundary | Required; ingestion/helper authentication | Required; real VU/PU route and LAN negative probe | Not part of the first-demo connectivity scenario |
+| [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | [UT-014](#ut-brake-cloud-014) | Required; listener/helper boundary | Required; isolated ingestion/correlation and authenticated helper | Required; real VU/PU route and LAN negative probe | Not part of the first-demo connectivity scenario |
 
 ## Cross-Cutting Constraints
 

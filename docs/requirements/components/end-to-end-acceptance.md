@@ -147,7 +147,7 @@ qualification remains outside the audience flow.
 | --- | --- | --- | --- |
 | Accepted component packages | Every `CR-*` owner | D3 design reviewed; D4 contracts and required implementation evidence complete for the attempted scope | E2E execution is blocked, not waived |
 | OEM Demo Factory Image and prepared candidates | Platform and Function Teams | Exact immutable versions/digests, compatibility and secret-negative evidence | `M0` or affected release stage cannot start |
-| Validation and Production lanes | AosCloud/OEM + Demo Solution | Fresh Units, exact disjoint Unit Set membership and current authoritative state | Every Unit-affecting action is blocked |
+| Scoped Unit identity | AosCloud/OEM + Demo Solution | Installed: exact current-Test identity, selected membership and authoritative state. Expanded promotion additionally requires fresh Validation/Production Units and disjoint role-set membership | Missing evidence blocks the applicable profile; expanded prerequisites are not installed features |
 | One live CARLA/Gateway source | Simulator/Gateway owner | Exclusive attach, detach, canonical reset and new generation are provable | Next Unit role cannot attach |
 | Authoritative Cloud and functional surfaces | AosCloud and Function Teams | Current scoped APIs and honest unavailable/stale states | Claim remains unproved or explicitly unavailable |
 | Native KUKSA/Aos security and runtime | Platform/AosEdge | Accepted identity/permission, `CMP-KAC`, signer/verifier, trusted Provider integration and quota mechanisms | Service readiness or affected proof fails closed |

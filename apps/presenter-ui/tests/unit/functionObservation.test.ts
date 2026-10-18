@@ -17,6 +17,18 @@ test("current allocation/profile source report keeps input and activity separate
   expect(selected.item?.message.content.activity.state).toBe("WAITING");
   expect(selectFunction(resource(), "brake", { ...binding, profile: "v2" }, now).state).toBe("UNREPORTED");
 });
+test("opaque browser references preserve native-binding comparisons without exposing native IDs", () => {
+  const value = resource();
+  const refs = { unitSystemUid: "ref_" + "1".repeat(32), serviceId: "ref_" + "2".repeat(32),
+    subjectId: "ref_" + "3".repeat(32), instanceId: "ref_" + "4".repeat(32) };
+  value.data.unitSystemUid = refs.unitSystemUid;
+  value.data.items[0].message.unitSystemUid = refs.unitSystemUid;
+  const { unitSystemUid: _uid, ...instanceRefs } = refs;
+  Object.assign(value.data.items[0].message.serviceInstance, instanceRefs);
+  const projectedBinding = { ...binding, unitSystemUid: refs.unitSystemUid, serviceId: refs.serviceId, subjectId: refs.subjectId };
+  expect(selectFunction(value, "brake", projectedBinding, now).state).toBe("CURRENT");
+  expect(selectFunction(value, "brake", { ...projectedBinding, serviceId: "ref_" + "5".repeat(32) }, now).state).toBe("UNREPORTED");
+});
 test.each(["old", "future", "stale", "partial", "truncated", "cloud-stale"])("%s cannot be fresh from recent receipt", change => {
   const value = resource();
   if (change === "old") value.data.items[0].message.observedAt = new Date(now - 90001).toISOString();

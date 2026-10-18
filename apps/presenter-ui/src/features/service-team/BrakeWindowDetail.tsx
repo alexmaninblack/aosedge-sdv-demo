@@ -10,7 +10,7 @@ import { stamp } from "../../app/StudioReadViews";
 type Sample = { sampleIndex: number; sourceTimestamp: string; phase: "PRE" | "ACTIVE" | "POST";
   speedKph: number; brakePedalPercent: number; longitudinalAccelerationMps2: number };
 type Detail = { samples: Sample[]; window: Record<string, unknown> };
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$(?![\s\S])/;
+const windowReference = /^ref_[0-9a-f]{32}$(?![\s\S])/;
 export function validateWindowDetail(value: unknown, row: ProductRow): Detail {
   const data = object(value), window = object(data.window), message = row.message;
   const provenanceMatches = message.serviceInstance ? sameInstance(window.serviceInstance, message.serviceInstance)
@@ -59,7 +59,7 @@ export function BrakeWindowDetail({ row }: { row: ProductRow }) {
   useEffect(() => {
     const controller = new AbortController(); let active = true;
     setState({}); setPage(0);
-    if (typeof eventId !== "string" || !uuid.test(eventId)) { setState({ error: true }); return; }
+    if (typeof eventId !== "string" || !windowReference.test(eventId)) { setState({ error: true }); return; }
     void (async () => {
       try {
         const detail = validateWindowDetail(await readBrakeWindow(eventId, controller.signal), row);

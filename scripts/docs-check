@@ -416,6 +416,11 @@ def metadata(text: str, field: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def document_version(text: str) -> str | None:
+    value = metadata(text, "Version") or metadata(text, "Contract version")
+    return value.strip("`") if value else None
+
+
 def named_document_versions(title: str, fragment: str = "") -> list[str]:
     # D4-026.17 is a stable decision identifier, not document version 026.17.
     # Likewise, a requirement about product v1.0 does not name its doc version.
@@ -459,7 +464,7 @@ def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
             target_text = documents.get(destination)
             if target_text is None:
                 continue
-            target_version = metadata(target_text, "Version")
+            target_version = document_version(target_text)
             if target_version and target_version not in title:
                 issues.append(
                     Issue(
@@ -473,7 +478,7 @@ def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
             if destination not in documents or destination.suffix != ".md":
                 continue
             target_text = documents.get(destination)
-            target_version = metadata(target_text or "", "Version")
+            target_version = document_version(target_text or "")
             named_versions = named_document_versions(title, urlsplit(link_target(raw_target)).fragment)
             if target_version and named_versions and target_version not in named_versions:
                 issues.append(
@@ -1041,7 +1046,7 @@ def check_workspace(root: Path) -> tuple[list[Issue], int, set[str]]:
                 body = documents.get(destination) or destination.read_text(encoding="utf-8")
                 if parsed.fragment and unquote(parsed.fragment).lower() not in anchors(body):
                     issues.append(Issue(relative(root, source), f"missing workspace anchor: {target}"))
-                version = metadata(body, "Version")
+                version = document_version(body)
                 named = named_document_versions(title, parsed.fragment)
                 if version and named and version not in named:
                     issues.append(Issue(relative(root, source), f"versioned document link label is stale: {title}, target is {version}"))
@@ -1118,12 +1123,16 @@ def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Is
             "Candidate correction not started", "No implementation | `TARGET`"),
         "docs/requirements/components/brake-health-service.md": (
             "verify installed identity/capabilities", "implementation/qualification open",
-            "implementation and qualification remain open", "implementation review open"),
+            "implementation and qualification remain open", "implementation review open",
+            "Versioned authenticated endpoint"),
         "docs/requirements/components/tire-health-service.md": (
-            "verify the installed identity, capability manifest", "implementation and integration open"),
+            "verify the installed identity, capability manifest", "implementation and integration open",
+            "Authenticated bounded summary/event schemas"),
         "docs/requirements/components/factory-substrate.md": ("awaits prepared VDP artifacts",),
         "docs/requirements/components/README.md": ("legacy cleanup schema drift",),
-        "docs/requirements/components/tire-health-cloud.md": ("When that status reports `INCOMPATIBLE_VDP`",),
+        "docs/requirements/components/tire-health-cloud.md": ("When that status reports `INCOMPATIBLE_VDP`", "CR-TIRE 0.2 in-vehicle resource"),
+        "docs/requirements/components/brake-health-cloud.md": ("authenticate VM ingestion", "ingestion/helper authentication"),
+        "contracts/service-tenant-quota-proof/README.md": ("staging requalification candidate",),
         "docs/requirements/components/cross-cutting.md": ("the normative `G4/X-OFFLINE` presentation uses PU",
                                                          "The normative presentation selects PU"),
         "contracts/distribution-installation/version-selection.md": (
@@ -1145,6 +1154,17 @@ def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Is
         for pattern in patterns:
             if pattern in body:
                 issue(name, "superseded normative rule: " + pattern)
+    lifecycle = "docs/requirements/components/aos-lifecycle.md"
+    body = documents.get((root / lifecycle).resolve(), "")
+    for identifier in ("001", "003", "005", "006", "015", "016"):
+        clause = re.search(r'- ID: `REQ-AOS-' + identifier + r'`\n(.*?)(?=\n- Rationale:|\Z)', body, re.S)
+        if body and (not clause or not all(word in clause[1].lower() for word in ("installed", "expanded"))):
+            issue(lifecycle, "REQ-AOS-" + identifier + " must state installed and expanded applicability locally")
+    evidence = "contracts/shared-evidence-correlation/README.md"
+    shared = documents.get((root / evidence).resolve(), "")
+    if shared and ("Service version/digest" in shared or not all(term in shared for term in
+            ("native instance identity", "separate persisted positive generation", "never reuses or advances advisory"))):
+        issue(evidence, "shared evidence must distinguish current native provenance and observation/advisory ordering")
     product_schemas = {
         "brake-telemetry-window": ("brake-telemetry-window-chunk", "brake-telemetry-window-completion"),
         "brake-health-model": ("brake-health-assessment", "brake-health-event"),

@@ -1,5 +1,8 @@
 import type { TeamView, ServiceRelease } from "./model";
 
+// Browser read model: identity-shaped string fields carry opaque Presenter
+// references, never exact Unit/Node/system UID or native Cloud object IDs.
+// The private CLI/Cloud model is not this HTTP projection.
 export interface CloudSection<T> { value: T | null; state: string; reason?: string | null; readCompletedAt?: string; lastKnownReadCompletedAt?: string }
 export interface InstalledProfile { state: "CURRENT" | "STALE" | "UNKNOWN"; profile: "v1" | "v2" | "v3" | null; releaseVersion: string | null; cloudVersionId: string | null; source: "CLOUD_INSTALLATION_AND_PACKAGE"; reason: string | null }
 export interface CloudComponent { installedProfile?: InstalledProfile; reported_component_id: string | null; type: string | null; installed_component: { id?: string | null; version: string | null } | null; pending_component: { version: string | null } | null; pending_component_status: string | null; pending_component_error?: string | null; runtimeState: string }

@@ -20,8 +20,8 @@ provisioning, operational evidence binds the exact Validation or Production
 role, current `system_uid`, AosCloud Unit UUID, main Node UUID, source
 generation/frame or event range and the same bounded current-session window.
 
-Function messages carry only their own correlation context: `unitSystemUid`,
-`unitRole`, Service version/digest, VDP contract version/digest, source
+Current function messages carry only their own correlation context: `unitSystemUid`,
+`unitRole`, immutable Service release and native instance identity, VDP contract version/digest, source
 exercise/generation/event identity and the domain `eventId`, `assessmentId` or
 `requestId`. They do not receive Cloud Unit/Node UUIDs or a local run
 identifier. Demo surfaces join `system_uid` to current authoritative AosCloud
@@ -84,13 +84,21 @@ the original receipt/result and creates neither a second action nor a second
 Dashboard row. Reusing a key with different content is an explicit
 `IDEMPOTENCY_CONFLICT` and cannot replace accepted evidence.
 
-State-changing order is defined by producer epoch and sequence, not backend
-receipt time. An ordinary process, container or VM restart preserves the epoch
+Advisory state-changing order is defined by producer epoch and sequence, not
+backend receipt time. An ordinary process, container or VM restart preserves the epoch
 and continues from the persisted next sequence without reuse. Only an explicit
 producer replacement or new producer lifecycle rotates the epoch, exactly once,
 and starts its sequence at `1`; R0 destroys the producer state. Delayed evidence
 from an old epoch may remain visible in the current run but cannot mutate current
-state or advisory. Reconnect retries only unacknowledged messages without
+state or advisory. These persisted epoch rules apply to advisory producers,
+not to function-observation generations. Current product provenance follows the
+[v2 migration contract](../service-runtime-inputs/product-message-migration.md);
+Service/model artifact digests remain only in explicitly retained legacy formats.
+Function observation follows its [v3 ordering contract](../service-function-observation/v3-contract.md):
+each producer process reserves a separate persisted positive generation, whose
+sequence starts at `1`. It never reuses or advances advisory epochs/sequences.
+Its native binding and original queued envelope remain unchanged on retry.
+Reconnect retries only unacknowledged messages without
 changing IDs, content or source times; synchronization completes only after
 every sequence through the declared watermark is acknowledged.
 

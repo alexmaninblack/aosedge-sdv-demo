@@ -85,6 +85,12 @@ path, not the Aos secret. Provider authority is separately packaged and is not
 issued by a service or by its backend. No browser gains VM, signing or QMP
 credentials. See the [protocol status map](../../contracts/implementation-status.md).
 
+The current source also enforces fingerprint-only browser identity projection
+at the common Presenter JSON boundary. Exact Cloud/backend joins remain on the
+server; opaque references preserve display correlation and fixed selectors.
+This source correction has isolated tests, not new package/M1 qualification;
+the selected DMG and its recorded evidence remain unchanged.
+
 ## Effective design boundaries
 
 The [HLA](high-level-architecture.md), [scenario](../demo/staged-post-sop-brake-health-demo-scenarios.md)

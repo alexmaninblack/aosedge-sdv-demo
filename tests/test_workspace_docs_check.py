@@ -46,6 +46,14 @@ class WorkspaceDocumentationTests(unittest.TestCase):
     def messages(self):
         return "\n".join(issue.render() for issue in self.result()[0])
 
+    def test_contract_version_labels_are_validated_across_repository_links(self):
+        (self.component / "README.md").write_text("# Gateway\n\n- Contract version: `1.2.3`\n")
+        entry = self.root / "README.md"
+        entry.write_text("# Lab\n\n[Gateway 1.0.0](" + URL + "main/README.md)\n")
+        self.assertIn("versioned document link label is stale", self.messages())
+        entry.write_text("# Lab\n\n[Gateway 1.2.3](" + URL + "main/README.md)\n")
+        self.assertNotIn("versioned document link label is stale", self.messages())
+
     def commit_component(self):
         subprocess.run(["git", "-C", str(self.component), "add", "README.md"], check=True)
         # Disposable documentation objects must not invoke the host's signing

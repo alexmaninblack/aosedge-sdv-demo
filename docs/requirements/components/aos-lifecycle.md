@@ -55,7 +55,7 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 | --- | --- |
 | What this package owns | Required behavior and qualification of external AosCore, Service Manager, IAM and AosCloud lifecycle/logging mechanisms used by the demo |
 | What this package does not own | Factory image creation, FOTA/Service artifact contents, team release decisions, dashboard presentation logic, VM overlay orchestration, functional data or vehicle control |
-| Intended result | Two freshly provisioned Units can receive independently governed FOTA/SOTA releases through Validation and Production lanes, expose authoritative state/log evidence and retire without identity reuse |
+| Intended result | Installed: one exactly bound Test with authoritative delivery and retirement. Expanded: two freshly provisioned Units can receive independently governed FOTA/SOTA releases through Validation and Production lanes, expose authoritative state/log evidence and retire without identity reuse |
 | Accountable lifecycle owner | AosEdge Platform integration with OEM-authorized Cloud operation; individual release decisions remain with Platform Team, Function Team 1 or Function Team 2 |
 | Primary source | External AosCore/AosCloud platform plus project-owned qualification evidence in `aosedge-sdv-demo`; no fork of the platform is introduced |
 
@@ -80,11 +80,11 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 
 | Dependency or assumption | Owner | Required state | Failure consequence |
 | --- | --- | --- | --- |
-| Fresh identity-free Validation and Production overlays | `CR-FACTORY` and `CR-DEMO` | Exact accepted Factory Image backing digest and distinct pre-provision local identity | Provisioning is blocked before any Cloud mutation |
+| Expanded dual-role: fresh identity-free Validation and Production overlays | `CR-FACTORY` and `CR-DEMO` | Exact accepted Factory Image backing digest and distinct pre-provision local identity | Provisioning is blocked before any Cloud mutation |
 | Immutable FOTA/SOTA candidates | Platform Team or owning Function Team | Accepted version, digest/metadata identity, architecture and requested permissions | Artifact cannot enter validation |
 | Evidence and final-confirmation presentation | `CR-DEMO` | Stateless view over qualified AosCloud APIs with active-role display and authoritative re-read | Approval remains disabled or uses the original AosCloud UI |
 | Runtime/service health | `CR-FACTORY`, `CR-VDP`, `CR-BHS`, `CR-TIRE` | Versioned health/readiness contracts and bounded resources | Unit actual state cannot be accepted as stage-ready |
-| Stable Fleet/Unit Set configuration and run-scoped membership control | OEM/AosCloud administration creates and pins the objects once; `CR-DEMO` uses qualified membership APIs | Dedicated `AosEdge SDV Demo Fleet`; validation-enabled `AosEdge SDV Demo / Test Vehicles`; non-validation `AosEdge SDV Demo / Production Vehicles`; no unresolved placeholder, mismatch, prior-run membership or lifecycle object | M1 or any release approval remains blocked |
+| Expanded promotion: stable Fleet/Unit Set configuration and run-scoped membership control | OEM/AosCloud administration creates and pins the objects once; `CR-DEMO` uses qualified membership APIs | Dedicated `AosEdge SDV Demo Fleet`; validation-enabled `AosEdge SDV Demo / Test Vehicles`; non-validation `AosEdge SDV Demo / Production Vehicles`; no unresolved placeholder, mismatch, prior-run membership or lifecycle object | M1 or any release approval remains blocked |
 | External platform release | AosEdge Platform Team | Exact Cloud/API/Core versions identified and compatible | Qualification result is invalidated; deferred features remain unavailable |
 
 <a id="current-implementation-baseline"></a>
@@ -96,6 +96,12 @@ verification definitions below remain binding; this package's open-gate table
 does not claim full acceptance.
 
 ## Unit Set and Demo Lane Model
+
+The two-lane model in this section is the expanded promotion profile. Installed
+use has one Test, no implicit Production peer and no Campaign promotion. Its
+current identity/target checks and [single-Test Finish](../../../contracts/demo-run-state/README.md#complete-single-test-finish)
+remain mandatory; the expanded model below is an additional obligation, not
+a prerequisite silently imposed on installed use.
 
 The terms below describe different layers of the release lifecycle and shall
 not be used as synonyms:
@@ -208,14 +214,14 @@ if project-owned executable lifecycle logic is later moved into `CR-AOS`.
 <a id="req-aos-001"></a>
 
 - ID: `REQ-AOS-001`
-- Statement: The provisioning lifecycle shall create exactly one unique Unit and one Main Node identity for each accepted fresh overlay, bind one to the Validation role and one to the Production role, and preserve those bindings through G0–T1 without reprovisioning.
+- Statement: Installed provisioning shall bind one fresh Test overlay to one unique Unit and Main Node and preserve that binding until retirement. In the expanded dual-role profile, the provisioning lifecycle shall create exactly one unique Unit and one Main Node identity for each accepted fresh overlay, bind one to the Validation role and one to the Production role, and preserve those bindings through G0–T1 without reprovisioning.
 - Rationale: Every lifecycle observation and approval must address one unambiguous vehicle-computer identity and lane.
 - Parent system requirement: [One identity per overlay (`SYS-ID-001`)](../system-requirements-and-traceability.md#sys-id-001)
 - Architecture flows: [Provisioning (`AF-M1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-lc) and [provisioning evidence (`AF-M1-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-ob)
 - Components: [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud)
 - Interface: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004)
 - Verification levels: Contract, Integration, End-to-end
-- Required evidence: redacted overlay/Unit/Node/certificate uniqueness, exact role/Unit Set binding and stable identity across accepted restarts
+- Required evidence: Installed: exact Test uniqueness/binding and restart evidence; expanded: the same per-role uniqueness plus redacted overlay/Unit/Node/certificate uniqueness, exact role/Unit Set binding and stable identity across accepted restarts
 - State: D3 design-reviewed; existing one-Unit provisioning is implementation evidence, not final two-Unit acceptance
 
 Expanded-profile acceptance requires two different Unit and Node identities from two fresh
@@ -247,14 +253,14 @@ proven no-identity result may return an overlay to the unprovisioned state.
 <a id="req-aos-003"></a>
 
 - ID: `REQ-AOS-003`
-- Statement: Before every update or approval, AosCloud and AosCore integration shall expose the current Unit ID, Node ID, role, Unit Set membership, connection/last-reported state, complete desired and reported actual software graph, pending lifecycle references and source timestamps for both current-run Units.
+- Statement: Before every update or approval, AosCloud and AosCore integration shall expose the current Unit ID, Node ID, role, Unit Set membership, connection/last-reported state, complete desired and reported actual software graph, pending lifecycle references and source timestamps for the installed current Test; the expanded dual-role profile requires the same evidence for both current-run Units.
 - Rationale: Stage labels and update decisions must be derived from current authoritative facts rather than dashboard memory.
 - Parent system requirements: [Prove current Unit state (`SYS-ID-003`)](../system-requirements-and-traceability.md#sys-id-003), [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002) and [per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
 - Architecture flows: [Provisioning evidence (`AF-M1-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-ob), [evidence architecture (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs) and [common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components: [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud)
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, End-to-end
-- Required evidence: authoritative pre-action snapshot and post-action re-read tied to Unit IDs and the bounded run time window
+- Required evidence: Installed: exact current-Test evidence; expanded: both current-run Units with authoritative pre-action snapshot and post-action re-read tied to Unit IDs and the bounded run time window
 - State: D3 design-reviewed
 
 Acceptance reports absent, stale, conflicting or eventually consistent state
@@ -285,14 +291,14 @@ verification as vehicle validation.
 <a id="req-aos-005"></a>
 
 - ID: `REQ-AOS-005`
-- Statement: The platform integration shall expose a complete paginated Unit inventory for the applicable Fleet/OEM visibility scope plus current per-Unit component and service pending-batch references sufficient to derive every effective Verification Batch recipient. Immediately before technical verification approval, the release workflow shall normalize all identities to Cloud Unit UUID, require the exact pending-recipient set and current Verification Unit Set membership to equal `{VU}`, require current Production Unit Set membership to equal `{PU}`, and require PU to have no matching pending reference. Promotion shall use a separate fresh Campaign whose explicit sole Unit Set target is the Production Unit Set; its Campaign recipient/result records shall be reconciled separately. Missing evidence or any mismatch blocks approval.
+- Statement: The platform integration shall expose a complete paginated Unit inventory for the applicable Fleet/OEM visibility scope plus current per-Unit component and service pending-batch references sufficient to derive every effective Verification Batch recipient. For installed Test-only delivery, the required native verification and authoritative current-Test recipient checks apply without a Production peer or a Campaign claim. In the expanded promotion profile, immediately before technical verification approval, the release workflow shall normalize all identities to Cloud Unit UUID, require the exact pending-recipient set and current Verification Unit Set membership to equal `{VU}`, require current Production Unit Set membership to equal `{PU}`, and require PU to have no matching pending reference. Promotion shall use a separate fresh Campaign whose explicit sole Unit Set target is the Production Unit Set; its Campaign recipient/result records shall be reconciled separately. Missing evidence or any mismatch blocks approval.
 - Rationale: A stale batch previously retained a Unit after Unit Set membership changed.
 - Parent system requirements: [Current effective-target validation (`SYS-REL-002`)](../system-requirements-and-traceability.md#sys-rel-002), [prove current Unit state (`SYS-ID-003`)](../system-requirements-and-traceability.md#sys-id-003) and [evidence-backed approval (`SYS-REL-010`)](../system-requirements-and-traceability.md#sys-rel-010)
 - Architecture flows: [FOTA validation (`AF-G1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc) and [common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components: [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud)
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
-- Required evidence: both persistent Unit Set UUIDs and roles, exact `{VU}`/`{PU}` membership, complete Fleet/OEM inventory pagination, API visibility scope, every applicable Unit pending-batch reference, normalized Cloud Unit UUID comparison, fresh Verification/Fleet Validation/Campaign identities, Campaign target/result reconciliation, mismatch result and fresh corrected-object proof
+- Required evidence: Installed: exact current-Test verification/recipient reconciliation and unexpected-recipient rejection; expanded promotion additionally requires both persistent Unit Set UUIDs and roles, exact `{VU}`/`{PU}` membership, complete Fleet/OEM inventory pagination, API visibility scope, every applicable Unit pending-batch reference, normalized Cloud Unit UUID comparison, fresh Verification/Fleet Validation/Campaign identities, Campaign target/result reconciliation, mismatch result and fresh corrected-object proof
 - State: D3 design-reviewed; D4-012 API and guard design accepted; live FOTA/SOTA pending-reference and Campaign response-shape qualification remains required
 
 Acceptance never infers effective targets from current Unit Set membership
@@ -306,7 +312,7 @@ requires a fresh reconciled lifecycle object.
 <a id="req-aos-006"></a>
 
 - ID: `REQ-AOS-006`
-- Statement: Each FOTA or SOTA candidate shall reach and pass its required qualification and owning-team acceptance on the Validation Unit before the identical accepted artifact identity is promoted through a Campaign to the Production Unit. The Production Unit is a rollout and live-operation target, not a second product-validation lane; post-rollout desired/actual/readiness reconciliation confirms delivery health only. AosCloud shall own the authorized desired update and delivery record without being presented as a physical-motion authority. For Vehicle Data Platform Component FOTA, the factory-installed OEM Component Runtime inside AosCore Service Manager shall consume Gateway samples fresh at acquisition, use 12 consecutive samples only as stability evidence and revalidate the latest complete sample at gate opening and immediately before every destructive stop/activation step. Brake/Tire QM Service SOTA may be applied while the vehicle moves, subject to every other release gate.
+- Statement: In the expanded promotion profile, each FOTA or SOTA candidate shall reach and pass its required qualification and owning-team acceptance on the Validation Unit before the identical accepted artifact identity is promoted through a Campaign to the Production Unit. The Production Unit is a rollout and live-operation target, not a second product-validation lane; post-rollout desired/actual/readiness reconciliation confirms delivery health only. AosCloud shall own the authorized desired update and delivery record without being presented as a physical-motion authority. For Vehicle Data Platform Component FOTA, the factory-installed OEM Component Runtime inside AosCore Service Manager shall consume Gateway samples fresh at acquisition, use 12 consecutive samples only as stability evidence and revalidate the latest complete sample at gate opening and immediately before every destructive stop/activation step. Brake/Tire QM Service SOTA may be applied while the vehicle moves, subject to every other release gate.
 - Rationale: Production deployment must reuse validated bytes rather than rebuild, re-sign, re-publish or bypass the Validation lane, while the factory-installed OEM runtime supplies the current-release in-vehicle vehicle-state enforcement missing from the stock lifecycle path.
 - Parent system requirement: [Validate before promotion (`SYS-REL-004`)](../system-requirements-and-traceability.md#sys-rel-004)
 - Architecture flows: [FOTA validation (`AF-G1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc), [Brake SOTA (`AF-G2-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-lc) and [Tire SOTA (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
@@ -314,14 +320,16 @@ requires a fresh reconciled lifecycle object.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004), [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006), [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007) and the applicable FOTA/SOTA interface
 - Verification levels: Contract, Integration, End-to-end
 - Executable contract: [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
-- Required evidence: producer manifest and pinned Demo Release Set identity, prepared/signed/Cloud publication chain, VU actual state/readiness, accepted validation record, same Cloud Component or Service Version identity, Campaign target and PU actual state/readiness; for Platform FOTA, authorization while moving, runtime waiting, per-sample acquisition freshness, stability history, latest-sample revalidation before every destructive apply step, restart/timeout behavior and explicit resume; for QM Service SOTA, continuous in-motion evidence when that claim is exercised
+- Required evidence: Installed: immutable Test delivery, authoritative desired/actual/readiness and applicable FOTA/SOTA gating; expanded promotion additionally requires producer manifest and pinned Demo Release Set identity, prepared/signed/Cloud publication chain, VU actual state/readiness, accepted validation record, same Cloud Component or Service Version identity, Campaign target and PU actual state/readiness; for Platform FOTA, authorization while moving, runtime waiting, per-sample acquisition freshness, stability history, latest-sample revalidation before every destructive apply step, restart/timeout behavior and explicit resume; for QM Service SOTA, continuous in-motion evidence when that claim is exercised
 - State: D3 design-reviewed; D4-013 identity model accepted; signer and live Cloud mapping qualification remains required
 
 Acceptance rejects PU-first delivery, rebuilt promotion content, changed
 metadata/permissions, missing VU result, unsuccessful Campaign Unit result,
 an actual-state mismatch after promotion or Platform FOTA application outside
 Safe Stop. It does not require Safe Stop solely for accepted Brake/Tire QM
-Service SOTA.
+Service SOTA. Installed Test-only execution retains exact candidate identity,
+authoritative desired/actual reconciliation and the same FOTA/SOTA Safe Stop
+distinction; it does not claim Validation-to-Production Campaign promotion.
 
 ### Recorded owner and OEM approval
 
@@ -485,14 +493,14 @@ back to the original AosCloud UI.
 <a id="req-aos-015"></a>
 
 - ID: `REQ-AOS-015`
-- Statement: After a final authoritative read, each current-run Unit shall be placed offline through a qualified bounded local operation and reported `Offline` by AosCloud before OEM `oem-delivery` invokes `DELETE /api/v11/units/{unit_uuid}/deprovision/` with `units_deprovision`. Its no-body `204` shall be reconciled by fresh Unit state, followed by a bounded old-credential reconnect test. After the VM is stopped and current-run log requests are deleted, the Unit shall be removed from its one persistent role set through `DELETE /api/v11/unit-sets/{set_uuid}/units/remove/` with the current `system_uid`, then deleted through `DELETE /api/v11/units/{unit_uuid}/` with `units_delete`. Final reads shall prove Unit absence, empty sets and inaccessible Unit-owned Nodes while retaining audit history. Because API v11 exposes no standalone Node-delete operation, none shall be invented; persistent/reachable Node state blocks R0 and requires Platform Team resolution.
+- Statement: Installed retirement shall follow the exact current-Test Offline/deprovision/re-read, scoped membership removal, Unit/Node absence, backend cleanup and ownership-checked local deletion sequence in the run-state contract, preserving uncertain state and unrelated resources. It does not claim old-credential TLS revocation proof. The expanded two-Unit/security-negative profile additionally requires the following full sequence: after a final authoritative read, each current-run Unit shall be placed offline through a qualified bounded local operation and reported `Offline` by AosCloud before OEM `oem-delivery` invokes `DELETE /api/v11/units/{unit_uuid}/deprovision/` with `units_deprovision`. Its no-body `204` shall be reconciled by fresh Unit state, followed by a bounded old-credential reconnect test. After the VM is stopped and current-run log requests are deleted, the Unit shall be removed from its one persistent role set through `DELETE /api/v11/unit-sets/{set_uuid}/units/remove/` with the current `system_uid`, then deleted through `DELETE /api/v11/units/{unit_uuid}/` with `units_delete`. Final reads shall prove Unit absence, empty sets and inaccessible Unit-owned Nodes while retaining audit history. Because API v11 exposes no standalone Node-delete operation, none shall be invented; persistent/reachable Node state blocks R0 and requires Platform Team resolution.
 - Rationale: A reusable demo must retire identities cleanly without treating disk deletion as deprovisioning.
 - Parent system requirements: [Qualify identity retirement (`SYS-ID-004`)](../system-requirements-and-traceability.md#sys-id-004) and [retire Units and overlays (`SYS-RET-001`)](../system-requirements-and-traceability.md#sys-ret-001)
 - Architecture flows: [Controlled retirement (`AF-R0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-lc), [retirement evidence (`AF-R0-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-ob) and [partial retirement (`AF-R0-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-fr)
 - Components: [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), jointly with `CR-DEMO`
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
-- Required evidence: final identity/state snapshot, qualified offline action, Cloud `Offline` precondition, exact method/role/permission/body matrix, deprovision `204` plus state re-read, bounded retired-certificate reconnect rejection, VM stop, current-run log cleanup, scoped set removal plus membership read, Unit delete plus active/detail/nested-Node reads, retained audit and overlay-release authorization
+- Required evidence: Installed: the complete single-Test Finish receipts and preserved uncertainty defined by the run-state contract, without claiming retired-credential reconnect proof; expanded security/two-role qualification additionally requires final identity/state snapshot, qualified offline action, Cloud `Offline` precondition, exact method/role/permission/body matrix, deprovision `204` plus state re-read, bounded retired-certificate reconnect rejection, VM stop, current-run log cleanup, scoped set removal plus membership read, Unit delete plus active/detail/nested-Node reads, retained audit and overlay-release authorization
 - State: D3 design-reviewed; D4-015 design accepted, live two-Unit retirement qualification remains required
 
 Acceptance keeps an uncertain deprovision, membership removal or delete result
@@ -507,14 +515,14 @@ production vehicle rollback/fleet-deletion policy.
 <a id="req-aos-016"></a>
 
 - ID: `REQ-AOS-016`
-- Statement: AosCloud shall expose the one-time OEM-administered `AosEdge SDV Demo Fleet`, validation-enabled `AosEdge SDV Demo / Test Vehicles` Unit Set and non-validation `AosEdge SDV Demo / Production Vehicles` Unit Set, plus authoritative membership reads, scoped membership add/remove operations using Unit `system_uid`, qualified Unit-deletion effects, pending-recipient references and Campaign targets/results sufficient for `CR-DEMO` to map `system_uid` to Cloud Unit UUID, prove exact disjoint current-run demo-role membership, require fresh lifecycle objects after membership changes and prove both sets empty after R0. The three returned UUIDs shall be pinned only after authoritative validation; an unresolved placeholder or UUID/title/Fleet/flag mismatch blocks use. `CR-DEMO` shall never create, rename, reconfigure, move or delete these objects. Unit Set membership shall never use Main Node UUID, and the demo shall not use the all-membership replacement API or erase unrelated OEM classifications.
+- Statement: Installed use shall validate its exact selected Test references and reconcile only its own membership without deleting permanent or unrelated Cloud objects. The following permanent two-role configuration obligation applies to the expanded promotion profile: AosCloud shall expose the one-time OEM-administered `AosEdge SDV Demo Fleet`, validation-enabled `AosEdge SDV Demo / Test Vehicles` Unit Set and non-validation `AosEdge SDV Demo / Production Vehicles` Unit Set, plus authoritative membership reads, scoped membership add/remove operations using Unit `system_uid`, qualified Unit-deletion effects, pending-recipient references and Campaign targets/results sufficient for `CR-DEMO` to map `system_uid` to Cloud Unit UUID, prove exact disjoint current-run demo-role membership, require fresh lifecycle objects after membership changes and prove both sets empty after R0. The three returned UUIDs shall be pinned only after authoritative validation; an unresolved placeholder or UUID/title/Fleet/flag mismatch blocks use. `CR-DEMO` shall never create, rename, reconfigure, move or delete these objects. Unit Set membership shall never use Main Node UUID, and the demo shall not use the all-membership replacement API or erase unrelated OEM classifications.
 - Rationale: Persistent Cloud set configuration is reusable, but stale Unit membership or lifecycle objects can silently target retired or unintended vehicles.
 - Parent system requirements: [One identity per overlay (`SYS-ID-001`)](../system-requirements-and-traceability.md#sys-id-001), [prove current Unit state (`SYS-ID-003`)](../system-requirements-and-traceability.md#sys-id-003), [current effective-target validation (`SYS-REL-002`)](../system-requirements-and-traceability.md#sys-rel-002), [validate before promotion (`SYS-REL-004`)](../system-requirements-and-traceability.md#sys-rel-004), [retire Units and overlays (`SYS-RET-001`)](../system-requirements-and-traceability.md#sys-ret-001) and [reconcile Unit Sets for the next run (`SYS-RET-006`)](../system-requirements-and-traceability.md#sys-ret-006)
 - Architecture flows: [Provisioning (`AF-M1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-lc), [provisioning evidence (`AF-M1-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-ob), [fail-closed provisioning (`AF-M1-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-fr), [FOTA lifecycle (`AF-G1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc), [common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release), [controlled retirement (`AF-R0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-lc) and [partial retirement (`AF-R0-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-fr)
 - Components: [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), jointly with `CR-DEMO`
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
-- Required evidence: one-time bootstrap receipt; pinned Fleet/set identifiers, exact titles, shared Fleet ownership and validation flags; unresolved-placeholder and wrong-object negatives; `system_uid`/Cloud Unit UUID/Main Node UUID mapping; scoped add/remove requests and authoritative re-reads; pre-M1 empty membership; exact VU/PU demo-role membership and disjointness with unrelated classification preservation; fresh batch/validation/campaign identities; pending-recipient and Campaign-target/result reconciliation; and post-R0 empty membership with all three persistent objects retained unchanged
+- Required evidence: Installed: exact selected Test references and scoped membership/recipient reconciliation; expanded promotion additionally requires one-time bootstrap receipt; pinned Fleet/set identifiers, exact titles, shared Fleet ownership and validation flags; unresolved-placeholder and wrong-object negatives; `system_uid`/Cloud Unit UUID/Main Node UUID mapping; scoped add/remove requests and authoritative re-reads; pre-M1 empty membership; exact VU/PU demo-role membership and disjointness with unrelated classification preservation; fresh batch/validation/campaign identities; pending-recipient and Campaign-target/result reconciliation; and post-R0 empty membership with all three persistent objects retained unchanged
 - State: D3 design-reviewed; D4-012 API and guard design accepted and isolated fresh-batch behavior evidenced; live membership/permission and Campaign response-shape qualification remains target work
 
 Acceptance proves the external platform contract needed for exactly one
@@ -531,7 +539,7 @@ block on overlay deletion and the next M1.
 
 | Requirement group | Unit obligation | Reviewed rationale and replacement proof |
 | --- | --- | --- |
-| `REQ-AOS-001`–`003` | Reasoned N/A | Provisioning, identity and current state belong to external SDK/AosCore/AosCloud; use contract, two-Unit integration and reconciliation evidence. Project-owned orchestration tests belong to `CR-DEMO`. |
+| `REQ-AOS-001`–`003` | Reasoned N/A | Provisioning, identity and current state belong to external SDK/AosCore/AosCloud; use current-Test contract/integration/reconciliation evidence; expanded dual-role acceptance additionally proves both Units. Project-owned orchestration tests belong to `CR-DEMO`. |
 | `REQ-AOS-004`–`008` | Reasoned N/A | Verification, validation, campaign and approval records are external Cloud behavior; use API contract, role-negative, audit and end-to-end tests. Dashboard logic belongs to `CR-DEMO`. |
 | `REQ-AOS-009`–`012` | Reasoned N/A | Desired-state reconciliation and runtime scheduling are external AosCore/AosCloud behavior; use component/integration fault tests. Provider/service unit logic belongs to its package. |
 | `REQ-AOS-013`, `015`–`016` | Reasoned N/A | Native log transport, retirement and Unit Set APIs are external lifecycle behavior; use contract, live integration and failure/recovery analysis. Membership, target and cleanup guards belong to `CR-DEMO`. |
@@ -543,12 +551,12 @@ to this package requires stable `UT-AOS-*` IDs before implementation begins.
 
 | Requirement | Unit obligations | Component proof | Contract proof | Integration proof | End-to-end proof |
 | --- | --- | --- | --- | --- | --- |
-| [`REQ-AOS-001`](#req-aos-001) | N/A; external provisioning | Single-Node identity gate | Provisioning/identity schema | Two fresh overlays and Units | M1 lane evidence |
+| [`REQ-AOS-001`](#req-aos-001) | N/A; external provisioning | Single-Node identity gate | Provisioning/identity schema | Installed: one Test; expanded: two fresh overlays/Units | Profile-scoped M1 binding evidence |
 | [`REQ-AOS-002`](#req-aos-002) | N/A; external provisioning | SDK/guest state inspection | Result/error/reconciliation contract | Interrupted and partial provisioning | M1 fail-closed evidence |
 | [`REQ-AOS-003`](#req-aos-003) | N/A; external state authority | Unit actual-state report | Unit/Node/Set/software/status API | Pre/post action re-read | M1–R0 correlated state |
 | [`REQ-AOS-004`](#req-aos-004) | N/A; external Cloud objects | Candidate state inspection | Verification/validation/campaign schemas | One complete lifecycle object chain | G1/G2 lifecycle labels |
 | [`REQ-AOS-005`](#req-aos-005) | N/A; derivation belongs to `CR-DEMO` | Pending-recipient inspection | Unit pending/batch/campaign fields | Stale/fresh target comparison | Approval-block evidence |
-| [`REQ-AOS-006`](#req-aos-006) | N/A; external execution | Unit install/readiness state | Validation/campaign identity | VU then identical PU promotion | G1–T1 promotion evidence |
+| [`REQ-AOS-006`](#req-aos-006) | N/A; external execution | Unit install/readiness state | Validation/campaign identity | Expanded: VU then identical PU promotion; installed: exact Test delivery/gates | Profile-scoped delivery; expanded G1–T1 promotion evidence |
 | [`REQ-AOS-007`](#req-aos-007) | N/A; external role/audit | Cloud action/result state | SP/OEM permissions and approval record | Positive/wrong-role/stale-evidence cases | Visible final decision and audit |
 | [`REQ-AOS-008`](#req-aos-008) | N/A; external owner gate | Combined graph state | Owner acceptance schema | Missing/mismatched owner negatives | G3/G4 ordered promotion |
 | [`REQ-AOS-009`](#req-aos-009) | N/A; external scheduler | Service Manager lifecycle/resource proof | Desired/actual/status semantics | Install/restart/remove/offline/reconnect | G0–T1 actual graph |
@@ -556,15 +564,15 @@ to this package requires stable `UT-AOS-*` IDs before implementation begins.
 | [`REQ-AOS-011`](#req-aos-011) | N/A; deferred external feature | N/A until release | Official API support and reason schema | Pre-mutation reject/compatible retry | Deferred demo point only |
 | [`REQ-AOS-012`](#req-aos-012) | N/A; external recovery | Runtime state sequence | Pre-Apply revert, SOTA removal and post-Apply forward-repair semantics | Dependent-first removal/repair/reassignment matrix | G3/G4 recovery evidence; no rollback claim after Apply |
 | [`REQ-AOS-013`](#req-aos-013) | N/A; external log path | Service Manager log provider | Request/status/result/permission API | Online/offline log request lifecycle | Selected native-log evidence |
-| [`REQ-AOS-015`](#req-aos-015) | N/A; external retirement | Guest offline/identity shutdown state | Exact deprovision/set-remove/Unit-delete/no-Node-delete/audit semantics | Post-`204`, certificate rejection, Unit-owned Node and partial-failure matrix | R0 retirement evidence |
-| [`REQ-AOS-016`](#req-aos-016) | N/A; guards belong to `CR-DEMO` | Unit Set membership inspection | Set role/membership, pending-reference and Campaign-target schemas | Empty/start, exact VU/PU, stale/fresh and post-R0 cases | M1–R0 lane-isolation evidence |
+| [`REQ-AOS-015`](#req-aos-015) | N/A; external retirement | Guest offline/identity shutdown state | Exact deprovision/set-remove/Unit-delete/no-Node-delete/audit semantics | Installed: scoped Finish/absence and uncertainty; expanded: full post-`204`, certificate-rejection and partial-failure matrix | Profile-scoped R0 retirement evidence |
+| [`REQ-AOS-016`](#req-aos-016) | N/A; guards belong to `CR-DEMO` | Unit Set membership inspection | Set role/membership, pending-reference and Campaign-target schemas | Installed: exact Test/peer preservation; expanded: empty/start, exact VU/PU, stale/fresh and post-R0 cases | Profile-scoped M1–R0 isolation evidence |
 
 ## Cross-Cutting Constraints
 
 | Concern | Applicable obligation | Component response | Verification |
 | --- | --- | --- | --- |
 | Authority and separation of duties | [`REQ-AOS-007`](#req-aos-007), [`REQ-AOS-008`](#req-aos-008) | SP publication, team acceptance, OEM authorization and Cloud execution remain distinct | Role matrix, audit and wrong-role negatives |
-| Identity and secrets | [`REQ-AOS-001`](#req-aos-001), [`REQ-AOS-002`](#req-aos-002), [`REQ-AOS-015`](#req-aos-015) | One identity per overlay, no blind retry/reuse, retired certificate rejection and redacted evidence | Contract/integration plus secret-negative inspection |
+| Identity and secrets | [`REQ-AOS-001`](#req-aos-001), [`REQ-AOS-002`](#req-aos-002), [`REQ-AOS-015`](#req-aos-015) | One identity per overlay, no blind retry/reuse and redacted evidence; expanded security qualification additionally proves retired-certificate rejection | Contract/integration plus secret-negative inspection |
 | State truth and target isolation | [`REQ-AOS-003`](#req-aos-003), [`REQ-AOS-005`](#req-aos-005), [`REQ-AOS-009`](#req-aos-009), [`REQ-AOS-016`](#req-aos-016) | Cloud desired and Unit actual state remain authoritative; sets are disjoint and current-run only; stale/unknown state blocks mutation | API conformance, membership reconciliation, target negatives and pre/post action re-read |
 | Dependency and recovery | [`REQ-AOS-010`](#req-aos-010), [`REQ-AOS-011`](#req-aos-011), [`REQ-AOS-012`](#req-aos-012) | Current runtime fail-closed defense, deferred native admission and dependent-first recovery are never conflated | Compatibility, no-side-effect and ordered-failure tests |
 | Observability and privacy | [`REQ-AOS-013`](#req-aos-013) | Native scoped logs only; no demo-owned pipeline/archive; no secrets/raw telemetry | Permission, retention, redaction and bounded archive tests |

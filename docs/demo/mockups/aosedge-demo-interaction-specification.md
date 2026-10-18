@@ -1296,6 +1296,15 @@ The modal does not attempt to hide secrets with CSS or redact them after they
 arrive in JavaScript state. A required redacted field remains visibly
 `REDACTED` with a bounded reason rather than disappearing.
 
+The installed [Presenter boundary](../../architecture/demo-control-cloud-observation.md#result-shape)
+projects exact server-validated identities as process-scoped opaque references
+consistently across every JSON endpoint, including backend records and operation
+results. Those references support correlated display and the two fixed native
+selectors without disclosing full IDs or granting authority. Public UI
+session/request/job generations are not Cloud object identities. Wire-message
+validation and hashes remain server/backend responsibilities; browser copies
+are sanitized views, not original canonical envelopes.
+
 ### <a id="ui-int-046"></a>UI-INT-046 — Perspective and evidence isolation
 
 Platform Details may show Platform/Unit/system/VDP release evidence within the

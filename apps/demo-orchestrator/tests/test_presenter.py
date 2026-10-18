@@ -185,16 +185,21 @@ class PresenterTests(unittest.TestCase):
         code, body, _ = self.request("/api/presenter/snapshot")
         self.assertEqual(503, code)
 
-    def test_brake_window_detail_is_fixed_current_test_uuid_read(self):
+    def test_brake_window_detail_resolves_issued_reference_before_exact_current_test_read(self):
         event_id = "4cba2d80-c04a-4d24-9f03-f4a85d56da13"
+        self.reader.return_value = dict(eventId=event_id)
+        code, body, _ = self.request("/api/presenter/snapshot")
+        reference = json.loads(body)["eventId"]
+        self.assertNotIn(event_id.encode(), body)
         with patch.object(presenter, "execute_operation", return_value=dict(state="OBSERVED", data=dict(resourceType="WINDOW_DETAIL"))) as call:
-            code, body, _ = self.request("/api/presenter/backend/brake/windows/" + event_id)
+            code, body, _ = self.request("/api/presenter/backend/brake/windows/" + reference)
             self.assertEqual(200, code)
             self.assertIn(b"WINDOW_DETAIL", body)
             self.assertEqual(dict(domain="backend", action="window-detail", team="brake", window_id=event_id), call.call_args.args[0])
             call.reset_mock()
-            for path in ("/api/presenter/backend/tire/windows/" + event_id,
-                    "/api/presenter/backend/brake/windows/" + event_id + "?target=production",
+            for path in ("/api/presenter/backend/tire/windows/" + reference,
+                    "/api/presenter/backend/brake/windows/" + reference + "?target=production",
+                    "/api/presenter/backend/brake/windows/" + event_id,
                     "/api/presenter/backend/brake/windows/not-an-id"):
                 self.assertEqual(404, self.request(path)[0])
             call.assert_not_called()
