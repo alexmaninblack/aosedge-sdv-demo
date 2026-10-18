@@ -37,5 +37,15 @@ only from fixed helper configuration and are never accepted as a caller path.
 Keychain/PKCS#11-backed non-exportable artifact signing remains a later
 hardening migration behind the same helper contract.
 
+Installed Prepare verifies prebuilt functional inputs and allocates a fresh
+release number through the reviewed adapter. It may assemble version-bound
+metadata/package, but never compile, train or accept arbitrary changed content.
+The prepared digest becomes immutable before signing. Expanded frozen-catalogue
+use prepares all such packages before presentation. A lost upload response with
+no exact response ID stays uncertain: collection search cannot adopt a guessed
+object or authorize resubmission. See the
+[publication owner](../../docs/architecture/demo-control-component-publication.md).
+
 The frozen JSON preserves original profile bindings and conformance fixtures;
-this scope clarification changes no schema, accepted hash or signing authority.
+these effective preparation/observation rules change no frozen schema, hash,
+runtime handler or signing authority.

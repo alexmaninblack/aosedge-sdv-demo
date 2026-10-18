@@ -61,7 +61,7 @@ Repeated records are rate-limited and aggregated. CPU/RAM quota enforcement
 and evidence come from AosCore, not from a Service-side resource monitor.
 
 The planned isolation experiment intentionally saturates CPU only inside Tire
-+Health; its fixed worker/control is not implemented in the current product. AosCore
+Health; its fixed worker/control is not implemented in the current product. AosCore
 caps that instance by throttling without stopping, restarting or redeploying
 it; Brake Health is the healthy control tenant and must continue processing the
 deterministic event while VDP, KUKSA and Gateway remain healthy. Stopping the

@@ -5,14 +5,15 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross)
-- Version: 0.5
+- Version: 0.6
+- Updated: 2026-10-18
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted D4 VISS trust decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
@@ -314,7 +315,7 @@ dependency.
 - Flow: [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Components: `CMP-BHS`, `CMP-TIRE`, `CMP-KUKSA`, `CMP-VDP`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH`
 - Interfaces: `IF-ADV-001` through `IF-ADV-005` and `IF-TIRE-002`
-- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 contract accepted, implementation and qualification open
 
 #### Acceptance criteria
@@ -383,7 +384,7 @@ dependency.
 <a id="req-cross-008"></a>
 
 - ID: `REQ-CROSS-008`
-- Statement: One stateful demo control shall atomically block or restore the currently selected Validation or Production Unit's external vehicle connectivity; the normative `G4/X-OFFLINE` presentation uses PU. D4-022.1 shall change only that Unit's external QEMU plane. The disconnected state shall block both selected-Unit-to-AosCloud and installed service-to-functional-backend paths while the other VM, presenter-to-AosCloud, the simulated in-vehicle QEMU plane and the installed on-board graph remain available. The helper shall set an exact desired state rather than toggle, persist intent before mutation, never treat a lost response as success or retry it blindly, reconcile after restart, and compensate a partial/forbidden effect only to the last confirmed state. The Software Delivery Dashboard shall show authoritative offline/online state, reachable Function Dashboards shall show delayed/offline and later synchronized results, local inference/advisory shall continue, and reconnect shall use the same Unit and installed graph without reprovisioning, reinstalling or restarting. No separate per-channel fault control shall be exposed.
+- Statement: One stateful demo control shall atomically block or restore the currently selected Validation or Production Unit's external vehicle connectivity; installed `G4/X-OFFLINE` uses its current Test, while expanded two-role presentation uses PU. D4-022.1 shall change only that Unit's external QEMU plane. The disconnected state shall block both selected-Unit-to-AosCloud and installed service-to-functional-backend paths while the other VM, presenter-to-AosCloud, the simulated in-vehicle QEMU plane and the installed on-board graph remain available. The helper shall set an exact desired state rather than toggle, persist intent before mutation, never treat a lost response as success or retry it blindly, reconcile after restart, and compensate a partial/forbidden effect only to the last confirmed state. The Software Delivery Dashboard shall show authoritative offline/online state, reachable Function Dashboards shall show delayed/offline and later synchronized results, local inference/advisory shall continue, and reconnect shall use the same Unit and installed graph without reprovisioning, reinstalling or restarting. No separate per-channel fault control shall be exposed.
 - Parent: [targeted vehicle external-connectivity continuity (`SYS-OBS-007`)](../system-requirements-and-traceability.md#sys-obs-007)
 - Flow: [targeted vehicle external-connectivity loss (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
 - Components: `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, installed `CMP-VDP`/services, `CMP-SW-DASH`, and qualification orchestration
@@ -393,7 +394,7 @@ dependency.
 #### Acceptance criteria
 
 1. One visible control transition proves that the selected Unit's AosCloud and all installed service-to-functional-backend traffic are blocked together; partial or independently switched channel states are rejected. The other VM, presenter-to-AosCloud and simulated in-vehicle connections remain available.
-2. AosCloud reports the selected Unit offline and affected lifecycle/log actions unavailable, while a deterministic CARLA event still reaches local inference, the advisory chain and Engineering Telematics Dashboard; reachable Function Dashboards receive no new result and show delayed/offline state. The normative presentation selects PU.
+2. AosCloud reports the selected Unit offline and affected lifecycle/log actions unavailable, while a deterministic CARLA event still reaches local inference, the advisory chain and Engineering Telematics Dashboard; reachable Function Dashboards receive no new result and show delayed/offline state. Installed presentation selects its current Test; expanded two-role presentation selects PU.
 3. One restore transition makes AosCloud report the same Unit and installed versions online without provisioning, reinstall or service/provider restart and synchronizes bounded functional messages idempotently with original and receipt times distinct; no presenter-loss or in-vehicle-loss claim is shown.
 4. Duplicate achieved-state requests are probed no-ops; lost responses and restarts reconcile before any explicit idempotent reissue, and failed/unproven compensation remains `FAILED/PARTIAL` rather than fabricating success.
 
@@ -486,7 +487,7 @@ repositories and are composed by the cross-package contract/integration gate.
 | Logs/privacy | Native scoped evidence only | AosCore/AosCloud + emitting owners | Redaction, retention and bounded-download qualification |
 | Correlation | Exact run/role/Unit/source binding | Orchestrator and producer contracts | Cross-Unit/cross-team collision cases |
 | Chronology | Event/local/receipt/sync times remain distinct | Message contracts and dashboards | Delayed/out-of-order reconnect cases |
-| Vehicle external connectivity | One control changes only the selected VU/PU external QEMU plane and interrupts its AosCloud/service-backend paths together; the other VM, presenter and in-vehicle plane remain available; normative presentation uses PU | Demo Orchestrator/native-helper fixed QMP operation, AosCloud/AosCore state and Function Team queues/backends | Exact selected-role/netdev proof, local advisory, delayed dashboards, synchronization and same-Unit reconnect |
+| Vehicle external connectivity | One control changes only the selected VU/PU external QEMU plane and interrupts its AosCloud/service-backend paths together; the other VM, presenter and in-vehicle plane remain available; installed presentation uses Test and expanded presentation uses PU | Demo Orchestrator/native-helper fixed QMP operation, AosCloud/AosCore state and Function Team queues/backends | Exact selected-role/netdev proof, local advisory, delayed dashboards, synchronization and same-Unit reconnect |
 | Service resources | AosCore is the sole in-vehicle enforcement/monitor authority; applications declare quotas and own bounded behavior | Aos Service Manager/container runtime/cgroups | Tire CPU cap, authoritative Cloud evidence, concurrent Brake event and healthy platform graph |
 
 <a id="d3-review-decisions"></a>

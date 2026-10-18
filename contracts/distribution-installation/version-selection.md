@@ -3,8 +3,9 @@
 
 # Installed Version Selection and Recovery
 
-- Status: Accepted staged implementation detail of ADR 0018; native delivery unqualified
-- Version: 1.0
+- Status: Accepted implemented selection/lease contract; scoped proof in the current baseline
+- Version: 1.1
+- Updated: 2026-10-18
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team
 - Parent: [Installed state](installed-state.md) and [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
@@ -14,9 +15,10 @@
 An explicit local selection binds a private instance to a fully verified
 installed manifest digest and a volume-bound store. It never starts/stops an
 application, VM, container, simulator or Cloud operation. The existing Demo
-Control remains the runtime owner. This engineering slice supplies the shared
-selection/lease mechanism; the native wizard and application launcher consume
-it later, after their own qualification.
+Control remains the runtime owner. The native Setup and persistent application launcher consume this shared
+selection/lease mechanism now. Their scoped proof is in the
+[current baseline](../../docs/qualification/current-baseline.md); the complete
+interruption/repair/update/removal matrix remains a separate gate.
 
 The fixed compatibility identity is `aosedge-demo-installed-state/1`, carried
 by the independently pinned application manifest as `installedStateContract`.

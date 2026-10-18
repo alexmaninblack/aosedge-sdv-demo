@@ -1,0 +1,93 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "profileId": "tire-cloud-current-admin",
+  "profileVersion": "1.0.0",
+  "wireContractVersion": "1.0.0",
+  "decision": "D4-019",
+  "scope": "IMPLEMENTED_CURRENT_TEST_AND_OPTIONAL_RETAINED_PRODUCTION",
+  "authority": "LOCAL_DEMO_CONTROL_ONLY",
+  "transport": {
+    "kind": "OWNER_PRIVATE_UNIX_SOCKET",
+    "mode": "0600",
+    "maximumRequestBytes": 4096,
+    "browserAllowed": false,
+    "guestAllowed": false,
+    "lanAllowed": false
+  },
+  "selectors": {
+    "minimum": 1,
+    "maximum": 2,
+    "allowTestOnly": true,
+    "allowAllCurrent": true,
+    "allowProductionOnly": false,
+    "allowForeign": false,
+    "allowDuplicates": false,
+    "ordering": "SERVER_SORTS_VALID_CURRENT_SELECTOR",
+    "contextSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "contextRequiredRole": "VALIDATION",
+    "contextOptionalRole": "PRODUCTION",
+    "distinctUids": true
+  },
+  "recordCategories": [
+    "messages",
+    "assessments",
+    "events",
+    "advisories",
+    "functionStatus",
+    "quarantine",
+    "resetProducers",
+    "resetCommands",
+    "functionObservations",
+    "functionObservationConflicts"
+  ],
+  "token": {
+    "kind": "OPAQUE_SERVER_HELD",
+    "ttlSeconds": 60,
+    "maximumPending": 16,
+    "consumedOnSuccess": true,
+    "restartInvalidates": true,
+    "invalidCode": "INVALID_PREVIEW",
+    "staleCode": "STALE_PREVIEW"
+  },
+  "statefulChecks": [
+    "EXACT_CURRENT_CONTEXT",
+    "ROLE_BOUND_SELECTOR",
+    "TOKEN_SELECTOR_AND_EXPIRY",
+    "MATCHING_RECORD_SET_UNCHANGED",
+    "PEER_RECORDS_PRESERVED",
+    "SELECTED_RECORDS_ZERO",
+    "NO_BLIND_EXECUTE_RETRY"
+  ],
+  "databaseSchemaVersion": 4,
+  "schema": "current-admin.schema.json",
+  "endpoints": {
+    "preview": {
+      "path": "/api/v1/tire/admin/current-run/cleanup-preview",
+      "request": "#/$defs/previewRequest",
+      "response": "#/$defs/preview"
+    },
+    "execute": {
+      "path": "/api/v1/tire/admin/current-run/cleanup",
+      "request": "#/$defs/executeRequest",
+      "response": "#/$defs/result"
+    },
+    "proof": {
+      "path": "/api/v1/tire/admin/storage/empty-proof",
+      "request": "#/$defs/proofRequest",
+      "response": "#/$defs/proof"
+    }
+  },
+  "fixtures": "fixtures/current-admin.valid.json",
+  "legacyProfile": "tire-cloud-api-profile.v1.json",
+  "errorResponse": "#/$defs/error",
+  "errorStatusCodes": {
+    "INVALID_REQUEST": 400,
+    "INVALID_SELECTOR": 400,
+    "NOT_FOUND": 404,
+    "MESSAGE_TOO_LARGE": 413,
+    "INVALID_PREVIEW": 409,
+    "STALE_PREVIEW": 409,
+    "CURRENT_UNIT_CONTEXT_UNAVAILABLE": 503,
+    "TEMPORARILY_UNAVAILABLE": 503
+  }
+}

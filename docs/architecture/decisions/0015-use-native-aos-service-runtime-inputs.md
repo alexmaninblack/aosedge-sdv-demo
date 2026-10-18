@@ -10,7 +10,7 @@
 - Owner: Demo Solution Team and OEM Platform Team
 - Change class: C — application provenance contract and credential-file boundary
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Current proof: [baseline](../../qualification/current-baseline.md)
 - Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 

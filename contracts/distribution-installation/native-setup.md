@@ -378,7 +378,6 @@ or Cloud access, request Full Disk Access/recording, or alter existing owners.
 After an operator grants the OS permission, a new explicit Open rechecks it.
 
 <a id="independent-window-metadata--accepted-29-september-2026"></a>
-<a id="independent-window-metadata--accepted-29-september-2026"></a>
 ### Independent window metadata
 
 Opening/restoring/closing Presenter must not create a vehicle-run journal.

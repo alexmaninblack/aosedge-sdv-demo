@@ -5,14 +5,15 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 1.5
+- Version: 1.6
+- Updated: 2026-10-18
 - Prepared: 2026-08-19
 - Accepted: 2026-09-27
 - Owner: Demo Solution Team
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
@@ -290,6 +291,12 @@ demo-run history.
 
 ### In scope
 
+Installed use creates one Test, prepares reviewed prebuilt functional profiles
+into fresh release-numbered packages, and publishes serially through the owning
+OEM/SP action. Its preparation receipts freeze each output before signing.
+The two-overlay, distinct-role promotion and frozen-catalogue obligations below
+are the expanded profile, not additional first-install prerequisites.
+
 - create one bounded run identity and correlate local roles before provisioning;
 - create two fresh overlays from one verified immutable factory-image digest;
 - invoke qualified provisioning once per overlay and reconcile uncertain results;
@@ -301,7 +308,7 @@ demo-run history.
   with purpose, exact Factory Image/runtime baseline, contract delta, digests,
   permissions, resource envelope, required evidence and identity chain;
 - delegate explicit protected Platform Team signing/publication without
-  exposing keys or allowing presentation-time build/repackaging;
+  exposing keys or allowing source compilation/arbitrary content regeneration;
 - present exact candidates, permissions, evidence, owner decisions, active role
   and current effective recipients before enabling an OEM-authorized action;
 - require explicit confirmation, perform one bounded action and re-read Cloud;
@@ -311,8 +318,8 @@ demo-run history.
 - expose one stateful vehicle external-connectivity control that atomically
   blocks/restores the currently selected VU/PU AosCloud and installed
   service-to-functional-backend paths without interrupting the other VM,
-  presenter-to-AosCloud or in-vehicle paths; the normative offline story uses
-  PU;
+  presenter-to-AosCloud or in-vehicle paths; installed offline use selects Test
+  and expanded two-role use selects PU;
 - request and present native AosCloud log status/results without local archival;
 - preserve requested/observed lifecycle facts and reconcile uncertain outcomes without presenting Cloud-operation duration as a vehicle KPI;
 - support the D4-026.6 mandatory core flow inside the reviewed presenter
@@ -325,9 +332,10 @@ demo-run history.
 
 ### Out of scope
 
-- source editing, compilation, Yocto/rootfs/container build, packaging or
-  repackaging, metadata generation, model training, or full qualification-test
-  execution during presentation;
+- source editing, compilation, Yocto/rootfs/container build, arbitrary package
+  content/metadata generation, model training or qualification-test execution
+  during presentation; the installed reviewed Prepare adapter is the bounded
+  release-number/metadata assembly exception, not a compiler or source editor;
 - Cloud lifecycle, authentication, signing, approval or operator-interaction
   performance benchmarking;
 - signing/publishing functional SOTA candidates, which remains owned by each
@@ -425,7 +433,7 @@ the real supported APIs and launchers.
 | [Honest coverage and deferred claims (`REQ-DEMO-017`)](#req-demo-017) | Present version-bound evidence state and deferred capabilities without invented proof | Unit, Component, Inspection, End-to-end | D3 design-reviewed |
 | [Prepared Platform candidate catalogue (`REQ-DEMO-018`)](#req-demo-018) | Present exactly three frozen VDP candidates with baseline compatibility and complete identity | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Protected Platform publication (`REQ-DEMO-019`)](#req-demo-019) | Delegate one confirmed sign/publish operation over the available presenter control plane | Unit, Component, Integration, End-to-end | D3 design-reviewed |
-| [Atomic vehicle external-connectivity control (`REQ-DEMO-020`)](#req-demo-020) | Use one stateful control to disconnect or reconnect all currently selected VU/PU external paths together; normative presentation uses PU | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed; D4-022.1 mechanism accepted |
+| [Atomic vehicle external-connectivity control (`REQ-DEMO-020`)](#req-demo-020) | Use one stateful control to disconnect or reconnect all currently selected VU/PU external paths together; installed use selects Test and expanded use selects PU | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed; D4-022.1 mechanism accepted |
 | [AosCore tenant-isolation proof (`REQ-DEMO-021`)](#req-demo-021) | Trigger one prepared Tire CPU load and present authoritative quota/isolation evidence without managing resources | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Independent resource-scoped operations (`REQ-DEMO-022`)](#req-demo-022) | Preserve independent Platform/Brake/Tire mutations while blocking exact conflicts and reconciling every non-terminal operation | Unit, Component, Contract, Integration, End-to-end | D4-021.2/.3 revalidated; implementation open |
 | [Deterministic presenter workspace composition (`REQ-DEMO-023`)](#req-demo-023) | Compose and restore one measured native/browser workspace while preserving separate physical-shell, header-meaning and surface-content ownership | Unit, Component, Integration, End-to-end | D4-026.17 design accepted; implementation qualification open |
@@ -669,20 +677,20 @@ the real supported APIs and launchers.
 <a id="req-demo-018"></a>
 
 - ID: `REQ-DEMO-018`
-- Statement: The Platform Releases view shall load exactly the three VDP Component entries pinned by `manifests/demo-release-set.v1.json` to producer-owned RFC-8785 canonical manifests and prepared artifacts staged in the Git-excluded content-addressed store. Before publication is enabled, it shall show and validate candidate ID, purpose, semantic version, prepared SHA-256, canonical manifest SHA-256, `linux/arm64` target, exact compatible OEM Demo Factory Image digest and component-runtime version, backward-compatible signal/advisory contract delta, requested permissions, resource envelope, retained qualification evidence and provenance. It shall preserve distinct prepared, signed/uploaded and AosCloud upload/Component identities and present their verified mapping as one chain without conflating publication with Validation or promotion. It shall expose no source editor, compiler, Yocto/rootfs/container build, package-content or metadata generator, model training, full qualification run, hidden candidate or fallback rebuild; presentation-time work is limited to integrity/baseline verification and protected signing/upload of frozen inputs.
+- Statement: The installed Platform Releases view shall offer functional V1/V2/V3, prepare a fresh release number from reviewed prebuilt inputs through the existing adapter and freeze its prepared receipt before signing. Expanded frozen-catalogue use shall instead load the three VDP entries pinned by the Demo Release Set to producer manifests and prepared artifacts. Before publication is enabled, it shall show and validate candidate ID, purpose, semantic version, prepared SHA-256, canonical manifest SHA-256, `linux/arm64` target, exact compatible OEM Demo Factory Image digest and component-runtime version, backward-compatible signal/advisory contract delta, requested permissions, resource envelope, retained qualification evidence and provenance. It shall preserve distinct prepared, signed/uploaded and AosCloud upload/Component identities and present their verified mapping as one chain without conflating publication with Validation or promotion. It shall expose no source editor, compiler, Yocto/rootfs/container build, arbitrary package-content or metadata generator, model training, full qualification run, hidden candidate or fallback rebuild; the reviewed installed Prepare assembly is distinct from protected signing/upload of the frozen prepared result.
 - Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [team-owned decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007) and [evidence-backed final approval (`SYS-REL-010`)](../system-requirements-and-traceability.md#sys-rel-010)
 - Flows: [VDP v1 lifecycle (`AF-G1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc), [VDP v2 lifecycle (`AF-G3-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-lc) and [VDP v3 lifecycle (`AF-G4-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-lc)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-VDP`, `IF-LC-001`
 - Verification: Unit, Component, Contract, Integration
-- Evidence: exactly-three producer manifests plus pinned Demo Release Set, content-addressed-store integrity, exact Factory Image/runtime bindings, v1-to-v3 compatibility/contract deltas, complete rendered metadata, prepared/signed/Cloud identity-chain fixtures and malformed/missing/mismatched/alternate negatives
-- State: D3 design-reviewed; D4-013 catalogue/storage/identity design accepted; schema implementation, signer and live FOTA mapping qualification remain open
+- Evidence: three functional choices with reviewed preparation receipts, exact Factory/runtime bindings, rendered compatibility/metadata, prepared/signed/Cloud identity-chain and malformed/mismatched negatives; expanded use additionally proves its pinned Demo Release Set and content-addressed producer manifests
+- State: D3 design-reviewed; D4-013 catalogue/storage/identity design accepted; installed preparation/signing/publication implemented with scoped baseline proof; expanded catalogue and complete negative qualification remain separate
 
 ### Protected Platform publication
 
 <a id="req-demo-019"></a>
 
 - ID: `REQ-DEMO-019`
-- Statement: After explicit Platform Team confirmation, the Platform Releases view shall delegate only the pinned candidate ID and expected prepared/manifest SHA-256 values to the authenticated common native helper pre-bound to `platform-oem`; it shall send no profile, credential path, candidate path or Cloud URL. The helper shall resolve and re-hash the allowlisted content-addressed input, use the fixed mode-`0600` PKCS#12 and `aos-signer` 2.0.1, compute the exact signed/uploaded-file SHA-256 and FOTA comparison SHA-1/size, and preserve the D4-013 prepared-to-upload-to-Cloud mapping. `PUBLISHED` requires independent upload-batch and processed-Component re-reads. Interruption or response loss shall persist only a current-operation `.run/publication/` receipt, enter `UNCERTAIN` and reconcile without blind retry. Presenter-Mac Cloud connectivity remains a precondition; the view never accesses key material and visibly separates publication from Validation and promotion.
+- Statement: After explicit Platform Team confirmation, the Platform Releases view shall delegate only the pinned candidate ID and expected prepared/manifest SHA-256 values to the authenticated common native helper pre-bound to `platform-oem`; it shall send no profile, credential path, candidate path or Cloud URL. The helper shall resolve and re-hash the allowlisted prepared input from its receipt (expanded use: content-addressed catalogue), use the fixed mode-`0600` PKCS#12 and `aos-signer` 2.0.1, compute the exact signed/uploaded-file SHA-256 and FOTA comparison SHA-1/size, and preserve the D4-013 prepared-to-upload-to-Cloud mapping. `PUBLISHED` requires independent upload-batch and processed-Component re-reads. Interruption or response loss shall persist only a current-operation `.run/publication/` receipt, enter `UNCERTAIN` and reconcile without blind retry. Presenter-Mac Cloud connectivity remains a precondition; the view never accesses key material and visibly separates publication from Validation and promotion.
 - Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [team-owned release decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011) and [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002)
 - Flow: [common release (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components/interfaces: `CMP-SW-DASH`, `IF-LC-001`, `IF-LC-005`

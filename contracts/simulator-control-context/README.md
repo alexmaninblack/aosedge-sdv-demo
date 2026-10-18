@@ -7,7 +7,8 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 
 - Decision: [`D4-004`](../../docs/requirements/d4-decision-register.md#d4-004)
 - Contract version: 1.1.1
-- Lifecycle state: accepted contract; implementation and qualification remain open
+- Lifecycle state: accepted and implemented; scoped proof in the current baseline,
+  with the complete transition/negative matrix still required
 
 This cross-repository contract freezes the drive-mode/world-context transition
 matrix and the simulator-specific engineering projection shared by Vehicle

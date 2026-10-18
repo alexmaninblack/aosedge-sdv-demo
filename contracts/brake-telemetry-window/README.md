@@ -94,7 +94,7 @@ Use the immutable package release and native service/Subject/instance identity;
 do not require service/model OCI digest fields or relabel old queued records.
 Payload algorithms, model/VDP hashes, receipt keys and authorization remain
 unchanged. Producer/input migration and backend consumers are implemented and
-have scoped live Test evidence. Full current-image qualification remains
+have scoped live Test evidence. The complete negative/recovery acceptance matrix remains
 separate; see the protocol map above. Earlier sections and v1 schema
 files remain legacy evidence, not an instruction to reintroduce the digest
 dependency into new messages. Administrative/cleanup protocols are unaffected.

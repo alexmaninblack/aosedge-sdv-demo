@@ -4,9 +4,9 @@
 # Documentation and Requirements Management
 
 - Status: Accepted
-- Version: 1.4
+- Version: 1.5
 - Prepared: 2026-10-09
-- Updated: 2026-10-15
+- Updated: 2026-10-18
 - Owner: System Architecture
 
 ## Purpose
@@ -233,6 +233,11 @@ status patterns. Add `--external` for bounded parallel network probes. Those
 read at most a small fallback prefix, never a complete binary payload.
 Automated checks complement semantic review; their success does not prove
 that every normative requirement is implemented or every upstream page is current.
+The same gate checks linked JSON version labels, repeated explicit anchors,
+accepted D4 profile hashes and declared Brake quotas against their canonical
+profiles. Effective Safe Stop, Reset, compatibility and publication rules have
+negative regression cases. Current administrative schemas/fixtures are checked
+separately from retained compatibility fixtures; neither is live acceptance.
 Frozen producer/source checkouts use their own revision-matched checks; they
 are not the maintained current-documentation workspace.
 

@@ -5,16 +5,17 @@
 
 ## Scope
 
-This policy applies to the planned public
-`alexmaninblack/aos-vehicle-platform` and
-`alexmaninblack/brake-health-service` repositories and to artifacts
-published from them. Existing repositories retain their current licenses and
-notices unless a separate reviewed decision changes them.
+This policy governs project-owned source and artifact notices across the SDV
+Lab repositories. The platform, Gateway, Brake/Tire services and backends keep
+their declared Apache-2.0 licenses; the integration repository keeps MIT.
+Third-party and restricted simulator inputs retain their own licenses and
+notices. This policy does not relicense existing or upstream material.
 
 ## Project License and Copyright Holder
 
-- License both new repositories under the Apache License, Version 2.0.
-- Use the SPDX identifier `Apache-2.0`.
+- License original component-repository source under Apache License, Version 2.0;
+  retain the integration repository's existing MIT license.
+- Use SPDX `Apache-2.0` for those components and `MIT` for integration source.
 - Use the exact copyright holder text `maninblack` for original project files.
 - Do not name an employer, customer, GitHub organization, AosEdge, the Apache
   Software Foundation, Eclipse Foundation, COVESA, or another third party as a
@@ -44,7 +45,7 @@ a new explicit decision.
 
 ## Repository-Level Files
 
-Each new repository must contain:
+The accepted platform and Brake-service repository policy requires:
 
 - `LICENSE` with the unmodified Apache-2.0 license text;
 - a minimal project-specific `NOTICE`;
@@ -54,14 +55,16 @@ Each new repository must contain:
   Certificate of Origin sign-off;
 - machine-readable license metadata and a CI license-compliance gate.
 
-The initial platform `NOTICE` is:
+Other components retain their existing reviewed license/notice layouts; this
+editorial clarification adds no repository-creation or relicensing obligation.
+The platform `NOTICE` is:
 
 ```text
 Aos Vehicle Platform
 Copyright 2026 maninblack
 ```
 
-The initial service `NOTICE` is:
+The Brake-service `NOTICE` is:
 
 ```text
 Brake Health Service

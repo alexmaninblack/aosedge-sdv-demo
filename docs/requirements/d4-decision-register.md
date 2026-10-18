@@ -4,11 +4,12 @@
 # D4 Interface and Qualification Decision Register
 
 - Status: Decision register; each record's decision and proof state governs
-- Version: 1.2
+- Version: 1.3
+- Updated: 2026-10-18
 - Prepared: 2026-08-22
-- Reading baseline: HLA 1.8, Scenario 2.2, Flows/System/Register 2.3 and
+- Reading baseline: HLA 1.8, Scenario 2.3, Flows/System 2.4, Register 2.3 and
   current component packages; installed and expanded profiles are distinguished
-- Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
+- Editorial consolidation: 2026-10-18; accepted behavior and stable IDs preserved
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
 <a id="current-implementation-view--24-september-2026"></a>
@@ -428,13 +429,18 @@ Safe Stop uses twelve complete samples for stability, not twelve simultaneous
 claims of current freshness. Acquisition freshness, retained history and the
 latest-sample destructive-step revalidation are distinct checks:
 
-1. Every complete sample is source-fresh, at most 250 ms old, when admitted to
-   the window.
+1. Every complete sample satisfies the selected runtime freshness profile when
+   admitted to the window. Standard/Production and an absent Test
+   role retain a 0..250-ms source-age bound and 250-ms read deadline. Only an
+   explicit Test role selects `demo-5s`: source age -5000..+5000 ms inclusive
+   and a 1000-ms read deadline. Unknown profile values are rejected, as defined by the
+   [effective timing profiles](../../contracts/platform-fota-safe-stop/README.md#effective-timing-profiles).
 2. The retained twelve-sample sequence proves stability only and is never
    reused as current vehicle state.
-3. The latest complete sample is at most 250 ms old when the gate opens and is
-   revalidated immediately before every destructive stop, switch, activation
-   or removal step.
+3. The latest complete sample satisfies that same selected profile when the
+   gate opens and is revalidated immediately before every destructive stop,
+   switch, activation or removal step. This does not widen provider, service
+   input, advisory or authorization timing budgets.
 4. Missing, stale, repeated, contradictory or reset-discontinuous evidence
    remains fail-closed. Loss before destructive apply returns to waiting; loss
    during apply fails and rolls back.
@@ -442,8 +448,9 @@ latest-sample destructive-step revalidation are distinct checks:
 Reducing the window to six samples was rejected because it weakens the
 accepted stability proof solely to fit an incorrectly scoped freshness rule.
 The correction changes no authority, component ownership, lifecycle direction
-or Service SOTA motion policy. Implementation and live qualification remain
-open.
+or Service SOTA motion policy. The runtime is implemented; the
+[current baseline](../qualification/current-baseline.md) binds scoped proof
+without closing the complete negative/recovery matrix.
 
 <a id="w2--vehicle-data-advisory-and-identity-contracts"></a>
 ## Vehicle Data, Advisory and Identity Contracts
@@ -545,24 +552,27 @@ The accepted compatibility contract freezes:
 4. Brake Health v1 is compatible with VDP v1-v3, Brake Health v2 with v2-v3,
    Brake Health v3 only with v3, and Tire Health v1.0 only with v3. Exact
    model-consumed subsets remain owned by `D4-016` and `D4-018`.
-5. Every installed VDP identity carries component/artifact/metadata identity,
-   VDP contract identity and digest, hardware/VISS profile digests and a
-   capability-manifest digest. Missing, malformed, unknown-future or
-   semantically changed identity fails closed.
+5. Presenter obtains exact installed component/release identity from native
+   Cloud observation and verified artifact/profile binding. Missing, malformed,
+   unknown-future or contradictory identity remains unknown or incompatible
+   there; no service infers it from missing telemetry. Services validate their
+   committed requirements and real local authorized inputs under
+   [option A](../../contracts/service-runtime-inputs/active-vdp-capability-amendment.md).
 6. Process health is separate from functional readiness. Readiness evaluates
    `INBOUND_DATA`, `SERVICE_ACCESS` and, where required,
    `OUTBOUND_ADVISORY`; an incompatible service remains process-healthy but
    `NOT_READY`, produces no functional result or advisory and never enters a
    crash/restart loop.
-7. A component-identity, capability, source or access change triggers
-   re-evaluation. Installing VDP v3 after Tire Health was installed against
-   v1/v2 lets the same service instance become `READY` automatically after a
-   complete valid contract/data check; no SOTA reinstall is required.
-8. When backend connectivity exists, Tire Health reports a structured
-   incompatibility status. Its Function Dashboard shows required and actual
-   VDP versions, missing capability/path facts and an explicit handoff to the
-   Platform Team. Source stale/disconnected and access-denied cases use
-   different reasons and are not mislabeled as a platform-version request.
+7. Local capability, source or access changes trigger service re-evaluation.
+   Installing VDP v3 after Tire Health was installed against v1/v2 lets the
+   same service instance become `READY` after valid local inputs and advisory
+   readiness are established; no SOTA reinstall or Cloud lookup is required.
+8. Tire Health reports structured local input/access observations when backend
+   connectivity exists. Presenter separately joins required and actual VDP
+   profile evidence and shows `INCOMPATIBLE_VDP` only for a proven mismatch,
+   with missing capability/path facts and a Platform Team handoff. Missing
+   local input alone, stale/disconnected telemetry and access denial do not
+   establish a platform-version verdict.
 9. Current runtime defense and dashboard guidance are not native AosCloud
    admission. The dashboard neither mutates lifecycle state nor implements a
    local admission proxy. Native pre-transfer rejection remains deferred in
@@ -795,9 +805,12 @@ The accepted current-demo publication contract is:
    is the engineering default, not a requirement to copy installed private
    inputs there. Only the session-scoped non-root native helper may read the
    fixed allowlisted paths;
-5. presentation-time work starts with digest verification of an already-built,
-   tested, packaged and metadata-frozen catalogue candidate. No source edit,
-   build, package generation, metadata mutation or repackaging is allowed;
+5. installed presentation-time Prepare uses verified prebuilt functional
+   inputs and the reviewed preparation adapter to allocate a fresh release
+   number and assemble its version-bound metadata/package. It permits no
+   source edit, compilation, model training or arbitrary content generation.
+   The prepared result is immutable before signing/publication; an expanded
+   frozen-catalogue presentation instead selects an already prepared candidate;
 6. the operation states are `PREPARED`, `SIGNING`, `SIGNED`, `PUBLISHING`,
    `PUBLISHED`, `FAILED` and `UNCERTAIN`. `PUBLISHED` requires an independent
    authoritative AosCloud re-read; a lost/ambiguous result becomes
@@ -1293,9 +1306,11 @@ current baseline records scoped implementation and remaining live gates.
 
 The accepted current-demo authority model preserves the three D4-010.3
 artifact-publication profiles and adds one separate authenticated operational
-context named `oem-delivery`. `oem-delivery` is not a fourth publisher: it
-cannot select or use credentials bound to the three publication profiles and
-exists only for the explicitly allowed OEM lifecycle actions below. In D4-010.3,
+context named `oem-delivery`. It is not a fourth publication profile. Installed
+Setup may bind the same selected OEM certificate to VDP signing/publication
+and OEM delivery, while the owning action independently checks role, owner,
+destination and permission. Sharing the file grants no implicit deployment
+approval; the browser cannot choose a credential or authority. In D4-010.3,
 `approvalAuthority: false` therefore means that a publication profile has no
 OEM lifecycle/deployment authority; it does not change the external API fact
 that Verification Batch approval is technically available to eligible OEM and
@@ -1304,12 +1319,17 @@ Service Provider roles.
 | Lifecycle purpose | Supported API operation | Documented API role and permission | Current-demo authority |
 | --- | --- | --- | --- |
 | Active-session preflight | `GET /api/v11/users/me/` | Admin, OEM, Service Provider or Fleet Owner; `users_me` | Every authenticated surface; role, owner binding, `effective_permissions` and permission groups are re-read before enabling an action |
-| Brake/Tire SOTA upload | `POST /api/v11/services/versions/`; reconcile with `GET /api/v11/services/versions/{item_id}/` | Service Provider; `services_versions_create` / owned-item `services_versions_read` | Fixed `brake-sp1` or `tire-sp2` publication surface only |
-| Platform FOTA upload | `POST /api/v11/update-components/upload/`; reconcile with `GET /api/v11/update-components/upload/{item_id}/` | OEM; `update_components_upload_create` / `update_components_upload_read` | Fixed `platform-oem` publication surface only |
+| Brake/Tire SOTA upload | `POST /api/v11/deployment-bundles/upload/`; exact-ID reads through `/api/v11/deployment-bundles/`, then owned service/version catalogue | Service Provider; `deployment_bundles_create`, `deployment_bundles_list` and required service/version reads | Fixed Brake or Tire publication action, bound to its selected associated SP |
+| Platform FOTA upload | `POST /api/v11/deployment-bundles/upload/`; exact-ID bundle read, then processed component/version catalogue | OEM; `deployment_bundles_create`, `deployment_bundles_list` and required component/version reads | Fixed VDP publication action bound to the selected OEM |
 | Artifact technical verification | `GET /api/v11/verification-batch/`, `GET` and `PATCH /api/v11/verification-batch/{batch_id}/` | OEM or Service Provider; `verification_batch_list`, `verification_batch_read`, `verification_batch_approval` | Owning-team acceptance is shown first; the demo performs the approval mutation only through `oem-delivery` |
 | Fleet validation | `GET /api/v11/fleet-validation-batch/`, `GET /api/v11/fleet-validation-batch/{item_id}/`, `PATCH /api/v11/fleet-validation-batch/{item_id}/approve/` | OEM or Fleet Owner; list/read permissions; OpenAPI 6.1.26 currently documents `fleet_validation_batch_read` for approve | `oem-delivery` only; Fleet Owner is not used in this demo |
 | Production promotion | `POST /api/v11/campaigns/`, `GET /api/v11/campaigns/{item_id}/`, `PUT /api/v11/campaigns/{item_id}/approve/` | OEM or Fleet Owner; `campaigns_create`, `campaigns_read`, `campaigns_approve` | `oem-delivery` only; Fleet Owner is not used in this demo |
 | Service desired-state assignment/removal | `POST /api/v11/subjects/{item_id}/services/`, `DELETE /api/v11/subjects/{item_id}/services/{service_id}/` | OEM only; `subjects_services_create`, `subjects_services_delete` | `oem-delivery` only |
+
+Installed Test publication uses the official deployment-bundle upload, not
+legacy direct-version/component-upload routes. The following validation and
+Campaign mutations are expanded-governance operations; they are not automatic
+fallbacks after an installed Test upload.
 
 The accepted mutation bodies are kept distinct:
 
@@ -1360,7 +1380,12 @@ retirement decisions.
 - Contract source: [AosCloud OpenAPI v11](https://api.aoscloud.io/api/v11/openapi.json),
   implementation version `6.1.26`
 
-The demo uses two persistent, disjoint Unit Set objects. The Verification Unit
+Installed use owns one current Test in its Verification Unit Set. Publication
+preflight rejects unrelated eligible recipients. Expanded dual-role use adds
+the two persistent, disjoint Unit Set objects below; it is not a requirement
+to create a Production Unit during first use.
+
+The expanded demo uses two persistent, disjoint Unit Set objects. The Verification Unit
 Set has `is_validation_set=true` and contains exactly the current Validation
 Unit. The Production Unit Set has `is_validation_set=false` and contains
 exactly the current Production Unit. Neither Unit is moved between these
@@ -1486,9 +1511,20 @@ resulting AosCloud object as three distinct identities joined by an immutable
 evidence chain. It never overwrites one identity with another and never calls
 a Cloud UUID or semantic version a content digest.
 
-The current release set contains exactly seven producer-owned prepared
-candidates: VDP Component v1-v3, Brake Health Service v1-v3 and Tire Health
-Service v1. Each owning repository stores one canonical version-controlled
+Installed Prepare offers seven functional choices: VDP V1/V2/V3, Brake
+V1/V2/V3 and Tire V1. A functional profile is not a Cloud release number.
+The reviewed adapter verifies prebuilt source/profile inputs, allocates a fresh
+package version and assembles its metadata and unsigned package. It does not
+compile, train, edit source or accept arbitrary content. Its preparation
+receipt binds inputs and output digests before signing; signing cannot alter
+that prepared content. The existing Demo Control catalogue/journal owns these
+records, not a second mandatory manifest tree. See
+[ADR 0016](../architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md).
+
+The expanded frozen-catalogue profile instead requires seven producer-owned
+prepared candidates: VDP Component v1-v3, Brake Health Service v1-v3 and Tire
+Health Service v1. In that profile, each owning repository stores a canonical
+version-controlled
 manifest under `manifests/release-candidates/`. `aosedge-sdv-demo` stores one
 version-controlled `manifests/demo-release-set.v1.json` that pins only the
 allowed candidate ID, canonical manifest SHA-256, artifact kind and fixed
@@ -1510,7 +1546,8 @@ SHA-256. The manifest does not contain its own digest. It contains at least:
 - no credential, private Cloud identifier, machine-specific absolute path or
   mutable tag.
 
-Prepared bytes are staged before the presentation in the Git-excluded local
+For that expanded frozen-catalogue profile, prepared bytes are staged before
+the presentation in the Git-excluded local
 content-addressed store
 `.local/release-candidates/sha256/<prepared-sha256>/`. The directory contains
 the exact prepared artifact and a verified copy of its producer manifest.
@@ -1522,7 +1559,7 @@ content regeneration or fallback rebuild. Signing may form the required
 cryptographic envelope around the already frozen inputs; it may not regenerate
 their content.
 
-The dashboard selects only a pinned `candidateId` and expected prepared and
+In that expanded profile the dashboard selects only a pinned `candidateId` and expected prepared and
 manifest SHA-256 values. It sends no candidate path, publication profile,
 credential path or Cloud URL. The native helper resolves the candidate through
 its fixed allowlist and the Demo Release Set, re-hashes the manifest and exact
@@ -1573,13 +1610,16 @@ a historical demo-run archive and is removed at R0 only after authoritative
 Cloud reconciliation.
 
 After a timeout, process interruption or response loss, the action becomes
-`UNCERTAIN` and is not blindly retried. FOTA reconciliation searches the
-complete visible upload-batch set and requires one exact match on local SHA-1,
-file size, owner and bounded operation context, then re-reads processed
-components. SOTA reconciliation requires exactly one newly visible Service
-Version with the expected Service UUID, unique semantic version, owner and
-complete exposed configuration. Zero, multiple or contradictory matches stay
-blocked; absence of a Cloud-side SOTA content digest remains visible.
+`UNCERTAIN` and is not blindly retried. FOTA and SOTA reconciliation re-read
+the exact recorded upload-response ID, then its processed component/service
+version under the expected owner and destination. Collection search may
+reject conflicts but cannot adopt a guessed upload ID from a similar version,
+size, checksum or configuration. Without the response ID, the outcome remains
+`UNCERTAIN` and requires explicit reconciliation; neither automatic adoption
+nor resubmission is allowed. Zero, multiple or contradictory matches stay
+blocked; absent Cloud-side content digests remain visible. The
+[publication adapter](../architecture/demo-control-component-publication.md)
+owns the installed observation sequence.
 
 Before implementation acceptance the following release-specific facts remain
 to be qualified and captured as fixtures:
@@ -1812,11 +1852,11 @@ mutation, Unit deletion, VM stop or overlay disposal.
 
 - Decision state: `ACCEPTED`; D4-016.1 through D4-016.5 accepted
 - Accepted D4-016.3 profile SHA-256:
-  `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53`
+  `ea74cda63116d1f9fc969ec292aedb7cd0935ae899775bd8bcd73c230190e028`
 - Accepted D4-016.4 policy SHA-256:
-  `13216b51647525d48b83eb79bd47444ccb392d1a51a7ffd18b593d4c91f52467`
+  `4cd9ca4b3870a96caf0c9ef33c71443f4070730780f3e6d8a991a747d56e47aa`
 - Accepted D4-016.5 profile SHA-256:
-  `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4`
+  `bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820`
 - Owners: Function Team 1 / Vehicle Simulation / Platform Team
 
 #### D4-016.1 — Service v1 bounded braking acquisition
@@ -2065,10 +2105,13 @@ in these canonical contracts:
 4. The Service subscribes read-only to the matching Gateway Status and treats
    only the same request/epoch/sequence `APPLIED` or `CLEARED` state as
    application evidence. KUKSA/VISS success is not application evidence.
-5. The current monotonic model does not fabricate a `CLEAR`. The implementation
-   supports explicit D4-008 `CLEAR` only after a future accepted state/model
-   migration supplies a valid non-inspection assessment. Stop/crash does not
-   invent condition clear; absent refresh lets the Gateway lease expire.
+5. The ordinary monotonic model does not fabricate a `CLEAR`. The accepted
+   Test-only [independent Reset](../../contracts/qm-advisory-profile/readiness-and-reset.md)
+   is the separate explicit exception: its fresh typed `CLEAR` binds the reset
+   command UUID, preserves producer epoch, continues its sequence and retains
+   history/outbox. It needs correlated Gateway `CLEARED` evidence and is not
+   an ordinary model assessment.
+   Stop/crash does not invent condition clear; absent refresh lets the lease expire.
 6. Rejection has no alternate target, arbitrary text or motion fallback. The
    visible status is Gateway application status, not driver acknowledgement.
 
@@ -2085,7 +2128,7 @@ in these canonical contracts:
    outcome, not by itself a readiness failure. Invalid state cannot report
    ready.
 2. The candidate requests the declared service quota envelope: CPU 250,
-   RAM 16 MiB, storage 8 MiB, state 1 MiB, tmp 8 MiB, 64 files and 16 PIDs.
+   RAM 16 MiB, storage 8 MiB, state 1 MiB, tmp 8 MiB, 1024 files and 24 PIDs.
    These are requested—not qualified—until D4-023 measurement and isolation
    pass. AosCore is the only enforcement authority.
 3. v1-to-v2 creates model state and starts v2 analytics without waiting for
@@ -2128,8 +2171,8 @@ not itself authorize artifact publication, Cloud mutation or Unit deployment.
 - Owners: Function Team 1 / Demo Solution local integration
 - Machine-readable contract:
   [Brake Health Cloud API 1.0.0](../../contracts/brake-cloud-api/README.md)
-- Query/SSE/Admin wire annex:
-  [Brake Cloud Query/SSE/Admin API 1.0.0](../../contracts/brake-cloud-api/brake-cloud-query-admin-profile.v1.json)
+- Query/SSE/Admin profile (wire revisions remain explicit in each message):
+  [Brake Cloud Query/SSE/Admin API 1.1.0](../../contracts/brake-cloud-api/brake-cloud-query-admin-profile.v1.json)
 
 The contract requires:
 
@@ -2192,7 +2235,7 @@ The contract requires:
    and otherwise the legacy ledger. Any v2 failure rolls the whole transition
    back to the intact v1 ledger and `user_version = 1`.
 6. The Dashboard reads functional windows, assessments, events and advisory
-   facts only through the closed Brake Cloud Query/SSE/Admin API 1.0.0 annex.
+   facts only through the closed Brake Cloud Query/SSE/Admin profile 1.1.0 and current administrative schemas.
    The backend receives a closed `CurrentUnitContext` input containing the
    required current Test Vehicle (`VALIDATION` on the wire) and optional
    explicitly retained Production Vehicle UIDs/roles from the current-run
@@ -2264,8 +2307,8 @@ The contract requires:
 - Amendment ID: `BC-WINDOW-DETAIL-DEC-01`
 - Amendment state: `ACCEPTED`
 - Prepared: 2026-08-31
-- Accepted base: D4-017 Query/SSE/Admin API 1.0.0
-- Proposed machine-readable profile: Query/SSE/Admin API 1.1.0
+- Accepted base: D4-017 Query/SSE/Admin profile 1.1.0; wire revisions remain separately explicit
+- Current machine-readable query profile: Query/SSE/Admin 1.1.0
 
 The accepted additive decision is:
 
@@ -2693,7 +2736,8 @@ access and unchanged other VM. Function Dashboards retain the last actual
 result and show connectivity unavailable. Recovered `ONLINE` requires the same
 Unit identity, no reprovision/reinstall/restart, idempotent bounded message
 synchronization with separate event/receipt/sync times and unchanged excluded
-paths. Any mismatch is `FAILED/PARTIAL`; the normative presentation uses PU.
+paths. Any mismatch is `FAILED/PARTIAL`. Installed presentation uses its current
+Test; expanded two-role presentation uses PU.
 
 D4-022.3 makes the helper a desired-state setter, never a toggle, and journals
 the exact target and last confirmed state before QMP mutation. Lost response

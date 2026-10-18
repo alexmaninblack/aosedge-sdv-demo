@@ -9,9 +9,9 @@
 - Prepared: 2026-08-21
 - Owner: Vehicle Simulation / Demo Vehicle Tooling
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted D4 decision: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)

@@ -4,7 +4,8 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted
-- Version: 2.2
+- Version: 2.3
+- Updated: 2026-10-18
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: Demo Architecture
@@ -446,9 +447,10 @@ online/offline/reconnect behavior and allowlisted redaction must be qualified.
 | T1 | `G4 graph + Tire Health Service v1.0` | Function Team 2 independently adds one mature local tire-condition product with bounded reporting and its typed inspection advisory |
 | R0 | `Retired demo run` | Cloud identities are retired and provisioned overlays are discarded; the immutable factory image remains |
 
-Every graph is composed of immutable, versioned artifacts. Promotion uses the
-same accepted bytes and digests that passed validation; it does not rebuild or
-repackage them during the presentation.
+Every graph is composed of immutable, versioned artifacts. Installed Prepare
+binds reviewed functional inputs to a fresh package version before signing.
+Expanded promotion uses the same accepted bytes/digests that passed validation;
+it never rebuilds or repackages them.
 
 `G0–G4` describe the Function Team 1 Brake Health progression. Function Team
 2's Tire Health service, backend, and dashboard remain absent throughout those
@@ -657,6 +659,11 @@ The exact contract is a later design decision.
 
 ### Release flow
 
+Installed use prepares functional V1 from verified prebuilt inputs, freezes the
+new package before selected-OEM signing, publishes to the current verification
+Test and waits for actual Safe Stop installation. The numbered frozen-candidate,
+independent-approval and Production-promotion sequence below is expanded scope.
+
 1. The Platform Team selects the already-built immutable VDP Component v1 in
    the `Platform Releases / Release Candidates` view. The Dashboard shows its
    purpose, unsigned artifact and metadata digests, contract, permissions,
@@ -770,6 +777,11 @@ advisory. Its purpose is to create the evidence from which Function Team 1
 could develop a later model outside the live vehicle demonstration.
 
 ### Release flow
+
+Installed use prepares Brake V1 from reviewed prebuilt inputs, signs/publishes
+with the associated SP and assigns it through the exact OEM/Test context after
+VDP V1 is installed. Moving QM SOTA is allowed. The numbered frozen-candidate,
+independent-approval and Production-promotion sequence below is expanded scope.
 
 1. The Brake Health Function Team explicitly selects the frozen Service v1
    candidate; the common native helper pre-bound to `brake-sp1` signs and publishes
@@ -886,6 +898,11 @@ validated remaining useful life, or a safety function.
 
 ### Release flow
 
+Installed use prepares/publishes VDP V2 and observes its Safe Stop installation
+before preparing/publishing Brake V2. Each version is observed before the next;
+Prepare uses reviewed prebuilt inputs, not a live compiler. The numbered
+frozen-candidate and dual-role promotion sequence below is expanded scope.
+
 1. The Platform Team develops and freezes VDP Component v2 as a backward-
    compatible superset of VDP Component v1 before presentation.
 2. During the demo, the Platform Releases view shows the exact v2 candidate
@@ -995,6 +1012,11 @@ scenario level this is called VDP Component v3; its lower-level implementation m
 use separate inbound and outbound providers.
 
 ### Release flow
+
+Installed use prepares/publishes VDP V3 and observes Safe Stop installation
+before the independent Brake V3 SOTA. Local advisory requires correlated
+Gateway application, not merely upload or KUKSA write success. The numbered
+frozen-candidate and dual-role promotion sequence below is expanded scope.
 
 1. VDP Component v3 adds a strictly allowlisted advisory actuator path and Gateway
    status feedback while preserving all accepted v1 and v2 inputs.
@@ -1143,8 +1165,14 @@ provider onboarding, fleet-operator tenancy or safety-domain consolidation.
 
 ### Release flow
 
-1. Function Team 2 selects the frozen Tire Health Service v1.0 candidate; its
-   the common native helper pre-bound to `tire-sp2` signs and publishes the exact
+Installed use follows Prepare Tire V1, selected-SP signing/publication and exact
+OEM assignment to the current Test, after VDP V3 is installed. Each prepared
+release is immutable before signing; publication and observed installation
+remain distinct. The following additional owner acceptance and Production
+promotion steps belong to the expanded dual-role profile.
+
+1. Function Team 2 selects the frozen Tire Health Service v1.0 candidate; the
+   common native helper pre-bound to `tire-sp2` signs and publishes the exact
    payload/metadata digests through the SOTA 2 lifecycle, and AosCloud records
    technical verification.
 2. The service declares VDP Component v3 compatibility and its exact KUKSA
@@ -1306,12 +1334,14 @@ as explicitly simulator-derived engineering facts.
 
 ## Prebuilt Demo and Presentation Boundary
 
-All source changes, builds, model training, package assembly and tests occur
-before the presentation. The OEM Demo Factory Image and the unsigned content
-and metadata digests of all post-SOP candidates are frozen before the
-presentation. No live step compiles source, invokes a Yocto/rootfs/container
-build, generates or repackages a payload or metadata, trains a model, or runs
-the full qualification suite. The live demo performs only:
+All source changes, compilation, model training and product tests occur before
+presentation. The Factory image and functional inputs are frozen. Installed
+Prepare may allocate a fresh release number and assemble its metadata/package
+only through the reviewed adapter; the resulting digests are frozen before
+signing. No live step compiles source, invokes a Yocto/rootfs/container build,
+changes functional content, trains a model or runs the qualification suite.
+The expanded frozen-catalogue profile additionally prepares every package
+before presentation and promotes identical accepted bytes. The live demo uses:
 
 - creation of a fresh Test overlay from the immutable Factory image, plus a
   separate Production overlay only for expanded use;
@@ -1467,11 +1497,12 @@ destructive experiment.
 9. The final Brake Health advisory is visible only as a request and Gateway
    status in the Engineering Telematics Dashboard; no driver HMI is
    implemented.
-10. All factory and update candidates are built, tested and content-frozen
-    before the presentation. The demo may explicitly sign and publish those
-    immutable candidates; it never edits source, compiles, invokes a
-    Yocto/rootfs/container build, packages or regenerates metadata, trains a
-    model, runs the full qualification suite, rebuilds or repackages them.
+10. Factory and functional inputs are built, tested and frozen before the
+    presentation. Installed Prepare may allocate a fresh release number and
+    assemble only its reviewed metadata/package, then freeze it before signing.
+    Expanded promotion never changes those accepted bytes. No live source edit,
+    compilation, Yocto/rootfs/container build, training, arbitrary content
+    regeneration or full qualification run is permitted.
 11. Unit identities remain stable throughout `G0–T1`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
 12. High-Level Architecture 1.8 is a capability superset; `G0–G4` exercise
@@ -1488,8 +1519,8 @@ destructive experiment.
     absent is a target demo scenario deferred until the AosEdge roadmap feature
     ships and is qualified. No project-specific admission controller is used.
 16. The owning Platform or Function Team publishes its candidate and accepts
-    the exact Test result. Function Teams publish through their separate
-    Service Provider identities; the independent OEM Release Authority then
+    the exact Test result. Installed Function Teams publish separate services through the selected
+    associated SP; expanded cross-provider use binds distinct SP identities; the independent OEM Release Authority then
     uses the authorized OEM delivery context to authorize each exact Test or
     Production Unit operation. AosCloud stores and executes the resulting
     lifecycle transition. The dashboard and orchestrator own neither decision
@@ -1610,7 +1641,7 @@ proof above remain part of the demo and are not a performance benchmark.
 Cloud provisioning, authentication, signing, approval and operator-interaction
 duration are not vehicle-performance KPIs for this demo.
 
-Architecture Flows 2.3 owns detailed interaction mapping. These verification
+Architecture Flows 2.4 owns detailed interaction mapping. These verification
 obligations constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
@@ -1621,7 +1652,7 @@ the independence of the two SOTA lifecycles.
 - [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 2.3](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 2.4](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

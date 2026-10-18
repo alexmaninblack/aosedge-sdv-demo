@@ -4,17 +4,17 @@
 # Implemented architecture and traceability
 
 - Status: as-built candidate view; not blanket requirements acceptance
-- Version: 2.1
+- Version: 2.2
 - Prepared: 2026-10-07
-- Updated: 2026-10-17
+- Updated: 2026-10-18
 - Owner: SDV Lab integration
 - Current selection: [launcher catalog](../../workspace/launcher-catalog.json) and its immutable delivery descriptor
 - Source inputs: [current source lock](../../workspace/inputs/sources.lock.json)
 
 ## Reading the design chain
 
-The accepted chain remains HLA 1.8 → Scenario 2.2 → Flows 2.2 →
-System Requirements 2.3 → Component Register 2.3 → component packages.
+The accepted chain remains HLA 1.8 → Scenario 2.3 → Flows 2.4 →
+System Requirements 2.4 → Component Register 2.3 → component packages.
 The owning sections state effective installed and expanded profiles while
 preserving stable IDs and unfulfilled obligations. Implementation is not
 authority to invent a requirement or mark an unexecuted test passed.

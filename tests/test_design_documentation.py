@@ -25,6 +25,71 @@ def prose(relative):
 
 
 class EffectiveDesignDocumentationTests(unittest.TestCase):
+    def effective_issues(self, relative, old, replacement):
+        documents = CHECK["markdown_documents"](ROOT)
+        path = (ROOT / relative).resolve()
+        self.assertIn(old, documents[path])
+        documents[path] = documents[path].replace(old, replacement, 1)
+        return CHECK["check_effective_contracts"](ROOT, documents)
+
+    def test_effective_gate_rejects_stale_hash_and_both_conflicting_quota_locations(self):
+        d4 = "docs/requirements/d4-decision-register.md"
+        cases = [("1024 files and 24 PIDs", "64 files and 16 PIDs"),
+                 ("| Brake | 250 | 16 | 8 | 1 | 8 | 1024 | 24 |",
+                  "| Brake | 250 | 16 | 8 | 1 | 8 | 64 | 16 |")]
+        for old, new in cases:
+            with self.subTest(old=old):
+                self.assertTrue(any("quota" in x.message for x in self.effective_issues(d4, old, new)))
+        contract = ROOT / "contracts/brake-health-model/brake-health-model-profile.v1.json"
+        import hashlib
+        digest = hashlib.sha256(contract.read_bytes()).hexdigest()
+        self.assertTrue(any("hash differs" in x.message
+                            for x in self.effective_issues(d4, digest, "0" * 64)))
+
+    def test_effective_gate_rejects_wrong_link_version_and_plain_reading_chain(self):
+        self.assertTrue(any("JSON profile version" in x.message for x in self.effective_issues(
+            "docs/requirements/components/brake-health-service.md",
+            "[Typed QM Advisory Profile 1.2.0]", "[Typed QM Advisory Profile 1.0.2]")))
+        path = "docs/architecture/demo-scenario-architecture-flows.md"
+        current = CHECK["metadata"](read(path), "Version")
+        self.assertTrue(any("plain-text design-chain" in x.message for x in self.effective_issues(
+            "docs/architecture/current-implementation.md", "Flows " + current, "Flows 0.0")))
+
+    def test_effective_gate_rejects_duplicate_non_identifier_anchor(self):
+        marker = '<a id="independent-window-metadata--accepted-29-september-2026"></a>'
+        self.assertTrue(any("duplicate explicit anchor" in x.message for x in self.effective_issues(
+            "contracts/distribution-installation/native-setup.md", marker, marker + "\n" + marker)))
+
+    def test_effective_gate_rejects_missing_explicit_test_timing_exception(self):
+        path = "docs/requirements/components/factory-substrate.md"
+        self.assertTrue(any("Safe Stop profiles" in x.message for x in self.effective_issues(
+            path, "`demo-5s`", "`standard`")))
+
+    def test_effective_gate_rejects_old_authority_and_publication_rules(self):
+        for name, bad in (
+            ("docs/requirements/d4-decision-register.md", "only after a future accepted state/model"),
+            ("docs/requirements/d4-decision-register.md", "FOTA reconciliation searches the"),
+            ("docs/requirements/d4-decision-register.md", "cannot select or use credentials bound"),
+            ("docs/requirements/components/brake-health-service.md", "verify installed identity/capabilities"),
+            ("docs/requirements/components/tire-health-cloud.md", "When that status reports `INCOMPATIBLE_VDP`"),
+            ("docs/requirements/components/cross-cutting.md", "The normative presentation selects PU"),
+        ):
+            with self.subTest(rule=bad):
+                documents = CHECK["markdown_documents"](ROOT)
+                documents[(ROOT / name).resolve()] += "\n" + bad + "\n"
+                self.assertTrue(any("superseded normative rule" in x.message
+                                    for x in CHECK["check_effective_contracts"](ROOT, documents)))
+
+    def test_brake_requested_quotas_match_actual_packaging_not_only_summary_presence(self):
+        path = ROOT.parent / "brake-health-service/packaging/aos/config.yaml"
+        if not path.is_file():
+            self.skipTest("component checkout unavailable; root-only quota checks still run")
+        profile = json.loads(read("contracts/brake-health-runtime/brake-health-runtime-profile.v1.json"))["aosRequestedQuotas"]
+        for field in ("cpuLimit", "ramLimit", "storageLimit", "stateLimit", "tmpLimit", "noFileLimit", "pidsLimit"):
+            match = re.search(r'^\s+' + field + r':\s*(\S+)\s*$', path.read_text(), re.M)
+            self.assertIsNotNone(match, field)
+            self.assertEqual(match[1], str(profile[field]), field)
+
     def test_current_component_heading_keeps_strict_reader_validation(self):
         path = (ROOT / "docs/requirements/component-decomposition-and-interface-register.md").resolve()
         text = path.read_text()

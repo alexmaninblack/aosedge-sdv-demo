@@ -43,8 +43,9 @@ Recovered `ONLINE` requires the same Unit UUID/`system_uid` online, no
 reprovision/reinstall/service restart, idempotent bounded outbox
 synchronization with original event time distinct from receipt/sync time, and
 unchanged other-VM/in-vehicle paths. Any mismatch is `FAILED/PARTIAL`. The
-normative presentation selects PU, although the mechanism supports the current
-VU role during qualification.
+installed presentation selects its current Test; expanded two-role presentation
+selects PU. The retained machine profile's Production presentation field belongs
+to that expanded design, not an instruction to create a Production-role vehicle.
 
 The helper always sets an exact desired state and never implements a blind
 toggle. It journals the exact role, Unit identity, QEMU process/socket,

@@ -14,7 +14,8 @@ independent credential/binding and handover proof.
 - Decision: [`D4-006`](../../docs/requirements/d4-decision-register.md#d4-006)
 - Contract version: 1.1.0
 - Accepted contract SHA-256: `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c`
-- Lifecycle state: accepted contract; implementation and live qualification remain open
+- Lifecycle state: strict installed Test trust implemented with scoped proof;
+  expanded trust/negative qualification remains separate
 
 This contract freezes the private in-vehicle VISS trust boundary, authenticated
 peer roles, read-only operation profile, timing and failure semantics, and the
@@ -45,5 +46,5 @@ Standard path/type/unit values are pinned to the official
 whose `vss.json` SHA-256 is
 `b77785180dbe7fc674e4965ab9c1c58dcc97433867cf4abf4e3f78c013550e78`.
 In particular, acceleration uses `m/s^2` and standard wheel angular speed uses
-`degrees/s`; the current CARLA runtime's native `rad/s` value therefore needs
-an explicit target conversion before that path is qualified.
+`degrees/s`; Gateway converts CARLA's native `rad/s` to `degrees/s` in its VSS projection.
+This implemented conversion is not a blanket all-sensor qualification claim.

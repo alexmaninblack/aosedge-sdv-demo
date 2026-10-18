@@ -3,16 +3,18 @@
 
 # End-to-End Acceptance Requirements
 
-- Status: D3 design-reviewed; implementation and live qualification open
+- Status: D3 design-reviewed; scoped implementation/proof in the current baseline;
+  full expanded acceptance and negative matrices remain open
 - Package: [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e)
-- Version: 0.8
+- Version: 0.9
+- Updated: 2026-10-18
 - Prepared: 2026-08-26
 - Accepted: 2026-08-27
 - Owner: System Acceptance with Platform, Function, Gateway and Demo Solution teams
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)

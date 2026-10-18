@@ -5,13 +5,14 @@
 
 - Status: D3 design-reviewed; scoped implementation evidence is separate from full acceptance
 - Package: [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos)
-- Version: 0.4
+- Version: 0.5
+- Updated: 2026-10-18
 - Prepared: 2026-08-21
 - Owner: AosEdge Platform integration / OEM lifecycle qualification
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0004](../../architecture/decisions/0004-single-main-node-for-aos1.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md), [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md) and [ADR 0014](../../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
@@ -390,7 +391,7 @@ evidence rather than a project-owned unit test.
 <a id="req-aos-010"></a>
 
 - ID: `REQ-AOS-010`
-- Statement: The lifecycle shall preserve each service's D4-007 VDP compatibility range, expose the current installed component identity and capability manifest to deployment/readiness evidence, and shall distinguish an installed/process-healthy service from functional `READY`. It shall not present an incompatible or dependency-unready service as an accepted running graph.
+- Statement: The lifecycle shall preserve each service's D4-007 VDP compatibility range, expose current installed component identity through native Cloud observations joined with verified artifact/profile evidence in Presenter, while services validate their committed local requirements and real authorized inputs without Cloud lookup, and shall distinguish an installed/process-healthy service from functional `READY`. It shall not present an incompatible or dependency-unready service as an accepted running graph.
 - Rationale: Current platform releases do not provide native pre-transfer Service-to-FOTA admission, so runtime defense in depth remains mandatory.
 - Parent system requirement: [Service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003)
 - Architecture flows: [Deferred dependency flow (`AF-G3-DEP`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-dep) and [joint Brake lifecycle (`AF-G3-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-lc)
@@ -401,7 +402,8 @@ evidence rather than a project-owned unit test.
 - State: D3 design-reviewed; D4-007 compatibility/readiness contract accepted
 
 Acceptance requires compatible startup and fail-closed incompatible readiness
-without claiming that this service-side check is native Cloud admission.
+without inferring installed VDP identity from missing local input or claiming
+that the service-side check is native Cloud admission.
 
 ### Deferred native Service-to-VDP Component admission
 

@@ -5,15 +5,16 @@
 
 - Status: D3 design-reviewed; D4-018 and D4-019 accepted; D4-020 design-reviewed
 - Package: [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud)
-- Version: 0.6
+- Version: 0.7
+- Updated: 2026-10-18
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Reconciled: 2026-08-31
 - Owner: Function Team 2 / Service Provider 2 functional Cloud product
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
@@ -355,11 +356,11 @@ packaged product and protected helper against controlled adjacent components.
 <a id="req-tire-cloud-002"></a>
 
 - ID: `REQ-TIRE-CLOUD-002`
-- Statement: The Release Candidates view shall load exactly one Tire Health v1.0 entry pinned by the Demo Release Set to its producer-owned canonical manifest and immutable prepared artifact in the local content-addressed store; it shall expose no source editor, build, metadata generation, package-content regeneration, alternate hidden release or fallback.
+- Statement: The installed release view shall offer only functional Tire V1 and use the reviewed Prepare adapter to assemble a fresh release-numbered package from verified prebuilt inputs, freezing its receipt before signing. Expanded frozen-catalogue use shall pin one producer manifest/prepared artifact through the Demo Release Set. Neither profile shall expose a source editor, compiler, arbitrary metadata/content generator, alternate hidden profile or fallback rebuild.
 - Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001) and [single mature Tire service (`SYS-TIRE-001`)](../system-requirements-and-traceability.md#sys-tire-001)
 - Flow: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Contract, Integration
-- Evidence: producer manifest, pinned release-set entry, prepared/manifest digest and content-addressed-store verification, exactly-one-entry proof and absence of build/mutation endpoints
+- Evidence: one functional profile, verified preparation input/output digests and absence of compilation/arbitrary-content endpoints; expanded use also proves its pinned producer manifest, release-set entry and content-addressed store
 - State: D3 design-reviewed; D4-013 catalogue and storage design accepted; implementation and executable-profile drift follow the protocol map
 
 ### Complete v1.0 metadata
@@ -424,7 +425,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-007"></a>
 
 - ID: `REQ-TIRE-CLOUD-007`
-- Statement: The Vehicle Data view shall use bounded, stably ordered exact-Unit REST state and SSE only as change notification to present backend records: estimated condition band, confidence/quality, threshold/change event, local inspection decision, original event and receipt time, service/model/VDP versions, Unit role and delivery/freshness state. It shall label `TIRE_FUNCTION_STATUS` as Function Team-reported rather than AosCore readiness and mark it `FUNCTION_STATUS_STALE` after 90 seconds without heartbeat while retaining the last reason. When that status reports `INCOMPATIBLE_VDP`, it shall show required and actual VDP identity, missing capability/path facts and a non-mutating action message directing the operator to the Platform Team. It shall keep stale/disconnected/access-denied reasons distinct and shall not display continuous raw telemetry, hidden truth, exact tread depth, remaining life, production/safety claims or uncorrelated Gateway/driver acknowledgement.
+- Statement: The Vehicle Data view shall use bounded, stably ordered exact-Unit REST state and SSE only as change notification to present backend records: estimated condition band, confidence/quality, threshold/change event, local inspection decision, original event and receipt time, service/model/VDP versions, Unit role and delivery/freshness state. It shall label `TIRE_FUNCTION_STATUS` as Function Team-reported rather than AosCore readiness and mark it `FUNCTION_STATUS_STALE` after 90 seconds without heartbeat while retaining the last reason. Presenter shall derive `INCOMPATIBLE_VDP` only from authoritative Cloud/artifact profile binding, not service-local missing input or an unverified status reason; a proven mismatch shall show required/actual VDP identity, missing capability/path facts and a non-mutating Platform Team handoff. It shall keep stale/disconnected/access-denied reasons distinct and shall not display continuous raw telemetry, hidden truth, exact tread depth, remaining life, production/safety claims or uncorrelated Gateway/driver acknowledgement.
 - Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005) and [authoritative surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001)
 - Flow: [Tire observability (`AF-TIRE-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-ob)
 - Verification: Unit, Component, Integration, End-to-end
@@ -586,7 +587,7 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented backend | Real HTTP/SQLite container, revision-2 products, revision-3 observations, durable receipts, exact Unit queries, reset and private Test-only cleanup exist. |
-| Known executable-contract mismatch | Legacy cleanup profile/preview schema still require two UIDs and fewer counters. Current handler accepts current Test alone and ten counters; see the as-built wire supplement. Static legacy fixture tests do not close this mismatch. |
+| Executable administrative contract | The [current admin profile](../../../contracts/tire-cloud-api/current-admin-profile.v1.json) and closed schemas describe one-Test/optional-peer context and ten counters. Retained two-UID/six-counter fixtures test legacy compatibility, not the current protocol. Source conformance is not a new live acceptance result. |
 | Audience and CPU scope | Integrated Presenter provides live results. A standalone Tire dashboard and CPU qualification control/worker are not implemented; CPU control returns NOT_IMPLEMENTED. |
 | Remaining live matrix | Complete migration/corruption/crash, route/LAN-negative, stale-preview/peer preservation and broader dual-role qualification beyond scoped Test receipts. |
 | External ownership | Cloud signing/assignment and native service-to-VDP admission remain outside this backend; current Test proof does not authorize Production mutation. |

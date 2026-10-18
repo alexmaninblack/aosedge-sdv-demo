@@ -1,16 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 2.3
+# System Requirements and Traceability 2.4
 
 - Status: Accepted
-- Version: 2.3
+- Version: 2.4
+- Updated: 2026-10-18
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.3](../architecture/demo-scenario-architecture-flows.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.4](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -92,8 +93,8 @@ passes its acceptance criteria, and the evidence is retained.
 ## Source Precedence
 
 1. High-Level Architecture 1.8 owns boundaries, authority and invariants.
-2. Demo Scenario 2.2 owns the audience-visible stage progression.
-3. Architecture Flows 2.3 owns detailed lifecycle, runtime, observability and
+2. Demo Scenario 2.3 owns the audience-visible stage progression.
+3. Architecture Flows 2.4 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -195,9 +196,9 @@ by HLA and UI-STUDIO-026, not to every installed Test action.
 | <a id="sys-src-002"></a>`SYS-SRC-002` | Honest single-source presentation | The demo shall not imply that two simulated vehicles were running simultaneously when one CARLA/Gateway source was reused sequentially. | `I,D` | `GAP-AF-04` |
 | <a id="sys-src-003"></a>`SYS-SRC-003` | Versioned vehicle hardware profile | The selected virtual vehicle shall have one digest-addressed Vehicle Hardware Capability Manifest that identifies the CARLA revision and ego blueprint and classifies every installed signal, sensor and actuator with its type, unit, frame, cadence or command range, availability semantics and provenance; a capability that CARLA can theoretically create but that is not installed in the selected profile shall be declared `NOT_INSTALLED` rather than implied to exist. | `T,I` | Accepted HLA and native-CARLA-inventory baseline correction |
 | <a id="sys-src-004"></a>`SYS-SRC-004` | Complete Simulator–Gateway accounting | Across the selected hardware profile, the Simulator and Gateway shall account for every declared capability without silent loss: installed state shall be delivered or explicitly unavailable/unsupported; actuator commands shall be accepted or rejected with bounded status and the actually applied control state shall be observable; simulator ground truth and qualification-only oracle state shall remain outside the production vehicle-data interface. | `T,I,A` | Accepted HLA and native-CARLA-inventory baseline correction |
-| <a id="sys-rel-001"></a>`SYS-REL-001` | Immutable release candidates | Every FOTA and SOTA candidate shall have a producer-owned canonical manifest and immutable prepared artifact identified by semantic version, prepared SHA-256 and canonical manifest SHA-256 before presentation. The pinned Demo Release Set shall select only approved candidate IDs; presentation-time work may verify, sign and upload frozen inputs but shall not build, regenerate or silently substitute content. Prepared, signed/uploaded and Cloud identities shall remain distinct and traceably linked. | `T,I` | `GAP-AF-05`, `GAP-AF-07`, `GAP-AF-20` |
+| <a id="sys-rel-001"></a>`SYS-REL-001` | Immutable release candidates | Every FOTA and SOTA candidate shall bind verified functional inputs, its allocated package version, prepared SHA-256 and canonical metadata identity before signing. Installed Prepare may assemble release-specific metadata/package from reviewed prebuilt inputs without compilation, source edits or arbitrary content changes. Expanded frozen-catalogue use shall prepare candidates before presentation and pin their approved IDs through the Demo Release Set; it shall not regenerate content during promotion. Prepared, signed/uploaded and Cloud identities shall remain distinct and traceably linked. | `T,I` | `GAP-AF-05`, `GAP-AF-07`, `GAP-AF-20` |
 | <a id="sys-rel-002"></a>`SYS-REL-002` | Current effective-target validation | Immediately before approval, the delivery workflow shall enumerate every Unit in the applicable Fleet/OEM visibility scope, derive effective targets from their current pending-batch state, compare the resulting exact Unit-ID set with the intended Unit Set and block stale, missing, unexpected or unprovable targets. | `T,I` | `GAP-AF-06` |
-| <a id="sys-rel-003"></a>`SYS-REL-003` | Service capability compatibility | Each SOTA service artifact shall carry a versioned Vehicle Data Platform Component compatibility range and shall fail closed at startup/readiness when the installed capability is absent or incompatible. | `T,I` | `GAP-AF-20` |
+| <a id="sys-rel-003"></a>`SYS-REL-003` | Service capability compatibility | Each SOTA artifact shall carry its versioned VDP compatibility requirement. Services shall fail closed on missing/invalid authorized local inputs or advisory capability, independently of Cloud. Presenter shall join native Cloud inventory with verified artifact/profile evidence for the installed-version verdict; missing local data alone shall not prove incompatibility. Valid returning inputs shall permit same-instance recovery. | `T,I` | `GAP-AF-20` |
 | <a id="sys-rel-004"></a>`SYS-REL-004` | Validate once, then apply by update-state policy | For expanded Production promotion, a candidate shall be installed, qualified and explicitly accepted by its owning team on the Validation Unit before the identical accepted bytes and digest are promoted to the Production Unit. The Production Unit shall be an authorized rollout and live-operation target, not a second product-validation lane; post-rollout actual-state/readiness checks confirm delivery health only. In both profiles, Vehicle Data Platform Component FOTA shall be delivered through AosCloud/AosCore but applied only after the factory-installed OEM Component Runtime proves the accepted Safe Stop policy from Gateway samples fresh at acquisition, a consecutive stability history that is not current-state authority, and a latest complete sample revalidated immediately before every destructive step; the UI shall present, but not duplicate, that in-vehicle gate and shall not claim that AosCloud evaluates physical motion. The accepted Brake/Tire QM Service SOTA may be applied while the vehicle moves, subject to all other release gates. | `T,I,D` | `GAP-AF-06`, `GAP-AF-20` |
 | <a id="sys-rel-005"></a>`SYS-REL-005` | Dependent-first recovery | Recovery shall stop/remove the dependent SOTA service before changing a platform capability on which it depends, preserve unaffected service/platform lifecycles and then revalidate/reassign the dependent service. FOTA may use `RevertUpdate` only before `ApplyUpdate`; after Apply it shall use a new signed forward-repair version. SOTA removal is supported, while exact selection of a previous Service Version remains unqualified and shall not be claimed. | `T,A` | `GAP-AF-05`, `GAP-AF-20` |
 | <a id="sys-rel-006"></a>`SYS-REL-006` | Native Cloud Service-to-VDP rejection | AosCloud shall natively reject a SOTA request whose declared FOTA Vehicle Data Platform Component range is not satisfied on the intended Unit before changing Subject-service desired state, creating a validation batch or campaign, or transferring update content to the Unit, and shall return an authoritative machine-readable reason. Existing component-to-component and service-to-layer dependency mechanisms remain supported platform capabilities and are outside this deferred cross-lifecycle requirement. | `T,I,D` | `GAP-AF-20` |
@@ -221,12 +222,11 @@ native contracts fit the graph.
 
 ### Vehicle control and handover
 
-`SYS-CTRL-001` and `SYS-CTRL-002` are corrective allocations discovered while
-deriving the first component packages. `SYS-CTRL-003` preserves the historical
-Scenario 1.4 and Architecture Flows 1.3 mode/context refinement now carried
-forward by Scenario 1.9 and Flows 1.8. The
-set does not add a demo stage, authority, architectural boundary or data
-direction.
+The requirements below define exclusive vehicle control, continuous handover
+and deterministic mode/context transitions. The
+[drive-mode flow](../architecture/demo-scenario-architecture-flows.md#af-x-drive)
+owns their sequence. They preserve the existing vehicle-control authority,
+architectural boundary and data direction; they add no demonstration stage.
 
 | ID | Short name | System requirement | Verification | Gap source |
 | --- | --- | --- | --- | --- |
@@ -396,9 +396,9 @@ in-Unit performance benchmarking is tracked separately in the roadmap.
 | `GAP-AF-26` | `SYS-RES-001` |
 
 All twenty-two active architecture-flow gaps have explicit requirement coverage.
-Retired gaps `GAP-AF-12` through `GAP-AF-14` and `GAP-AF-18` resolve to their replacements in
-Architecture Flows 2.0. This
-does not mean they are resolved; each remains open until its linked
+Retired identifiers resolve through the
+[flow retirement map](../architecture/demo-scenario-architecture-flows.md#retired-architecture-flow-gaps).
+Coverage is not closure: each active gap remains open until its linked
 requirements have accepted evidence.
 
 ## Component Requirement Package Allocation

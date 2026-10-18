@@ -15,17 +15,18 @@ mean that the vehicle is physically safe for application. AosCloud does not
 observe vehicle motion and the Demo UI must not become an alternative update
 authority.
 
-The current factory-installed `systemd-slot-component` runtime validates and
-prepares an accepted component candidate and then immediately activates it. It
-has no vehicle-state input, Safe Stop policy or durable waiting state. A simple
-wait added only to `StartInstance` is also insufficient: when an installed
-component is replaced, Service Manager calls `StopInstance` for the current
-version before it calls `StartInstance` for the replacement.
+The lifecycle problem addressed by this decision is destructive replacement
+before fresh vehicle-state evidence. Service Manager calls `StopInstance` for
+the current version before `StartInstance` for its replacement, so a gate only
+in `StartInstance` is insufficient. The implemented runtime below gates both
+boundaries and retains a durable waiting state; it does not immediately apply
+an update merely because preparation succeeded.
 
 The accepted Simulator Control and Context Contract already defines the
 project-owned read-only control-state projection, including
-`Vehicle.CarlaSimulation.Control.ActiveMode` and `TransitionState`. Its
-implementation and the Platform FOTA policy that consumes it remain open.
+`Vehicle.CarlaSimulation.Control.ActiveMode` and `TransitionState`. The projection and consuming policy are implemented. The
+[current baseline](../../qualification/current-baseline.md) records scoped
+proof separately from the complete recovery/negative matrix.
 
 ## Decision
 
@@ -68,7 +69,8 @@ The versioned Platform FOTA Safe Stop contract owns the exact thresholds,
 freshness, stability window, timeout and reason vocabulary. A stopped vehicle
 in another control mode, including a temporary traffic stop, is not Safe Stop.
 
-Safe Stop profile 1.1.1 defines freshness at two different points. Every
+The [effective timing profiles](../../../contracts/platform-fota-safe-stop/README.md#effective-timing-profiles)
+define standard 250-ms versus explicit Test `demo-5s` freshness at two points. Every
 sample is checked against its source time when admitted into the consecutive
 stability window. The history proves stability only; it is not current-state
 authority. The latest complete sample is checked again when the gate opens and

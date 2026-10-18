@@ -14,7 +14,8 @@ handover; those additional duties are not ordinary single-Test prerequisites.
 
 - Decision: [`D4-005`](../../docs/requirements/d4-decision-register.md#d4-005)
 - Contract version: 1.0.0
-- Lifecycle state: accepted contract; implementation and qualification remain open
+- Lifecycle state: installed single-Test assignment implemented with scoped proof;
+  expanded dual-role handover and its full negative matrix remain separate gates
 
 The expanded profile separates the audience story from its source-assignment
 constraint:

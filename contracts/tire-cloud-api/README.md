@@ -100,6 +100,15 @@ offline. Reported control state never proves AosCore quota enforcement.
 
 ## Current-Test administrative protocol
 
+The [current admin profile](current-admin-profile.v1.json) binds endpoint-specific
+definitions in [current-admin.schema.json](current-admin.schema.json) and
+[synthetic fixtures](fixtures/current-admin.valid.json). Profile version 1.0.0
+describes the implemented wire contract 1.0.0 and database schema 4; it does not
+change a handler or frozen input. Current consumers use this profile, not the
+retained two-UID/six-counter cleanup schema. Schema validity alone cannot prove
+current-context authorization, opaque-token validity/expiry or transactional
+peer preservation; the backend must still enforce those stateful checks.
+
 The backend retains current-demo functional state, not a historical run
 archive. Only local Demo Control may preview/execute cleanup. Browser, guest
 ingestion and LAN cannot access this administrative interface. Model Reset is

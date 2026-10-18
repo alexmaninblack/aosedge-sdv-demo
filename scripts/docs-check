@@ -7,9 +7,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
+import runpy
 import subprocess
 import sys
 import urllib.error
@@ -1046,6 +1048,106 @@ def check_workspace(root: Path) -> tuple[list[Issue], int, set[str]]:
     return issues, len(documents), external
 
 
+def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    """Check effective facts, not merely the presence of a current-view paragraph.
+
+    JSON versions/hashes and requested quotas have canonical machine owners.
+    Current/expanded behavioral exceptions also have explicit owning clauses;
+    negative regression tests ensure old prohibitions cannot silently return.
+    This is source consistency, never proof of runtime acceptance.
+    """
+    issues: list[Issue] = []
+    def issue(path, message):
+        issues.append(Issue(str(path), message))
+    for path, text in documents.items():
+        duplicates = [name for name, count in Counter(EXPLICIT_ANCHOR.findall(text)).items() if count > 1]
+        for name in duplicates:
+            issue(relative(root, path), "duplicate explicit anchor: " + name)
+        for title, raw in markdown_links(text):
+            target = link_target(raw)
+            if urlsplit(target).scheme or not target.split("#")[0].endswith(".json"):
+                continue
+            destination, _ = resolve_local_target(root, path, raw)
+            if not destination.is_relative_to(root) or not destination.is_file():
+                continue
+            try:
+                value = json.loads(destination.read_text())
+            except ValueError:
+                issue(relative(root, path), "invalid linked JSON: " + target)
+                continue
+            if not isinstance(value, dict):
+                continue
+            versions = {value[k] for k in ("contractVersion", "profileVersion", "version")
+                        if isinstance(value.get(k), str)}
+            named = re.findall(r'(?<![\w.-])\d+\.\d+(?:\.\d+)?\b', title)
+            if versions and named and not versions.intersection(named):
+                issue(relative(root, path), "JSON profile version label is stale: " + title)
+    d4path = "docs/requirements/d4-decision-register.md"
+    d4 = documents.get((root / d4path).resolve(), "")
+    for number, contract in (("3", "brake-health-model/brake-health-model-profile.v1.json"),
+                             ("4", "brake-health-advisory-policy/brake-health-advisory-policy.v1.json"),
+                             ("5", "brake-health-runtime/brake-health-runtime-profile.v1.json")):
+        path = root / "contracts" / contract
+        if path.is_file():
+            declared = re.search(r'Accepted D4-016\.' + number + r' (?:profile|policy) SHA-256:\s*`([a-f0-9]{64})`', d4)
+            if not declared or declared[1] != hashlib.sha256(path.read_bytes()).hexdigest():
+                issue(d4path, "D4-016." + number + " accepted hash differs from its current profile")
+    quota_path = root / "contracts/brake-health-runtime/brake-health-runtime-profile.v1.json"
+    if quota_path.is_file():
+        q = json.loads(quota_path.read_text())["aosRequestedQuotas"]
+        expected = [q["cpuLimit"], *[int(q[k].removesuffix("MiB")) for k in
+                    ("ramLimit", "storageLimit", "stateLimit", "tmpLimit")], q["noFileLimit"], q["pidsLimit"]]
+        found = re.search(r'candidate requests the declared service quota envelope: CPU (\d+),\s*'
+                          r'RAM (\d+) MiB, storage (\d+) MiB, state (\d+) MiB, tmp (\d+) MiB, (\d+) files and (\d+) PIDs', d4)
+        if not found or list(map(int, found.groups())) != expected:
+            issue(d4path, "D4-016.5 requested quotas differ from the runtime profile")
+        row = re.search(r'^\| Brake \| ([^\n]+)', d4, re.M)
+        if not row or [int(x.strip()) for x in row[1].split("|") if x.strip()] != expected:
+            issue(d4path, "D4-023 Brake quota table differs from the runtime profile")
+    # These patterns reject the competing old normative rules, not historical
+    # quotations in immutable evidence URLs. Each is scoped to its owning file.
+    forbidden = {
+        d4path: ("only after a future accepted state/model", "cannot select or use credentials bound",
+                 "FOTA reconciliation searches the", "No source edit, build, package generation"),
+        "docs/requirements/components/brake-health-service.md": ("verify installed identity/capabilities",),
+        "docs/requirements/components/tire-health-service.md": ("verify the installed identity, capability manifest",),
+        "docs/requirements/components/tire-health-cloud.md": ("When that status reports `INCOMPATIBLE_VDP`",),
+        "docs/requirements/components/cross-cutting.md": ("the normative `G4/X-OFFLINE` presentation uses PU",
+                                                         "The normative presentation selects PU"),
+        "contracts/distribution-installation/version-selection.md": ("consume it later",),
+        "contracts/viss-trust-telemetry-profile/README.md": ("value therefore needs an explicit target conversion",),
+    }
+    for name, patterns in forbidden.items():
+        body = " ".join(documents.get((root / name).resolve(), "").split())
+        for pattern in patterns:
+            if pattern in body:
+                issue(name, "superseded normative rule: " + pattern)
+    for name in (d4path, "docs/requirements/components/factory-substrate.md"):
+        body = " ".join(documents.get((root / name).resolve(), "").split())
+        if body and not all(token in body for token in ("demo-5s", "250", "1000", "-5000..+5000")):
+            issue(name, "standard and explicit Test Safe Stop profiles must remain distinct")
+    aliases = (
+        (r'\b(?:Demo )?Scenarios? (\d+\.\d+)\b', "docs/demo/staged-post-sop-brake-health-demo-scenarios.md"),
+        (r'\b(?:Architecture )?Flows (\d+\.\d+)\b', "docs/architecture/demo-scenario-architecture-flows.md"),
+        (r'\bSystem Requirements(?: and Traceability)? (\d+\.\d+)\b', "docs/requirements/system-requirements-and-traceability.md"),
+    )
+    for pattern, owner in aliases:
+        expected_version = metadata(documents.get((root / owner).resolve(), ""), "Version")
+        if not expected_version:
+            continue
+        for path, text in documents.items():
+            if relative(root, path) in LOCKED_EVIDENCE:
+                continue
+            for found in re.finditer(pattern, text):
+                if found[1] != expected_version:
+                    issue(relative(root, path), "plain-text design-chain version is stale: " + found[0])
+    # Existing frozen fixtures remain compatibility checks. Current admin
+    # schema closure is separately checked, with no backend/runtime execution.
+    admin = runpy.run_path(str(Path(__file__).with_name("admin_contract_check.py")))
+    issues.extend(Issue("contracts", message) for message in admin["check"](root))
+    return issues
+
+
 def check_repository(
     root: Path, include_external: bool = False
 ) -> tuple[list[Issue], int, int, int]:
@@ -1063,6 +1165,7 @@ def check_repository(
     issues.extend(check_hygiene(root, documents))
     issues.extend(check_user_guide_audience(root, documents))
     issues.extend(check_current_guidance(root, documents))
+    issues.extend(check_effective_contracts(root, documents))
     mermaid_issues, diagram_count = check_mermaid(root, documents)
     issues.extend(mermaid_issues)
     if include_external:

@@ -3,8 +3,9 @@
 
 # Portable VM launch inputs
 
-- Status: Accepted Stage 2 implementation slice; live qualification deferred.
-- Version: 1.0
+- Status: Accepted implemented portable VM inputs; scoped live proof in the current baseline
+- Version: 1.1
+- Updated: 2026-10-18
 - Prepared: 2026-09-26
 - Owner: Demo Solution Team
 - Parent: [distribution plan, Stage 2](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
@@ -83,10 +84,11 @@ cross-interpreter DNS identity and unchanged owner rejection. Build only the
 small immutable input bundle from explicit pinned inputs; retain the 90 GiB
 reserve. No QEMU, Game, service or Factory rebuild is needed.
 
-The operator requested assembly before further live screen checks on
-26 September. Guest boot, DNS handoff, repeated start/stop, ignition, UI and
-full E2E are therefore deferred until the complete runtime is assembled.
-Unit/static/integrity gates do not establish live or clean-Mac qualification.
+Portable guest boot, DNS, retained Stop/Start, ignition and UI have scoped
+M1 evidence in the [current baseline](../../docs/qualification/current-baseline.md).
+That evidence is candidate-bound; broader cold-offline, nonempty-outbox power
+loss, host sleep/wake and full recovery matrices remain open. Unit/static
+checks alone do not establish new live or clean-Mac qualification.
 
 Class B: affects VM/image/helper input selection, orchestration requirements,
 scenario/flow annotations and tests. Revalidated unchanged: vehicle authority,

@@ -9,9 +9,9 @@
 - Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.3](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 2.3](system-requirements-and-traceability.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.4](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 2.4](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -82,10 +82,10 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 1. High-Level Architecture 1.8 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 2.2 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 2.3 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 2.3 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 2.4 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 2.3 owns normative `SYS-*` obligations and gap
+4. System Requirements 2.4 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.

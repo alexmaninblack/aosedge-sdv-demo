@@ -5,14 +5,15 @@
 
 - Status: Design-reviewed requirement allocation; current image/proof selected independently
 - Package: [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory)
-- Version: 0.5
+- Version: 0.6
+- Updated: 2026-10-18
 - Prepared: 2026-08-19
 - Accepted: 2026-08-28
 - Owner: Platform Team / pre-SOP OEM Factory Baseline Assembly
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Current image: [controller input lock](../../../workspace/inputs/controller-images.lock.json)
@@ -277,10 +278,13 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
   shall persist `WaitingForSafeStop` and gate destructive `StopInstance` plus
   activation `StartInstance` transitions on fresh complete `IF-VEH-007`
   evidence containing distinct monotonic `FrameId` values. Each admitted
-  sample shall be no older than 250 ms when acquired; the retained 12-sample
-  sequence proves stability only and is not current-state authority. The
-  latest complete sample shall be no older than 250 ms when the gate opens and
-  shall be revalidated immediately before every destructive runtime step. The VISS transport
+  sample shall satisfy the [selected timing profile](../../../contracts/platform-fota-safe-stop/README.md#effective-timing-profiles):
+  standard/Production or missing Test role uses age 0..250 ms and a 250-ms
+  read deadline; only explicit Test `demo-5s` uses age -5000..+5000 ms inclusive
+  and a 1000-ms read deadline. The retained 12-sample sequence proves stability
+  only and is not current-state authority. The latest complete sample shall
+  satisfy that same profile at gate opening and immediately before every
+  destructive runtime step. Other telemetry/advisory budgets are unchanged. The VISS transport
   shall be isolated behind `VehicleStateProviderItf`, the policy evaluator
   shall remain pure, and one bounded asynchronous worker shall return native
   `Activating` after persisting transaction metadata without holding the

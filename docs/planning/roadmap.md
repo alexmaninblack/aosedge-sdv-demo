@@ -42,7 +42,7 @@ The single launcher provides:
 | Native installation/return robustness | Candidate-bound interruption/repair/update/removal cases and full stopped-controller return journey |
 | Formal product acceptance | Outstanding calibration, negative/security/resource matrices, nonempty-outbox power loss and expanded vehicle-role/provider cases |
 | Host sleep/wake | Separate accepted recovery plan; controller ignition does not implement it |
-| Contract synchronization | Versioned legacy executable-profile drift, without changing accepted wire bytes or weakening handlers |
+| Contract maintenance | Keep current admin profiles/negative fixtures aligned with handlers while preserving explicitly selected legacy compatibility inputs; no runtime change is implied |
 | Deferred timing diagnostics | Load-sensitive readiness and VDP-TIMEOUT-01 remain deferred; do not restart them as documentation work |
 
 A successful current engineering campaign is not blanket acceptance of every
@@ -90,9 +90,9 @@ build side effect. M1 installation uses its internal storage.
 ## Canonical design chain
 
 [HLA 1.8](../architecture/high-level-architecture.md) →
-[Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md) →
-[Flows 2.3](../architecture/demo-scenario-architecture-flows.md) →
-[System Requirements 2.3](../requirements/system-requirements-and-traceability.md) →
+[Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md) →
+[Flows 2.4](../architecture/demo-scenario-architecture-flows.md) →
+[System Requirements 2.4](../requirements/system-requirements-and-traceability.md) →
 [Component Register 2.3](../requirements/component-decomposition-and-interface-register.md) →
 [component packages](../requirements/components/README.md).
 

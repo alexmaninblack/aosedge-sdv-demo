@@ -3,8 +3,9 @@
 
 # Portable Cloud and backend inputs
 
-- Status: Accepted Stage 2 implementation slice; integrated live gates deferred.
-- Version: 1.0
+- Status: Accepted implemented Cloud/backend inputs; scoped integrated proof in the current baseline
+- Version: 1.1
+- Updated: 2026-10-18
 - Prepared: 2026-09-26
 - Owner: Demo Solution Team
 - Parent: [distribution Stage 2](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
@@ -70,5 +71,7 @@ changed pins/files, links/extra files, bounded manifests, unchanged requests and
 timeouts, no fallback/build/load, preserved backend records and adapter identity.
 Verify the actual assembled inputs without running current Docker/VM/CARLA or
 using operator credentials. Reuse candidates; no Game/Factory rebuild or large
-payload copy is required. Complete app assembly and later live UI, guest,
-Cloud, fresh-engine and clean-Mac qualification remain separate gates.
+payload copy is required. App assembly and scoped M1 UI, guest and Cloud
+results are recorded in the [current baseline](../../docs/qualification/current-baseline.md).
+Those candidate-bound receipts do not close every fresh-engine, new-user,
+interruption or recovery case, nor qualify a different archive.

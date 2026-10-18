@@ -1,17 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.3
+# Demo Scenario Architecture Flows 2.4
 
 - Status: Accepted
-- Version: 2.3
+- Version: 2.4
+- Updated: 2026-10-18
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 2.3](../requirements/system-requirements-and-traceability.md)
+- Requirements input: [System Requirements and Traceability 2.4](../requirements/system-requirements-and-traceability.md)
 - Component input: [Component Decomposition and Interface Register 2.3](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
@@ -22,7 +23,7 @@
 
 ## Purpose and flow profiles
 
-This document connects HLA 1.8, Scenario 2.2 and the component requirements.
+This document connects HLA 1.8, Scenario 2.3 and the component requirements.
 It specifies software/data/decision/evidence movement, not a second lifecycle
 authority. The current installed profile is one Test, one OEM and one associated
 SP; the detailed VU/PU promotion and two-SP flows are the expanded accepted
@@ -103,7 +104,7 @@ When the inputs differ, use this order:
 
 1. High-Level Architecture 1.8 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 2.2 owns stage order, component presence, audience-visible
+2. Demo Scenario 2.3 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -940,8 +941,9 @@ official implementing release:
 4. the error is available through the authoritative API for dashboard display;
 5. a compatible retry succeeds after VDP Component v2 is ready.
 
-The existing service-side compatibility file and fail-closed readiness check
-remain defense in depth. The Software Delivery Dashboard does not recreate the
+The service's committed compatibility requirement and real local input/access
+checks remain defense in depth; no active-installed-VDP file or Cloud lookup
+is required in the service. Presenter owns exact installed-profile evidence. The Software Delivery Dashboard does not recreate the
 roadmap feature.
 
 <a id="af-g3-lc"></a>
@@ -1275,7 +1277,7 @@ sequenceDiagram
     FT2->>AC: SP identity publishes immutable Tire Health Service v1.0
     OR->>AC: Authorize Test deployment after VDP v3 and evidence review
     AC->>VU: Install the selected service through SOTA 2
-    VU-->>FT2: Readiness verifies installed VDP v3 contract or fails closed
+    VU-->>FT2: Local authorized input/advisory readiness or fail closed
     VU-->>FT2: Local model, persistence, advisory, and bounded-report evidence
     VU->>TB: Deliver qualified condition summary or threshold event
     FT2->>AC: Accept exact service version and Test scenario result
@@ -1646,9 +1648,9 @@ on the advisory for hazard mitigation.
 <a id="af-x-offline"></a>
 ## `AF-X-OFFLINE` — Targeted Vehicle External Connectivity Loss
 
-The first demo exposes exactly one stateful `Vehicle External Connectivity`
-control. Its disconnect transition makes the Production Unit lose external
-vehicle connectivity and blocks:
+The demo exposes one stateful `Vehicle External Connectivity` control. Installed
+use disconnects its current Test; expanded two-role use selects the Production
+Unit. The selected Unit loses external vehicle connectivity, blocking:
 
 - the Unit's connection to AosCloud; and
 - every installed service's connection to its functional backend.
@@ -1835,7 +1837,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 2.2 claim | Architecture flow coverage |
+| Demo Scenario 2.3 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -1933,7 +1935,7 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Downstream Component Requirement Gate
 
-System Requirements and Traceability 2.3 and Component Register 2.3
+System Requirements and Traceability 2.4 and Component Register 2.3
 allocate these flows and their authorization,
 Release Authority, Safe Stop and workspace obligations to the canonical
 component packages. The accepted component sequence remains:

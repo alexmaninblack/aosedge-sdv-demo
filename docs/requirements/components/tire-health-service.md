@@ -6,14 +6,15 @@
 - Status: D3 design-reviewed; D4-018 and D4-027 accepted; D4-003 empirical
   qualification remains open
 - Package: [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire)
-- Version: 0.7
+- Version: 0.8
+- Updated: 2026-10-18
 - Prepared: 2026-08-21
 - Accepted: 2026-08-31
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
@@ -258,21 +259,23 @@ executable against controlled adjacent components.
 - Evidence: reproducible staging bytes, secret-negative scan, exact artifact/metadata digests and release manifest
 - State: D3 design-reviewed; repository and candidates implemented, complete qualification remains scoped below
 
-Changed content shall produce a new immutable version/digest. Validation and
-Production promotion use identical accepted bytes; no presentation-time
-source change, compilation or repackaging is permitted.
+Changed content shall produce a new immutable version/digest. Installed
+Prepare may assemble a fresh release number from reviewed prebuilt inputs;
+the prepared output is frozen before signing. Expanded Validation/Production
+promotion uses identical accepted bytes without repackaging. Neither profile
+permits presentation-time source changes or compilation.
 
 ### VDP v3 compatibility and fail-closed readiness
 
 <a id="req-tire-002"></a>
 
 - ID: `REQ-TIRE-002`
-- Statement: Service v1.0 shall declare the accepted VDP Component v3-only compatibility range, verify the installed identity, capability manifest and every mandatory D4-018 read/D4-008 advisory path before readiness, and remain process-healthy but functionally `NOT_READY` with a machine-readable reason when the contract is absent, incompatible or incomplete. It shall produce no condition result or advisory and shall not crash-loop.
+- Statement: Service v1.0 shall declare the accepted VDP Component v3-only compatibility range, validate its committed requirement and real authorized D4-018 input/D4-008 advisory paths before readiness under [option A](../../../contracts/service-runtime-inputs/active-vdp-capability-amendment.md), leaving exact installed VDP identity to Presenter Cloud/artifact evidence, and remain process-healthy but functionally `NOT_READY` with a machine-readable reason when the contract is absent, incompatible or incomplete. It shall produce no condition result or advisory and shall not crash-loop.
 - Rationale: Release sequencing and OEM evidence do not replace runtime compatibility enforcement.
 - Parent: [service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003)
 - Flows: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc) and [failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Contract, Integration
-- Evidence: compatible/incompatible manifests, readiness reasons, absence of result/advisory side effects and automatic transition to `READY` after compatible VDP v3 appears
+- Evidence: compatible/incompatible Presenter profile bindings, service-local input/access reasons without inferred VDP identity, absence of result/advisory side effects and automatic transition to `READY` after valid inputs return
 - State: D3 design-reviewed; D4-007 compatibility/readiness and D4-018.1 exact
   VDP v3 behavior accepted
 
@@ -281,13 +284,13 @@ The latter remains deferred until an implementing AosEdge release is available
 and qualified; no project-side substitute is permitted.
 
 When backend connectivity exists, the service shall publish its structured
-readiness status separately from Tire condition results. If VDP v1/v2 is
-installed, the Tire Health Function Dashboard shall identify
-`INCOMPATIBLE_VDP`, show required v3 and actual v1/v2 plus missing
-paths/capabilities, and direct the operator to the Platform Team. It shall not
-use this guidance for `TELEMETRY_STALE`, `TELEMETRY_DISCONNECTED` or
-`SERVICE_ACCESS_DENIED`. A later compatible VDP v3 identity/capability change
-shall trigger re-evaluation and automatic readiness without SOTA reinstall.
+local input/access observations separately from Tire condition results. The
+Presenter joins required v3 with authoritative Cloud/artifact profile evidence;
+only a proven mismatch permits `INCOMPATIBLE_VDP` and the Platform Team
+handoff. Missing local input does not establish actual VDP v1/v2. Keep
+`TELEMETRY_STALE`, `TELEMETRY_DISCONNECTED` and `SERVICE_ACCESS_DENIED`
+distinct. Valid local inputs and advisory readiness restore the same service
+instance automatically, without SOTA reinstall or Cloud lookup.
 
 ### Retired: Caller-selected KUKSA credential lifecycle
 
@@ -378,7 +381,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 - Flows: [Tire runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt) and [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Verification: Unit, Component, Contract, Integration, End-to-end
 - Evidence: Request/Status schema fixtures, malformed/cross-target/stale/replay/rate negatives, explicit clear/expiry, restart idempotency, correlation and factual Gateway status
-- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 interface and D4-018.6 exact local
   model-to-advisory policy accepted
 
@@ -463,7 +466,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 | Test obligation | Requirement coverage | Required proof |
 | --- | --- | --- |
 | <a id="ut-tire-001"></a>`UT-TIRE-001` | `REQ-TIRE-001` | Reproducible candidate identity, changed-content digest and secret-negative package scan |
-| <a id="ut-tire-002"></a>`UT-TIRE-002` | `REQ-TIRE-002` | Compatible v3 readiness and absent/incompatible/incomplete fail-closed reasons |
+| <a id="ut-tire-002"></a>`UT-TIRE-002` | `REQ-TIRE-002` | Local input/access/advisory readiness, fail-closed missing/stale inputs and same-instance recovery; Presenter alone supplies exact compatible/incompatible profile verdict |
 | <a id="ut-tire-013"></a>`UT-TIRE-013` | `REQ-TIRE-013` | Named-resource/private-socket bootstrap; analytics receives only `KUKSA_TOKEN_FILE`; reject caller-selected authority; atomic private-tmpfs delivery; 300-second expiry and renewal at 180 seconds; reconnect/subscription recreation; terminal/transient failure; stop/replace/unregister/reboot cleanup; cross-Service isolation and no credential persistence/logging |
 | <a id="ut-tire-004"></a>`UT-TIRE-004` | `REQ-TIRE-004`, `REQ-TIRE-006` | Path/type/unit/quality/freshness validation and oracle-negative boundary |
 | <a id="ut-tire-005"></a>`UT-TIRE-005` | `REQ-TIRE-005` | Deterministic model vectors, bounded state, persistence restart and band transition |

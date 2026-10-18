@@ -1,0 +1,497 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:tire-cloud-current-admin:schema:1.0.0",
+  "title": "Current Tire private administrative messages",
+  "description": "Use the endpoint-specific $defs reference declared by the current admin profile. Context/selector authorization and token validity also require stateful owner checks; schema validity is not cleanup authority.",
+  "$defs": {
+    "systemUid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "systemUids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/systemUid"
+      }
+    },
+    "token": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 512
+    },
+    "recordCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "messages",
+        "assessments",
+        "events",
+        "advisories",
+        "functionStatus",
+        "quarantine",
+        "resetProducers",
+        "resetCommands",
+        "functionObservations",
+        "functionObservationConflicts"
+      ],
+      "properties": {
+        "messages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assessments": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "advisories": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "functionStatus": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "quarantine": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resetProducers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resetCommands": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "functionObservations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "functionObservationConflicts": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "source",
+        "testUnit"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        },
+        "source": {
+          "const": "CURRENT_RUN_PROVISIONING_JOURNAL"
+        },
+        "testUnit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "systemUid",
+            "unitRole",
+            "userFacingRole"
+          ],
+          "properties": {
+            "systemUid": {
+              "$ref": "#/$defs/systemUid"
+            },
+            "unitRole": {
+              "const": "VALIDATION"
+            },
+            "userFacingRole": {
+              "const": "Test Vehicle"
+            }
+          }
+        },
+        "productionUnit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "systemUid",
+            "unitRole",
+            "userFacingRole"
+          ],
+          "properties": {
+            "systemUid": {
+              "$ref": "#/$defs/systemUid"
+            },
+            "unitRole": {
+              "const": "PRODUCTION"
+            },
+            "userFacingRole": {
+              "const": "Production Vehicle"
+            }
+          }
+        }
+      }
+    },
+    "previewRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "systemUids"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        },
+        "systemUids": {
+          "$ref": "#/$defs/systemUids"
+        }
+      }
+    },
+    "executeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "systemUids",
+        "confirmationToken"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        },
+        "systemUids": {
+          "$ref": "#/$defs/systemUids"
+        },
+        "confirmationToken": {
+          "$ref": "#/$defs/token"
+        }
+      }
+    },
+    "proofRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        }
+      }
+    },
+    "preview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "systemUids",
+        "recordCounts",
+        "recordSetSha256",
+        "nonmatchingRecordCounts",
+        "nonmatchingRecordSetSha256",
+        "confirmationToken",
+        "expiresAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "systemUids": {
+          "$ref": "#/$defs/systemUids"
+        },
+        "recordCounts": {
+          "$ref": "#/$defs/recordCounts"
+        },
+        "recordSetSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "nonmatchingRecordCounts": {
+          "$ref": "#/$defs/recordCounts"
+        },
+        "nonmatchingRecordSetSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "confirmationToken": {
+          "$ref": "#/$defs/token"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "state",
+        "systemUids",
+        "deletedRecordCounts",
+        "remainingRecordCounts",
+        "nonmatchingRecordCounts",
+        "nonmatchingRecordSetSha256",
+        "completedAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        },
+        "state": {
+          "const": "CLEANED"
+        },
+        "systemUids": {
+          "$ref": "#/$defs/systemUids"
+        },
+        "deletedRecordCounts": {
+          "$ref": "#/$defs/recordCounts"
+        },
+        "remainingRecordCounts": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/recordCounts"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "messages": {
+                  "const": 0
+                },
+                "assessments": {
+                  "const": 0
+                },
+                "events": {
+                  "const": 0
+                },
+                "advisories": {
+                  "const": 0
+                },
+                "functionStatus": {
+                  "const": 0
+                },
+                "quarantine": {
+                  "const": 0
+                },
+                "resetProducers": {
+                  "const": 0
+                },
+                "resetCommands": {
+                  "const": 0
+                },
+                "functionObservations": {
+                  "const": 0
+                },
+                "functionObservationConflicts": {
+                  "const": 0
+                }
+              }
+            }
+          ]
+        },
+        "nonmatchingRecordCounts": {
+          "$ref": "#/$defs/recordCounts"
+        },
+        "nonmatchingRecordSetSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "databaseSchemaVersion",
+        "state",
+        "recordCounts",
+        "observedAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        },
+        "databaseSchemaVersion": {
+          "const": 4
+        },
+        "state": {
+          "enum": [
+            "EMPTY",
+            "NONEMPTY"
+          ]
+        },
+        "recordCounts": {
+          "$ref": "#/$defs/recordCounts"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "EMPTY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "recordCounts": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "const": 0
+                  },
+                  "assessments": {
+                    "const": 0
+                  },
+                  "events": {
+                    "const": 0
+                  },
+                  "advisories": {
+                    "const": 0
+                  },
+                  "functionStatus": {
+                    "const": 0
+                  },
+                  "quarantine": {
+                    "const": 0
+                  },
+                  "resetProducers": {
+                    "const": 0
+                  },
+                  "resetCommands": {
+                    "const": 0
+                  },
+                  "functionObservations": {
+                    "const": 0
+                  },
+                  "functionObservationConflicts": {
+                    "const": 0
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "recordCounts": {
+                "not": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "const": 0
+                    },
+                    "assessments": {
+                      "const": 0
+                    },
+                    "events": {
+                      "const": 0
+                    },
+                    "advisories": {
+                      "const": 0
+                    },
+                    "functionStatus": {
+                      "const": 0
+                    },
+                    "quarantine": {
+                      "const": 0
+                    },
+                    "resetProducers": {
+                      "const": 0
+                    },
+                    "resetCommands": {
+                      "const": 0
+                    },
+                    "functionObservations": {
+                      "const": 0
+                    },
+                    "functionObservationConflicts": {
+                      "const": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "errorCode",
+        "retryable"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1.0.0"
+        },
+        "errorCode": {
+          "enum": [
+            "INVALID_REQUEST",
+            "INVALID_SELECTOR",
+            "NOT_FOUND",
+            "MESSAGE_TOO_LARGE",
+            "INVALID_PREVIEW",
+            "STALE_PREVIEW",
+            "CURRENT_UNIT_CONTEXT_UNAVAILABLE",
+            "TEMPORARILY_UNAVAILABLE"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "not": {}
+}

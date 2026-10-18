@@ -5,14 +5,15 @@
 
 - Status: D3 design-reviewed; V1/V2/V3 artifacts implemented/delivered; current qualification limits below
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
-- Version: 0.9
+- Version: 0.10
+- Updated: 2026-10-18
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
 - Owner: Platform Team / independent component FOTA
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
@@ -236,7 +237,7 @@ enforces the final deny-by-default QM-channel policy.
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: complete allow/deny matrix, correlated VISS/Gateway status and proof of independent authoritative Gateway rejection
 - Executable compatibility contract: [VDP Compatibility Profile 1.0.1](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
-- Executable advisory contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable advisory contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-007 graph and D4-008 advisory contract accepted
 
 <a id="req-vdp-006"></a>

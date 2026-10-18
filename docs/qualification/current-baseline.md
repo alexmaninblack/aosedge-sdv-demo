@@ -60,7 +60,6 @@ is a separate destructive operation. Shared Docker Engine is not a demo owner.
 - Target-host installation interruption/repair/update/removal and broader recovery/negative matrices remain candidate-specific gates; ordinary tested Stop/Start is not host sleep/wake.
 - Full-source fresh Builder/CARLA/Unreal closure and R4 fresh-host developer reproduction remain separate.
 - Formal stimulus/model calibration, fixed Tire CPU-load isolation, expanded dual-role/provider proof and a full acceptance dossier are not supplied by sampled functional results.
-- Legacy executable-contract drift remains explicitly mapped, not silently re-versioned.
 - Cold externalOFF ignition, nonempty-outbox power loss and laptop sleep/wake remain unqualified.
 - Load-sensitive readiness and VDP-TIMEOUT-01 remain deferred.
 - The short reported false-Offline fluctuation was not reproduced/classified by bounded observation; a passing campaign alone is not its root-cause analysis.
@@ -69,6 +68,10 @@ is a separate destructive operation. Shared Docker Engine is not a demo owner.
 <a id="current-qualification-limitation"></a>
 
 ## Input provenance
+
+Current Brake/Tire private admin schemas and negative fixtures describe the
+implemented handlers separately from retained legacy compatibility inputs.
+Their source conformance is not a new live result or a change to this DMG.
 
 The [controller image lock](../../workspace/inputs/controller-images.lock.json)
 preserves immutable Factory provenance. It does not select operator media or

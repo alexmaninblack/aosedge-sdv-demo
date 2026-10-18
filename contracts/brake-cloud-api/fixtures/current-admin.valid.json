@@ -1,0 +1,137 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT; synthetic schema fixtures, never real cleanup authority.",
+  "context": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "source": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "testUnit": {
+      "systemUid": "a-test",
+      "unitRole": "VALIDATION",
+      "userFacingRole": "Test Vehicle"
+    }
+  },
+  "previewRequest": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "systemUids": [
+      "a-test"
+    ]
+  },
+  "executeRequest": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "systemUids": [
+      "a-test"
+    ],
+    "confirmationToken": "v1.synthetic-fixture-payload.synthetic-fixture-mac"
+  },
+  "proofRequest": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0"
+  },
+  "preview": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "systemUids": [
+      "a-test"
+    ],
+    "recordCounts": {
+      "messages": 0,
+      "windows": 0,
+      "assessments": 0,
+      "events": 0,
+      "advisories": 0,
+      "quarantine": 0,
+      "resetProducers": 0,
+      "resetCommands": 0,
+      "functionObservations": 0,
+      "functionObservationConflicts": 0
+    },
+    "recordSetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "nonmatchingRecordCounts": {
+      "messages": 0,
+      "windows": 0,
+      "assessments": 0,
+      "events": 0,
+      "advisories": 0,
+      "quarantine": 0,
+      "resetProducers": 0,
+      "resetCommands": 0,
+      "functionObservations": 0,
+      "functionObservationConflicts": 0
+    },
+    "confirmationToken": "v1.synthetic-fixture-payload.synthetic-fixture-mac",
+    "expiresAt": "2026-10-18T12:00:00.000Z"
+  },
+  "result": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "systemUids": [
+      "a-test"
+    ],
+    "deletedRecordCounts": {
+      "messages": 0,
+      "windows": 0,
+      "assessments": 0,
+      "events": 0,
+      "advisories": 0,
+      "quarantine": 0,
+      "resetProducers": 0,
+      "resetCommands": 0,
+      "functionObservations": 0,
+      "functionObservationConflicts": 0
+    },
+    "remainingMatchingRecordCounts": {
+      "messages": 0,
+      "windows": 0,
+      "assessments": 0,
+      "events": 0,
+      "advisories": 0,
+      "quarantine": 0,
+      "resetProducers": 0,
+      "resetCommands": 0,
+      "functionObservations": 0,
+      "functionObservationConflicts": 0
+    },
+    "nonmatchingRecordCounts": {
+      "messages": 0,
+      "windows": 0,
+      "assessments": 0,
+      "events": 0,
+      "advisories": 0,
+      "quarantine": 0,
+      "resetProducers": 0,
+      "resetCommands": 0,
+      "functionObservations": 0,
+      "functionObservationConflicts": 0
+    },
+    "nonmatchingRecordSetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "completedAt": "2026-10-18T12:00:00.000Z"
+  },
+  "proof": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "databaseSchemaVersion": 5,
+    "state": "EMPTY",
+    "recordCounts": {
+      "messages": 0,
+      "windows": 0,
+      "assessments": 0,
+      "events": 0,
+      "advisories": 0,
+      "quarantine": 0,
+      "resetProducers": 0,
+      "resetCommands": 0,
+      "functionObservations": 0,
+      "functionObservationConflicts": 0
+    },
+    "observedAt": "2026-10-18T12:00:00.000Z"
+  },
+  "error": {
+    "schemaVersion": 1,
+    "contractVersion": "1.0.0",
+    "errorCode": "PREVIEW_TOKEN_EXPIRED",
+    "message": "synthetic invalid preview fixture",
+    "retryable": false
+  }
+}

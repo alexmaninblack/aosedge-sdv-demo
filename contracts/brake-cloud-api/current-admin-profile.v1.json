@@ -1,0 +1,92 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "profileId": "brake-cloud-current-admin",
+  "profileVersion": "1.0.0",
+  "wireContractVersion": "1.0.0",
+  "decision": "D4-017",
+  "scope": "IMPLEMENTED_CURRENT_TEST_AND_OPTIONAL_RETAINED_PRODUCTION",
+  "authority": "LOCAL_DEMO_CONTROL_ONLY",
+  "transport": {
+    "kind": "OWNER_PRIVATE_UNIX_SOCKET",
+    "mode": "0600",
+    "maximumRequestBytes": 4096,
+    "browserAllowed": false,
+    "guestAllowed": false,
+    "lanAllowed": false
+  },
+  "selectors": {
+    "minimum": 1,
+    "maximum": 2,
+    "allowTestOnly": true,
+    "allowAllCurrent": true,
+    "allowProductionOnly": false,
+    "allowForeign": false,
+    "allowDuplicates": false,
+    "ordering": "TEST_ONLY_OR_EXACT_SORTED_ALL_CURRENT",
+    "contextSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "contextRequiredRole": "VALIDATION",
+    "contextOptionalRole": "PRODUCTION",
+    "distinctUids": true
+  },
+  "recordCategories": [
+    "messages",
+    "windows",
+    "assessments",
+    "events",
+    "advisories",
+    "quarantine",
+    "resetProducers",
+    "resetCommands",
+    "functionObservations",
+    "functionObservationConflicts"
+  ],
+  "token": {
+    "kind": "PROCESS_KEYED_HMAC",
+    "ttlSeconds": 60,
+    "maximumPending": null,
+    "consumedOnSuccess": false,
+    "restartInvalidates": true,
+    "invalidCode": "PREVIEW_TOKEN_EXPIRED",
+    "staleCode": "PREVIEW_STALE"
+  },
+  "statefulChecks": [
+    "EXACT_CURRENT_CONTEXT",
+    "ROLE_BOUND_SELECTOR",
+    "TOKEN_SELECTOR_AND_EXPIRY",
+    "MATCHING_RECORD_SET_UNCHANGED",
+    "PEER_RECORDS_PRESERVED",
+    "SELECTED_RECORDS_ZERO",
+    "NO_BLIND_EXECUTE_RETRY"
+  ],
+  "databaseSchemaVersion": 5,
+  "schema": "current-admin.schema.json",
+  "endpoints": {
+    "preview": {
+      "path": "/api/v1/brake/admin/current-run/cleanup-preview",
+      "request": "#/$defs/previewRequest",
+      "response": "#/$defs/preview"
+    },
+    "execute": {
+      "path": "/api/v1/brake/admin/current-run/cleanup",
+      "request": "#/$defs/executeRequest",
+      "response": "#/$defs/result"
+    },
+    "proof": {
+      "path": "/api/v1/brake/admin/storage/empty-proof",
+      "request": "#/$defs/proofRequest",
+      "response": "#/$defs/proof"
+    }
+  },
+  "fixtures": "fixtures/current-admin.valid.json",
+  "legacyProfile": "brake-cloud-query-admin-profile.v1.json",
+  "errorResponse": "#/$defs/error",
+  "errorStatusCodes": {
+    "INVALID_REQUEST": 400,
+    "NOT_FOUND": 404,
+    "PAYLOAD_TOO_LARGE": 413,
+    "PREVIEW_TOKEN_EXPIRED": 409,
+    "PREVIEW_STALE": 409,
+    "CURRENT_UNIT_CONTEXT_UNAVAILABLE": 503,
+    "TEMPORARILY_UNAVAILABLE": 503
+  }
+}

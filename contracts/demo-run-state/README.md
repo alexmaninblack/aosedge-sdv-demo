@@ -4,7 +4,7 @@
 # Current-run state, overlays and retirement
 
 - Decision: `D4-021`; accepted lifecycle and narrow cleanup exceptions retained
-- Contract version: 1.8.0; editorial consolidation, no journal/schema change
+- Contract version: 1.8.6; matches the retained executable profile, no journal/schema change
 - Implementation and proof: [protocol map](../implementation-status.md)
 
 ## Purpose and profiles

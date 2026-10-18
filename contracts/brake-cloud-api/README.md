@@ -83,9 +83,9 @@ Test records from an entirely empty logical store. Other Units' rows are never
 implied disposable. Whole-volume removal requires the separate private schema-
 validated empty-store proof, stopped owners and exact resource ownership.
 
-The private `POST /api/v1/brake/admin/storage/empty-proof` takes only the
-[versioned request](storage-empty-proof-request.schema.json) and returns the
-[closed storage proof](storage-empty-proof.schema.json). It is read-only and
+The private `POST /api/v1/brake/admin/storage/empty-proof` takes the
+[current proof request](current-admin.schema.json#/$defs/proofRequest) and returns
+the [current closed storage proof](current-admin.schema.json#/$defs/proof). It is read-only and
 does not require a Unit context, so an interrupted Create before Provision can
 be retired without inventing a Unit UID. The backend verifies its packaged
 database schema, migration ledger, integrity and foreign keys before counting
@@ -126,7 +126,20 @@ Brake's HMAC encoding must not be imposed on Tire.
 Read-only source authorities:
 [selector/token handler](https://github.com/alexmaninblack/brake-health-cloud/blob/main/apps/backend/src/brake-data-http.ts),
 [record-set/delete transaction](https://github.com/alexmaninblack/brake-health-cloud/blob/main/apps/backend/src/brake-data-store.ts).
-This prose correction changes no executable schema or recorded artifact hash.
+The [current admin profile](current-admin-profile.v1.json) selects endpoint
+request/response definitions in [current-admin.schema.json](current-admin.schema.json)
+and [synthetic fixtures](fixtures/current-admin.valid.json). Profile version
+1.0.0 describes the existing wire contract 1.0.0, ten counters and database
+schema 5; it is not a new wire deployment. Closed-schema validation does not
+prove current-context authorization, HMAC validity/expiry or transactional
+peer preservation: those remain mandatory owner checks. The source-only
+conformance suite is `tests/test_current_admin_contracts.py` in the integration
+repository. It changes no handler, signed input or recorded artifact hash.
+
+The original `cleanup-*.schema.json`, `storage-empty-proof.schema.json` and
+six-counter fixtures remain immutable compatibility inputs, not validators
+for the current administrative responses. Consumers of current admin data
+must select the new profile rather than generate a client from those files.
 
 SQLite runtime and forward-only transactional migrations are packaged in the
 immutable Brake backend image. The database file lives only in a dedicated
