@@ -13,7 +13,7 @@ specified here still performs none of those later actions.
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team / integration distribution tooling
 - Decision: [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
-- Parent: [Stage 3](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-3-implement-installation-and-first-use-setup)
+- Parent: [Integrated native Setup contract](native-setup.md#integrated-user-journey)
 
 ## Authority and trust
 

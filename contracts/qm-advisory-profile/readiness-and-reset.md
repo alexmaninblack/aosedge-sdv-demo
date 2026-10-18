@@ -3,21 +3,22 @@
 
 # Advisory readiness and independent Reset
 
-- Status: Accepted existing behavior; relocation only, no wire or timing change
+- Status: Accepted readiness and Reset contract
 - Version: 1.0
 - Owner: SDV Lab integration and Brake/Tire producers
 
 This contract defines readiness and demo Reset used by the current
-Brake and Tire contracts. It replaces the completed implementation work packet,
-not the typed advisory profiles or their golden bytes. Runtime qualification
-and remaining matrices are owned by the [current baseline](../../docs/qualification/current-baseline.md).
+Brake and Tire contracts. The typed advisory profiles and their golden bytes
+remain authoritative. Runtime qualification and remaining matrices are owned
+by the [current baseline](../../docs/qualification/current-baseline.md).
 
 Services publish actual boolean readiness transitions at the next worker
 iteration and retain the five-second heartbeat. VDP forwards changes without
 waiting for its heartbeat. Successful writes/attempts are bounded to at most
 one per 100 ms; unaccepted writes retry with current state after one second.
-KUKSA RPC/entry errors and VISS responses/timeouts are checked. No credential,
-schema, freshness, model, reset or AosCore authority is changed by this move.
+KUKSA RPC/entry errors and VISS responses/timeouts are checked. Credential,
+schema, freshness, model, reset and AosCore authority retain their existing
+contract boundaries.
 
 ## Vehicle display
 
@@ -111,7 +112,6 @@ correlated CLEAR, or explicit failure. This accepted wording does not rename
 `reset-scenario` or change its reset scope. Offline
 commands expire rather than executing unexpectedly in a later demonstration.
 
-
 ## Implementation boundaries
 
 The native dashboard reads Gateway/VISS only. Backend command administration
@@ -136,8 +136,3 @@ Current source attachment/provisioning and vehicle-control behavior follow
 [current operator sequence](../../docs/operations/current-demo-workflow.md).
 They do not inherit old one-session staging permissions or the retired
 Park/Resume implementation order.
-
-The maintained contract
-
-preserves the display, reset and command-protocol sections without changing
-request bodies, deadlines, identity bindings or success criteria.

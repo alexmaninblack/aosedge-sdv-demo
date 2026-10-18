@@ -243,6 +243,21 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
         self.assertIn("direct specialist tools retain explicit selection", text)
         self.assertNotIn("explicitly select a shorter `.tmp`", text)
 
+    def test_active_contract_navigation_has_no_completed_relocation_or_stage_plan(self):
+        reset = prose("contracts/qm-advisory-profile/readiness-and-reset.md")
+        self.assertNotIn("relocation only", reset)
+        self.assertNotIn("completed implementation work packet", reset)
+        self.assertNotIn("changed by this move", reset)
+        self.assertNotIn("The maintained contract", reset)
+        self.assertIn("60-second execution deadline", reset)
+        self.assertIn("command-expiry boundary remains 250 ms", reset)
+        self.assertIn("Only a matching Gateway CLEARED result", reset)
+        installation = prose("contracts/distribution-installation/README.md")
+        self.assertIn("- Parent: [Integrated native Setup contract](native-setup.md#integrated-user-journey)", installation)
+        self.assertIn("[ADR 0018]", installation)
+        self.assertNotIn("Parent: [Stage 3]", installation)
+        self.assertNotIn("installable-distribution-and-reproducibility.md", installation)
+
 
 if __name__ == "__main__":
     unittest.main()
