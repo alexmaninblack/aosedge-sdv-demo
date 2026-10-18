@@ -74,6 +74,21 @@ unchanged verified file and healthy tool cache; do not copy or hash a multi-GB
 DMG again merely for a status update. The persistent launcher must match the
 selected installed package; runtime installation alone is not that proof.
 
+Capacity preflight counts the 90 GiB reserve, unpacked runtime and any missing
+DMG copy separately. A capacity refusal may use `--resume-capacity-preflight`
+only after proving the new version, staging transaction and receipt are absent
+and normal owners are quiescent. A mount-induced ctime-only change requires
+checksum verification of the existing file, not another transfer.
+
+Presenter browser identities are process-scoped opaque references, not native
+Cloud UUIDs. Keep the exact Test/Unit binding in the private M1 observer and
+use the public reference when checking browser responses or selecting an
+allowed browser operation. Validate the native journal and real backend effects
+independently; never restore full IDs to the browser to satisfy an older test.
+The API outbox/delivery checks use the private backend observation, while UI
+Reset/history checks use the same opaque projection as the displayed product.
+Native session/request IDs retain their separate public at-most-once protocol.
+
 ## Visible M1 execution
 
 The current browser scenario uses `--display m1`. It shows the real Presenter
@@ -103,6 +118,12 @@ installation uses Safe Stop; QM service SOTA may run while moving when the
 selected scenario calls for it. Switch to Platform for the independent
 publication-card checks. Reset, return-to-road, offline and ignition checks
 retain their ordinary product guards and declared scope.
+
+Moving SOTA waits up to 120 wall-clock seconds for actual fresh, unheld
+Autopilot motion above 3 km/h before publishing. Traffic Manager road stops and
+below-real-time simulation do not authorize stationary publication, weakened
+freshness checks, forced traffic lights or another control input. This bounded
+wait is a test scheduling budget, not a service/provider timeout change.
 
 Persist intent before mutation. On timeout or response loss, observe and
 reconcile the exact operation rather than replaying input. A terminal failed or

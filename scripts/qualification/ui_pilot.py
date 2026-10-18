@@ -31,6 +31,8 @@ def read_query(transport, config, test, query, team=None, release=None, channel=
     h.require(query in ('component', 'component-idle', 'service', 'backend', 'combined', 'local', 'platform', 'publication', 'exercise'),
               'QUERY_NOT_ALLOWED')
     args = dict(query=query)
+    if query in ('backend','combined'):
+        args['browserProjection'] = True
     h.require((query in ('service','backend')) == (team is not None), 'QUERY_TEAM_REQUIRED')
     h.require((query == 'publication') == (release is not None), 'QUERY_RELEASE_REQUIRED')
     if team is not None:
@@ -94,6 +96,7 @@ try:
     vehicle=state['vehicles']['test']
     teams=BackendService(worker.app.environment_service).observe_stack()['teams']
     answer=dict(candidate=worker.pin,
+     browserRunId=worker.snapshot()['_browserRunId'],
      identity={key:vehicle.get(key) for key in ('localVmId','unitId','nodeId','systemUid')},
      controller=snapshot['vehicles']['test'].get('process'),source=source.get('state'),
      currentVehicle=state.get('currentVehicle'),selectedVehicle=source.get('selectedVehicle'),
@@ -364,6 +367,10 @@ def run(args, transport, config):
                     helper=str(Path(__file__).resolve()), config=str(args.config.resolve()),
                     journey=str(args.journey.resolve()), test=args.test, cards=cards, scenario=scenario,
                     cloudDomain=j.cloud_scope(config)[0])
+                bound = observe(transport, config, args.test, 'before')
+                h.require('error' not in bound and re.fullmatch(r'ref_[0-9a-f]{32}', bound.get('browserRunId','')),
+                          'BROWSER_TEST_BINDING_REQUIRED')
+                value['browserTest'] = bound['browserRunId']
                 if native is not None: value['nativeRunner'] = True
                 if getattr(args,'native_versions',None) is not None:
                     h.require(scenario in ('native-controls','continuous-campaign','moving-sota'),'NATIVE_VERSION_SCOPE_INVALID')

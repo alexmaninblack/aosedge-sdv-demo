@@ -19,6 +19,21 @@ import remote_harness as h
 from journey_plan import plan
 
 
+def metadata_only_media_change(before, after):
+    """A mount can update ctime/xattrs; content-bearing identity must stay fixed."""
+    first, second = before.split(':'), after.split(':')
+    return (len(first) == len(second) == 6 and all(v.isdigit() for v in first+second)
+            and first != second and all(first[i] == second[i] for i in (0,1,2,3,5)))
+
+
+def consumer_space_required(receipt, media_cached, candidate_present):
+    logical, compressed = receipt.get('logicalBytes'), receipt.get('dmgBytes')
+    h.require(type(logical) is int and 0 < logical <= 48*2**30
+              and type(compressed) is int and compressed > 0
+              and type(media_cached) is type(candidate_present) is bool, 'MEDIA_CAPACITY_RECEIPT_INVALID')
+    return 90*2**30 + (0 if candidate_present else logical) + (0 if media_cached else compressed)
+
+
 def media_input(dmg, config, remote_dmg, user):
     dmg = h.unlinked(dmg)
     receipt = h.parse(h.unlinked(dmg.with_suffix('.receipt.json')).read_bytes())
@@ -51,6 +66,15 @@ class Media:
             '/usr/bin/stat -f %d:%i:%z:%m:%c:%Lp '+path).strip()
         h.require(re.fullmatch('[0-9]+(?::[0-9]+){5}',value), 'MEDIA_STAT_UNAVAILABLE')
         return value
+
+    def allocation(self):
+        """Presence controls only the capacity estimate; normal owners still verify bytes."""
+        file, candidate = shlex.quote(self.media['remotePath']), shlex.quote(self.config['packageRoot'])
+        script = ('set -eu\nmedia=false\ncandidate=false\ntest ! -L '+file+'\ntest ! -L '+candidate+
+            '\nif test -e '+file+'; then test -f '+file+'; test "$(stat -f %z '+file+')" = '+str(self.media['bytes'])+
+            '; media=true; fi\nif test -e '+candidate+'; then test -d '+candidate+'; candidate=true; fi\n'+
+            'printf \'{"mediaCached":%s,"candidatePresent":%s}\\n\' "$media" "$candidate"\n')
+        return h.parse(self.remote(script, timeout=10))
 
     def transfer(self, reconcile=False):
         q, path = shlex.quote, Path(self.media['remotePath'])
@@ -152,8 +176,32 @@ except Exception as e:
         h.require(value['outcome'] == 'PASS', value['code'])
         return value['facts']
 
+    def capacity_preflight(self):
+        """Prove the failed capacity guard had no installation effect before a new attempt."""
+        resources = self.config['setupApp']+'/Contents/Resources'
+        request = dict(action='preflight', source=self.config['sourceRoot'], store=self.config['storeRoot'],
+                       state=self.config['instanceRoot'])
+        program = 'RESOURCES='+repr(resources)+'\nREQUEST='+repr(request)+'\nPIN='+repr(self.config['manifestSha256'])+'''
+import json,sys
+from pathlib import Path
+sys.path.insert(0,RESOURCES+'/tooling/scripts/distribution')
+sys.path.insert(0,RESOURCES+'/tooling/apps/demo-orchestrator/src')
+import setup_bridge as b
+v=b.request(json.dumps(REQUEST).encode());p=b.perform(v,PIN)
+store=b.Store(v['store'],p['volumeUUID'],volume_probe=b.volume_identity)
+for relative in ('versions/'+PIN,'staging/'+PIN,'receipts/'+PIN+'.json'):
+ path=store.root/relative
+ b.require(not path.exists() and not path.is_symlink(),'INSTALL_CAPACITY_RECOVERY_HAS_EFFECTS')
+from aosedge_demo_orchestrator.installed_control import quiescent
+quiescent(Path(v['state']),store.root)
+bundle=store.plan(Path(v['source']),PIN)
+print(json.dumps(dict(installationEffectsAbsent=True,capacityNowSufficient=True,logicalBytes=bundle.total_bytes)))
+'''
+        return h.parse(self.remote(shlex.quote(resources+'/python/bin/python3.12')+
+            " -I -B - <<'SDV_CAPACITY_PREFLIGHT'\n"+program+'\nSDV_CAPACITY_PREFLIGHT',timeout=60))
 
-def installation(media, journal, emit=print):
+
+def installation(media, journal, emit=print, resume_capacity=False):
     """One attempt per action; interruption uses read-only reconciliation."""
     actions = [('media-transfer', media.transfer), ('media-mount', media.mount),
                ('setup-install', lambda reconcile=False: media.setup('install', reconcile)),
@@ -161,11 +209,30 @@ def installation(media, journal, emit=print):
     for name, action in actions:
         rows = h.read_attempts(journal.root)
         prior = next((r for r in reversed(rows) if r['command'] == name), None)
+        if (resume_capacity and name == 'setup-install' and prior
+                and prior['outcome'] == 'UNCERTAIN' and prior.get('code') == 'INSTALL_SPACE_INSUFFICIENT'):
+            proof = journal.begin('reconcile-install-capacity-preflight')
+            try:
+                facts = media.capacity_preflight()
+                h.require(facts.get('installationEffectsAbsent') is True and facts.get('capacityNowSufficient') is True,
+                          'INSTALL_CAPACITY_RECOVERY_UNCONFIRMED')
+            except (OSError, ValueError, subprocess.SubprocessError):
+                journal.finish(proof, 'BLOCKED', 'INSTALL_CAPACITY_RECOVERY_UNCONFIRMED')
+                return False
+            journal.finish(proof, 'PASS', 'INSTALL_CAPACITY_PREFLIGHT_NO_EFFECT', facts)
+            prior = None  # Explicit new attempt only after the no-effect proof; retain the original record.
         if prior and prior['outcome'] == 'PASS':
             try:
                 if name == 'media-transfer':
-                    h.require(media.file_identity() == prior['observations'].get('remoteIdentity'),
-                              'VERIFIED_MEDIA_CHANGED')
+                    current = media.file_identity()
+                    original = prior['observations'].get('remoteIdentity')
+                    if current != original:
+                        h.require(isinstance(original,str) and metadata_only_media_change(original,current),
+                                  'VERIFIED_MEDIA_CHANGED')
+                        proof = journal.begin('media-transfer')
+                        facts = media.transfer(reconcile=True)  # Existing file only; never a second copy.
+                        journal.finish(proof,'PASS','EXISTING_MEDIA_DIGEST_REVERIFIED',
+                                       dict(facts,payloadCopied=False))
                 # Mounts are ephemeral; reattach only this verified DMG when
                 # absent. Never displace another image.
                 if name == 'media-mount':
@@ -215,6 +282,8 @@ def main():
     parser.add_argument('--remote-dmg', required=True)
     parser.add_argument('--until')
     parser.add_argument('--resume-partial-create', action='store_true')
+    parser.add_argument('--resume-capacity-preflight', action='store_true',
+                        help='Explicitly resume a proven no-effect installer capacity failure')
     args = parser.parse_args()
     transport, _ = h.configuration(args.config)
     config = j.configuration(args.journey, transport['user'])
@@ -223,15 +292,19 @@ def main():
     records = Path(config['records']+'-installation')
     probe = h.probe(transport, cloud_domain=j.cloud_scope(config)[0])
     h.require(probe['console'] == transport['user'] and probe['internal'] == 'true', 'TARGET_LOGIN_OR_STORAGE_REQUIRED')
-    h.require(probe['memoryBytes'] >= 16*2**30 and probe['freeKiB']*1024 >= 90*2**30+media['bytes'],
+    client = Media(transport, config, media, emit=lambda value: print(value, flush=True))
+    allocation = client.allocation()
+    receipt = h.parse(args.dmg.with_suffix('.receipt.json').read_bytes())
+    needed = consumer_space_required(receipt, allocation['mediaCached'], allocation['candidatePresent'])
+    h.require(probe['memoryBytes'] >= 16*2**30 and probe['freeKiB']*1024 >= needed,
               'TARGET_CAPACITY_REQUIRED')
     if not j.read_records(config, transport):
         h.require(probe['demoProcesses'] == 0 and probe['busyPorts'] == 0, 'EXISTING_RUNTIME_CONFLICT')
-    client = Media(transport, config, media, emit=lambda value: print(value, flush=True))
     with h.Journal(records, pin) as journal:
         installed = False
         try:
-            installed = installation(client, journal, emit=lambda value: print(value, flush=True))
+            installed = installation(client, journal, emit=lambda value: print(value, flush=True),
+                                     resume_capacity=args.resume_capacity_preflight)
         finally:
             installation_report(records, installed)
         if not installed:

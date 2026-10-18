@@ -3,8 +3,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView,qualificationCloud } from './ui_journey.mjs';
+import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,movingWindowMs,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView,qualificationCloud,assertBrowserIdentities } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
+const ref='ref_'+'a'.repeat(32);
+test('traffic-light motion window stays bounded and cannot replace actual fresh motion',()=>{
+  assert.equal(movingWindowMs,120000);
+  const value={controller:{fresh:true,held:false,mode:'AUTOPILOT',speed:0}};
+  assert.equal(autopilot(value),true);
+  for(const speed of [0,1,3]) assert.equal(autopilot({controller:{...value.controller,speed}},true),false);
+  assert.equal(autopilot({controller:{...value.controller,speed:3.1}},true),true);
+  for(const change of [{fresh:false},{held:true},{mode:'MANUAL'}])
+    assert.equal(autopilot({controller:{...value.controller,speed:30,...change}},true),false);
+});
+test('live browser reads reject known private Test and Cloud UUIDs, including composite values',()=>{
+  const value={runId:ref,sessionId:'11234567-89ab-cdef-0123-456789abcdef'};
+  assert.equal(assertBrowserIdentities(value,[id]),value);
+  for(const leaked of [{runId:id},{value:{unitId:id}},{bindingKey:id+':test'}])
+    assert.throws(()=>assertBrowserIdentities(leaked,[id]),/BROWSER_PRIVATE_IDENTITY_LEAK/);
+});
 test('browser uses only an explicitly allowed qualification Cloud',()=>{
   assert.equal(qualificationCloud({}),'aws-stage.epmp-aos.projects.epam.com');
   assert.equal(qualificationCloud({cloudDomain:'aoscloud.io'}),'aoscloud.io');
@@ -235,9 +251,11 @@ test('Advanced settings inspection is exact and does not authorize credential se
 });
 test('release values come only from validated product receipts',()=>{
   assert.deepEqual(facts({version:null,release:null,serviceId:null,results:[{facts:{}}]}),{});
-  assert.deepEqual(facts({results:[{facts:{version:'150.0.0',releaseHandle:'brake/150.0.0',serviceId:id}}]}),
-    {version:'150.0.0',releaseHandle:'brake/150.0.0',serviceId:id});
-  assert.equal(facts({results:[{facts:{command:{commandId:id}}}]}).commandId,id);
+  assert.deepEqual(facts({results:[{facts:{version:'150.0.0',releaseHandle:'brake/150.0.0',serviceId:ref}}]}),
+    {version:'150.0.0',releaseHandle:'brake/150.0.0',serviceId:ref});
+  assert.equal(facts({results:[{facts:{command:{commandId:ref}}}]}).commandId,ref);
+  assert.throws(()=>facts({results:[{facts:{serviceId:id}}]}),/SERVICE_RECEIPT_INVALID/);
+  assert.throws(()=>facts({results:[{facts:{command:{commandId:id}}}]}),/RESET_RECEIPT_INVALID/);
   for(const v of ['latest','../value','']) assert.throws(()=>facts({results:[{facts:{version:v}}]}));
 });
 test('VDP readiness keeps its full process and current release contract',()=>{

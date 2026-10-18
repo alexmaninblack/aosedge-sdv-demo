@@ -3,9 +3,97 @@
 
 # Current M1 runtime and native Setup acceptance
 
-Recorded on 15 October 2026, on the dedicated M1 internal disk with Production
+Updated on 18 October 2026, on the dedicated M1 internal disk with Production
 Aos Cloud and a Test vehicle. These exact profiles do not qualify different bytes.
 The [current baseline](current-baseline.md) records remaining acceptance limits.
+
+## Mainline candidate 1.2.0-rc.3: API and visible UI PASS
+
+The new immutable DMG uses the current mainline application/Presenter/Setup
+sources and retained binary dependencies. CARLA and the Factory controller
+image were **not rebuilt**. Application source is integration
+`e787b926471dc096ed365efe0178d8d0181de1a5`; Platform is
+`3a09f8c2b1c6f9e13efd25b91f00aa035d7a1938`; Gateway is
+`19354402594ab2facf5f99f58bc3105740b4ad55`. Later qualification-tool and
+documentation commits do not change the packaged product bytes.
+
+| Candidate identity | Value |
+| --- | --- |
+| Filename | `AosEdge-SDV-Lab-1.2.0-rc.3.dmg` |
+| Bytes | 14,156,820,119 |
+| DMG SHA-256 | `25b2f89eb64bb8b58cbfca18e46ef2d6c59450dcdb2f316b168155842328355e` |
+| Runtime application manifest | `b6884145a5098eeec0bad1a95182a060655b0c6451c1d1a040bf3fea0a9ba595` |
+| Setup executable SHA-256 | `df1cd783c7087182af36d6478e612c763a949019c324a2723e39070c1b8d291e` |
+| Signing | Apple Development engineering preview; not notarized |
+
+Installation used this exact DMG on the M1 internal disk and the authorized
+existing Production OEM/SP certificate pair. The ordinary Setup owners
+installed/prepared the package. A capacity refusal was resolved before a new
+installation attempt: the candidate/staging/receipt were independently proven
+absent, and only four unused, unmounted old M1 test DMGs were removed. The
+accepted rc.2 media, certificates, source, reusable dependencies and caches were
+preserved. Mount-only file metadata changes required checksum reverification,
+not another payload copy.
+
+| Final runtime profile | Result | Measured time |
+| --- | --- | --- |
+| Complete API journey | 118/118 PASS; no failed, blocked, uncertain or unrun checks | 1733.146 s |
+| Complete visible UI campaign, preflight and cleanup | 42/42 browser stages PASS, including real signed native driving input | 1278.536 s |
+| Independent final closure | PASS; zero owned demo processes/listeners and closed native/display helpers | Separate post-campaign check |
+
+API coverage includes sequential VDP V1/V2/V3 Safe Stop FOTA, Brake V1/V2/V3,
+Tire V1, real products/advisories, independent Reset with retained history,
+five-minute offline local progress and recovery/drain, ignition off/on,
+Stop/Start preservation and fresh post-restart products.
+
+The visible UI campaign used Presenter, CARLA and Driving Control on M1,
+semantic browser controls and the signed Accessibility runner. It checked
+serial publication and Platform/card labels, team/details/resource/backend/
+activity views, independent resets, cancel-stop, both QM updates while moving,
+post-update maneuvers, Stop/Start identity/model/history/software preservation,
+restored layout and confirmed final stop. No live demo ran on the development
+Mac.
+
+Qualification tooling was brought into line with the accepted opaque-browser-
+identity contract: native IDs stay in the private observer, while browser
+selectors use the actual public references. Private delivery/outbox joins and
+public Reset/history checks remain separate. A lost publication response was
+reconciled through the existing exact release receipt and authoritative Cloud
+read, without republishing. The earlier diagnostic Test was normally retired
+before the fresh complete API journey.
+
+The first UI attempt stopped before Tire publication at
+`MOVING_PUBLICATION_REQUIRED`: its 45-second wall-time motion wait expired
+while Autopilot was stationary. Preserved simulator evidence showed advancing
+frames and a previous stationary interval that recovered on its own and took
+longer than this wall-time budget. Only the runner's bounded pre-publication
+motion wait changed to 120 seconds. Freshness, unheld Autopilot, actual speed
+above 3 km/h, road controls and service/provider timeouts were not relaxed.
+A new complete UI campaign then passed all 42 stages on the same Test and DMG;
+the failed attempt remains separately recorded, not relabelled PASS.
+
+The measured API/UI times above are successful-script times, not total build,
+transfer, diagnosis or failed-attempt elapsed time. No product change or DMG
+rebuild occurred during this correction. The exact package also contains the
+current server-side private-ID projection that was absent from rc.2.
+
+Final closure preserved the stopped Test, VM disk, installed releases, models,
+history and credentials. Browser, native runner, SSH UI transport and temporary
+display assertions were closed; installer media was detached without force.
+Shared Docker retained the same Engine and had zero running demo containers.
+
+Private evidence is retained under
+`build/candidates/1.2.0-rc.3/.local/remote-qualification/current-main-m1` on the
+selected SSD: `api-final`, `ui-final`, the earlier diagnostic attempts and
+their reconciliation/cleanup receipts. The candidate's `qualification.result.json`
+and `final-independent-closure.json` bind the combined result and final closure.
+
+This certifies the installed API plus continuous visible-UI profiles only.
+Native Setup without ready certificates was **not rerun for rc.3**; the rc.2
+first-use proof below does not transfer to different bytes. Public option A
+delivery has its separate [publication record](release-automation-2026-10-13.md).
+Notarization, new-company registration, clean-macOS permission prompts, full
+source reproduction and deferred `VDP-TIMEOUT-01` are not claimed.
 
 ## Corrected immutable candidate: complete production API and visible UI PASS
 

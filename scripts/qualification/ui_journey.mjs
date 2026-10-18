@@ -14,10 +14,21 @@ const executeFile=promisify(execFile);
 
 const origin = 'http://127.0.0.1:18080';
 const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/;
+const reference = /^ref_[0-9a-f]{32}$/;
+export function assertBrowserIdentities(value, privateIds) {
+  const body=JSON.stringify(value);
+  for(const id of privateIds.filter(id=>typeof id==='string' && uuid.test(id)))
+    assert(!body.includes(id),'BROWSER_PRIVATE_IDENTITY_LEAK');
+  return value;
+}
 const version = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 const profiles = { platform: ['Braking telemetry', 'Brake analysis', 'Tire & advisory'],
   brake: ['Braking windows', 'Condition assessment', 'Driver advisory'], tire: ['Tire health'] };
 export const continuousSections = ['release-story','installed-views','moving-sota','stop-start'];
+// Traffic Manager may wait at road signals while M1 simulation advances below
+// real time. Wait for real motion; never bypass road controls or publish while
+// stationary merely to satisfy a wall-clock deadline.
+export const movingWindowMs = 120000;
 
 export function qualificationCloud(input) {
   const domain=input.cloudDomain??'aws-stage.epmp-aos.projects.epam.com';
@@ -129,9 +140,9 @@ export function facts(job) {
   if (result.version !== undefined) assert(version.test(result.version), 'VERSION_RECEIPT_INVALID');
   if (result.releaseHandle !== undefined)
     assert(/^(brake|tire)\/[0-9]+\.[0-9]+\.[0-9]+$/.test(result.releaseHandle), 'RELEASE_RECEIPT_INVALID');
-  if (result.serviceId !== undefined) assert(uuid.test(result.serviceId), 'SERVICE_RECEIPT_INVALID');
+  if (result.serviceId !== undefined) assert(reference.test(result.serviceId), 'SERVICE_RECEIPT_INVALID');
   const ids = job.results.map(row => row.facts?.command?.commandId).filter(Boolean);
-  if (ids.length) { assert(uuid.test(ids.at(-1)), 'RESET_RECEIPT_INVALID'); result.commandId = ids.at(-1); }
+  if (ids.length) { assert(reference.test(ids.at(-1)), 'RESET_RECEIPT_INVALID'); result.commandId = ids.at(-1); }
   return result;
 }
 export function installed(value, team, release) {
@@ -279,7 +290,7 @@ export async function main(inputPath) {
     const end=performance.now()+30000;
     while(true) {
       const r = await page.request.get(`${origin}/api/presenter/${name}`, { timeout: 15000 });
-      if(r.ok()) return r.json();
+      if(r.ok()) return assertBrowserIdentities(await r.json(),[input.test,...Object.values(before?.identity??{})]);
       let code=null;
       try { const value=await r.json();if(/^[A-Z][A-Z0-9_]{1,100}$/.test(value.error??''))code=value.error; } catch { /* Fixed fields only. */ }
       record({state:'UI_OWNER_READ_REFUSED',resource:name,httpStatus:r.status(),code});
@@ -422,8 +433,8 @@ export async function main(inputPath) {
       const event = { state: isPlatform(req)?'UI_CLOUD_READ':'UI_LOCAL_READ', httpStatus: response.status(), milliseconds: Math.round(performance.now() - readStarts.get(req)) };
       try {
         const data = await response.json();
-        record(isPlatform(req)?{...event,...statusObservation(data,input.test)}:
-          { ...event, runState: data.runId === input.test ? 'MATCHING' : data.runId ? 'OTHER' : 'MISSING',
+        record(isPlatform(req)?{...event,...statusObservation(data,input.browserTest)}:
+          { ...event, runState: data.runId === input.browserTest ? 'MATCHING' : data.runId ? 'OTHER' : 'MISSING',
             controllerProcess:['RUNNING','STOPPED'].includes(data.vehicles?.test?.process)?data.vehicles.test.process:null });
       } catch { record({ ...event, runState: 'UNREADABLE' }); }
     });
@@ -451,7 +462,7 @@ export async function main(inputPath) {
     await stage('open-installed-presenter',async () => {
       await page.goto(origin+'/#native-browser');
       const [ops,snapshot]=await Promise.all([read('operations',true),read('snapshot',true)]);
-      assert(snapshot.runId===input.test && ops.cloudDomain===cloudDomain,'TEST_BINDING_REQUIRED');
+      assert(reference.test(input.browserTest) && snapshot.runId===input.browserTest && ops.cloudDomain===cloudDomain,'TEST_BINDING_REQUIRED');
       session=ops.sessionId; before=(await observed('before')); owners(before,before,'STOPPED');
       await expect(button('Start controller')).toBeEnabled();
     });
@@ -527,7 +538,7 @@ export async function main(inputPath) {
     });
     if (input.scenario === 'vdp-transition') {
       await stage('vdp-v1-current-baseline', async () => {
-        await until(async () => transitionBaseline(await read('platform'), input.test), 'CURRENT_VDP_V1_REQUIRED', 65000);
+        await until(async () => transitionBaseline(await read('platform'), input.browserTest), 'CURRENT_VDP_V1_REQUIRED', 65000);
         assert((await query('component-idle')).idle, 'COMPONENT_PENDING');
       });
       await stage('vdp-v2-prepare-only', async () => {
@@ -543,7 +554,7 @@ export async function main(inputPath) {
     }
     if (['release-story','release-continuation','continuous-campaign'].includes(input.scenario)) {
       if (input.scenario === 'release-continuation') await stage('continuation-current-v1', async () => {
-        assert(transitionBaseline(await read('platform'),input.test),'CURRENT_VDP_V1_REQUIRED');
+        assert(transitionBaseline(await read('platform'),input.browserTest),'CURRENT_VDP_V1_REQUIRED');
         assert((await query('component-idle')).idle,'COMPONENT_PENDING');
       });
       const platform=async (profile, existingVersion) => {
@@ -636,17 +647,18 @@ export async function main(inputPath) {
             assert.deepEqual(value.identity, original.identity, 'MOVING_TEST_IDENTITY_CHANGED');
             assert(value.bootId === original.bootId, 'MOVING_BOOT_CHANGED');
             assert(autopilot(value), 'AUTOPILOT_NOT_CURRENT');
-            record({state:'MOVING_SOTA_OBSERVATION', team, moving:autopilot(value,true), mode:value.controller.mode});
+            record({state:'MOVING_SOTA_OBSERVATION', team, moving:autopilot(value,true), mode:value.controller.mode,
+              speedKmh:value.controller.speed});
             return autopilot(value, true);
           };
-          await until(motion, 'MOVING_BASELINE_REQUIRED', 45000);
+          await until(motion, 'MOVING_BASELINE_REQUIRED', movingWindowMs);
           await button(team==='brake'?'Brake Team':'Tire Team').click();
           await page.getByRole('group',{name:'Capability profile',exact:true}).getByRole('button',
             {name:`${profile} ${profiles[team][Number(profile[1])-1]}`,exact:true}).click();
           const prepared=await operate({action:'service-prepare',team,profile},()=>button('Prepare '+profile).click());
           assert(prepared.releaseHandle && prepared.version, 'PREPARED_SERVICE_REQUIRED');
           await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
-          await until(motion, 'MOVING_PUBLICATION_REQUIRED', 45000);
+          await until(motion, 'MOVING_PUBLICATION_REQUIRED', movingWindowMs);
           await confirmed({action:'service-publish',release:prepared.releaseHandle},()=>button('Sign & publish').click(),'Sign & publish service');
           await until(async()=> {
             const moving = await motion();
@@ -799,8 +811,8 @@ export async function main(inputPath) {
     }
     await stage('activity-receipts',async () => {
       await until(async()=>{
-        const snapshot=await read('snapshot');assert(!snapshot.runId || snapshot.runId===input.test,'TEST_BINDING_CHANGED');
-        return snapshot.runId===input.test;
+        const snapshot=await read('snapshot');assert(!snapshot.runId || snapshot.runId===input.browserTest,'TEST_BINDING_CHANGED');
+        return snapshot.runId===input.browserTest;
       },'CURRENT_UI_RUN_UNAVAILABLE',30000,1000);
       await expect(page.getByRole('button',{name:/^Activity · [1-9][0-9]*$/})).toBeVisible();
       await page.getByRole('button',{name:/^Activity · /}).click(); await expect(dialog()).toContainText('Connect in Manual');
@@ -869,7 +881,7 @@ export async function main(inputPath) {
     if(page && session) {
       try {
         const [snapshot,ops]=await Promise.all([read('snapshot'),read('operations')]);
-        record({state:'FAILURE_OWNER_PROJECTION',expectedRunMatches:snapshot.runId===input.test,
+        record({state:'FAILURE_OWNER_PROJECTION',expectedRunMatches:snapshot.runId===input.browserTest,
           snapshotObserved:snapshot.state??null,sessionMatches:ops.sessionId===session,
           activeOperation:Boolean(ops.active),uncertain:Boolean(ops.uncertain),
           workspaceBusy:Boolean(ops.workspaceBusy),sourceRecoveryBusy:Boolean(ops.sourceRecoveryBusy),

@@ -4,8 +4,8 @@
 # Current demo baseline
 
 - Status: engineering preview; scoped qualification, not general-public release acceptance
-- Version: 3.0
-- Prepared: 2026-10-15
+- Version: 3.1
+- Prepared: 2026-10-18
 - Owner: SDV Lab integration
 
 ## Current selection
@@ -18,8 +18,9 @@ number and document version are different namespaces.
 
 The [release report](release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2)
 records the published successor, main/tag identities and anonymous M1 consumer.
-The [M1 report](m1-clean-install-e2e-2026-10-14.md#corrected-immutable-candidate-complete-production-api-and-visible-ui-pass)
-records exact runtime qualification; its
+The [M1 report](m1-clean-install-e2e-2026-10-14.md#mainline-candidate-120-rc3-api-and-visible-ui-pass)
+records the new rc.3 runtime qualification independently of the selected
+operator delivery. Its earlier
 [native Setup continuation](m1-clean-install-e2e-2026-10-14.md#native-setup-with-no-ready-certificates-pass-on-15-october)
 binds the corrected Setup separately. Documentation changes do not advance
 artifact pins or inherit another candidate's passes.
@@ -28,10 +29,10 @@ artifact pins or inherit another candidate's passes.
 
 | Profile | Recorded result and scope |
 | --- | --- |
-| Installed runtime API | 118/118 checks passed on M1 internal storage using Production Aos Cloud and a Test vehicle |
-| Visible product UI | 42/42 browser stages and required actual native driving input passed, with Presenter/CARLA/Driving Control visible |
-| Native Setup without ready certificates | Empty fields, fresh M1-generated OEM/SP keys, issuance using existing accounts, Production connection and Presenter opening passed; unchanged installation-helper evidence was reused |
-| Public option A consumer | Anonymous download, complete checksum/signature, Setup handoff, installed reuse/open and cleanup passed; reused the installed certificate instance, not a second fresh enrollment |
+| Installed runtime API | rc.3: 118/118 checks passed on M1 internal storage using Production Aos Cloud and a Test vehicle |
+| Visible product UI | rc.3: 42/42 browser stages and required actual native driving input passed, with Presenter/CARLA/Driving Control visible |
+| Native Setup without ready certificates | rc.2 only: empty fields, fresh M1-generated OEM/SP keys, issuance using existing accounts, Production connection and Presenter opening passed; not rerun or inherited by rc.3 |
+| Public option A consumer | The publication record binds the exact selected delivery and its anonymous consumer; installed certificate reuse is not another fresh enrollment |
 
 Runtime proofs include serial VDP V1/V2/V3 Safe Stop FOTA, Brake V1/V2/V3,
 Tire V1, real products/advisories, moving QM updates, independent Reset/history,
@@ -73,11 +74,12 @@ Current Brake/Tire private admin schemas and negative fixtures describe the
 implemented handlers separately from retained legacy compatibility inputs.
 Their source conformance is not a new live result or a change to this DMG.
 
-Current source includes the accepted fingerprint-only Presenter boundary:
+The rc.3 candidate includes the accepted fingerprint-only Presenter boundary:
 private identities are projected server-side before browser JSON, with bounded
-opaque selectors and isolated regression coverage. This is not incorporated
-into the selected DMG by a documentation/source commit. No rebuilt media or
-new M1 runtime result is claimed for that correction.
+opaque selectors and isolated regression coverage. Its new exact-DMG API/UI
+proof is recorded above; a source/documentation commit alone never advances
+the operator delivery or qualifies different bytes. CARLA and Factory were
+reused without rebuilding.
 
 The [controller image lock](../../workspace/inputs/controller-images.lock.json)
 preserves immutable Factory provenance. It does not select operator media or

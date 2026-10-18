@@ -271,6 +271,32 @@ def backend_projection(value):
                 functions=functions)
 
 
+def browser_run_binding(native, browser):
+    """Private observer checks native identity; public transport keeps opaque IDs."""
+    identity = native.get('runId')
+    reference = browser.get('runId')
+    if identity is None:
+        require(reference is None, 'PRESENTER_IDENTITY_CHANGED')
+    else:
+        require(isinstance(reference, str) and re.fullmatch(r'ref_[0-9a-f]{32}', reference),
+                'BROWSER_IDENTITY_NOT_OPAQUE')
+        require(set(browser.get('vehicles') or {}) == set(native.get('vehicles') or {}),
+                'BROWSER_TEST_BINDING_CHANGED')
+    return reference
+
+
+def reset_command_binding(native, browser, reference):
+    require(isinstance(reference, str) and re.fullmatch(r'ref_[0-9a-f]{32}', reference)
+            and browser.get('commandId') == reference, 'BROWSER_RESET_BINDING_CHANGED')
+    identity = native.get('commandId')
+    require(identity and str(UUID(identity)) == identity
+            and native.get('issuedAt') and native['issuedAt'] == browser.get('issuedAt')
+            and native.get('unitSystemUid') and (native.get('state') == browser.get('state')
+                or native.get('state') == 'PENDING' and browser.get('state') in ('CLEARED','EXPIRED','FAILED','REJECTED')),
+            'RESET_COMMAND_UNCONFIRMED')
+    return identity
+
+
 def service_projection(value, team):
     observation = value.get('state')
     require(observation in ('CURRENT','STALE','UNAVAILABLE'), 'PLATFORM_OBSERVATION_INVALID')
@@ -389,10 +415,44 @@ class Worker:
                     'QUALIFICATION_CLOUD_OWNERS_CHANGED')
         return state
 
+    def snapshot(self):
+        from aosedge_demo_orchestrator.presenter import read_snapshot
+        before = read_snapshot()
+        browser = exchange('snapshot')
+        after = read_snapshot()
+        require(before.get('runId') == after.get('runId'), 'TEST_IDENTITY_CHANGED')
+        after['_browserRunId'] = browser_run_binding(after, browser)
+        return after
+
+    def backend(self, team):
+        if self.args.get('browserProjection') is True:
+            return exchange('backend/' + team)
+        # Native outbox UUIDs join the real backend on the private test side,
+        # never by decoding or exporting the browser's process-scoped references.
+        from aosedge_demo_orchestrator.presenter import StudioCloudReader
+        reader = StudioCloudReader()
+        try:
+            return reader.backend(team)
+        finally:
+            reader.pool.shutdown(wait=True)
+
+    def service_reference(self, identity):
+        from aosedge_demo_orchestrator.service_packages import ServicePackages
+        native = [r for r in ServicePackages(self.app.environment_service).receipts()['releases']
+                  if r.get('serviceId') == identity and r.get('submitted')]
+        public = exchange('snapshot').get('serviceReleases') or []
+        handles = {r['releaseHandle'] for r in native}
+        matches = {r.get('serviceId') for r in public if r.get('releaseHandle') in handles}
+        require(len(matches) == 1, 'BROWSER_SERVICE_BINDING_UNCONFIRMED')
+        reference = next(iter(matches))
+        require(isinstance(reference, str) and re.fullmatch(r'ref_[0-9a-f]{32}', reference),
+                'BROWSER_SERVICE_IDENTITY_NOT_OPAQUE')
+        return reference
+
     def idle(self, allow_created=False):
         deadline, session = time.monotonic() + 35, None
         while True:
-            snapshot, operations = exchange('snapshot'), exchange('operations')
+            snapshot, operations = self.snapshot(), exchange('operations')
             if not allow_created:
                 require(snapshot.get('runId') == self.request['expectedRun'], 'PRESENTER_IDENTITY_CHANGED')
             require(operations['cloudDomain'] == self.domain, 'QUALIFICATION_CLOUD_CHANGED')
@@ -591,7 +651,9 @@ class Worker:
 
     def observe(self):
         query = self.args['query']
-        require(query in QUERIES and set(self.args) <= {'query','team','release'}, 'OBSERVATION_NOT_ALLOWED')
+        require(query in QUERIES and set(self.args) <= {'query','team','release','browserProjection'}, 'OBSERVATION_NOT_ALLOWED')
+        if 'browserProjection' in self.args:
+            require(self.args['browserProjection'] is True and query in ('backend','combined'), 'PROJECTION_SCOPE_INVALID')
         if query == 'installed': return self.installed()
         state = self.binding()
         if query == 'exercise':
@@ -602,7 +664,7 @@ class Worker:
                 physicalStop=result.get('physicalStop'),autopilotStarted=result.get('autopilotStarted'),noOp=result.get('noOp'))
         if query == 'demo-stopped':
             from aosedge_demo_orchestrator.backends import BackendService
-            snapshot = exchange('snapshot')
+            snapshot = self.snapshot()
             require(snapshot.get('runId') == self.request['expectedRun'], 'TEST_IDENTITY_CHANGED')
             return demo_stopped_projection(state, snapshot, self.app.source_service.observe(),
                 BackendService(self.app.environment_service).observe_stack(), docker_info())
@@ -630,11 +692,11 @@ class Worker:
             return {k:value.get(k) for k in ('stage','source','version','serviceId','deploymentId','versionId')}
         if query == 'local': return self.local(require_teams=False)
         if query == 'combined':
-            return dict(local=self.local(), brake=backend_projection(exchange('backend/brake')),
-                        tire=backend_projection(exchange('backend/tire')))
+            return dict(local=self.local(), brake=backend_projection(self.backend('brake')),
+                        tire=backend_projection(self.backend('tire')))
         if query == 'backend':
             require(self.args['team'] in ('brake','tire'), 'TEAM_INVALID')
-            return backend_projection(exchange('backend/'+self.args['team']))
+            return backend_projection(self.backend(self.args['team']))
         if query == 'service':
             require(self.args['team'] in ('brake','tire'), 'TEAM_INVALID')
             return service_projection(exchange('platform'), self.args['team'])
@@ -643,7 +705,7 @@ class Worker:
             require(value['state'] == 'CURRENT', 'PLATFORM_NOT_CURRENT')
             return dict(online=(value.get('value') or {}).get('online'))
         if query == 'snapshot':
-            value = exchange('snapshot')
+            value = self.snapshot()
             require(value['runId'] == self.request['expectedRun'], 'TEST_IDENTITY_CHANGED')
             return dict(process=value['vehicles']['test'].get('process'))
         from aosedge_demo_orchestrator.models import OperationRequest, VehicleTarget
@@ -698,8 +760,9 @@ class Worker:
         return result(preflight(self.app.environment_service, self.config['image']))
 
     def bind_created(self, job):
-        identity = exchange('snapshot').get('runId')
-        require(identity and str(UUID(identity)) == identity and job.get('runId') == identity,
+        snapshot = self.snapshot()
+        identity = snapshot.get('runId')
+        require(identity and str(UUID(identity)) == identity and job.get('runId') == snapshot.get('_browserRunId'),
                 'CREATE_IDENTITY_UNCONFIRMED')
         require(self.request.get('expectedRun') in (None, identity), 'TEST_IDENTITY_CHANGED')
         self.request['expectedRun'] = identity
@@ -740,6 +803,17 @@ class Worker:
             return result(dict(sessionId=self.idle()['sessionId']))
         # Create may already have changed the journal after a lost response.
         state = self.binding() if action != 'create' else None
+        if self.request['phase'] == 'reconcile' and action == 'service-publish':
+            # The native session can be gone after ordinary failure cleanup.
+            # Re-read the exact persisted publication intent and Cloud result;
+            # never submit another publication to recreate an in-memory job.
+            from aosedge_demo_orchestrator.service_packages import ServicePackages
+            value = ServicePackages(self.app.environment_service).cloud_status(self.args['release'])
+            require(value.get('stage') == 'READY' and value.get('source') == 'AOS_CLOUD_ONLY'
+                    and value.get('serviceId') and value.get('versionId') and value.get('deploymentId'),
+                    'SERVICE_PUBLICATION_RECONCILIATION_UNCONFIRMED')
+            return result({key:value[key] for key in ('version','serviceId')},
+                          code='EXISTING_PUBLICATION_RECONCILED')
         if self.request['phase'] == 'reconcile' and action == 'service-assign':
             # The assignment owner journals before any Cloud mutation. When
             # that record is absent, corroborate complete Unit inventory before
@@ -786,6 +860,8 @@ class Worker:
         require(operations['sessionId'] == prepared['sessionId'], 'SESSION_CHANGED_RECONCILE_REQUIRED')
         if self.request['phase'] == 'execute':
             self.idle()
+            if action == 'service-assign':
+                payload['serviceId'] = self.service_reference(self.args['serviceId'])
             self.attempted = True
             try: exchange('operations', payload)
             except OSError: pass  # Read the same request identity, never POST twice.
@@ -819,6 +895,20 @@ class Worker:
                 for row in job.get('results', []):
                     if (row.get('facts') or {}).get('command'):
                         facts['commandId'] = row['facts']['command']['commandId']
+                if action == 'service-publish' and facts.get('serviceId'):
+                    from aosedge_demo_orchestrator.service_packages import ServicePackages
+                    rows = [r for r in ServicePackages(self.app.environment_service).receipts()['releases']
+                            if r.get('releaseHandle') == self.args['release'] and r.get('submitted')]
+                    require(len(rows) == 1 and rows[0].get('serviceId'), 'SERVICE_PUBLICATION_BINDING_REQUIRED')
+                    require(self.service_reference(rows[0]['serviceId']) == facts['serviceId'],
+                            'BROWSER_SERVICE_BINDING_CHANGED')
+                    facts['serviceId'] = rows[0]['serviceId']
+                if action == 'backend-reset' and facts.get('commandId'):
+                    command = ((self.backend(self.args['team']).get('observations') or {})
+                               .get('demoReset', {}).get('data') or {}).get('command') or {}
+                    public = ((exchange('backend/'+self.args['team']).get('observations') or {})
+                              .get('demoReset', {}).get('data') or {}).get('command') or {}
+                    facts['commandId'] = reset_command_binding(command, public, facts['commandId'])
                 if action == 'create':
                     facts['runId'], _ = self.bind_created(job)
                 return result(facts)
@@ -881,7 +971,7 @@ class Worker:
         from aosedge_demo_orchestrator.guest_access import read_guest
         state = self.binding()
         if self.request['phase'] == 'reconcile':
-            value = exchange('snapshot')
+            value = self.snapshot()
             require(value['runId'] == self.request['expectedRun'] and value['vehicles']['test']['process'] == 'STOPPED', 'POWEROFF_UNCONFIRMED')
             return result(dict(process='STOPPED'))
         self.idle()

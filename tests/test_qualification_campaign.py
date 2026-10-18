@@ -15,6 +15,21 @@ import remote_harness as h
 
 
 class CampaignTests(unittest.TestCase):
+    def test_capacity_includes_unpacked_runtime_and_only_missing_media(self):
+        receipt=dict(logicalBytes=35*2**30,dmgBytes=14*2**30)
+        self.assertEqual(c.consumer_space_required(receipt,False,False),139*2**30)
+        self.assertEqual(c.consumer_space_required(receipt,True,False),125*2**30)
+        self.assertEqual(c.consumer_space_required(receipt,True,True),90*2**30)
+        with self.assertRaisesRegex(h.Error,'MEDIA_CAPACITY_RECEIPT_INVALID'):
+            c.consumer_space_required(dict(dmgBytes=10),False,False)
+
+    def test_only_ctime_change_allows_existing_media_reverification(self):
+        before='1:2:300:4:5:600'
+        self.assertTrue(c.metadata_only_media_change(before,'1:2:300:4:6:600'))
+        for after in ('2:2:300:4:6:600','1:3:300:4:6:600','1:2:301:4:6:600',
+                      '1:2:300:5:6:600','1:2:300:4:6:644','bad',before):
+            self.assertFalse(c.metadata_only_media_change(before,after))
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -56,6 +71,24 @@ class CampaignTests(unittest.TestCase):
             with self.assertRaises(h.Error): c.media_input(dmg,config,path,'tester')
         with self.assertRaises(h.Error): c.media_input(dmg,dict(manifestSha256='c'*64),
             '/Users/tester/SDV-Qualification/run/lab.dmg','tester')
+
+    def test_capacity_recovery_is_explicit_and_requires_independent_no_effect_proof(self):
+        for proof in (dict(installationEffectsAbsent=True,capacityNowSufficient=True),
+                      dict(installationEffectsAbsent=False,capacityNowSufficient=True)):
+            media=Mock(transfer=Mock(return_value=dict(remoteIdentity='identity')),
+                       file_identity=Mock(return_value='identity'),mount=Mock(return_value={}))
+            media.setup.side_effect=[h.Error('INSTALL_SPACE_INSUFFICIENT'),{},{}]
+            media.capacity_preflight.return_value=proof
+            with h.Journal(self.root/('records-'+str(proof['installationEffectsAbsent'])), 'pin') as journal:
+                self.assertFalse(c.installation(media,journal,lambda _:None))
+                self.assertTrue(c.installation(media,journal,lambda _:None,resume_capacity=True)
+                                is proof['installationEffectsAbsent'])
+                rows=h.read_attempts(journal.root)
+                self.assertTrue(any(r['code']=='INSTALL_SPACE_INSUFFICIENT' for r in rows))
+                if proof['installationEffectsAbsent']:
+                    self.assertEqual(media.setup.call_args_list[1].args,('install',False))
+                else:
+                    self.assertEqual(media.setup.call_count,1)
 
     def test_foreign_mount_is_never_detached(self):
         media = c.Media({},dict(setupApp='/Volumes/Lab/AosEdge SDV Lab Setup.app'),dict(remotePath='/mine'))
@@ -138,13 +171,14 @@ class CampaignTests(unittest.TestCase):
     def test_created_identity_must_match_existing_binding_and_receipt(self):
         from uuid import uuid4
         identity=str(uuid4());other=str(uuid4())
+        reference='ref_'+'a'*32
         worker=object.__new__(w.Worker)
         worker.request=dict(expectedRun=None); worker.binding=Mock(return_value={'state':'fixture'})
-        with patch.object(w,'exchange',return_value=dict(runId=identity)):
-            self.assertEqual(worker.bind_created(dict(runId=identity))[0],identity)
+        with patch.object(worker,'snapshot',return_value=dict(runId=identity,_browserRunId=reference)):
+            self.assertEqual(worker.bind_created(dict(runId=reference))[0],identity)
             worker.request['expectedRun']=other
             with self.assertRaisesRegex(ValueError,'TEST_IDENTITY_CHANGED'):
-                worker.bind_created(dict(runId=identity))
+                worker.bind_created(dict(runId=reference))
             worker.request['expectedRun']=None
             with self.assertRaisesRegex(ValueError,'CREATE_IDENTITY_UNCONFIRMED'):
                 worker.bind_created(dict(runId=other))
