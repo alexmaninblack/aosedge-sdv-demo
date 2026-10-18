@@ -5,15 +5,15 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 1.4
+- Version: 1.5
 - Prepared: 2026-08-19
 - Accepted: 2026-09-27
 - Owner: Demo Solution Team
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 - Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
@@ -263,9 +263,12 @@ An `OEM identity` or `Service Provider identity` names the accountable Cloud
 role. D4-010.3 freezes three non-interchangeable technical-publication
 profiles: `platform-oem`, `brake-sp1` and `tire-sp2`. The installed
 `aos-signer` 2.0.1 compatibility path uses the same passwordless PKCS#12 per
-profile for signing and mTLS upload. The three mode-`0600` files stay under
-`~/.aos/security`, outside Git and every browser/container/VM/artifact, and
-only the session helper may read their fixed allowlisted paths. This does not
+profile for signing and mTLS upload. Installed use requires one OEM and one
+associated-SP credential; Brake/Tire profiles may reference the same SP file
+without copying it. Expanded cross-provider proof uses separate SP identities.
+Every credential remains mode `0600` at its configured private host path
+(`~/.aos/security` is the engineering default), outside Git and every
+browser/container/VM/artifact; only the session helper reads allowlisted paths. This does not
 make technical publication an OEM Unit-approval action; any separate Cloud API
 session credential remains governed by its own qualified operation boundary.
 
@@ -348,7 +351,7 @@ demo-run history.
 | Prepared SOTA candidates | `CR-BHS`, `CR-TIRE` and their Cloud products | Immutable bytes/digests, metadata, owner acceptance and evidence | Delivery stage blocked before OEM confirmation |
 | Vehicle Data Platform compatibility | `CR-VDP` plus services | Declared range and fail-closed readiness | Display mismatch, preserve independent lifecycles and block only the dependent Service until required VDP readiness |
 | CARLA/Gateway lifecycle | `CR-VEHICLE-SIM` and `CR-GATEWAY` | Qualified start, source identity, scenario/reset and advisory status boundaries | Source-dependent stage blocked; no second simulated vehicle claim |
-| Functional backend cleanup | `CR-BRAKE-CLOUD` and `CR-TIRE-CLOUD` | Exact run/Unit/time selector with preview | R0 remains incomplete; Cloud audit remains untouched |
+| Functional backend cleanup | `CR-BRAKE-CLOUD` and `CR-TIRE-CLOUD` | Journal-bound Test-only or explicit full-context Unit selector, no time selector; product-specific preview/confirm/prove-empty protocol | R0 remains incomplete; Cloud audit and nonmatching data remain untouched |
 | Publication credential custody | D4-010.3 role-bound native-helper profiles | Exact pre-bound profile, local mode-`0600` PKCS#12, no caller-selected path and no browser/container/VM/artifact/log exposure | Sign/publish control disabled with factual reason |
 | Native Service-to-FOTA VDP Component admission | Future AosCloud release | Current release still supports component-to-component and service-to-layer dependencies but not this cross-lifecycle rule | Negative scenario remains visibly deferred; no local substitute |
 
@@ -415,7 +418,7 @@ the real supported APIs and launchers.
 | [Validation-first identical promotion (`REQ-DEMO-009`)](#req-demo-009) | Qualify VU before promoting the exact digest to PU | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Honest single-source binding (`REQ-DEMO-010`)](#req-demo-010) | Run one live CARLA source sequentially on VU, then detach/reset and run it on PU | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Native log request presentation (`REQ-DEMO-011`)](#req-demo-011) | Route OEM Unit logs and SP-owned Service logs to their matching dashboards without a second archive | Unit, Component, Integration | D4-014 design accepted; live qualification open |
-| [Ordered Unit retirement (`REQ-DEMO-013`)](#req-demo-013) | Reconcile offline deprovision, credential rejection, set/Unit deletion and Unit-owned Nodes for both Units | Unit, Contract, Integration, End-to-end | D4-015 design accepted; live qualification open |
+| [Ordered Unit retirement (`REQ-DEMO-013`)](#req-demo-013) | Reconcile exact installed Test retirement; expanded two-role R0 additionally proves credential rejection and both Unit lifecycles | Unit, Contract, Integration, End-to-end | Current Test path implemented; complete expanded qualification remains open |
 | [Run-data and simulation cleanup (`REQ-DEMO-014`)](#req-demo-014) | Delete current-run functional data, reset scenario and preserve factory image | Unit, Component, Integration | D3 design-reviewed |
 | [Restart-safe partial-failure recovery (`REQ-DEMO-015`)](#req-demo-015) | Preserve uncertain operations temporarily and block the next run until reconciled | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Local least-privilege deployment (`REQ-DEMO-016`)](#req-demo-016) | Keep browser local and credentials/host authority in a launcher-owned session helper | Unit, Component, Integration | D3 design-reviewed |
@@ -614,7 +617,7 @@ the real supported APIs and launchers.
 <a id="req-demo-014"></a>
 
 - ID: `REQ-DEMO-014`
-- Statement: Expanded two-Unit R0 shall delete only the exact native-log request IDs created by the current run and prove each corresponding detail and file-download operation unavailable afterward. After identity retirement is reconciled, it shall ask both functional backends to preview deletion selected by exact equality with the current VU and PU `system_uid` values, compare the returned count/digest/short-lived confirmation token, and then permanently delete precisely that scope. Empty, wildcard, partial or additional Unit selectors shall block the action. Because every run provisions fresh Unit identities, no independent time-window selector or historical run archive is required. R0 shall retain no demo-run telemetry, derived events, advisories, dashboard records or temporary downloads, invoke the qualified CARLA/Gateway scenario reset, discard only stopped retired overlays and run-local state, clear the Current Vehicle, verify the immutable factory digest remains unchanged and stop at `READY_FOR_M0`. It shall not automatically create overlays, provision Units or begin another run. Other authoritative AosCloud lifecycle, Batch, Campaign and audit history shall not be deleted by this cleanup.
+- Statement: Installed Finish shall retain the journal-bound Test context until both backends confirm previewed deletion for exactly `[currentTestUid]` and prove zero selected records with peer preservation. The explicit expanded operation may select all sorted current-context Unit IDs. Empty, duplicate, wildcard, foreign, Production-only or other unauthorized partial selectors shall block. D4-017 and D4-019 own separate token/error formats; both require bounded 60-second previews, no deletion on invalid/expired/stale input and read-only reconciliation of uncertain results without blind retry. No `demoRunId` or independent time selector is accepted. Model Reset shall preserve history and is not this cleanup. Expanded two-Unit R0 shall additionally delete only exact current-run native-log request IDs and prove detail/file absence, retire both identities before backend cleanup, invoke qualified CARLA/Gateway reset, discard stopped retired overlays/run-local state, clear Current Vehicle, preserve the Factory digest and end at `READY_FOR_M0`. Neither profile shall retain matching functional/reset/observation data after cleanup, create/provision the next run automatically, or delete authoritative Cloud lifecycle, Batch, Campaign or audit history.
 - Parents: [clear functional data (`SYS-RET-002`)](../system-requirements-and-traceability.md#sys-ret-002), [reset simulation (`SYS-RET-003`)](../system-requirements-and-traceability.md#sys-ret-003), [no rollback or fleet claim (`SYS-RET-004`)](../system-requirements-and-traceability.md#sys-ret-004) and [preserve factory (`SYS-RET-005`)](../system-requirements-and-traceability.md#sys-ret-005)
 - Flow: [controlled retirement (`AF-R0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-lc)
 - Components/interfaces: `CMP-ORCH`, `CMP-SW-DASH`, adjacent Function Dashboards, `IF-DEMO-001`, `IF-OBS-001`, `IF-FUNC-002`, `IF-TIRE-004`
@@ -640,13 +643,13 @@ the real supported APIs and launchers.
 <a id="req-demo-016"></a>
 
 - ID: `REQ-DEMO-016`
-- Statement: The trusted macOS demo launcher shall start a session-scoped native helper under the logged-in non-root user before starting the dashboard backend and opening the browser. The product shall expose browser access only on loopback through an authenticated session, keep private keys, reusable certificates, credential-store access and host authority in the native helper boundary, allowlist exact Cloud/VM/source/cleanup operations, reject arbitrary shell/path/URL input and redact all UI, journal and log output. For D4-010.3 publication, the helper alone may read the fixed role-bound mode-`0600` PKCS#12 paths; the caller may not select a profile, credential path, candidate path or Cloud URL. One explicit `Start or Restore Demo Environment` operation shall start the helper, dashboards/backends and accepted CARLA/Gateway/Controller support plus one shared session-scoped loopback DNS bridge on `127.0.0.1:18053`. At `READY_FOR_M0`, readiness shall not require a VU/PU overlay, Cloud Unit or `Online` state. During an active run, the launcher shall safely remove only exact owned stale PID/socket runtime state after proving the process and listener absent and the overlay unopened, then start only the exact current-run VU and PU. It shall expose `VM Running`, `Guest Ready`, `DNS Ready`, `AosCore Connected` and `Unit Online` separately for each role and report active-run readiness only after fresh AosCloud reads prove both existing Units Online. Startup shall not create an overlay, provision, reprovision or change Unit identity, certificates, keys, Unit Sets, Current Vehicle or lifecycle stage. Missing, corrupt or contradictory active-run state shall enter recovery instead of being treated as a new run. The helper shall not be installed as a persistent `launchd` or login service, shall accept no operation outside its authenticated demo session, and shall stop on orderly demo completion or after a bounded launcher-loss/orphan condition.
+- Statement: The trusted macOS demo launcher shall start a session-scoped native helper under the logged-in non-root user before starting the dashboard backend and opening the browser. The product shall expose browser access only on loopback through an authenticated session, keep private keys, reusable certificates, credential-store access and host authority in the native helper boundary, allowlist exact Cloud/VM/source/cleanup operations, reject arbitrary shell/path/URL input and redact all UI, journal and log output. For D4-010.3 publication, the helper alone may read the fixed role-bound mode-`0600` PKCS#12 paths; the caller may not select a profile, credential path, candidate path or Cloud URL. Installed Open SDV Lab shall open host Presenter without creating a controller; explicit Start controller shall restore only the retained Test, and simulator/backend operations shall remain separately guarded. The two backend containers shall remain independent of host Presenter/CARLA/native Driving Control; Presenter loopback `18080` and the protected helper loopback `18600` retain their existing roles. Expanded `Start or Restore Demo Environment` qualification shall additionally exercise the helper, dashboards/backends and accepted CARLA/Gateway/Controller support plus one shared session-scoped loopback DNS bridge on `127.0.0.1:18053`. At `READY_FOR_M0`, readiness shall not require a VU/PU overlay, Cloud Unit or `Online` state. During an active run, the launcher shall safely remove only exact owned stale PID/socket runtime state after proving the process and listener absent and the overlay unopened, then start only the exact retained Test, or both explicitly selected VU/PU instances in expanded qualification. It shall expose `VM Running`, `Guest Ready`, `DNS Ready`, `AosCore Connected` and `Unit Online` separately for each role and report Unit Online only from fresh AosCloud reads for each selected role; a Production peer shall not gate installed Test readiness. Startup shall not create an overlay, provision, reprovision or change Unit identity, certificates, keys, Unit Sets, Current Vehicle or lifecycle stage. Missing, corrupt or contradictory active-run state shall enter recovery instead of being treated as a new run. The helper shall not be installed as a persistent `launchd` or login service, shall accept no operation outside its authenticated demo session, and shall stop on orderly demo completion or after a bounded launcher-loss/orphan condition.
 - Parents: [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002), [authoritative surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001) and [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011)
 - Flow: [evidence architecture (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-ORCH`, `IF-LC-005`, `IF-DEMO-001`
 - Verification: Unit, Component, Integration
 - Evidence: launcher/helper/backend/browser startup and shutdown order, `READY_FOR_M0` support-stack readiness with no VM/Unit/Online dependency, shared-DNS-before-active-run-VM ordering and independence from either VM, clean and crash-stale exact dual-VM restore, wrong/missing/corrupt-run and stale-runtime ownership/open-overlay negatives, per-role readiness transitions and fresh dual-Unit Online proof, no overlay/provisioning/identity/certificate/Unit-Set/Current-Vehicle/stage change, non-root process identity, no-persistent-service inspection, listener/session/CSRF/allowlist/profile/path/URL/secret-negative tests, publication-file mode/location/exclusion proof, launcher-loss/orphan timeout and credential-boundary inspection
-- State: D3 design-reviewed; D4-010.3 publication profile accepted and D4-020 exact packaging/helper/session/supervision profile prepared for review
+- State: D3 design-reviewed; D4-010.3 accepted and D4-020 design-reviewed; installed host/helper/backend path implemented, full expanded startup/helper/negative matrix remains required
 
 ### Honest coverage and deferred claims
 
@@ -824,7 +827,7 @@ proof; they do not replace these isolated decisions and failure branches.
 | Concern | Component response | Verification |
 | --- | --- | --- |
 | Authority | Team decision, OEM authorization, AosCloud state and dashboard facilitation remain separate | Unit, API inspection, integration |
-| Credentials | Three D4-010.3 role-bound local PKCS#12 profiles; no caller selector, Git/browser/container/VM/artifact mount or journal/log value | Unit, contract, mode/path inspection, secret scan, integration |
+| Credentials | Three fixed D4-010.3 publication profiles; installed OEM plus shared associated-SP credential, expanded separate SP identities; no caller selector, Git/browser/container/VM/artifact mount or journal/log value | Unit, contract, mode/path inspection, secret scan, integration |
 | Publication separation | Protected FOTA sign/publish is distinct from evidence-backed validation/promotion approval | Unit, UI/API inspection, integration |
 | Operation coordination | Bounded per-operation registry permits disjoint producer mutations, blocks exact resource overlap and preserves run-exclusive provisioning/source/retirement/R0 operations | Unit, contract, restart, integration |
 | Workspace ownership | Presenter Launcher owns physical window composition/restoration; the stateless Dashboard owns shared-header meaning; each surface owner retains content; workspace recovery has no lifecycle authority | Unit, integration, qualified-Mac human inspection |

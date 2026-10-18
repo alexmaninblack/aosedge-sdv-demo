@@ -5,16 +5,16 @@
 
 - Status: D3 design-reviewed; D4-018 and D4-019 accepted; D4-020 design-reviewed
 - Package: [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud)
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Reconciled: 2026-08-31
 - Owner: Function Team 2 / Service Provider 2 functional Cloud product
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
@@ -49,12 +49,14 @@ allocation into the automatic Tire Health Backend and Tire Health Function
 Dashboard.
 
 The product demonstrates bounded OEM-internal multi-tenancy. It is separate
-from Brake Health Cloud in repository, service-provider publication identity,
-fixed helper profile/credential binding, container, persistent volume, API
+from Brake Health Cloud in repository, service identity, fixed publication
+profile, container, persistent volume, API
 namespace, functional data, dashboard and failure boundary. Both products may
 share the same Apple Silicon host, Docker Desktop engine and common native
-helper implementation, but they do not share lifecycle authority, credentials
-or application state.
+helper implementation. Installed Brake/Tire profiles may reference the same
+associated-SP credential without copying it or exposing it to either backend.
+Expanded cross-provider qualification additionally separates SP organizations
+and credentials. Neither profile merges lifecycle authority or application state.
 
 The demonstration is **presenter-controlled and system-executed**. The
 presenter explicitly requests signing and publication of the one already-built
@@ -330,8 +332,8 @@ packaged product and protected helper against controlled adjacent components.
 | [Honest VU/PU evidence (`REQ-TIRE-CLOUD-010`)](#req-tire-cloud-010) | Never imply two simultaneous vehicles when one CARLA source is reused | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Complete current-run deletion (`REQ-TIRE-CLOUD-011`)](#req-tire-cloud-011) | Delete all exact functional run data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
 | [Failure, freshness and Service-log visibility (`REQ-TIRE-CLOUD-012`)](#req-tire-cloud-012) | Show functional failures plus role-scoped native Service-log evidence without fabricated success or a second archive | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-014 design accepted |
-| [Mac-local ARM64 deployment (`REQ-TIRE-CLOUD-013`)](#req-tire-cloud-013) | Run one health-checked backend/dashboard container with dedicated persistence | Unit, Component, Integration | D3 design-reviewed |
-| [Multi-product network/signing isolation (`REQ-TIRE-CLOUD-014`)](#req-tire-cloud-014) | Isolate Tire from Brake state/credentials while keeping browser local and VM ingestion authenticated | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Mac-local ARM64 deployment (`REQ-TIRE-CLOUD-013`)](#req-tire-cloud-013) | Run one health-checked Tire backend container with dedicated persistence; live views remain in host Presenter | Unit, Component, Integration | D3 design-reviewed |
+| [Multi-product network/signing isolation (`REQ-TIRE-CLOUD-014`)](#req-tire-cloud-014) | Isolate Tire/Brake state and publication profiles; keep browser local and VM ingestion on the isolated correlation-only route | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Fixed Tire CPU-isolation control (`REQ-TIRE-CLOUD-015`)](#req-tire-cloud-015) | Deliver one safe identity-bound fixed load command without becoming quota authority | Unit, Component, Contract, Integration | D4-023.3 accepted |
 
 ## Detailed Requirements
@@ -446,12 +448,12 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-009"></a>
 
 - ID: `REQ-TIRE-CLOUD-009`
-- Statement: Every accepted result and query shall be scoped by the current bounded run window, exact Unit identity and role, service instance/version and sequential live source/generation/frame correlation; unbound or ambiguous input shall be quarantined and excluded from audience success views.
+- Statement: Every accepted result and query shall be scoped by the injected current-Test/optional-Production context and exact Unit identity/role plus service instance/version; unbound or ambiguous input shall be quarantined and excluded from audience success views. Expanded comparative evidence shall additionally bind the bounded execution interval and sequential source/generation/frame correlation. That interval is evidence correlation, not an independent query or deletion selector, and installed cleanup shall not require a Production peer.
 - Parents: [exact source binding (`SYS-SRC-001`)](../system-requirements-and-traceability.md#sys-src-001) and [per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
 - Flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Verification: Unit, Component, Contract, Integration
 - Evidence: VU/PU/run/source fixtures and unassigned/collision negatives
-- State: D4-019 common fields and D4-024 shared evidence design reviewed; implementation and live qualification remain open
+- State: Current-Unit context/query paths implemented; complete D4-024 comparative source/watermark qualification remains open
 
 ### Honest VU/PU evidence
 
@@ -470,12 +472,12 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-011"></a>
 
 - ID: `REQ-TIRE-CLOUD-011`
-- Statement: The backend shall persist Tire Health results only as needed for the active demo run and shall provide a previewed permanent-delete operation requiring the exact current-run Validation and Production Unit IDs plus a bounded time selector. After successful R0 it shall retain no Tire Health demo-run summary, event, advisory or dashboard history; deletion shall not call AosCloud or erase Cloud audit/lifecycle state, Brake Health data or unrelated data.
+- Statement: The backend shall persist only current-demo functional state and expose preview/confirmed permanent deletion only to local Demo Control on its private mode-`0600` Unix admin socket. The journal-owned context shall require Test and permit optional Production. Installed Finish shall select exactly `[currentTestUid]`; explicit expanded cleanup may select all current-context UIDs. Empty, duplicate, foreign, wildcard, missing and Production-only selectors shall fail; no `demoRunId` or independent time selector is accepted. A process-held opaque random token shall bind selector, counts, matching/nonmatching digests and 60-second expiry, with at most 16 pending previews. Invalid, expired, consumed, wrong-selector or previous-process tokens shall return `409 INVALID_PREVIEW`; changed data shall return `409 STALE_PREVIEW`, with no deletion and a fresh preview required. One transaction shall remove selected records across all ten current categories, including reset/observation state, prove zero selected rows and unchanged nonmatching digest, then consume the token. Uncertain response requires read-only reconciliation, not blind retry. No matching Tire functional history shall remain after successful R0; cleanup shall not call AosCloud or erase its audit/lifecycle state, Brake data or unrelated records. Model Reset remains a separate history-preserving operation.
 - Parents: [clear functional run data (`SYS-RET-002`)](../system-requirements-and-traceability.md#sys-ret-002) and [bounded Tire reporting (`SYS-TIRE-004`)](../system-requirements-and-traceability.md#sys-tire-004)
 - Flow: [Tire failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Integration
-- Evidence: exact preview, complete selected-row/object deletion, empty-dashboard result, unrelated-data/Brake negative proof and restart result
-- State: D3 design-reviewed; D4-019 exact current-Unit reset preview/execute contract accepted
+- Evidence: Test-only and full-context preview/execute, exact selector negatives, invalid/expired/consumed/pre-restart token and stale selected/nonmatching data rejection, all ten categories deleted, empty selected view, retained peer/Brake proof, read-only uncertain-result reconciliation and restart result
+- State: D4-019 accepted; current-Test cleanup implemented with scoped evidence; full negative/expanded matrix remains required
 
 ### Failure, freshness and Service-log visibility
 
@@ -494,12 +496,12 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-013"></a>
 
 - ID: `REQ-TIRE-CLOUD-013`
-- Statement: The backend and embedded static dashboard shall run in one immutable native ARM64 container with an explicit health endpoint, read-only application content, dedicated persistent data volume, graceful stop/restart and no personal absolute path or reusable credential in image/configuration.
+- Statement: The Tire backend shall run in one immutable native `linux/arm64` container with explicit health endpoints, read-only application content, a dedicated persistent data volume, graceful stop/restart and no personal absolute path or reusable credential in image/configuration. Integrated live Tire views shall run in host Presenter/Demo Control, not require a standalone dashboard or third container. Any retained static fixture shell shall not be presented as a live product view. Setup shall explicitly import pinned images; runtime shall reuse exact identities without build, pull, navigation-triggered import or Docker Engine restart.
 - Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005) and [operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003)
 - Flow: [Tire observability (`AF-TIRE-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-ob)
 - Verification: Unit, Component, Integration
-- Evidence: ARM64 image/Compose manifest, secret/path scan, health, volume and Docker restart proof
-- State: D3 design-reviewed; D4-020 exact ARM64 container/port/volume baseline design-reviewed; implementation qualification open
+- Evidence: ARM64 image/Compose manifest, host-view/backend separation, secret/path scan, health, volume and owned-container stop/restart persistence; expanded route/helper/LAN negatives separately qualified
+- State: D4-020 design-reviewed; installed hosting implemented with scoped evidence; complete negative/expanded qualification remains open
 
 ### Multi-product network and signing isolation
 
@@ -536,9 +538,9 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 | <a id="ut-tire-cloud-005"></a>`UT-TIRE-CLOUD-005` | `REQ-TIRE-CLOUD-007`, `012` | Exact factual presentation; all freshness/failure states; SP2-owned Service-log route, documented states, array response, redaction/download/delete/offline behavior; SP1/system/raw/oracle/Gateway negative claims; no browser credential, second archive or retention-duration claim |
 | <a id="ut-tire-cloud-006"></a>`UT-TIRE-CLOUD-006` | `REQ-TIRE-CLOUD-008` | Disconnect/restart/reconnect convergence with original/receipt times and retention failure |
 | <a id="ut-tire-cloud-007"></a>`UT-TIRE-CLOUD-007` | `REQ-TIRE-CLOUD-009`, `010` | Run/Unit/source isolation and honest sequential live VU/reset/PU presentation |
-| <a id="ut-tire-cloud-008"></a>`UT-TIRE-CLOUD-008` | `REQ-TIRE-CLOUD-011` | Preview and complete exact current-run deletion; wildcard rejected; unrelated and Brake data unchanged; dashboard empty |
+| <a id="ut-tire-cloud-008"></a>`UT-TIRE-CLOUD-008` | `REQ-TIRE-CLOUD-011` | Test-only/full-context selectors; empty/duplicate/foreign/wildcard/Production-only rejection; opaque token expiry/consumption/restart and stale selected/nonmatching digests; all ten categories cleared, peer/Brake preservation and read-only uncertain-result reconciliation |
 | <a id="ut-tire-cloud-009"></a>`UT-TIRE-CLOUD-009` | `REQ-TIRE-CLOUD-013` | ARM64 immutable image, health, dedicated volume, restart and secret/path policy |
-| <a id="ut-tire-cloud-010"></a>`UT-TIRE-CLOUD-010` | `REQ-TIRE-CLOUD-014` | Loopback UI, authenticated VM path, fixed `tire-sp2` helper, PKCS#12 mode/exclusion and Brake/Tire port/volume/credential isolation |
+| <a id="ut-tire-cloud-010"></a>`UT-TIRE-CLOUD-010` | `REQ-TIRE-CLOUD-014` | Loopback UI, isolated correlation-only VM path, fixed authenticated `tire-sp2` helper, PKCS#12 mode/exclusion, installed shared-SP profile isolation and expanded distinct-SP/dual-VM/LAN negatives |
 | <a id="ut-tire-cloud-011"></a>`UT-TIRE-CLOUD-011` | `REQ-TIRE-CLOUD-015` | Exact fixed start/stop binding; wrong identity/version/digest/profile/parameter rejection; duplicate start; lease/ceiling/restart stop; offline-disabled UI; no admin bypass or enforcement claim |
 
 Every obligation is deterministic and runnable without personal credentials,
@@ -561,7 +563,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | `REQ-TIRE-CLOUD-010` | `UT-007` | Source labels | N/A | Sequential live binding | `AF-X-SOURCE` |
 | `REQ-TIRE-CLOUD-011` | `UT-008` | Exact deletion API | N/A | R0 cleanup | N/A |
 | `REQ-TIRE-CLOUD-012` | `UT-005` | Functional and Service-log state matrix | D4-014 Service-log role/API fixtures | Fault recovery plus live SP2 ownership/lifecycle qualification | `AF-TIRE-FR` and selected log evidence |
-| `REQ-TIRE-CLOUD-013` | `UT-009` | ARM64 container/health/volume | Packaging boundary | Docker restart | N/A |
+| `REQ-TIRE-CLOUD-013` | `UT-009` | ARM64 container/health/volume and host views | Packaging boundary | Owned-container stop/restart persistence | N/A |
 | `REQ-TIRE-CLOUD-014` | `UT-010` | Local/isolation policy | Ingestion/helper auth | VU/PU route + Brake peer | Network/offline presentation |
 | `REQ-TIRE-CLOUD-015` | `UT-011` | Fixed control state machine | D4-023.3 command/profile | Real Tire outbound route and same-cgroup worker | Bounded CPU-isolation proof action |
 
@@ -575,7 +577,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | Resource bounds | Message/page/storage/retention/upload limits plus one fixed, lease/ceiling-bounded Tire CPU-load control; no quota authority | Unit, load, integration |
 | Chronology | Preserve event/receipt/sync times; never present Cloud delivery as part of the local advisory path | Unit, analysis, end-to-end |
 | Offline | Idempotent reconnect and explicit delayed/offline/retention state | Unit, integration, end-to-end |
-| Local hosting | Native ARM64 container, dedicated volume, loopback UI, authenticated VM route and native D4-010.3 `tire-sp2` helper boundary | Packaging, component, contract, integration |
+| Local hosting | Native ARM64 backend, dedicated volume, host Presenter views, loopback UI, isolated correlation-only guest route and authenticated native `tire-sp2` helper | Packaging, component, contract, integration |
 
 ## Open D4 Gates
 

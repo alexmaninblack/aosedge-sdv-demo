@@ -5,15 +5,15 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross)
-- Version: 0.4
+- Version: 0.5
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted D4 VISS trust decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
@@ -276,8 +276,11 @@ dependency.
   SOTA. One session-scoped non-root native helper may implement them, but each
   dashboard surface shall be pre-bound to one profile and shall never supply a
   profile, credential path, arbitrary candidate path or Cloud URL. The current
-  `aos-signer` 2.0.1 path shall keep one mode-`0600` local passwordless PKCS#12
-  per profile outside Git, browser, containers, VMs, artifacts and logs. Only
+  `aos-signer` 2.0.1 path shall bind each profile to a mode-`0600` private local
+  passwordless PKCS#12 outside Git, browser, containers, VMs, artifacts and logs.
+  Installed use shall require one OEM and one associated-SP credential;
+  Brake/Tire profiles may reference the same SP file without copying it.
+  Expanded cross-provider proof shall retain distinct SP identities. Only
   an independent AosCloud re-read may establish `PUBLISHED`; ambiguity shall
   become `UNCERTAIN` without blind retry, and publication shall never perform
   OEM deployment approval.
@@ -287,8 +290,8 @@ dependency.
   `CMP-AOS-CLOUD`
 - Interfaces: `IF-LC-001`, `IF-LC-002`, `IF-LC-007`
 - Executable contract: [Artifact Publication Credential Profile 1.0.0](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
-- State: D4-010.3 decided; exact helper request/result transport and Cloud
-  reconciliation lookup remain implementation gates
+- State: D4-010.3 decided; installed protected publication/reconciliation
+  implemented with scoped evidence; full negative/cross-provider proof remains required
 
 #### Acceptance criteria
 
@@ -462,7 +465,7 @@ repositories and are composed by the cross-package contract/integration gate.
 | `REQ-CROSS-001` | Reused owner obligations | `IF-AUTH-007`–`009` conformance | Real Service Manager/IAM, `CMP-KAC`, both services and KUKSA | `CR-E2E` G2/T1 authorization |
 | `REQ-CROSS-002` | Reused owner obligations | JWT/trust/key-custody profile | Independent VU/PU signer/verifier lifecycle | `CR-E2E` issue/expiry/revocation |
 | `REQ-CROSS-010` | Reused owner obligations | Trusted Provider/Service separation contract | Real trusted Provider connection plus SOTA credential-reuse negatives | `CR-E2E` G1/G3 readiness under the declared trust assumption |
-| `REQ-CROSS-011` | Reused owner obligations | D4-010.3 profile/custody/helper conformance | Three fixed profile paths, credential-exclusion proof and authoritative Cloud reconciliation | `AT-E2E-003` publication/approval separation |
+| `REQ-CROSS-011` | Reused owner obligations | D4-010.3 profile/custody/helper conformance | Three fixed profile bindings, installed shared-SP versus expanded distinct-SP credentials, exclusion proof and authoritative Cloud reconciliation | `AT-E2E-003` publication/approval separation |
 | `REQ-CROSS-004` | Reused owner obligations | Full advisory positive/negative matrix | Real KUKSA→VDP→Gateway chain with bypass injection | G4/T1 accepted and rejected advisories |
 | `REQ-CROSS-005` | Reused owner obligations | Log API/redaction/retention contract | Scoped native request/result/download/delete | Operational evidence view |
 | `REQ-CROSS-006` | Reused owner obligations | Correlation-field and cleanup contracts | Sequential VU/reset/PU plus both backends | Cross-surface evidence and R0 |

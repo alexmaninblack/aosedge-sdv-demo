@@ -10,10 +10,10 @@
 - Accepted: 2026-08-28
 - Owner: Platform Team / independent component FOTA
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
 - Accepted D4 VISS input: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)

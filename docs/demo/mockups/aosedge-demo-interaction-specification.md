@@ -7,8 +7,8 @@
 - Version: 2.6
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.1](../staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
+- Scenario input: [Demo Scenarios 2.2](../staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
 - Interaction decision: [D4-026.7 Linear Audience Interaction Model](../../requirements/d4-decision-register.md#d4-026-7)
 - Global lifecycle decision: [D4-026.15 M0/M1/G0/R0 Interaction Model](../../requirements/d4-decision-register.md#d4-026-15)
 - Fleet and Unit Set identity decision: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../../requirements/d4-decision-register.md#d4-012-1)

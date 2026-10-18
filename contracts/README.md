@@ -60,7 +60,7 @@ Frozen historical schemas are not silently rewritten to match newer handlers.
   — accepted D4-016.5 readiness axes, requested Aos quotas, cross-version state,
   CPU-throttling isolation boundary and bounded native-log evidence.
 - [Brake Health Cloud API](brake-cloud-api/README.md)
-  — D4-017 review candidate for isolated local-demo delivery, transactional
+  — accepted D4-017 contract for isolated local-demo delivery, transactional
   durable acknowledgement, SQLite persistence, factual UI queries and exact
   reset; production backend authentication is Function Team-owned and out of
   scope.
@@ -71,8 +71,9 @@ Frozen historical schemas are not silently rewritten to match newer handlers.
   — accepted D4-019 contract for the isolated Function Team 2 backend,
   idempotent derived-result ingestion, UI queries and exact reset.
 - [Local Demo Hosting and VM Route](local-demo-hosting/README.md)
-  — D4-020 review candidate for exact ARM64 containers, ports, volumes,
-  loopback/publication-helper sessions and isolated QEMU guest-to-host routes.
+  — D4-020 design-reviewed hosting/containment contract for two ARM64 backend
+  containers, host Presenter/native tools, protected helper sessions and
+  isolated QEMU guest-to-host routes; expanded route/security proof is separate.
 - [Service Tenant Quota Proof](service-tenant-quota-proof/README.md)
   — D4-023 design-reviewed contract for Function Team-requested/OEM-approved Service
   metadata, AosCore-only enforcement and the read-only demo evidence boundary.
@@ -83,8 +84,9 @@ Frozen historical schemas are not silently rewritten to match newer handlers.
   — D4-021 design-reviewed Factory/overlay layout, bounded per-operation
   recovery registry, resource-scoped conflicts and ordered R0 cleanup.
 - [End-to-End Stage Evidence](e2e-stage-evidence/README.md)
-  — D4-025 review-in-progress contract for atomic stage assertions, evidence
-  composition and the formal acceptance dossier.
+  — D4-025 design-reviewed contract with accepted subdecisions for atomic stage
+  assertions, evidence composition and the formal acceptance dossier; scoped
+  runtime passes do not close full-dossier or expanded-profile acceptance.
 
 Component-private schemas and fixtures remain in their owning repositories.
 This directory contains only contracts that span repository boundaries.

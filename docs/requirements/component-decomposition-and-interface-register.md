@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 2.2
+# Component Decomposition and Interface Register 2.3
 
 - Status: Accepted
-- Version: 2.2
+- Version: 2.3
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 2.2](system-requirements-and-traceability.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.3](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 2.3](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -82,10 +82,10 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 1. High-Level Architecture 1.8 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 2.1 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 2.2 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 2.2 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 2.3 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 2.2 owns normative `SYS-*` obligations and gap
+4. System Requirements 2.3 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -376,9 +376,9 @@ changing their historical meaning.
 | ID | Producer | Consumer | Contract and direction | Authority | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="if-func-001"></a>`IF-FUNC-001` | `CMP-BHS` | `CMP-BRAKE-BE` | Versioned bounded Brake Health message family. D4-016.2 freezes the v1 [RFC-8785/SHA-256 chunk/completion and local-spool contract](../../contracts/brake-telemetry-window/README.md); D4-017 freezes isolated local HTTP delivery and durable acknowledgement. Later messages are idempotent v2/v3 `BrakeHealthAssessment`, threshold/change `BrakeHealthEvent`, and correlated advisory fact; preserve original sample/event times. Reported `system_uid` is demo correlation, not authenticated backend identity; production authentication is Function Team 1-owned and out of scope | Function Team 1 data contract | `CURRENT / SCOPED`; durable asynchronous product delivery |
-| <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` / `CMP-ORCH` | Query/subscription API for reconstructed v1 windows and persisted v2/v3 Brake Health derived results, scoped by an injected exact current Test/Production Unit context sourced from the provisioning journal; later out-of-order chunks remain hidden until authoritative window start, and event VDP provenance remains nullable/pending until exact assessment correlation. The exact preview-and-delete operation freezes an explicitly ordered RFC-8785/SHA-256 row set and maximum-1024-character process-local HMAC confirmation; malformed, bad-MAC, expired or previous-process tokens are `409 PREVIEW_TOKEN_EXPIRED`, while only a valid-MAC changed-row-set token is `409 PREVIEW_STALE`. Live context wiring remains integration work and no Cloud state is inferred | Function Team 1 backend | `CURRENT / SCOPED`; live query/detail/reset/cleanup; retained design fields use current protocol amendments |
+| <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` / `CMP-ORCH` | Query/subscription API for reconstructed v1 windows and persisted v2/v3 Brake Health derived results, scoped by the journal-injected required Test and optional Production context; installed cleanup selects only Test, while explicit expanded cleanup may select all sorted context UIDs, with no time selector; later out-of-order chunks remain hidden until authoritative window start, and event VDP provenance remains nullable/pending until exact assessment correlation. The exact preview-and-delete operation freezes an explicitly ordered RFC-8785/SHA-256 row set and maximum-1024-character process-local HMAC confirmation; malformed, bad-MAC, expired or previous-process tokens are `409 PREVIEW_TOKEN_EXPIRED`, while only a valid-MAC changed-row-set token is `409 PREVIEW_STALE`. Live context wiring is implemented; all ten current record categories are covered, peer data is preserved transactionally and no Cloud state is inferred | Function Team 1 backend | `CURRENT / SCOPED`; live query/detail/reset/cleanup; retained design fields use current protocol amendments |
 | <a id="if-tire-003"></a>`IF-TIRE-003` | `CMP-TIRE` | `CMP-TIRE-BE` | Versioned, bounded and idempotent `TireHealthAssessment`, band-change event, advisory fact and Function Team-reported `TIRE_FUNCTION_STATUS` over the isolated local demo route. Reported `system_uid` is correlation, not authenticated backend identity; production authentication is Function Team 2-owned and out of scope | Function Team 2 data contract | `CURRENT / SCOPED`; v2 products and separate observation v3 |
-| <a id="if-tire-004"></a>`IF-TIRE-004` | `CMP-TIRE-BE` | `CMP-TIRE-DASH` / `CMP-ORCH` | Query/subscription API for persisted Tire Health results; one fixed, identity-bound D4-023.3 CPU-isolation proof command path with no arbitrary load parameters or enforcement claim; plus an exact preview-and-delete administration operation for current-run cleanup | Function Team 2 backend | `PARTIAL`; query/cleanup implemented; fixed CPU qualification control absent |
+| <a id="if-tire-004"></a>`IF-TIRE-004` | `CMP-TIRE-BE` | `CMP-TIRE-DASH` / `CMP-ORCH` | Query/subscription API for persisted Tire Health results; one fixed, identity-bound D4-023.3 CPU-isolation proof command path with no arbitrary load parameters or enforcement claim; plus private exact-Test or explicit full-context cleanup with a 60-second process-held opaque token and ten-category proof; invalid tokens are INVALID_PREVIEW and changed selected/nonmatching rows are STALE_PREVIEW, not Brake HMAC errors | Function Team 2 backend | `PARTIAL`; query/cleanup implemented; fixed CPU qualification control absent |
 
 Functional Cloud interfaces are asynchronous. Loss of Cloud connectivity must
 not stop local Brake Health or Tire Health analysis and advisory generation.
@@ -431,7 +431,7 @@ not a claim of implemented or qualified behavior.
 | <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows; apply the closed twelve-path/fixed-point v2 synthetic assessment with atomic derived admission and crash-safe state; operate offline; and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, exact model input/arithmetic/identity/time, model/data-product evolution, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Deliver one mature Tire Health v1.0 product on accepted VDP v3: estimate condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Exact VDP v3 prerequisite, model, persistence, bounded reporting, advisory and multi-tenant isolation |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, pre-Apply revert, SOTA removal, forward repair, native logging and retirement |
-| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; and run as a Mac-local ARM64 container without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, exact-current-Unit persistence and complete R0 deletion |
+| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; with its backend in a Mac-local ARM64 container and live views in host Presenter, without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, exact-current-Unit persistence and complete R0 deletion |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Present one prepared Tire v1.0 candidate, delegate protected publication and ingest/present real bounded Tire Health results as an independent Mac-local Function Team product without owning OEM lifecycle state. | Tire Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, idempotency, delivery/freshness, product isolation, local hosting, current-run persistence and complete R0 deletion |
 | <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles and Unit Set membership; present the immutable Platform candidate catalogue and delegate protected FOTA publication; facilitate staged releases, evidence-backed final OEM approval, authoritative dashboards, ordered retirement and next-run provisioning. | Software Delivery Dashboard and Demo Orchestrator | Candidate integrity, protected publication, target safety, source binding, membership reconciliation, decision-basis presentation, native logs, observability and reset |
 | <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, chronology, resource and offline constraints shared by multiple owners. | Cross-component concerns; helper implementation remains allocated to `CMP-KAC` / `CR-KAC` | Least privilege, fail-closed behavior, evidence controls and chronology |

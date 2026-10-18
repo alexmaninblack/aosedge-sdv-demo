@@ -118,7 +118,8 @@ duplicate-key, malformed, oversized or unknown context is rejected.
 Cleanup accepts exactly `[currentTestUid]` or all current context UIDs (one or
 two). It rejects empty, duplicate, foreign and Production-only selectors.
 The selector is checked against current context and sorted before use; valid
-UID syntax alone grants no cleanup authority.
+UID syntax alone grants no cleanup authority. Neither a `demoRunId` nor an
+independent time-window selector is accepted.
 
 ### Transport and closed requests
 
@@ -140,13 +141,16 @@ Preview returns `schemaVersion: 1`, sorted `systemUids`, `recordCounts`,
 `confirmationToken` and `expiresAt`. Unlike the request, it has no
 `contractVersion` field. Tokens last 60 seconds and at most 16 previews are
 retained. Token contents are private and must not enter audit evidence.
+The token is opaque random server-held state, not Brake's HMAC wire format.
+Invalid, expired, wrong-selector, consumed or previous-process tokens yield
+`409 INVALID_PREVIEW`; a backend restart requires a fresh preview.
 
 Both count objects cover ten categories: `messages`, `assessments`, `events`,
 `advisories`, `functionStatus`, `quarantine`, `resetProducers`, `resetCommands`,
 `functionObservations`, `functionObservationConflicts`.
 
 Execution revalidates context, exact selector/token/expiry and both matching
-and nonmatching record-set digests. Changed data is `STALE_PREVIEW`; no blind
+and nonmatching record-set digests. Changed data is `409 STALE_PREVIEW`; no blind
 retry is valid. One SQLite transaction deletes selected rows, including reset
 and observation records, proves zero selected rows and unchanged nonmatching
 digest, then consumes the preview token. Uncertain response requires read-only

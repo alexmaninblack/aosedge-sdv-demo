@@ -47,7 +47,7 @@ target-host interruption/repair gate. See the [current baseline](../docs/qualifi
 | [Brake model](brake-health-model/README.md) | V2/V3 fixed-point model, persistent state and derived outbox | Synthetic demonstration model; frozen 20/20 stimulus/calibration acceptance is not proved by isolated successes |
 | [Brake advisory](brake-health-advisory-policy/README.md) | V3 retained-model activation, typed request, lease and correlated Gateway fact | Reset is the accepted separate demo exception; a write/HTTP ACK is not Gateway application |
 | [Brake runtime](brake-health-runtime/README.md) | Native quotas, independent input/analytics/delivery/advisory state | Ordinary packages: 1024 files and 24 PIDs. Declaration/monitoring is not a full quota stress proof |
-| [Brake Cloud](brake-cloud-api/README.md) | Durable transaction/ACK, query/window detail, SSE notification, reset and scoped cleanup | Product v2 and observation v3 coexist with legacy decoders. Integrated Presenter is not the standalone fixture shell |
+| [Brake Cloud](brake-cloud-api/README.md) | Durable transaction/ACK, query/window detail, SSE notification, model Reset and scoped Test cleanup | Product v2/observation v3 coexist with legacy decoders. Current cleanup covers ten categories; retained six-counter schemas/fixtures are not complete current admin validators. Brake HMAC and Tire opaque tokens are different protocols. Integrated Presenter is not the standalone fixture shell |
 | [Tire model](tire-health-model/README.md) | Functional V1 with VDP V3 dynamics, bounded estimator/hysteresis, persistence, advisory | Missing samples do not prove `INCOMPATIBLE_VDP`; apply option A. Full healthy/pre-aged calibration remains separate |
 | [Tire Cloud](tire-cloud-api/README.md) | Independent product delivery/query/SSE, reset, current-Test context/cleanup | [Current administrative protocol](tire-cloud-api/README.md#current-test-administrative-protocol) owns Test-only selectors and ten-counter responses; frozen two-UID schemas remain compatibility inputs, not a generated-client specification |
 | [QM advisory](qm-advisory-profile/README.md) | Typed JSON leaf request/status and readiness, exact endpoints, freshness/replay/lease | Brake V3 and Tire V1; package release remains unchanged in provenance. Short genuine readiness interruptions are not hidden |
@@ -81,7 +81,7 @@ target-host interruption/repair gate. See the [current baseline](../docs/qualifi
 
 ## Contract-maintenance debt, not a product change
 
-The retained Tire cleanup profile/schema and older design-stage hosting,
+The retained Brake six-counter and Tire two-UID cleanup profiles/schemas and older design-stage hosting,
 dual-role acceptance and compatibility descriptions must not be used as a
 complete generated-client specification for the current Studio. Their current
 differences are explicit above. Updating executable profile versions, hashes,

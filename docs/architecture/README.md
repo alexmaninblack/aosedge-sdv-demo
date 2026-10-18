@@ -15,7 +15,7 @@ from expanded design obligations.
 
 - [High-Level Architecture 1.8](high-level-architecture.md): accepted boundaries,
   authority and invariants, with effective installed and expanded profiles stated in the owning sections.
-- [Architecture Flows 2.2](demo-scenario-architecture-flows.md): manufacturing,
+- [Architecture Flows 2.3](demo-scenario-architecture-flows.md): manufacturing,
   provisioning, component/service evolution, offline operation and retirement.
 - [Repository boundaries](repository-boundaries.md): component ownership.
 - [Demo Control](demo-control.md): current shared orchestration and state owners.

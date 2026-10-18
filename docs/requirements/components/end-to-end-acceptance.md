@@ -10,10 +10,10 @@
 - Accepted: 2026-08-27
 - Owner: System Acceptance with Platform, Function, Gateway and Demo Solution teams
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 2.2](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.3](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)

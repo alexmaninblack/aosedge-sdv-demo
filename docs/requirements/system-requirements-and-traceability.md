@@ -1,16 +1,16 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 2.2
+# System Requirements and Traceability 2.3
 
 - Status: Accepted
-- Version: 2.2
+- Version: 2.3
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.3](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -92,8 +92,8 @@ passes its acceptance criteria, and the evidence is retained.
 ## Source Precedence
 
 1. High-Level Architecture 1.8 owns boundaries, authority and invariants.
-2. Demo Scenario 2.1 owns the audience-visible stage progression.
-3. Architecture Flows 2.2 owns detailed lifecycle, runtime, observability and
+2. Demo Scenario 2.2 owns the audience-visible stage progression.
+3. Architecture Flows 2.3 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -205,7 +205,7 @@ by HLA and UI-STUDIO-026, not to every installed Test action.
 | <a id="sys-rel-008"></a>`SYS-REL-008` | Separate producer acceptance and OEM deployment authorization | A Function Team shall use its Service Provider identity to publish and technically verify its service artifact. The owning Platform, Brake or Tire team shall explicitly accept the exact Validation Unit result. OEM Release Authority, as an independent governance role outside those producer teams, shall authorize exact targeting/assignment through the OEM delivery context; expanded governance shall additionally record the independent per-release Test and Production decisions. AosCloud shall record the owner acceptance, Release Authority decision, artifact version/object identity, target and transition; the demo shall bind those records to the exact retained publication digest chain and shall not claim a Cloud-side SOTA content digest where the released API exposes none. | `T,I,A,D` | `GAP-AF-06`, `GAP-AF-17` |
 | <a id="sys-rel-009"></a>`SYS-REL-009` | Dependent-release milestone gate | Every VDP FOTA and dependent Service SOTA shall retain its own owner acceptance, OEM authorization, Cloud lifecycle object and result. A dependent Service shall not be promoted to a target until the required VDP is actually ready there. G3/G4 shall be derived capability milestones only, complete after both releases and their live behavior are proven, with no combined Cloud object, atomic group approval or cross-team rollback. | `T,I,D` | `GAP-AF-17`, `GAP-AF-20` |
 | <a id="sys-rel-010"></a>`SYS-REL-010` | Evidence-backed OEM Release Authority decision | When the expanded profile exposes Test deployment or Production authorization, the workflow shall present and bind the exact artifact and service-metadata digests, requested permissions, effective target, required evidence with freshness/status, applicable owning-team acceptance and active OEM Release Authority context. Any missing, stale, failed or mismatched prerequisite shall block the action; passing evidence shall never auto-authorize; the explicit Release Authority decision shall be recorded in AosCloud and followed by an authoritative state re-read. | `T,I,A,D` | `GAP-AF-06`, `GAP-AF-17` |
-| <a id="sys-rel-011"></a>`SYS-REL-011` | Role-bound protected publication | Exactly three non-interchangeable current-demo publication profiles shall bind Platform OEM to VDP Component FOTA, the Brake SP context to Brake Health SOTA and the Tire SP context to Tire Health SOTA. Those contexts may share the installed associated SP certificate; expanded use requires independent SP domains. One session-scoped non-root native helper may implement all profiles, but each dashboard surface shall be pre-bound to one profile and shall not select a credential path, profile, arbitrary candidate path or Cloud URL. The installed `aos-signer` 2.0.1 compatibility path shall use one local mode-`0600`, Git-excluded passwordless PKCS#12 per profile for both signing and mTLS upload; no dashboard, container, VM image or artifact may receive it. Only an independent AosCloud re-read may establish `PUBLISHED`; an ambiguous result shall be reconciled as `UNCERTAIN` without blind retry, and technical publication shall never perform OEM deployment approval. | `T,I,A,D` | `GAP-AF-17` |
+| <a id="sys-rel-011"></a>`SYS-REL-011` | Role-bound protected publication | Exactly three non-interchangeable current-demo publication profiles shall bind Platform OEM to VDP Component FOTA, the Brake SP context to Brake Health SOTA and the Tire SP context to Tire Health SOTA. Installed use shall require one OEM credential and one associated-SP credential; both service profiles may reference the same SP file without duplication. Expanded cross-provider use requires independent SP domains. One session-scoped non-root native helper may implement all profiles, but each dashboard surface shall be pre-bound to one profile and shall not select a credential path, profile, arbitrary candidate path or Cloud URL. The installed `aos-signer` 2.0.1 compatibility path shall bind each profile to a local mode-`0600`, Git-excluded passwordless PKCS#12 for both signing and mTLS upload; no dashboard, container, VM image or artifact may receive it. Only an independent AosCloud re-read may establish `PUBLISHED`; an ambiguous result shall be reconciled as `UNCERTAIN` without blind retry, and technical publication shall never perform OEM deployment approval. | `T,I,A,D` | `GAP-AF-17` |
 | <a id="sys-rel-012"></a>`SYS-REL-012` | Independent resource-scoped release operations | Installed protected mutations shall serialize under the existing writer while read-only observations remain independent. Expanded disjoint-resource concurrency shall be coordinated per exact candidate/operation and resource-conflict key set without inventing independent authority or an automatic mutation queue. Active or unresolved operations on disjoint candidate/digest/profile, Cloud-object, Batch/Campaign, Unit and Unit-Set keys may proceed independently; only overlapping keys shall block. Provisioning, identity retirement, exclusive live-source handover/reset and R0 freeze/cleanup shall remain run-exclusive. Restart shall reconcile every non-terminal operation from fresh authoritative state without blind retry, while read-only views remain available. Local helper capacity shall affect only the requested operation and shall neither be presented as an AosCloud restriction nor automatically queue or trigger another team's action. | `T,I,A,D` | `GAP-AF-17` |
 
 [Native Cloud Service-to-VDP rejection (`SYS-REL-006`)](#sys-rel-006) is
@@ -266,9 +266,9 @@ remains resolvable for historical traceability.
 | <a id="sys-bhs-003"></a>`SYS-BHS-003` | Allowlisted v3 advisory | Service v3 shall request only the accepted Brake Health advisory target and shall not gain arbitrary display-text or vehicle-motion authority. | `T,I` | `GAP-AF-10`, `GAP-AF-15` |
 | <a id="sys-bhs-004"></a>`SYS-BHS-004` | Offline local continuity | Brake Health local assessment and advisory shall continue without Cloud connectivity; in-progress/completed v1 windows and v2/v3 derived functional messages shall use bounded retention, retry and idempotent synchronization with original sample/event times. | `T,A,D` | `GAP-AF-11` |
 
-D4-016.1/.2/.3/.4/.5 are accepted. The D4-017 Cloud transport/store/reset
-values remain an executable review candidate in the
-[contract index](../../contracts/README.md). D4-003 calibration remains an
+D4-016.1/.2/.3/.4/.5 and D4-017 Cloud transport/store/cleanup are accepted
+design contracts in the [contract index](../../contracts/README.md), with
+implemented paths and scoped evidence in the current baseline. D4-003 calibration remains an
 implementation-acceptance gate for the accepted model. These contracts refine
 the stable system requirements without changing their authority or adding a
 new component.
@@ -285,14 +285,17 @@ new component.
 | <a id="sys-tire-006"></a>`SYS-TIRE-006` | Offline inspection advisory | Local estimation and inspection-advisory generation shall continue without Cloud connectivity, and the service shall request only its typed allowlisted Tire Health target without vehicle-motion or arbitrary-display authority. | `T,I,A,D` | `GAP-AF-22`, `GAP-AF-23` |
 
 Accepted D4-018 and D4-019 define the exact in-vehicle and Cloud contracts.
-D4-020 proposes their physical Mac/QEMU route.
+D4-020 defines their design-reviewed physical Mac/QEMU hosting and route:
+two independent Linux/arm64 backend containers and host Presenter/Demo Control,
+CARLA and native Driving Control, not a third dashboard container.
 The first demo uses lightweight isolated local functional-backend transport
 without per-Unit backend credentials; `system_uid` is correlation-only and
 production backend authentication remains independently Function Team-owned
 and out of scope. Signed updates, OEM authorization and in-vehicle
-Aos IAM/KUKSA/Gateway security remain unchanged. The candidate numeric values
-and two-VM route integration require human review and live qualification before
-implementation acceptance.
+Aos IAM/KUKSA/Gateway security remain unchanged. Accepted numeric/model design
+does not close calibration or resource qualification. Expanded two-VM routing,
+helper isolation and LAN negatives require their own live proof before full
+implementation acceptance; scoped installed passes do not supply that proof.
 
 ### Retired Function Team 2 candidate requirements
 
@@ -358,12 +361,12 @@ in-Unit performance benchmarking is tracked separately in the roadmap.
 
 | ID | Short name | System requirement | Verification | Gap source |
 | --- | --- | --- | --- | --- |
-| <a id="sys-ret-001"></a>`SYS-RET-001` | Retire Units and overlays | R0 shall finish the final authoritative read, place both Units offline through a qualified bounded local operation, wait until AosCloud reports each `Offline`, call the OEM offline-only deprovision API, reconcile its no-body `204`, prove retired credentials cannot return either Unit `Online`, stop the VMs, delete exact current-run log requests, remove each Unit from its role set by `system_uid`, delete each Unit by Cloud UUID, and prove Unit absence, empty sets and inaccessible Unit-owned Nodes before discarding the provisioned overlays. The current API exposes no standalone Node-delete operation and none shall be invented. | `T,I,A` | `GAP-AF-03`, `GAP-AF-19` |
-| <a id="sys-ret-002"></a>`SYS-RET-002` | Clear functional run data | Functional backends shall first preview and then permanently delete all dashboard-visible data selected by exact equality with the current Test Vehicle and Production Vehicle Unit `system_uid` values supplied by the injected current-run provisioning context. The Test Vehicle retains the internal `VALIDATION` wire role. Empty, wildcard, partial, non-current or additional recipients shall block deletion. The preview shall bind an explicitly enumerated RFC-8785/SHA-256 logical row-set digest and counts; a process-local HMAC token shall be bounded to 1024 characters, expire after 60 seconds and require a new preview after every backend restart. Malformed, bad-MAC, expired and previous-process tokens shall return `409 PREVIEW_TOKEN_EXPIRED`; only a valid-MAC token bound to a changed current row set shall return `409 PREVIEW_STALE`. Fresh provisioning gives every run new Unit identities, so no `demoRunId`, independent time-window selector or historical demo-run archive is required. After successful R0, no matching demo telemetry, events, advisories or dashboard records remain; authoritative AosCloud lifecycle and audit history remains owned and retained by AosCloud. | `T,I` | `GAP-AF-19` |
+| <a id="sys-ret-001"></a>`SYS-RET-001` | Retire Units and overlays | Installed Finish shall stop owned source/VM/backends, retire only its exact current Test, reconcile Unit/Node/Subject/Set and backend effects, prove absence and empty desired/reported recipients, dispose only owned working files and remove the reconciled journal last. Permanent topology, releases, credentials, Factory and unrelated/Production state shall survive. Ordinary Finish shall not require a deliberate old-credential reconnect. In the expanded Validation/Production profile, R0 shall finish the final authoritative read, place both owned Units offline through a qualified bounded operation, wait for AosCloud `Offline`, invoke OEM offline-only deprovision, reconcile its no-body `204`, prove retired credentials cannot restore either Unit `Online`, stop the VMs, delete exact current-run log requests, remove each role membership by `system_uid`, delete each Unit by Cloud UUID and prove Unit absence, empty role sets and inaccessible Unit-owned Nodes before overlay disposal. Neither profile may invent a standalone Node-delete API or automatically create/provision the next run. | `T,I,A` | `GAP-AF-03`, `GAP-AF-19` |
+| <a id="sys-ret-002"></a>`SYS-RET-002` | Clear functional run data | Each functional backend shall expose preview/confirmed permanent deletion only to local Demo Control through its private mode-`0600` Unix admin boundary, using the injected journal-owned current-Unit context. Installed Finish selects exactly `[currentTestUid]`; explicit expanded cleanup may select all sorted current-context UIDs. Test retains the internal `VALIDATION` role. Missing, empty, duplicate, wildcard, foreign, Production-only or other unauthorized partial selectors shall delete nothing. Preview shall bind the exact selector, current canonical RFC-8785/SHA-256 record-set digest/counts and 60-second expiry; invalid, expired, previous-process or stale previews require a fresh preview without deletion. The backend-specific token/error protocol remains D4-017 for Brake and D4-019 for Tire, not a universal HMAC wire. One transaction shall delete all selected functional, reset and observation records, prove zero selected rows and unchanged nonmatching digest across deletion, preserving peers. Uncertain response requires authoritative read-only reconciliation, never blind execution retry. Fresh Unit identities define scope; no `demoRunId`, independent time-window selector or historical run archive is required. Model Reset shall preserve history and is not this cleanup. AosCloud lifecycle/audit history remains AosCloud-owned and retained. | `T,I` | `GAP-AF-19` |
 | <a id="sys-ret-003"></a>`SYS-RET-003` | Reset vehicle simulation state | R0 shall safe-stop the ego vehicle, remove only scenario-owned CARLA actors and sensors, restore changed CARLA world and Traffic Manager settings, clear run-local simulation evidence and report incomplete cleanup before the next run. | `T,I` | `GAP-AF-04` |
 | <a id="sys-ret-004"></a>`SYS-RET-004` | No rollback or fleet claim | The normal demo reset shall not be presented as a G4-to-G0 OTA rollback or as a production-fleet vehicle deletion policy. | `I,D` | `GAP-AF-03` |
 | <a id="sys-ret-005"></a>`SYS-RET-005` | Preserve immutable factory artifact | R0 shall not modify or replace the accepted OEM Demo Factory Image; after provisioned overlays are retired and discarded, the system shall verify and retain the same immutable factory-image digest as the source for the next M0 deployments. | `T,I` | `GAP-AF-01`, `GAP-AF-19` |
-| <a id="sys-ret-006"></a>`SYS-RET-006` | Reconcile Unit Sets for the next run | OEM/AosCloud administration shall create and pin once the dedicated `AosEdge SDV Demo Fleet` and its empty `AosEdge SDV Demo / Test Vehicles` and `AosEdge SDV Demo / Production Vehicles` Unit Sets. The Demo Orchestrator shall never create, mutate or delete those object definitions. R0 shall prove that both persistent role sets contain no retired Unit and are empty after Cloud deprovisioning and Unit deletion. The next M1 shall verify the pinned Fleet/set UUIDs, titles and validation flags, provision new Unit and Node identities, assign exactly one new Validation/Test Unit and one new Production Unit to their correct disjoint demo-role sets, and shall not reuse prior-run batch, validation, Campaign or target assumptions after membership changes. | `T,I,A` | `GAP-AF-03`, `GAP-AF-06`, `GAP-AF-19` |
+| <a id="sys-ret-006"></a>`SYS-RET-006` | Reconcile Unit Sets for the next run | Installed Setup may prepare only the absent model/empty Test verification set through its accepted Cloud owner; reuse requires exact authenticated selection, not title-based adoption. Finish shall preserve permanent topology, reconcile only current-Test membership/recipients and preserve unrelated/Production objects. In the expanded profile, OEM administration shall create and pin once `AosEdge SDV Demo Fleet` and its dedicated Test/Production role sets; Demo Orchestrator shall never create, rename, reconfigure, move or delete those definitions. Expanded R0 shall prove both role memberships empty; the next expanded M1 shall verify pinned UUIDs/titles/validation flags and place fresh distinct Unit/Node identities into the correct disjoint sets. Neither profile shall reuse retired batch, validation, Campaign or target assumptions after membership changes or implicitly create/provision the next run. | `T,I,A` | `GAP-AF-03`, `GAP-AF-06`, `GAP-AF-19` |
 
 ## Gap Coverage Matrix
 
@@ -402,7 +405,7 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 2.2](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 2.3](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.

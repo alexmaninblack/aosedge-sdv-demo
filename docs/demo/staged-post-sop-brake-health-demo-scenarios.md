@@ -4,7 +4,7 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted
-- Version: 2.1
+- Version: 2.2
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: Demo Architecture
@@ -13,7 +13,7 @@
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.8, with detailed interaction mapping in Demo Scenario Architecture Flows
-  2.2
+  2.3
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -962,7 +962,7 @@ an already-persisted active v2 condition without fabricating another assessment
 or band-change event. D4-016.5 runtime and evidence behavior is also accepted
 in the [D4-016 decision record](../requirements/d4-decision-register.md#d4-016);
 D4-023 still qualifies the requested quotas and Tire CPU-isolation proof.
-The [D4-017 Brake Cloud API review candidate](../../contracts/brake-cloud-api/README.md)
+The accepted [D4-017 Brake Cloud API](../../contracts/brake-cloud-api/README.md)
 separately owns the isolated local demo delivery, durable acknowledgement,
 backend persistence, queries and exact current-Unit cleanup. Production
 functional-backend authentication remains Function Team 1-owned and out of
@@ -1115,26 +1115,30 @@ pressure, temperature, puncture, load, force, or torque measurements. Hidden
 simulation truth is used only for qualification and is never presented as a
 measured vehicle signal.
 
-The D4-018 review candidate uses exactly 15 VDP v3 paths: speed, lateral
+The accepted D4-018 model contract uses exactly 15 VDP v3 paths: speed, lateral
 acceleration, steering, four wheel speeds, four longitudinal slips and four
-lateral-slip angles. It proposes a deterministic local condition score and
-band with immediate worsening and three-episode improvement hysteresis. Those
-values become accepted only after D4-003 proves 10/10 `HEALTHY` and 10/10
-`PRE_AGED` live separations without exposing the oracle. See
+lateral-slip angles. It defines a deterministic local condition score and
+band with immediate worsening and three-episode improvement hysteresis. Model
+design acceptance does not close D4-003: implementation acceptance still
+requires 10/10 `HEALTHY` and 10/10 `PRE_AGED` live separations without exposing
+the oracle. See
 [Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md).
 
 `T1` follows `G4` in the audience presentation so the required VDP v3 data and
 advisory contract already exist. Tire Health does not depend on the Brake
 Health service, backend, dashboard, model, or SOTA 1 lifecycle. Brake Health
 demonstrates multi-version product evolution; Tire Health demonstrates a
-second independent Function Team, Service Provider identity, data product and
-SOTA lifecycle sharing the accepted platform.
+second independent Function Team, service identity, data product and SOTA
+lifecycle sharing the accepted platform. Installed use shares the associated
+SP credential; the expanded profile additionally separates SP organizations.
 
 The multi-tenancy claim is deliberately bounded and visible: Tire Health v1.0
 and Brake Health v3 run as separate service instances on the same Domain
-Controller, with distinct Service Provider publication identities, service
-metadata, IAM-derived KUKSA permissions, resource quotas, SOTA lifecycles,
-functional backends and dashboards. The demo does not claim third-party
+Controller, with distinct role-bound publication profiles, service metadata,
+IAM-derived KUKSA permissions, resource quotas, SOTA lifecycles, functional
+backends and dashboard views. Separate SP publication identities are an
+additional expanded-profile obligation, not a first-install prerequisite.
+The demo does not claim third-party
 provider onboarding, fleet-operator tenancy or safety-domain consolidation.
 
 ### Release flow
@@ -1215,20 +1219,28 @@ introduced.
   runs as one worker at most, stops after backend-lease loss or an absolute
   180-second ceiling and always returns to `INACTIVE` after Service/VM restart.
   Its reported state is a control fact, not proof of quota enforcement.
-- This proof is deliberately bounded to two Aos-managed service instances,
-  one per Service Provider, on the same Domain Controller. The Mac-local
+- This proof is deliberately bounded to two Aos-managed service instances
+  on the same Domain Controller. Its expanded cross-provider case uses one
+  instance per independent SP; installed same-SP operation is not proof of
+  cross-provider isolation. The Mac-local
   functional backends use separate host-container limits and are not part of
   the AosCore tenant-isolation claim. Aggregate quota enforcement across
   several services owned by one Service Provider is also not claimed.
 
 The [D4-019 Tire Cloud API](../../contracts/tire-cloud-api/README.md)
-accepts derived results/readiness only and keeps its identity, database,
-volume and reset operation separate from Brake. The proposed
+accepts bounded derived products and Function Team-reported status, not
+AosCore readiness, and keeps its API, database, volume and cleanup separate
+from Brake. The design-reviewed
 [D4-020 local-hosting contract](../../contracts/local-demo-hosting/README.md)
-uses three prebuilt Mac-hosted ARM64 containers, loopback-only browser ports,
-one profile-bound native publication helper and separate local Brake/Tire
-ingestion routes without per-Unit backend credentials. These remain review
-candidates with an explicit live two-VM route gate.
+places two independent Linux/arm64 backend containers on the Mac. Integrated
+Presenter/Demo Control, CARLA and native Driving Control run on the host;
+Presenter uses loopback `18080` and the protected native operation boundary
+uses loopback `18600`. Separate Brake/Tire ingestion routes use `18091`/`18092`
+through the accepted guest-visible host route, without per-Unit backend
+credentials. Frozen older three-container fixtures are compatibility inputs,
+not the current deployment topology. The current baseline records scoped
+implementation/proof; expanded two-VM routing, helper isolation and LAN-negative
+qualification remain separate obligations.
 
 ## Deterministic CARLA Visual Scenario
 
@@ -1331,6 +1343,10 @@ Finish demo retires the exact current Test without rolling its software graph
 back to G0. Stop/Start instead preserves that Test. Quiesce owned source, VM
 and backends; reconcile exact Unit/Node/Subject/Set effects and backend cleanup;
 dispose of owned working files and remove the reconciled journal last.
+Backend cleanup previews exactly the journal-bound Test `system_uid`, then
+confirms and executes each product's private admin protocol. It has no time
+selector or `demoRunId`, preserves peer data, and rejects stale/expired previews
+without deletion. Model Reset is a different operation and preserves history.
 Preserve credentials, permanent Subjects/Sets, releases, Factory and unrelated
 or Production state. A next run requires a new explicit Create Controller and
 Provision. Ordinary Finish does not require reconnecting an old identity.
@@ -1376,8 +1392,9 @@ The controlled retirement sequence is:
    and both persistent Unit Sets. Prove both Units absent, both memberships
    empty, and Unit-owned Nodes inaccessible. A remaining reachable Node blocks
    R0 and is treated as a platform issue;
-10. permanently delete all functional backend/dashboard data for the exact
-   retired Unit IDs and current-session time window, leaving no local demo-run
+10. preview, confirm and permanently delete all functional backend/dashboard
+   data for the exact sorted retired Unit IDs from the provisioning journal,
+   without a time selector or `demoRunId`, leaving no selected local demo-run
    telemetry, event, advisory or dashboard history while preserving
    authoritative AosCloud lifecycle and audit history;
 11. discard the two provisioned overlays and their run-specific host access
@@ -1593,7 +1610,7 @@ proof above remain part of the demo and are not a performance benchmark.
 Cloud provisioning, authentication, signing, approval and operator-interaction
 duration are not vehicle-performance KPIs for this demo.
 
-Architecture Flows 2.2 owns detailed interaction mapping. These verification
+Architecture Flows 2.3 owns detailed interaction mapping. These verification
 obligations constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
@@ -1604,7 +1621,7 @@ the independence of the two SOTA lifecycles.
 - [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 2.3](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

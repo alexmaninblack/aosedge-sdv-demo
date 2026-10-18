@@ -48,10 +48,10 @@ belong here, separately from user instructions:
 These are normative obligations, not claims that every case is implemented:
 
 1. [High-Level Architecture 1.8](architecture/high-level-architecture.md).
-2. [Demo Scenarios 2.1](demo/staged-post-sop-brake-health-demo-scenarios.md).
-3. [Architecture Flows 2.2](architecture/demo-scenario-architecture-flows.md).
-4. [System Requirements 2.2](requirements/system-requirements-and-traceability.md).
-5. [Component and Interface Register 2.2](requirements/component-decomposition-and-interface-register.md).
+2. [Demo Scenarios 2.2](demo/staged-post-sop-brake-health-demo-scenarios.md).
+3. [Architecture Flows 2.3](architecture/demo-scenario-architecture-flows.md).
+4. [System Requirements 2.3](requirements/system-requirements-and-traceability.md).
+5. [Component and Interface Register 2.3](requirements/component-decomposition-and-interface-register.md).
 6. [Component requirements](requirements/components/README.md) and
    [D4 decision register](requirements/d4-decision-register.md).
 7. [Executable contracts](../contracts/README.md) and

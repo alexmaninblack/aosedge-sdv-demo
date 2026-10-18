@@ -1,18 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.2
+# Demo Scenario Architecture Flows 2.3
 
 - Status: Accepted
-- Version: 2.2
+- Version: 2.3
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 2.2](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 2.2](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 2.3](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 2.3](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -22,7 +22,7 @@
 
 ## Purpose and flow profiles
 
-This document connects HLA 1.8, Scenario 2.1 and the component requirements.
+This document connects HLA 1.8, Scenario 2.2 and the component requirements.
 It specifies software/data/decision/evidence movement, not a second lifecycle
 authority. The current installed profile is one Test, one OEM and one associated
 SP; the detailed VU/PU promotion and two-SP flows are the expanded accepted
@@ -103,7 +103,7 @@ When the inputs differ, use this order:
 
 1. High-Level Architecture 1.8 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 2.1 owns stage order, component presence, audience-visible
+2. Demo Scenario 2.2 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -512,7 +512,8 @@ identities throughout `G0–T1`; no FOTA or SOTA step reprovisions them.
 | Audience state | Two visibly separate vehicle roles: Test and Production; exact Verification and Production Unit Sets remain technical Details |
 
 Before M1 the session is correlated by start time and local overlay roles.
-After M1 it is bound to the two Unit IDs and the same time window.
+After M1 it is bound to the provisioned Unit IDs and observation interval.
+The interval correlates evidence; it is not a backend deletion selector.
 
 <a id="af-m1-fr"></a>
 ### `AF-M1-FR` — Fail-closed provisioning
@@ -1054,12 +1055,14 @@ part of the audience-visible proof that processing moved into the vehicle.
 The exact arithmetic, bands, message identities and crash-safe state are
 accepted in the [D4-016.3 Brake model contract](../../contracts/brake-health-model/README.md),
 with D4-003 live calibration still required before implementation acceptance.
-Local demo delivery, transactional acknowledgement and backend queries are
-prepared separately in the [D4-017 Brake Cloud API](../../contracts/brake-cloud-api/README.md).
+Local demo delivery, transactional acknowledgement, backend queries and cleanup
+are defined by the accepted [D4-017 Brake Cloud API](../../contracts/brake-cloud-api/README.md).
 Production functional-backend authentication is Function Team-owned and is
 not a security claim of this demo.
-The D4-017 transport remains a review candidate and neither contract is yet
-implemented by this flow document.
+The services and backend implement these product/transport paths; the
+[implementation map](current-implementation.md) and current baseline own
+their scoped evidence. This flow is not an implementation receipt and does
+not close formal calibration, expanded routing or negative-test gates.
 
 <a id="af-g3-ob"></a>
 ### `AF-G3-OB` — Predictive-function proof
@@ -1311,17 +1314,18 @@ flowchart LR
     TARGET --> OUTBOUND["Allowlisted outbound VDP and VISS Set"] --> GWSTATUS["Gateway advisory status"]
 ```
 
-The D4-018 review candidate narrows the Service input to exactly VDP v3 speed,
+The accepted D4-018 model contract limits the Service input to exactly VDP v3 speed,
 lateral acceleration, steering angle, four wheel linear speeds, four
-longitudinal-slip values and four lateral-slip angles. It proposes a bounded
+longitudinal-slip values and four lateral-slip angles. It defines a bounded
 10 Hz dynamics episode and a deterministic `DEMO_SYNTHETIC` score with
 `GOOD`, `INSPECTION_RECOMMENDED` and `REPLACEMENT_RECOMMENDED` bands. CARLA
 does not expose live tire tread wear, pressure, temperature, puncture health,
 load, force, or torque as production-equivalent measurements. The scenario
 therefore owns hidden deterministic degradation truth used only for D4-003
 qualification; neither the service nor its backend may receive profile,
-friction multiplier or expected band as a production signal. The exact review
-package is [Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md).
+friction multiplier or expected band as a production signal. Design acceptance
+does not close D4-003 calibration or D4-023 quota qualification. The exact
+contract is [Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md).
 
 <a id="af-tire-ob"></a>
 ### `AF-TIRE-OB` — Audience and engineering evidence
@@ -1330,7 +1334,7 @@ package is [Tire Health In-Vehicle Product Contract](../../contracts/tire-health
 | --- | --- |
 | CARLA scene | Repeatable driving with a clearly labelled accelerated/pre-aged tire condition |
 | Engineering Telematics Dashboard | Native source dynamics plus typed Tire Health advisory request and factual Gateway status; no exact tread-depth claim |
-| Software Delivery Dashboard | Independent Service Provider 2 identity, dependency, validation and promotion |
+| Software Delivery Dashboard | Independent Tire service/publication context and dependency; installed associated-SP identity, with separate SP2 identity and promotion proof in the expanded profile |
 | Tire Health Function Dashboard | Estimated condition band, threshold event, bounded payload identity, Unit role, service/capability version and online/offline delivery state; selected SP2-owned model/persistence/queue service-log evidence |
 | Brake Health Dashboard | Unchanged; no coupling to Function Team 2 data plane |
 
@@ -1348,9 +1352,11 @@ package is [Tire Health In-Vehicle Product Contract](../../contracts/tire-health
 - A Function Team 2 defect creates a new SOTA 2 artifact, not a Brake Health
   SOTA or platform FOTA unless evidence proves the shared contract defective.
 
-The proposed Tire transport, durable acknowledgement, SQLite store, factual
-queries and exact current-Unit reset are defined in the
-[D4-019 Tire Cloud API review candidate](../../contracts/tire-cloud-api/README.md).
+The accepted Tire transport, durable acknowledgement, SQLite store, factual
+queries and exact current-Unit cleanup are defined in the
+[D4-019 Tire Cloud API](../../contracts/tire-cloud-api/README.md).
+These paths are implemented; scoped live evidence and remaining negative and
+expanded-profile gates belong to the current baseline, not design approval.
 
 <a id="af-tire-res"></a>
 ### `AF-TIRE-RES` — AosCore-enforced service-tenant isolation
@@ -1522,16 +1528,22 @@ operation allowlist; no browser or container receives a generic shell,
 filesystem, URL or secret interface. Each release surface is pre-bound to one
 profile and cannot select a credential path, candidate path or Cloud URL. In
 the current `aos-signer` 2.0.1 compatibility path, the helper alone reads one
-local mode-`0600` passwordless PKCS#12 per profile; this is not a Keychain or
+local mode-`0600` passwordless PKCS#12 bound to each profile; the installed
+Brake/Tire profiles may reference the same associated-SP file without copying
+it, while expanded cross-provider proof uses separate SP identities. This is not a Keychain or
 non-exportable-key claim. The helper is not a persistent `launchd` service and
 exits when the demo session ends or after a bounded launcher-loss/orphan
 condition.
 
-The D4-020 review candidate makes that physical realization concrete: three
-prebuilt ARM64 containers use loopback UI ports `18080`–`18082`, separate
-Brake/Tire ingestion ports `18091`/`18092`, separate volumes and one native
-publication helper on loopback `18600`. Each QEMU guest reaches the local Mac
-at `10.0.0.1`; no per-Unit functional-backend credential lifecycle is added.
+The design-reviewed D4-020 hosting contract places two independent prebuilt
+Linux/arm64 backend containers on the Mac, with separate stores/networks and
+Brake/Tire ingestion ports `18091`/`18092`. Integrated Presenter/Demo Control
+uses host loopback `18080`; the protected native operation helper uses
+loopback `18600`. CARLA and native Driving Control also run on the host. No
+third dashboard container or UI ports `18081`/`18082` are required for installed
+use. Frozen older hosting fixtures keep their original compatibility scope.
+Each QEMU guest reaches the local Mac at `10.0.0.1`; no per-Unit
+functional-backend credential lifecycle is added.
 The reported `system_uid` is correlation data, not authenticated backend
 identity. Both-VM guest-route and LAN-negative behavior remain live
 qualification gates. See
@@ -1685,7 +1697,16 @@ independently injected fault.
 
 #### Installed Test flow
 
-Finish retires only the exact owned Test, reconciles Cloud/backend effects, removes owned working data and disposes the journal last. Stop/Start instead preserves the same Test.
+Finish freezes mutations, stops owned source/VM/backend consumers and retires
+only the exact owned Test. It reconciles Unit/Node/Subject/Set effects, previews
+and confirms each product's cleanup for `[currentTestUid]`, proves zero selected
+rows and peer preservation, removes owned working data and disposes the journal
+last. Keep current context until cleanup succeeds. No `demoRunId`, time selector,
+Production peer or deliberate old-credential reconnect is required. Expired,
+invalid or stale previews delete nothing; uncertain effects require read-only
+reconciliation, not blind execution retry. Model Reset preserves history and
+is not cleanup. Stop/Start instead preserves the same Test. Exact backend token
+and error encodings belong to their separate accepted admin contracts.
 
 #### Expanded-profile lifecycle and proof
 
@@ -1731,6 +1752,10 @@ sequenceDiagram
 <a id="af-r0-ob"></a>
 ### `AF-R0-OB` — Retirement evidence
 
+Installed Finish proves the exact Test effects above and preserves unrelated
+or retained Production state. The following additional two-role and deliberate
+credential-reconnect proofs apply to expanded retirement qualification:
+
 - the final online state was captured before retirement, both Units were then
   reported `Offline` by AosCloud before either deprovision request, and the
   offline mechanism is identified;
@@ -1750,8 +1775,9 @@ sequenceDiagram
 - Cloud lifecycle audit history is retained;
 - only the exact current-run native-log request IDs are deleted, and each
   matching detail/download is proved unavailable afterward;
-- all current-run functional backend/dashboard data is permanently deleted by
-  the exact Unit IDs and session time window, leaving no local demo-run history;
+- all selected functional backend/dashboard data is permanently deleted by
+  exact journal-bound Unit IDs, without a time selector or `demoRunId`, leaving
+  no selected local demo-run history and preserving nonmatching rows;
 - no QEMU process holds either discarded overlay;
 - no current-run Service-private JWT, `AOS_SECRET`, helper runtime state or
   Unit-specific signing material survives disposal of either overlay;
@@ -1762,6 +1788,10 @@ sequenceDiagram
 
 <a id="af-r0-fr"></a>
 ### `AF-R0-FR` — Partial-failure rules
+
+The two-Unit/retired-credential cases below qualify expanded R0. Installed
+Finish applies the same uncertainty, ownership and preservation guards to its
+one Test; it must not require creating or retiring a Production peer.
 
 - Do not delete a local overlay while its VM is running or while Cloud identity
   retirement is uncertain.
@@ -1805,7 +1835,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 2.1 claim | Architecture flow coverage |
+| Demo Scenario 2.2 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -1903,7 +1933,7 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Downstream Component Requirement Gate
 
-System Requirements and Traceability 2.2 and Component Register 2.2
+System Requirements and Traceability 2.3 and Component Register 2.3
 allocate these flows and their authorization,
 Release Authority, Safe Stop and workspace obligations to the canonical
 component packages. The accepted component sequence remains:

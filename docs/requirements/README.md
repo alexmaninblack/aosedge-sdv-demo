@@ -5,17 +5,17 @@
 
 The [current implementation matrix](../architecture/current-implementation.md) and [protocol audit](../../contracts/implementation-status.md) cover the currently selected engineering preview and its exact evidence. Normative requirements remain obligations, not assertions that every qualification case has passed.
 
-- [System Requirements and Traceability 2.2 — accepted](system-requirements-and-traceability.md)
+- [System Requirements and Traceability 2.3 — accepted](system-requirements-and-traceability.md)
   — system obligations, coverage of all Architecture Flows gaps, verification
   intent, repository ownership and allocation to the thirteen component requirement
   packages.
-- [Component Decomposition and Interface Register 2.2 — accepted](component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 2.3 — accepted](component-decomposition-and-interface-register.md)
   — stable logical-component and interface identifiers, current/target state,
   lifecycle ownership, implemented repositories and requirement allocation.
 - [Component requirement packages](components/README.md)
   — D3 package order, stable component-requirement and unit-test-obligation
   identifiers, reusable package template and the D3/D4 verification boundary.
-- [D4 Interface and Qualification Decision Register 1.1](d4-decision-register.md)
+- [D4 Interface and Qualification Decision Register 1.2](d4-decision-register.md)
   — consolidated shared contract, API, security, hosting, resilience and
   acceptance decisions with stable IDs, owners, order and closure rules;
   includes accepted Factory and Vehicle Hardware Capability decisions.

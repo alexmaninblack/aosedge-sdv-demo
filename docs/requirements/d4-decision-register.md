@@ -4,9 +4,9 @@
 # D4 Interface and Qualification Decision Register
 
 - Status: Decision register; each record's decision and proof state governs
-- Version: 1.1
+- Version: 1.2
 - Prepared: 2026-08-22
-- Reading baseline: HLA 1.8, Scenario 2.1, Flows/System/Register 2.2 and
+- Reading baseline: HLA 1.8, Scenario 2.2, Flows/System/Register 2.3 and
   current component packages; installed and expanded profiles are distinguished
 - Editorial consolidation: 2026-10-17; accepted behavior and stable IDs preserved
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
@@ -787,10 +787,14 @@ The accepted current-demo publication contract is:
    private-key material into its native process and does not provide a native
    macOS Keychain or PKCS#11 signing operation. Documentation shall not label
    this current path Keychain-backed or non-exportable;
-4. the three PKCS#12 files are local demo prerequisites under
-   `~/.aos/security`, mode `0600`, outside Git, every dashboard/container/VM
-   image and every FOTA/SOTA artifact. Only the session-scoped non-root native
-   helper may read the fixed allowlisted paths;
+4. each profile binds a private local mode-`0600` PKCS#12 reference outside
+   Git, every dashboard/container/VM image and every FOTA/SOTA artifact.
+   Installed Setup uses one OEM and one associated-SP credential; Brake and
+   Tire may reference the same SP file without duplicating it. Expanded
+   cross-provider qualification uses distinct SP identities. `~/.aos/security`
+   is the engineering default, not a requirement to copy installed private
+   inputs there. Only the session-scoped non-root native helper may read the
+   fixed allowlisted paths;
 5. presentation-time work starts with digest verification of an already-built,
    tested, packaged and metadata-frozen catalogue candidate. No source edit,
    build, package generation, metadata mutation or repackaging is allowed;
@@ -814,8 +818,10 @@ The accepted current-demo publication contract is:
 
 Consequences:
 
-- the Platform, Brake and Tire publication identities remain distinct even
-  though one helper implementation is reused;
+- the Platform, Brake and Tire publication profiles and candidate families
+  remain distinct even when the installed Brake/Tire profiles share one SP
+  credential and helper implementation; separate SP organizations remain an
+  expanded qualification obligation;
 - a wrong-profile, missing credential, changed digest or unsupported item type
   fails before signing and produces no publication-success state;
 - OEM approval remains outside every Function Dashboard and outside the
@@ -1288,8 +1294,8 @@ current baseline records scoped implementation and remaining live gates.
 The accepted current-demo authority model preserves the three D4-010.3
 artifact-publication profiles and adds one separate authenticated operational
 context named `oem-delivery`. `oem-delivery` is not a fourth publisher: it
-cannot select or use the three publication credentials and exists only for
-the explicitly allowed OEM lifecycle actions below. In D4-010.3,
+cannot select or use credentials bound to the three publication profiles and
+exists only for the explicitly allowed OEM lifecycle actions below. In D4-010.3,
 `approvalAuthority: false` therefore means that a publication profile has no
 OEM lifecycle/deployment authority; it does not change the external API fact
 that Verification Batch approval is technically available to eligible OEM and
@@ -1795,12 +1801,12 @@ mutation, Unit deletion, VM stop or overlay disposal.
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
-| <a id="d4-016"></a>`D4-016` — Brake in-vehicle product contract | Freeze v1 event-window trigger/pre/active/post/chunk/queue contract, v2 synthetic assessment and v3 advisory, persistence, readiness, resource and log schemas | Function Team 1 + Platform + Gateway + Vehicle Simulation | `CR-BHS`, `CR-BRAKE-CLOUD`, `CR-E2E` | `ACCEPTED`; D4-016.1 through D4-016.5 accepted; implementation qualification remains open |
-| <a id="d4-017"></a>`D4-017` — Brake Cloud product contract | Freeze local functional API/transport/ack/idempotency, UI fields, backend/storage technology, retention/migration and exact current-run deletion proof; production backend authentication remains Function Team-owned and out of scope | Function Team 1 | `CR-BRAKE-CLOUD`, `CR-DEMO`, `CR-E2E` | `ACCEPTED`; implementation and live route qualification remain open |
+| <a id="d4-016"></a>`D4-016` — Brake in-vehicle product contract | Freeze v1 event-window trigger/pre/active/post/chunk/queue contract, v2 synthetic assessment and v3 advisory, persistence, readiness, resource and log schemas | Function Team 1 + Platform + Gateway + Vehicle Simulation | `CR-BHS`, `CR-BRAKE-CLOUD`, `CR-E2E` | `ACCEPTED`; D4-016.1 through D4-016.5 accepted; models implemented, full calibration/runtime qualification remains open |
+| <a id="d4-017"></a>`D4-017` — Brake Cloud product contract | Freeze local functional API/transport/ack/idempotency, UI fields, backend/storage technology, retention/migration and exact current-run deletion proof; production backend authentication remains Function Team-owned and out of scope | Function Team 1 | `CR-BRAKE-CLOUD`, `CR-DEMO`, `CR-E2E` | `ACCEPTED`; implemented ingestion/query/cleanup with scoped Test evidence; full negative/expanded route qualification remains open |
 | <a id="d4-018"></a>`D4-018` — Tire in-vehicle product contract | Freeze input subset, synthetic estimator/state/bands/confidence, event/summary/advisory, persistence/offline and health/resource/log contracts | Function Team 2 + Platform + Gateway + Vehicle Simulation | `CR-TIRE`, `CR-TIRE-CLOUD`, `CR-E2E` | `ACCEPTED`; D4-003 calibration and D4-023 quota qualification remain implementation gates |
-| <a id="d4-019"></a>`D4-019` — Tire Cloud product contract | Freeze local functional API/transport/ack/idempotency, UI fields, backend/storage technology, retention/migration and exact current-run deletion proof; production backend authentication remains Function Team-owned and out of scope | Function Team 2 | `CR-TIRE-CLOUD`, `CR-DEMO`, `CR-E2E` | `ACCEPTED`; implementation and live route qualification remain open |
-| <a id="d4-020"></a>`D4-020` — Local hosting, helper and VM route | Choose native versus ARM64-container dashboard packaging; freeze Docker versions/names/ports/volumes, authenticated publication-helper transport/session/supervision, D4-010.3 fixed-profile client routing and isolated QEMU guest→host functional routes without LAN exposure | Demo Solution + both Function Teams + Security | `CR-DEMO`, both Cloud products | `DESIGN_REVIEWED`; implementation and two-VM/LAN-negative qualification remain required |
-| <a id="d4-021"></a>`D4-021` — Run state, overlays and cleanup | Freeze accepted artifact and overlay locations/names, bounded per-operation recovery registry and redaction, resource-scoped conflict coordination, partial-operation reconciliation, CARLA/Gateway reset, backend deletion and factory-digest-preserving cleanup | Demo Solution + Platform + Simulator + both Function Teams | `CR-DEMO`, `CR-AOS`, `CR-E2E` | `DESIGN_REVIEWED`; implementation and two-cycle live qualification remain open |
+| <a id="d4-019"></a>`D4-019` — Tire Cloud product contract | Freeze local functional API/transport/ack/idempotency, UI fields, backend/storage technology, retention/migration and exact current-run deletion proof; production backend authentication remains Function Team-owned and out of scope | Function Team 2 | `CR-TIRE-CLOUD`, `CR-DEMO`, `CR-E2E` | `ACCEPTED`; implemented ingestion/query/cleanup with scoped Test evidence; full negative/expanded route qualification remains open |
+| <a id="d4-020"></a>`D4-020` — Local hosting, helper and VM route | Define two ARM64 backend containers, host Presenter/native tools, pinned image/capability/port/volume checks, authenticated publication-helper sessions, D4-010.3 fixed-profile routing and isolated QEMU guest→host routes without LAN exposure | Demo Solution + both Function Teams + Security | `CR-DEMO`, both Cloud products | `DESIGN_REVIEWED`; installed topology implemented; expanded two-VM/helper-isolation/LAN-negative qualification remains required |
+| <a id="d4-021"></a>`D4-021` — Run state, overlays and cleanup | Freeze accepted artifact and overlay locations/names, bounded per-operation recovery registry and redaction, resource-scoped conflict coordination, partial-operation reconciliation, CARLA/Gateway reset, backend deletion and factory-digest-preserving cleanup | Demo Solution + Platform + Simulator + both Function Teams | `CR-DEMO`, `CR-AOS`, `CR-E2E` | `DESIGN_REVIEWED`; installed Finish implemented with scoped evidence; expanded two-cycle/security qualification remains open |
 
 ### D4-016 Accepted Decision Record — Brake In-Vehicle Product
 
@@ -2187,11 +2193,12 @@ The contract requires:
    back to the intact v1 ledger and `user_version = 1`.
 6. The Dashboard reads functional windows, assessments, events and advisory
    facts only through the closed Brake Cloud Query/SSE/Admin API 1.0.0 annex.
-   The backend receives a closed `CurrentUnitContext` input containing exactly
-   the current Test Vehicle (`VALIDATION` on the wire) and Production Vehicle
-   Unit UIDs/roles from the current-run provisioning journal. It does not query
-   or infer Unit, lifecycle, readiness or Cloud state; live context wiring is
-   deferred to the integration packet. Missing or invalid context is `503` and
+   The backend receives a closed `CurrentUnitContext` input containing the
+   required current Test Vehicle (`VALIDATION` on the wire) and optional
+   explicitly retained Production Vehicle UIDs/roles from the current-run
+   provisioning journal. The implemented provider rereads the owned context
+   file without a backend restart. It does not query or infer Unit, lifecycle,
+   readiness or Cloud state. Missing or invalid context is `503` and
    opens no SSE stream. A valid context makes an empty current-Unit page a
    truthful `200`; a non-current Unit is `404`.
    The four exact-Unit REST collections use stable resource-specific descending
@@ -2215,24 +2222,31 @@ The contract requires:
 7. Only the local Demo Orchestrator may use the reset admin endpoints over the
    separate mode-`0600` Unix-domain HTTP composition root; they are unavailable
    to the browser, guest ingestion route and LAN. It obtains the exact current
-   Test Vehicle (`VALIDATION` on the wire) and Production Vehicle `system_uid`
-   values from the injected `CurrentUnitContext`, whose source is the
-   current-run provisioning journal. The sorted two-UID
-   selector contains no `demoRunId` or time range. It previews counts and
-   an RFC-8785/SHA-256 record-set digest over the explicitly ordered logical
-   tables and fields frozen in the API annex, including empty table blocks,
+   Test Vehicle (`VALIDATION` on the wire) and optional Production `system_uid`
+   values from the injected journal-owned `CurrentUnitContext`. Installed
+   Finish selects exactly `[currentTestUid]` and preserves peer records. The
+   explicit expanded operation may select all sorted current-context UIDs;
+   a Production-only or unrelated partial selector is forbidden. Neither
+   selector contains a `demoRunId` or time range. It previews counts and
+   an RFC-8785/SHA-256 record-set digest over the current API's explicitly
+   ordered logical tables and fields, including empty table blocks,
    obtains explicit confirmation and executes with a 60-second token binding
    those exact facts. The token is authenticated by a random, process-local,
    non-persisted HMAC key and is bounded to 1024 characters. Malformed,
    bad-MAC, expired and previous-process/restart tokens return `409
    PREVIEW_TOKEN_EXPIRED`; only a structurally valid, valid-MAC token whose
    bound current row set changed returns `409 PREVIEW_STALE`. Both require a
-   new preview and delete nothing. Missing, wildcard or non-two-Unit selectors are rejected;
+   new preview and delete nothing. Missing, empty, duplicate, wildcard,
+   foreign or otherwise unauthorized selectors are rejected;
    an exact selector with no matching rows is an idempotent success. Any new or
-   changed record makes the preview stale and blocks execution. One SQLite
+   changed selected record makes the preview stale and blocks execution. One SQLite
    transaction removes only matching Brake messages, windows, assessments,
-   events, advisory facts and quarantine records. Success proves zero matching
-   rows and unchanged nonmatching digest. An uncertain response is reconciled
+   events, advisory facts, quarantine, model-reset producer/command and
+   function-observation/conflict records. The current canonical record set
+   contains all ten categories; the original six-category fixtures remain
+   compatibility inputs, not a complete current cleanup proof. Success proves
+   zero matching rows and unchanged nonmatching digest across the deletion
+   transaction. An uncertain response is reconciled
    by authoritative re-read, never blind repetition. Cleanup deletes no Tire
    data, AosCloud audit/Unit/Node state or VM/overlay state; it must succeed
    before the Brake volume reset, while D4-021 owns overall R0 ordering.
@@ -2476,22 +2490,36 @@ state across tenants:
    uncorrelated Gateway or driver-acknowledgement claim. During external loss,
    the Mac Dashboard remains available over stored state and freshness; after
    reconnect it preserves source time separately from backend receipt time.
-5. Reset is a separate Tire preview/execute operation over the same exact
-   current VU/PU system UIDs obtained from the provisioning journal, exposed
-   only to the local Demo Orchestrator. Browser, guest ingestion and LAN access
-   are forbidden. A 60-second token binds exact identities, counts and record-
-   set digest; any change makes the preview stale. One SQLite transaction
-   removes matching messages, assessments, events, advisory facts, function-
-   status facts and quarantine. Empty exact match is idempotent; wildcard,
-   missing or non-two-Unit selectors fail. Success proves zero selected rows
-   and unchanged nonmatching digest. Uncertain response reconciles by re-read,
+5. Data cleanup is a separate Tire preview/execute operation, not the
+   history-preserving model Reset. Only the local Demo Orchestrator may use its
+   private mode-`0600` Unix socket; browser, guest ingestion and LAN access are
+   forbidden. The journal-owned context requires Test and permits optional
+   Production. Installed Finish selects `[currentTestUid]`; explicit expanded
+   cleanup may select all current-context UIDs. Empty, duplicate, foreign,
+   wildcard, missing and Production-only selectors fail. No `demoRunId` or
+   independent time selector is accepted. A 60-second opaque random token is
+   held only in the backend process (at most 16 pending previews); it binds
+   exact identities, counts and matching/nonmatching digests. It is not the
+   Brake HMAC wire format. Invalid, expired, wrong-selector, consumed or
+   previous-process tokens return `409 INVALID_PREVIEW`; changed selected or
+   nonmatching data returns `409 STALE_PREVIEW`. Neither deletes anything;
+   recovery requires a fresh preview. One SQLite transaction removes matching
+   messages, assessments, events, advisory facts, function-status facts,
+   quarantine, model-reset producer/command and function-observation/conflict
+   records, covering all ten current categories. Empty exact match is
+   idempotent with a fresh preview; the successful token is consumed. Success
+   proves zero selected rows and unchanged nonmatching digest. Uncertain
+   response reconciles by read-only re-read,
    not blind repeat. Cleanup cannot delete Brake data, AosCloud audit/Units/
    Nodes or VM/overlay state, must precede Tire-volume reset and leaves overall
    R0 ordering to D4-021.
 
-D4-019 is accepted as a design contract. Implementation and D4-020 live route/
-LAN-negative qualification remain open; acceptance alone authorizes no build,
-publication, Cloud mutation or deployment.
+D4-019 is accepted as a design contract. Ingestion, query and current-Test
+cleanup are implemented with scoped evidence recorded by the current baseline.
+Full negative/expanded D4-020 route qualification remains open. The
+[current admin protocol](../../contracts/tire-cloud-api/README.md#current-test-administrative-protocol)
+owns exact fields; frozen older profiles remain compatibility inputs. Design
+acceptance alone authorizes no build, publication, Cloud mutation or deployment.
 
 ### D4-020 — Local hosting and controller routes
 
@@ -2502,8 +2530,9 @@ publication, Cloud mutation or deployment.
 1. The Mac runs two independent digest-pinned Linux/arm64 backend containers,
    Brake and Tire, with separate APIs, stores, networks, health/failure scopes
    and fixed ingestion ports 18091/18092. Presenter/Demo Control and native
-   CARLA/Driving Control run on the host; no third dashboard container is
-   required. Setup imports the pinned backend archive explicitly. Runtime
+   CARLA/Driving Control run on the host. Presenter uses loopback `18080` and
+   the protected native operation helper uses loopback `18600`; no third
+   dashboard container is required. Setup imports the pinned backend archive explicitly. Runtime
    start uses existing immutable image identities without build, pull, latest
    selection, repackaging or automatic import on navigation.
 2. Host compatibility comes from selected manifests and required capabilities:
@@ -2908,7 +2937,7 @@ This decision alone authorizes no external mutation.
 
 | Decision | Question and required output | Primary owners | Main consumers | State |
 | --- | --- | --- | --- | --- |
-| <a id="d4-025"></a>`D4-025` — Stage assertions and evidence dossier | Freeze machine-readable entry gate, one action, authoritative re-read, exit gate, verdict and sanitized dossier schema for every `AT-E2E-*` stage | System Acceptance + Demo Solution + all evidence owners | `CR-E2E`, `CR-DEMO` | `DESIGN_REVIEWED`; implementation and real-baseline qualification open |
+| <a id="d4-025"></a>`D4-025` — Stage assertions and evidence dossier | Freeze machine-readable entry gate, one action, authoritative re-read, exit gate, verdict and sanitized dossier schema for every `AT-E2E-*` stage | System Acceptance + Demo Solution + all evidence owners | `CR-E2E`, `CR-DEMO` | `DESIGN_REVIEWED`; scoped API/UI receipts exist; full dossier/expanded-matrix acceptance remains open |
 | <a id="d4-026"></a>`D4-026` — Qualification modes and repeatability | Freeze live versus controlled qualification split, disposable identities/environment, destructive-test policy, update-state and Test-to-Production presentation policy, repeat counts/tolerances, retained-dossier location, presenter duration/optional steps and icon/native-terminal boundary | System Acceptance + Demo owner + all engineering owners | Final qualification and presenter flow | `DESIGN_REVIEWED`; D4-026.1–.20 accepted |
 
 ### D4-025 Design Reviewed — Stage Assertions and Evidence Dossier

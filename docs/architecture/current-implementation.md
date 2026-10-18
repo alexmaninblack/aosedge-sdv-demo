@@ -13,8 +13,8 @@
 
 ## Reading the design chain
 
-The accepted chain remains HLA 1.8 → Scenario 2.1 → Flows 2.2 →
-System Requirements 2.2 → Component Register 2.2 → component packages.
+The accepted chain remains HLA 1.8 → Scenario 2.2 → Flows 2.2 →
+System Requirements 2.3 → Component Register 2.3 → component packages.
 The owning sections state effective installed and expanded profiles while
 preserving stable IDs and unfulfilled obligations. Implementation is not
 authority to invent a requirement or mark an unexecuted test passed.

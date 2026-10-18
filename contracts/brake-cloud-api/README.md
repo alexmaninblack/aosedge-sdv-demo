@@ -77,7 +77,7 @@ mode-`0600` Unix-domain HTTP composition root and are unavailable to the
 browser, guest ingestion route and LAN. Wildcard, missing, empty, duplicate,
 foreign or other partial-context selectors are rejected. An empty matching
 dataset is a valid idempotent result; its accepted current-context identity
-scope remains mandatory. Preview and execute additionally report six explicit
+scope remains mandatory. Preview and execute additionally report ten explicit
 `nonmatchingRecordCounts`, allowing a caller to distinguish removal of the
 Test records from an entirely empty logical store. Other Units' rows are never
 implied disposable. Whole-volume removal requires the separate private schema-
@@ -89,16 +89,18 @@ The private `POST /api/v1/brake/admin/storage/empty-proof` takes only the
 does not require a Unit context, so an interrupted Create before Provision can
 be retired without inventing a Unit UID. The backend verifies its packaged
 database schema, migration ledger, integrity and foreign keys before counting
-all six record categories in one read transaction. Unknown tables, schema or
-unavailable storage are errors, never `EMPTY`. It is not a public/guest route,
+all ten current record categories in one read transaction. Unknown tables,
+schema or unavailable storage are errors, never `EMPTY`. It is not a public/guest route,
 does not expose records and does not itself authorize a volume deletion.
 
 The 60-second preview token binds the selected accepted identities, record counts,
 record-set digest and expiry. The digest is SHA-256 of one RFC8785 canonical
-array containing all six logical table blocks in fixed order—messages,
-windows, assessments, events, advisories and quarantine—including empty
-blocks, the annex's exact row fields and rows sorted by their canonical UTF-8
-bytes. The nonmatching digest uses the same representation over complement
+array containing ten logical table blocks in fixed order: `messages`,
+`windows`, `assessments`, `events`, `advisories`, `quarantine`, `resetProducers`,
+`resetCommands`, `functionObservations`, `functionObservationConflicts`, including
+empty blocks and rows sorted by their canonical UTF-8 bytes. The current store
+owns the exact field lists; the original six-block fixtures remain compatibility
+inputs. The nonmatching digest uses the same representation over complement
 rows. Duplicate JSON object keys are rejected before canonicalization.
 The token is a versioned RFC8785 payload plus HMAC-SHA256, bounded to 1024
 characters, under a random 256-bit process-local key that is never persisted,
@@ -107,12 +109,24 @@ previous process/restart returns `409 PREVIEW_TOKEN_EXPIRED` and requires a new
 preview. Only a structurally valid, valid-MAC token whose bound current row set
 has changed returns `409 PREVIEW_STALE`. Both failures delete nothing. One SQLite
 transaction removes only matching Brake messages,
-windows, assessments, events, advisory facts and quarantine records. Success
-proves zero matching rows and an unchanged nonmatching-data digest. If the
-response is lost, the Orchestrator reconciles by authoritative re-read instead
+windows, assessments, events, advisory facts, quarantine, reset producer/command
+and function-observation/conflict records. Success proves zero matching rows
+and an unchanged nonmatching-data digest across the deletion transaction. Brake
+binds selected rows in the HMAC preview; unlike Tire it does not bind a preview-
+time complement digest. It proves complement preservation within execution.
+If the response is lost, the Orchestrator reconciles by authoritative re-read instead
 of blind repetition. Cleanup neither deletes Tire data, VM/overlay state,
 AosCloud Units/Nodes nor AosCloud audit. It must complete before the Brake
 volume reset; D4-021 owns the overall R0 ordering.
+
+These are **data cleanup** operations, not the separate history-preserving
+model Reset. Tire has its own opaque-token admin protocol and error names;
+Brake's HMAC encoding must not be imposed on Tire.
+
+Read-only source authorities:
+[selector/token handler](https://github.com/alexmaninblack/brake-health-cloud/blob/main/apps/backend/src/brake-data-http.ts),
+[record-set/delete transaction](https://github.com/alexmaninblack/brake-health-cloud/blob/main/apps/backend/src/brake-data-store.ts).
+This prose correction changes no executable schema or recorded artifact hash.
 
 SQLite runtime and forward-only transactional migrations are packaged in the
 immutable Brake backend image. The database file lives only in a dedicated
@@ -140,15 +154,16 @@ ledger and `user_version = 1`.
 Files:
 
 - [`brake-cloud-api-profile.v1.json`](brake-cloud-api-profile.v1.json) — exact
-  accepted endpoint, scope, acknowledgement, persistence,
-  retry, query and reset rules;
+  original endpoint, scope, acknowledgement, persistence, retry, query and
+  cleanup profile; older two-UID examples retain compatibility scope;
 - [`brake-cloud-ack.schema.json`](brake-cloud-ack.schema.json) — closed durable
   acknowledgement schema;
 - [`brake-advisory-fact.schema.json`](brake-advisory-fact.schema.json) — closed
   Service-to-backend fact combining the accepted request identity with factual
   Gateway Status;
-- [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — closed reset
-  preview and confirmation-token schema;
+- [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — retained
+  six-category cleanup preview/token schema, not a complete validator for the
+  current ten-counter administrative response;
 - [`current-unit-context.schema.json`](current-unit-context.schema.json) —
   closed injected current Test and optional Production identity/role context;
 - [`brake-cloud-query-admin-profile.v1.json`](brake-cloud-query-admin-profile.v1.json)
@@ -163,7 +178,9 @@ Files:
 - [`cleanup-preview-request.schema.json`](cleanup-preview-request.schema.json),
   [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
   and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
-  one-or-two-UID admin request/result messages with no run identifier or time range;
+  one-or-two-UID admin requests and original six-counter result with no run
+  identifier or time range; current ten-counter results extend that retained
+  fixture scope and require the current handler contract above;
 - [`rfc8785-edge-vectors.schema.json`](rfc8785-edge-vectors.schema.json) —
   closed Unicode ordering, number serialization and duplicate-key edge-vector
   package;
