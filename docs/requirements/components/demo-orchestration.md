@@ -5,7 +5,7 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 1.3
+- Version: 1.4
 - Prepared: 2026-08-19
 - Accepted: 2026-09-27
 - Owner: Demo Solution Team
@@ -81,7 +81,7 @@ blocks without rotation. Cloud identities and client mTLS remain distinct.
 <a id="req-demo-025"></a>
 
 - ID: `REQ-DEMO-025`
-- Statement: The installed adapter shall bind one explicit private instance to the executing installed program for the invocation, read code/contracts/locked input groups from that version, and write all existing state and generated artifacts beneath the instance. It shall retain developer mode unchanged without instance selection; installed mode shall reject missing inputs, foreign artifact overrides, unsafe/unknown markers, path overlap and inherited developer credential defaults. A fresh instance shall not reuse the developer VM-password Keychain item. The [explicit Test qualification profile](../../../scripts/qualification/README.md#unattended-test-access), accepted on 10 October, may supply the locally configured development Factory password only for its bound instance, Factory digest and staging Test; it is never shipped or inferred from developer state. Existing Cloud, native-process, journal and publication guards remain authoritative; selecting paths never implicitly activates an update or reports the demo ready.
+- Statement: The installed adapter shall bind one explicit private instance to the executing installed program for the invocation, read code/contracts/locked input groups from that version, and write all existing state and generated artifacts beneath the instance. It shall retain developer mode unchanged without instance selection; installed mode shall reject missing inputs, foreign artifact overrides, unsafe/unknown markers, path overlap and inherited developer credential defaults. A fresh instance shall not reuse the developer VM-password Keychain item. The [explicit Test qualification profile](../../../scripts/qualification/README.md#unattended-test-access) may supply the locally configured development Factory password only for its bound instance, exact Factory digest, explicitly authorized Cloud domain and Test vehicle; it is never shipped or inferred from developer state. Production Cloud shall additionally require explicit OEM/SP owner pins and exact Test-only binding; it shall not grant access to a Production-role vehicle. Existing Cloud, native-process, journal and publication guards remain authoritative; selecting paths never implicitly activates an update or reports the demo ready.
 - Parent: [separate installed data authority](../system-requirements-and-traceability.md#sys-dist-001).
 - Flow: [distribution entry](../../architecture/demo-scenario-architecture-flows.md#af-dist-entry).
 - Components/interfaces: `CMP-ORCH`, `IF-DEMO-001`.

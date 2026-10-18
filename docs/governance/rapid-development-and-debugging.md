@@ -345,8 +345,10 @@ no open handles. Unknown contents, active owners, nested mounts, changed volumes
 and uncertain checks are preserved. Cleanup never falls back to another disk.
 
 The only build-path exception is Gateway's existing Unix-socket length limit:
-when the workspace path is too long, explicitly select a shorter `.tmp` on the
-same volume for these small socket fixtures. Bulk scratch stays in the workspace.
+when the workspace path is too long, the launcher selects an owned shorter
+`.tmp` on the same volume for these small socket fixtures. Creation follows
+workflow confirmation; direct specialist tools retain explicit selection.
+Bulk scratch stays in the workspace.
 Atomic file promotion must remain on the destination filesystem; credential
 helpers and installed-runtime sessions keep their private security boundaries.
 Guest-only temporary files stay in the guest with their existing cleanup traps.

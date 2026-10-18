@@ -27,7 +27,7 @@ A healthy container does not prove current-vehicle context, service execution,
 fresh products or a driver warning. Presenter queries current-Test-scoped
 products, observations and history through existing team APIs.
 [Brake wire/API](../../contracts/brake-cloud-api/README.md) and
-[Tire current wire](../../contracts/tire-cloud-api/studio-current-wire.md)
+[Tire current wire](../../contracts/tire-cloud-api/README.md#current-test-administrative-protocol)
 remain authoritative. The legacy Tire cleanup schema is not the current
 one-Test cleanup contract; see [protocol status](../../contracts/implementation-status.md).
 

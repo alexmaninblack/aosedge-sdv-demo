@@ -135,7 +135,8 @@ The accepted Factory Image contract is:
    identity and evidence and cannot inherit an older candidate's acceptance.
 
 2. The existing provider-specific empty-slot runtime is the accepted pre-SOP
-   runtime model. A generic multi-provider runtime is not required by HLA 1.4
+   runtime model. A generic multi-provider runtime is not required by the
+   accepted HLA's installed profile
    and is not a reason to rebuild the image.
 3. A new versioned Factory Image candidate shall be produced only after
    [`D4-027`](#d4-027) and [`D4-010`](#d4-010) freeze the stock Aos IAM,

@@ -303,10 +303,11 @@ authorization and Demo Control; no Production mutation is included.
 
 ## 9. Evidence and limitations
 
-The retained native integration was inspected at AosCore revision
-`9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`, the local IAM v6 descriptors,
-our Brake/Tire bootstrap sources and resource templates. It established the
-available mechanisms, not a completed live service deployment.
+The [service-input contract](../demo-control-service-inputs.md#native-launch-boundary)
+records the selected Factory's native source set, public-input startup hooks
+and private resource placement. The mechanisms below support this decision;
+they are not a completed live service-deployment claim. Earlier source
+investigations remain in Git rather than selecting the current native revision.
 
 | Source | What it supports |
 | --- | --- |
@@ -316,7 +317,7 @@ available mechanisms, not a completed live service deployment.
 | [Image deployment pipeline](https://docs.aosedge.tech/docs/aos-core/service-lifecycle/image-deployment-pipeline) | Native image verification, assembly and launch |
 | [Service configuration schema](https://docs.aosedge.tech/docs/reference/core-component-configs/core-service-config) | Temporary/storage/state quotas and requested resources |
 | [Storage/state](https://docs.aosedge.tech/docs/aos-core/service-lifecycle/storage-state) | Instance-owned storage and Cloud synchronization of state |
-| [Pinned container runtime](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp) | `CreateAosEnvVars`, `ApplyItemConfig`, `AddResources`, `PrepareStateStorage`; no special token-owner mapping required by native API |
+| [Selected native runtime and resource integration](../demo-control-service-inputs.md#native-launch-boundary) | Native environment, mounts and instance storage; no project token-owner mapping or replacement container lifecycle |
 | [Linux tmpfs](https://docs.kernel.org/filesystems/tmpfs.html) | Mount-root mode/ownership, size, volatile lifetime and swap caveat |
 
 The published storage documentation contains differing statements about

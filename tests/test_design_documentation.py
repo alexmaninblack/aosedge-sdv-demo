@@ -180,6 +180,69 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
         self.assertIn('id="d3-review-decisions"', end_to_end)
         self.assertIn("Effective allocation", end_to_end)
 
+    def test_native_input_source_citation_matches_selected_factory(self):
+        lock = json.loads(read("workspace/inputs/controller-images.lock.json"))
+        text = prose("docs/architecture/demo-control-service-inputs.md")
+        for kind in ("prebuilt", "rebuilt"):
+            revision = lock[kind]["factory"]["sourceRevision"]
+            self.assertIn(f"aos-vehicle-platform/blob/{revision}/", text)
+        self.assertIn("AosCore applications", text)
+        self.assertIn("AosCore library", text)
+        self.assertIn("AosCore API", text)
+        self.assertIn("ExecStartPre", text)
+        self.assertIn("ExecStartPost", text)
+        self.assertNotIn("9eecb80c4994937b5c8cbe0464970f81e8ad4c2d", text)
+        self.assertNotIn("aos_iamanager/blob/", text)
+        decision = prose("docs/architecture/decisions/0015-use-native-aos-service-runtime-inputs.md")
+        self.assertIn("demo-control-service-inputs.md#native-launch-boundary", decision)
+        self.assertNotIn("9eecb80c4994937b5c8cbe0464970f81e8ad4c2d", decision)
+
+    def test_unattended_access_requirement_retains_exact_test_only_authority(self):
+        text = prose("docs/requirements/components/demo-orchestration.md")
+        self.assertIn("`REQ-DEMO-025`", text)
+        self.assertIn("bound instance, exact Factory digest, explicitly authorized Cloud domain", text)
+        self.assertIn("explicit OEM/SP owner pins and exact Test-only binding", text)
+        self.assertIn("shall not grant access to a Production-role vehicle", text)
+        self.assertNotIn("Factory digest and staging Test", text)
+
+    def test_tire_admin_protocol_has_one_current_owner_and_keeps_legacy_inputs(self):
+        path = "contracts/tire-cloud-api/README.md"
+        text = prose(path)
+        self.assertIn("## Current-Test administrative protocol", text)
+        self.assertIn("Cleanup accepts exactly `[currentTestUid]`", text)
+        self.assertIn("Production-only selectors", text)
+        self.assertIn("mode-0600 Unix socket", text)
+        self.assertIn("4096 bytes", text)
+        self.assertIn("at most 16 previews", text)
+        self.assertIn("60 seconds", text)
+        self.assertIn("no `contractVersion` field", text)
+        self.assertIn("database schema 4", text)
+        for field in ("messages", "assessments", "events", "advisories",
+                      "functionStatus", "quarantine", "resetProducers", "resetCommands",
+                      "functionObservations", "functionObservationConflicts"):
+            self.assertIn(f"`{field}`", text)
+        self.assertIn("## Retained compatibility inputs", text)
+        for legacy in ("tire-cloud-api-profile.v1.json", "cleanup-preview.schema.json",
+                       "fixtures/cleanup-preview.valid.json"):
+            self.assertTrue((ROOT / "contracts/tire-cloud-api" / legacy).is_file())
+        self.assertFalse((ROOT / "contracts/tire-cloud-api/studio-current-wire.md").exists())
+        for owner in (path, "docs/architecture/demo-control-backends.md",
+                      "contracts/implementation-status.md"):
+            self.assertNotIn("studio-current-wire.md", read(owner))
+        self.assertNotIn("implemented v1.1 demo", text)
+
+    def test_d4_current_factory_rule_does_not_select_superseded_hla(self):
+        text = prose("docs/requirements/d4-decision-register.md")
+        self.assertNotIn("required by HLA 1.4", text)
+        self.assertIn("accepted HLA's installed profile", text)
+
+    def test_scratch_policy_matches_automatic_launcher_and_explicit_specialist(self):
+        text = prose("docs/governance/rapid-development-and-debugging.md")
+        self.assertIn("the launcher selects an owned shorter", text)
+        self.assertIn("same volume", text)
+        self.assertIn("direct specialist tools retain explicit selection", text)
+        self.assertNotIn("explicitly select a shorter `.tmp`", text)
+
 
 if __name__ == "__main__":
     unittest.main()

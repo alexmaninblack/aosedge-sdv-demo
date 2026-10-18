@@ -9,11 +9,9 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 
 The backend supports one current Test and optional retained Production context;
 Test-only cleanup rejects unrelated selectors and preserves peer records.
-The old two-UID JSON profile/schema below has **not** been synchronized with
-this implementation. Its green legacy fixtures do not prove current wire
-conformance. Use the [as-implemented administrative protocol](studio-current-wire.md)
-for exact requests, responses, counts and guards. No handler or frozen digest
-is changed by this documentation correction.
+This document owns the current functional and [administrative protocol](#current-test-administrative-protocol).
+The [retained compatibility inputs](#retained-compatibility-inputs) serve their
+original validators, not a second current administrative specification.
 
 ## Contract and authority
 - Decision: `D4-019`
@@ -100,28 +98,84 @@ ceiling stop it, and Service/VM restart returns it to `INACTIVE` without
 resume. The action is disabled when the selected vehicle is externally
 offline. Reported control state never proves AosCore quota enforcement.
 
+## Current-Test administrative protocol
+
 The backend retains current-demo functional state, not a historical run
-archive. The implemented cleanup uses current Test alone or all bound context
-UIDs, preserving nonselected records. See the [current wire](studio-current-wire.md).
-The two-UID description below records the legacy executable profile, whose
-schema/fixtures still require controlled synchronization. AosCloud lifecycle and audit records are
-outside this product and remain untouched.
+archive. Only local Demo Control may preview/execute cleanup. Browser, guest
+ingestion and LAN cannot access this administrative interface. Model Reset is
+a separate protocol and does not erase history. D4-021 owns R0 ordering;
+cleanup must precede Tire-volume reset.
 
-Only the local Demo Orchestrator can preview/execute cleanup. It obtains the
-exact current VU/PU identities from the provisioning journal; browser, guest
-ingestion and LAN cannot access these endpoints. A 60-second token binds the
-two identities, counts and record-set digest. Any intervening data change makes
-the preview stale. One transaction removes matching Tire messages,
-assessments, events, advisory facts, function-status facts and quarantine; an
-empty exact match is idempotent. Success proves zero selected rows and unchanged
-nonmatching digest. Uncertain response is reconciled by re-read. Brake data,
-AosCloud audit/Units/Nodes and VM/overlay state are untouched; D4-021 owns R0
-ordering and cleanup must precede Tire-volume reset.
+### Context and selectors
 
-Files:
+Context is a closed object with `schemaVersion: 1`, `contractVersion: "1.0.0"`,
+`source: "CURRENT_RUN_PROVISIONING_JOURNAL"`, required `testUnit` and optional
+`productionUnit`. Each Unit has exactly `systemUid`, `unitRole` and
+`userFacingRole`. Internal roles are `VALIDATION` / `PRODUCTION`, display roles
+`Test Vehicle` / `Production Vehicle`. Identities must be distinct; missing,
+duplicate-key, malformed, oversized or unknown context is rejected.
 
-- [`tire-cloud-api-profile.v1.json`](tire-cloud-api-profile.v1.json) — exact
-  review-candidate transport, message, persistence, UI and cleanup profile;
+Cleanup accepts exactly `[currentTestUid]` or all current context UIDs (one or
+two). It rejects empty, duplicate, foreign and Production-only selectors.
+The selector is checked against current context and sorted before use; valid
+UID syntax alone grants no cleanup authority.
+
+### Transport and closed requests
+
+Admin POSTs use a private mode-0600 Unix socket, not the guest-ingestion or
+browser TCP route. Requests are limited to 4096 bytes and use strict JSON.
+
+| Operation | Path suffix under `/api/v1/tire/admin/` | Exact request fields |
+| --- | --- | --- |
+| Preview | `current-run/cleanup-preview` | `schemaVersion`, `contractVersion`, `systemUids` |
+| Execute | `current-run/cleanup` | Previous fields plus `confirmationToken` |
+| Storage proof | `storage/empty-proof` | `schemaVersion`, `contractVersion` |
+
+All three requests require schema 1 and contract `1.0.0`; extra fields fail.
+
+### Response and transaction
+
+Preview returns `schemaVersion: 1`, sorted `systemUids`, `recordCounts`,
+`recordSetSha256`, `nonmatchingRecordCounts`, `nonmatchingRecordSetSha256`,
+`confirmationToken` and `expiresAt`. Unlike the request, it has no
+`contractVersion` field. Tokens last 60 seconds and at most 16 previews are
+retained. Token contents are private and must not enter audit evidence.
+
+Both count objects cover ten categories: `messages`, `assessments`, `events`,
+`advisories`, `functionStatus`, `quarantine`, `resetProducers`, `resetCommands`,
+`functionObservations`, `functionObservationConflicts`.
+
+Execution revalidates context, exact selector/token/expiry and both matching
+and nonmatching record-set digests. Changed data is `STALE_PREVIEW`; no blind
+retry is valid. One SQLite transaction deletes selected rows, including reset
+and observation records, proves zero selected rows and unchanged nonmatching
+digest, then consumes the preview token. Uncertain response requires read-only
+reconciliation, not repeated execution.
+An empty exact match remains valid; a fresh preview/execute may report zero
+selected rows. This does not permit replaying a consumed token.
+
+Success returns schema 1, contract `1.0.0`, `state: "CLEANED"`, `systemUids`,
+`deletedRecordCounts`, `remainingRecordCounts`, `nonmatchingRecordCounts`,
+`nonmatchingRecordSetSha256` and `completedAt`. Storage proof separately
+reports database schema 4 and `EMPTY` / `NONEMPTY`, counts and observation time.
+Neither response retires Cloud identity, deletes VM files or touches Brake data.
+
+Sources: [context validation](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/context.mjs),
+[private HTTP handler](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/main.mjs),
+[store/cleanup transaction](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/store.mjs) and
+[product/selector tests](https://github.com/alexmaninblack/tire-health-cloud/blob/main/test/product.test.mjs).
+These tests cover Test-only/dual context, selector rejection, stale preview,
+peer preservation and empty-store behavior; scoped live proof belongs to the
+[current baseline](../../docs/qualification/current-baseline.md).
+
+## Retained compatibility inputs
+
+The following frozen files remain dependencies of original validators and
+persisted-message compatibility. They are not regenerated by a prose correction:
+
+- [`tire-cloud-api-profile.v1.json`](tire-cloud-api-profile.v1.json) — accepted
+  original machine profile; its two-UID cleanup selector is not the current
+  Test-only administrative protocol above;
 - [`tire-cloud-ack.schema.json`](tire-cloud-ack.schema.json) and
   [`tire-advisory-fact.schema.json`](tire-advisory-fact.schema.json),
   [`tire-function-status.schema.json`](tire-function-status.schema.json) and
@@ -147,6 +201,6 @@ do not require service/model OCI digest fields or relabel old queued records.
 Payload algorithms, model/VDP hashes, receipt keys and authorization remain
 unchanged. Producer/input migration and backend consumers are implemented and
 have scoped live Test evidence. Full current-image qualification remains
-separate; see the protocol map above. Earlier sections and v1 schema
-files remain legacy evidence, not an instruction to reintroduce the digest
-dependency into new messages. Administrative/cleanup protocols are unaffected.
+separate; see the protocol map above. Retained v1 schema files decode original
+records; they do not reintroduce the digest dependency into new messages.
+Administrative/cleanup protocols are unaffected by product-wire revision.

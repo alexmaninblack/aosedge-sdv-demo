@@ -4,7 +4,7 @@
 # Service runtime inputs
 
 - Status: Accepted contract; implementation evidence is separately scoped
-- Version: 2.2; editorial consolidation, no schema change
+- Version: 2.3; source-baseline correction, no schema change
 - Owner: Demo Control / OEM Platform
 - Decision: [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
 
@@ -14,8 +14,7 @@ This contract separates package provenance, public Unit/VDP/trust inputs,
 native workload identity and private short-lived credentials. None substitutes
 for another. Current scoped proof is mapped by the
 [implementation view](current-implementation.md) and
-[baseline](../qualification/current-baseline.md), not old permissions-blocked
-Factory observations.
+[baseline](../qualification/current-baseline.md).
 
 The [active-capability contract](../../contracts/service-runtime-inputs/active-vdp-capability-amendment.md)
 binds Presenter software state to native Cloud and the exact installed artifact's
@@ -100,13 +99,22 @@ replacement container lifecycle for these inputs. Demo Control prepares our
 packages and public inputs; the Factory image carries the declared resource
 configuration. Generic native lifecycle bug fixes are tracked separately.
 
-The retained AosCore revision `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`
-implements `Instance::Start`, `CreateAosEnvVars`, `AddResources` and
-`CRunRunner::StartContainer` (direct `libcrun_container_run`). The published
-Launcher page describes a systemd template that does not match that runner;
-its `aos-service@.service` example is not an available integration hook in
-this revision. See [native Instance](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp)
-and [native CRunRunner](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/crunrunner.cpp).
+The [controller image lock](../../workspace/inputs/controller-images.lock.json)
+selects the immutable Platform source. Its
+[Service Manager recipe](https://github.com/alexmaninblack/aos-vehicle-platform/blob/3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/aos-servicemanager_git.bbappend)
+and matching IAM/CM recipes pin this native source set:
+
+| Source | Exact revision |
+| --- | --- |
+| AosCore applications | `9d613a46df3c7f550062e2f19ae3406c57715694` |
+| AosCore library | `5560291ba6914e36a5b841ade4d8fc54134a9e91` |
+| AosCore API | `af3552a0a5eb0237eff7f5f183780ca46c339cd3` |
+
+These pins describe the selected image, not unmodified upstream main or an
+instruction to refresh build inputs. Native container setup owns environment,
+resource mounts and instance recovery. Public-input projection uses the
+Factory-packaged SM startup hook described below, not a per-container
+`aos-service@.service` template or replacement container runner.
 
 Cold preparation reconstructs volatile input files; it does not reimplement
 native container recovery. A missing application input is not evidence that
@@ -154,13 +162,14 @@ projector into the pre-SM store check would therefore prevent SM from reaching
 the code that starts the provider. The negative fixture verifies that no
 public input is published when the provider is absent.
 
-The inspected sources are in the owning platform repository:
+The component/startup sources are in the owning platform repository:
 `meta-aos-vehicle-platform/recipes-aos/aos-vehicle-data-provider-platform/files/`
 (`aos-vehicle-data-provider-bootstrap.service`, `aos-vehicle-data-provider.service`)
 and `recipes-aos/aos-servicemanager/files/systemd-slot-component/runtime.cpp`
-under the same layer. These are our component/startup integration, not a missing
-native container capability. The pinned native runner has no per-container
-systemd template into which this preparation can be inserted.
+under the same layer. The Factory-packaged
+`40-aos-demo-service-inputs.conf` invokes the shared projector in SM
+`ExecStartPre` (`cold`) and `ExecStartPost` (`verify`). This is component/startup
+integration, not a missing native container capability or a per-container hook.
 
 Prepare cold-start inputs from validated committed state, then verify the
 process after SM recovers VDP. An interrupted transaction does not authorize
@@ -174,12 +183,12 @@ The current Test uses native IAM `fileidentifier`, with `systemIDPath` equal
 to `/etc/machine-id`; its value matches the observed IAM v6 response and Test
 provisioning context. Cold preparation may read this same native source,
 without persisting a second identity. Other identifier plugins are unsupported,
-not silently substituted. The [IAM documentation](https://docs.aosedge.tech/docs/aos-core/architecture/identity-access-manager/node-identity#file-identifier)
-describes this authority; the [native file implementation](https://github.com/aosedge/aos_iamanager/blob/b2cdabdc8bc6924c0afe5cefcb5d66b7a1154a5d/identhandler/modules/fileidentifier/fileidentifier.go)
-reads the configured file and trims whitespace. Initial activation and warm
-observations still reconcile this source with native IAM.
+not silently substituted. The
+[shared projector](../../apps/demo-orchestrator/src/aosedge_demo_orchestrator/service_inputs_guest.py)
+validates the configured plugin/path and reads this native file; initial
+activation and warm observations reconcile its value with native IAM.
 
-## Migration and remaining evidence
+## Product compatibility and evidence
 
 [Product-message compatibility](../../contracts/service-runtime-inputs/product-message-migration.md) must
 cover the service digest **and** Brake's modelArtifactSha256 alias of it.
@@ -187,9 +196,9 @@ Retain modelConfigSha256 and the VDP compatibility digest. Do not invent a
 replacement artifact hash. New messages use an explicit new schema version;
 legacy queues and backend records remain readable and are never relabelled.
 
-Native environment/resource behavior was inspected at AosCore
-`9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`; evidence links and limitations
-remain in [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md#9-evidence-and-limitations).
+The current placement and native source set above govern implementation.
+[ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md#9-evidence-and-limitations)
+owns the accepted provenance and credential boundary.
 The [current baseline](../qualification/current-baseline.md) selects scoped
 startup/reboot, native KAC/TLS/subscription renewal, private-session and
 vehicle-derived product evidence. It is not blanket acceptance of every
