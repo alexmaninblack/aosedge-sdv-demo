@@ -13,11 +13,12 @@ CDN = 'https://uc123456789.dl.dropboxusercontent.com/cd/0/inline/public_download
 
 
 class DropboxParserTests(unittest.TestCase):
-    def parse(self, mode, text, url=URL, size=None):
+    def parse(self, mode, text, url=URL, size=None, offset=None):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'response';path.write_text(text)
             args=['/usr/bin/perl',str(PARSER),mode,str(path),url]
             if size is not None:args.append(str(size))
+            if offset is not None:args.append(str(offset))
             return subprocess.run(args,
                                   capture_output=True,text=True)
 
@@ -27,6 +28,35 @@ class DropboxParserTests(unittest.TestCase):
         self.assertEqual(result.stdout,'redirect\t'+CDN+'\n')
         result=self.parse('headers','HTTP/2 200\r\nContent-Type: application/octet-stream\r\n\r\n',CDN)
         self.assertEqual(result.stdout,'binary\t'+CDN+'\n')
+
+    def test_transfer_requires_exact_range_and_remaining_length(self):
+        header='HTTP/2 206\r\nContent-Type: application/octet-stream\r\nContent-Range: bytes 4-8/9\r\nContent-Length: 5\r\n\r\n'
+        self.assertEqual(self.parse('transfer-headers',header,CDN,9,4).returncode,0)
+        for changed in (header.replace('206','200'),header.replace('4-8/9','0-8/9'),
+                        header.replace('4-8/9','4-8/99'),header.replace('Length: 5','Length: 9'),
+                        header.replace('application/octet-stream','text/html'),
+                        header.replace('\r\n\r\n','\r\nContent-Encoding: gzip\r\n\r\n'),
+                        header.replace('Content-Range:', 'Unknown-Range:'),
+                        header.replace('Content-Length: 5', 'Content-Length: 5\r\nContent-Length: 5')):
+            with self.subTest(response=changed):
+                result=self.parse('transfer-headers',changed,CDN,9,4)
+                self.assertNotEqual(result.returncode,0)
+                self.assertEqual(result.stdout,'')
+
+    def test_transfer_json_attachment_uses_remaining_not_complete_size(self):
+        header=('HTTP/2 206\r\nContent-Type: application/json\r\n'
+                'Content-Disposition: attachment; filename=unspecified\r\n'
+                'Content-Range: bytes 4-8/9\r\nContent-Length: 5\r\n\r\n')
+        self.assertEqual(self.parse('transfer-headers',header,CDN,9,4).returncode,0)
+        self.assertNotEqual(self.parse('transfer-headers',header.replace('Length: 5','Length: 9'),CDN,9,4).returncode,0)
+
+    def test_first_transfer_rejects_unsolicited_ranges_and_html(self):
+        good='HTTP/2 200\r\nContent-Type: application/octet-stream\r\nContent-Length: 9\r\n\r\n'
+        self.assertEqual(self.parse('transfer-headers',good,CDN,9,0).returncode,0)
+        for changed in (good.replace('200','206'),good.replace('Length: 9','Length: 8'),
+                        good.replace('application/octet-stream','text/html'),
+                        good.replace('\r\n\r\n','\r\nContent-Range: bytes 0-8/9\r\n\r\n')):
+            self.assertNotEqual(self.parse('transfer-headers',changed,CDN,9,0).returncode,0)
 
     def test_file_share_is_supported_but_folder_zip_is_not(self):
         share=URL.replace('fo/public_folder_123/public_file_123','fi/public_file_123')

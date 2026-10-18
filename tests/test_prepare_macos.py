@@ -70,6 +70,79 @@ class PrepareMacTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('disconnected', result.stderr)
 
+    def socket_fixture(self, saved=''):
+        workspace = self.root/'long-development-workspace'
+        workspace.mkdir(exist_ok=True)
+        return f'''umask 077
+SDV_PARENT={shlex.quote(str(workspace))}; SDV_ROOT="$SDV_PARENT/sdv"; SDV_TMP="$SDV_ROOT/.tmp"
+state_get() {{ printf '%s' {shlex.quote(saved)}; }}
+socket_scratch_candidates() {{ SOCKET_CANDIDATES=("$1" {shlex.quote(str(self.root/'s/.tmp'))}); }}
+ask() {{ echo UNEXPECTED_PROMPT; exit 90; }}
+recheck_storage() {{ :; }}
+'''
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
+    def test_socket_path_auto_selection_is_short_same_volume_and_read_only(self):
+        result = self.shell(self.socket_fixture() + 'choose_socket_scratch; printf "SELECTED:%s\\n" "$SDV_TMP"')
+        self.assertIn('SELECTED:'+str(self.root/'s/.tmp'), result.stdout)
+        self.assertNotIn('UNEXPECTED_PROMPT', result.stdout)
+        self.assertLessEqual(len(str(self.root/'s/.tmp').encode()), 29)
+        self.assertFalse((self.root/'s').exists())
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
+    def test_socket_owned_parent_creation_repeat_and_legacy_path(self):
+        body = self.socket_fixture() + 'choose_socket_scratch; socket_scratch_parent; scratch_root "$SDV_TMP"'
+        self.shell(body)
+        self.shell(body)
+        base = self.root/'s'
+        self.assertEqual((base/'.sdv-socket-owner').read_text().strip(), 'sdv-socket-parent-v1')
+        self.assertEqual(base.stat().st_mode & 0o777, 0o700)
+        self.assertEqual((base/'.tmp').stat().st_mode & 0o777, 0o700)
+        legacy = self.shell(self.socket_fixture(str(self.root/'.tmp')) +
+                            'choose_socket_scratch; printf "SELECTED:%s\\n" "$SDV_TMP"')
+        self.assertIn('SELECTED:'+str(self.root/'.tmp'), legacy.stdout)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
+    def test_socket_foreign_or_linked_candidates_are_preserved(self):
+        base = self.root/'s'
+        base.mkdir(mode=0o700)
+        sentinel = base/'keep'; sentinel.write_text('foreign')
+        result = self.shell(self.socket_fixture() + 'choose_socket_scratch', ok=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(sentinel.read_text(), 'foreign')
+        sentinel.unlink(); base.rmdir()
+        target = self.root/'target'; target.mkdir()
+        base.symlink_to(target, target_is_directory=True)
+        result = self.shell(self.socket_fixture() + 'choose_socket_scratch', ok=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(list(target.iterdir()), [])
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
+    def test_socket_path_never_falls_back_to_another_volume(self):
+        result = self.shell(self.socket_fixture() + '''
+stat() {
+  if [ "$1" = -f ] && [ "$2" = %d ]; then
+    if [ "$3" = "$SDV_PARENT" ]; then echo 1; else echo 2; fi
+  else /usr/bin/stat "$@"; fi
+}
+choose_socket_scratch
+''', ok=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('no other disk or symlink', result.stderr)
+        self.assertFalse((self.root/'s').exists())
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS filesystem metadata')
+    def test_socket_parent_replacement_after_selection_is_rejected(self):
+        target = self.root/'target'; target.mkdir()
+        body = self.socket_fixture() + f'''choose_socket_scratch
+ln -s {shlex.quote(str(target))} {shlex.quote(str(self.root/'s'))}
+socket_scratch_parent
+'''
+        result = self.shell(body, ok=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('path changed', result.stderr)
+        self.assertEqual(list(target.iterdir()), [])
+
     def test_continuation_passes_environment_and_stops_on_bootstrap_failure(self):
         state = self.root/'state'
         state.mkdir()
@@ -331,7 +404,8 @@ subprocess.run=run
         # All external probes/installers are replaced; real orchestration and
         # local state/lock/environment behavior are exercised in a disposable root.
         body = f'''uname() {{ case "$1" in -s) echo Darwin ;; -m) echo arm64 ;; esac; }}
-ask() {{ case "$1" in 'Short socket-test'*) printf '%s' {shlex.quote(str(self.root/'.tmp'))} ;; *) IFS= read -r fixture_answer; printf '%s' "$fixture_answer" ;; esac; }}
+ask() {{ IFS= read -r fixture_answer; printf '%s' "$fixture_answer"; }}
+choose_socket_scratch() {{ SDV_TMP={shlex.quote(str(self.root/'.tmp'))}; }}
 SDV_PUBLIC_CATALOG_URL=https://drive.google.com/uc?export=download; SDV_PUBLIC_CATALOG_RECORD=fixture-public-pin
 sw_vers() {{ echo 26.6.2; }}
 inspect_volume() {{ VOLUME_UUID=fixture-uuid; VOLUME_NAME=Fixture; VOLUME_MOUNT={shlex.quote(str(self.root))}; FREE_KIB=999999999; }}

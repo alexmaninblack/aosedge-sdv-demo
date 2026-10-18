@@ -31,6 +31,40 @@ A's public download requires no storage-provider login. Unexpected sign-in or
 warning pages, incorrect sizes and checksum mismatches stop the download;
 there is no automatic private-download or alternate-provider fallback.
 
+<a id="operator-download-recovery"></a>
+
+### Operator download recovery
+
+An owned incomplete A download retains a `.part` payload, a private package/file
+binding and its selected parent/volume identity. Resolve the reported network
+issue and rerun the same current launcher with **A / 1**. It uses the original
+disk and resumes from the retained byte count; a missing finished DMG is not
+mistaken for a missing disk. A replaced volume, foreign/linked partial or
+changed package binding stops without adoption or deletion.
+
+The transfer has a connection deadline and a 90-second stalled/near-zero-data
+limit, not a 25-minute total download limit. An advancing slow transfer can
+continue. No automatic request retry or storage/provider fallback is added.
+Resume requires an exact server byte-range response. Unexpected ranges/pages
+discard only that request's appended suffix and preserve the earlier prefix.
+Every completed file still needs the full selected SHA-256 and Setup identity
+checks before mounting/opening; retained bytes are not proof of integrity.
+
+If you need to restart in another location, pass **A with `--parent`** and an
+existing new parent. This explicitly chooses a new download cache and leaves
+the previous files untouched. `--dmg` instead selects a complete existing copy
+of the approved package, not a partial file or arbitrary B build.
+If a provider refuses ranges, use a new cache only as an explicit restart,
+not an automatic fallback.
+
+For an interrupted attempt made by an **older launcher without download
+receipts**, first download the current launcher from README. Unmarked old
+partials cannot be adopted safely: select a new parent explicitly with
+`--route A --parent /absolute/existing/new-parent`, or supply a complete matching
+file with `--dmg`. Do not delete or edit private selection/receipt files to force
+recovery. An already selected local file that disappeared still requires its
+original disk/file or a deliberate new selection.
+
 B uses the [developer workflow](reproduce-demo.md). It retains the selected root
 revision on repeat, checks pinned inputs and asks for a signing identity.
 
@@ -70,8 +104,9 @@ shared Docker storage.
 Resuming and updating are different actions. To select current `main` again,
 finish or cancel the active build, download the launcher again using README,
 then create a **new empty parent folder** in Finder on your chosen APFS disk.
-Run the launcher and pass that folder with `--parent`, or choose it at the B
-storage prompt. It must be a different parent, not the existing `sdv` child:
+Run the launcher and pass that folder with `--parent`. A saved B selection is
+reused without a new storage prompt; the interactive choice is for first use
+only. It must be a different parent, not the existing `sdv` child:
 the workflow creates a new `<parent>/sdv` and records a new root revision.
 
 For example, with your actual existing new folder substituted for the path:
@@ -86,6 +121,14 @@ plan in that root, not every component's latest branch. To include your own
 source commits, follow [the contributor path](../../CONTRIBUTING.md#from-a-source-change-to-your-own-installer).
 Do not edit `root-source.json`, ownership markers or completed build receipts,
 and do not pull inside a frozen prepared checkout to force an update.
+
+If the workspace's ordinary `.tmp` path is too long for Gateway socket tests,
+B selects/reuses a private short `.tmp` on the **same volume** automatically.
+Only socket-test scratch uses it; compilers, caches and packaging retain the
+selected workspace. Selection is read-only until workflow confirmation, and
+unknown/busy scratch is never removed to make room. An unsuitable mount/path
+or ownership conflict stops with a reason instead of asking you to invent a
+path, creating a symlink or using a different disk.
 
 Ctrl+C stops the current owned transfer/tool process and removes its temporary
 files and lock. It does not erase a Test or stop Docker Engine. Keep the first

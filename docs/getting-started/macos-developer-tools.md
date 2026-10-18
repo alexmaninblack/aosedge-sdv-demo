@@ -20,7 +20,7 @@ private account.
 
 | Stage | Reuse/check | If a prerequisite is missing or incompatible |
 | --- | --- | --- |
-| 1. Mac and storage | Native Apple Silicon, macOS 26+, existing writable local APFS, volume identity and free space | Explain the problem; never format a disk or choose another volume after disconnect |
+| 1. Mac and storage | Native Apple Silicon, macOS 26+, existing writable local APFS, volume identity/free space and automatic same-volume short socket scratch when needed | Explain the problem; never format a disk or choose another volume after disconnect |
 | 2. Apple tools | Selected Xcode, completed first-run setup, macOS SDK 26+, Swift and Git | Ask you to install/open Xcode and complete Apple's prompts; preserve the global Xcode selection |
 | 3. CMake and Python | CMake/CTest >=3.24; native Python 3.12; project environment with packaging | Install missing Homebrew bottles and reconcile the owned environment; do not automatically upgrade an incompatible formula |
 | 4. Node and npm | Exact versions selected by the current source requirements | Install a checksum-verified ARM64 distribution inside the workspace, not over a global installation |
@@ -114,8 +114,14 @@ Operations without measurable progress show an activity indicator.
 Disposable work uses `sdv/.tmp` and is removed after completion or normal
 cancellation. Sources, verified caches, logs and final outputs are preserved.
 After a crash, only idle owned temporary directories can be cleaned; unknown
-or still-used files are left alone. Some Gateway tests need a shorter
-same-volume temporary path; the launcher explains when that is required.
+or still-used files are left alone. When Gateway socket tests need a shorter
+path, the launcher selects it automatically on the same volume, reusing a
+valid saved selection or a private per-user marked parent. That small socket
+root may be outside the workspace; it holds no compiler/media data or caches.
+It is created only after confirmation; test-owned children are cleaned by their
+owners. There is no manual short-path prompt and no fallback to another disk.
+If no safe short path exists, use the reported shorter APFS mount/parent
+selection rather than changing ownership of an unrelated directory.
 
 Small private control files are under
 `~/Library/Application Support/AosEdge SDV Lab/Developer`. They record

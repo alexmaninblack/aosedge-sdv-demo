@@ -49,10 +49,32 @@ The application is Apple Development signed, not notarized. Follow normal
 macOS security prompts; do not disable Gatekeeper or grant broad disk
 permissions to bypass a refusal.
 
+<a id="file-locations"></a>
+
+## File locations
+
+In A, **Existing download workspace parent folder** means an existing APFS
+folder for retaining the DMG. Press Return to use the shown home-folder default,
+or enter an existing absolute folder on your internal/external disk without
+shell quotes. This choice does not relocate the installed program or Docker.
+
+| Files | Default / selected location | Purpose |
+| --- | --- | --- |
+| Downloaded DMG | `<download-parent>/sdv/cache/` | Verified reusable installation media; this is not a source build or the running demo. |
+| Installed programs | `~/AosEdge SDV Packages` | Versioned program payload selected by Setup. |
+| Private demo data | `~/SDV-Lab-Data` | Controller disk, run state and local data retained across normal Stop/Start. |
+
+Setup confirms its program/data paths separately. The small launcher selections
+live in your Library Application Support, not inside the installed program.
+For an interrupted download, follow
+[download recovery](unified-macos-launcher.md#operator-download-recovery), not
+Test deletion or a new Cloud registration.
+
 ## Install and select local data
 
-1. Mount the complete DMG and open **AosEdge SDV Lab Setup**. Keep its matching
-   Runtime Kit beside Setup in the mounted image.
+1. If the launcher already opened **AosEdge SDV Lab Setup**, continue there.
+   Otherwise mount the complete DMG and open Setup. Keep its matching
+   Runtime Kit beside it in the mounted image; do not launch a second copy.
 2. Choose **Install SDV Lab**. Defaults are `~/AosEdge SDV Packages` for
    programs and `~/SDV-Lab-Data` for private demo data. No separate kit or
    package-store selection is required. Advanced settings can change program

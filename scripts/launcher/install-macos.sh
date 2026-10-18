@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: MIT
 
 # BEGIN VERIFIED DEPENDENCY PINS — maintained by scripts/sync-launcher-pins
-INSTALL_COMMON_SHA256=a199a5c78b0a79b599bd19dd2da6dc5d14572426c7b9e4582f4a8d687b4dd37e
-INSTALL_DRIVE_SHA256=bf9dc8b53e694008a17dbddff63eaf9d5fc689abe959eda716a511b0400085a3
+INSTALL_COMMON_SHA256=70054522d7df253c45dbfa4b441bed10e93901571c3008b275db3385869b056a
+INSTALL_DRIVE_SHA256=b43c73e9e4256bae5bdd045bd0769f0e083298d75866bc13f5540fd8acb24bd3
 # END VERIFIED DEPENDENCY PINS
 
 install_import() {
@@ -25,12 +25,55 @@ install_docker() {
   observed=$(/usr/bin/perl -e 'alarm 20; exec @ARGV' "$docker" --context desktop-linux info --format '{{.OSType}}/{{.Architecture}}' 2>/dev/null) || { say 'ACTION: Start the existing Docker Engine; do not restart a running one.'; return 2; }
   case "$observed" in linux/arm64|linux/aarch64) say 'Docker: existing local ARM64 Engine ready.' ;; *) say 'STOP: Docker must run Linux ARM64 containers.'; return 2 ;; esac
 }
+install_partial() {
+  local destination=$1 size=$2 binding identity receipt="$1.part.receipt"
+  safe_path "$destination" && safe_path "$receipt" || { say 'STOP: Unsafe download path; preserved.' >&2; return 1; }
+  binding=$(printf '%s\n' "$destination" "$size" "$(route_field operator.sha256)" \
+    "${SELECTED_UUID:-}" "$(route_field operator.downloadURL)" | shasum -a 256 | awk '{print $1}') || return 1
+  if [ ! -e "$destination.part" ] && [ ! -L "$destination.part" ]; then
+    [ ! -e "$receipt" ] && [ ! -L "$receipt" ] || { say 'STOP: Partial-download receipt has no payload; preserved for inspection.' >&2; return 1; }
+    (umask 077; set -C; : > "$destination.part") || return 1
+    identity=$(stat -f '%d:%i' "$destination.part") || return 1
+    (umask 077; set -C; printf 'sdv-dmg-part-v1\t%s\t%s\n' "$binding" "$identity" > "$receipt") || return 1
+  fi
+  private_file "$destination.part" && private_file "$receipt" && [ "$(stat -f %z "$receipt")" -le 512 ] &&
+    [ "$(wc -l < "$receipt" | tr -d ' ')" = 1 ] || { say 'STOP: Unowned or unsafe partial download; preserved.' >&2; return 1; }
+  identity=$(stat -f '%d:%i' "$destination.part") || return 1
+  [ "$(<"$receipt")" = "$(printf 'sdv-dmg-part-v1\t%s\t%s' "$binding" "$identity")" ] || {
+    say 'STOP: Partial download belongs to another package, file or volume; preserved.' >&2; return 1;
+  }
+  INSTALL_PART_BYTES=$(stat -f %z "$destination.part") || return 1
+  [ "$INSTALL_PART_BYTES" -le "$size" ] || { say 'STOP: Partial download exceeds the approved size; preserved.' >&2; return 1; }
+  INSTALL_PART_ID=$identity
+}
+install_rollback_append() {
+  # Remove only this request's untrusted suffix, through an exact private fd.
+  /usr/bin/perl -MFcntl=O_WRONLY,O_NOFOLLOW -e '
+    my ($path,$id,$offset)=@ARGV;
+    sysopen(my $f,$path,O_WRONLY|O_NOFOLLOW) or die "Cannot reconcile partial download.\n";
+    my @s=stat($f); die "Partial identity changed.\n" unless -f $f && $s[4]==$< &&
+      $s[3]==1 && ($s[2]&0777)==0600 && "$s[0]:$s[1]" eq $id && $s[7]>=$offset;
+    truncate($f,$offset) or die "Cannot preserve previous prefix.\n";
+  ' "$1" "$2" "$3"
+}
+install_promote_partial() {
+  local destination=$1
+  [ ! -e "$destination" ] && [ ! -L "$destination" ] || { say 'STOP: Completed destination appeared; both files preserved.' >&2; return 1; }
+  mv -n "$destination.part" "$destination" && [ ! -e "$destination.part" ] &&
+    private_file "$destination" && [ "$(stat -f '%d:%i' "$destination")" = "$INSTALL_PART_ID" ] || return 1
+  rm "$destination.part.receipt"
+}
 install_public_download() {
-  local url=$1 destination=$2 mode next round=0 parser=${SDV_LAB_DRIVE_PARSER:-} size
+  local url=$1 destination=$2 mode next round=0 parser=${SDV_LAB_DRIVE_PARSER:-} size offset result actual status
+  local resume=() progress=(--silent --show-error)
   size=$(route_field operator.bytes) || return 1
   safe_path "$parser" && [ -f "$parser" ] &&
     [ "$(shasum -a 256 "$parser" | awk '{print $1}')" = "$INSTALL_DRIVE_SHA256" ] || return 1
-  [ ! -e "$destination.part" ] && [ ! -L "$destination.part" ] || return 1
+  install_partial "$destination" "$size" || return 1
+  offset=$INSTALL_PART_BYTES
+  if [ "$offset" = "$size" ]; then
+    install_promote_partial "$destination"; return $?
+  fi
   while [ "$round" -lt 5 ]; do
     round=$((round+1))
     curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 30 \
@@ -46,25 +89,43 @@ install_public_download() {
         IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
         [ "$mode" = confirm ] || return 1; url=$next ;;
       binary)
+        [ "$offset" = 0 ] || resume=(--continue-at "$offset")
         if [ -t 9 ] && [ "${TERM:-}" != dumb ]; then
           printf '  %s\n' "${destination##*/}" >&9
-          curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
-            --dump-header "$ROUTE_WORK/drive-get-head" --max-filesize "$size" --progress-bar --show-error --output "$destination.part" "$url" 2>&9 || return 1
-        else
-          curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 1500 \
-            --dump-header "$ROUTE_WORK/drive-get-head" --max-filesize "$size" --silent --show-error --output "$destination.part" "$url" || return 1
+          progress=(--progress-bar --show-error)
         fi
-        # GET can return an HTML quota page even when HEAD advertised the DMG.
-        /usr/bin/perl "$parser" headers "$ROUTE_WORK/drive-get-head" "$url" "$size" > "$ROUTE_WORK/drive-next" || return 1
-        IFS=$'\t' read -r mode next < "$ROUTE_WORK/drive-next" || return 1
-        if [ "$mode" != binary ]; then
-          mode=$(/usr/bin/perl "$parser" payload-status "$destination.part" "$url") || return 1
-          if [ "$mode" = quota ]; then
+        # No total deadline: a slow but advancing download may take hours.
+        # curl owns range-start checks; the parser additionally binds total/end.
+        curl --disable --fail --proto '=https' --tlsv1.2 --connect-timeout 15 --speed-limit 1 --speed-time 90 \
+          --dump-header "$ROUTE_WORK/drive-get-head" --max-filesize "$size" "${resume[@]}" \
+          "${progress[@]}" --output "$destination.part" "$url" 2>&9
+        result=$?
+        status=unsupported
+        if ! /usr/bin/perl "$parser" transfer-headers "$ROUTE_WORK/drive-get-head" "$url" "$size" "$offset" > "$ROUTE_WORK/drive-next"; then
+          if [ "$offset" = 0 ] && [ "$(stat -f %z "$destination.part")" -le 65536 ]; then
+            status=$(/usr/bin/perl "$parser" payload-status "$destination.part" "$url") || status=unsupported
+          fi
+          install_rollback_append "$destination.part" "$INSTALL_PART_ID" "$offset" || return 1
+          if [ "$status" = quota ]; then
             printf 'STOP: The artifact provider blocks this anonymous download (quota exceeded). No installer was opened. Wait for provider availability; no automatic retry.\n' >&2
-          else printf 'STOP: The artifact provider returned an unsupported page instead of the DMG. No installer was opened.\n' >&2; fi
+          else printf 'STOP: Download response/range was not confirmed. The previous prefix is preserved; no installer opened or automatic retry.\n' >&2; fi
           return 2
         fi
-        mv "$destination.part" "$destination"; return $? ;;
+        private_file "$destination.part" && [ "$(stat -f '%d:%i' "$destination.part")" = "$INSTALL_PART_ID" ] || return 1
+        actual=$(stat -f %z "$destination.part") || return 1
+        if [ "$actual" -gt "$size" ]; then
+          install_rollback_append "$destination.part" "$INSTALL_PART_ID" "$offset" || return 1
+          say 'STOP: Transfer exceeded the approved total size; previous prefix preserved.' >&2; return 2
+        fi
+        install_partial "$destination" "$size" || return 1
+        actual=$INSTALL_PART_BYTES
+        [ "$actual" -ge "$offset" ] || return 1
+        if [ "$actual" != "$size" ]; then
+          printf 'Download paused at %s of %s bytes (transport exit %s). Rerun the same launcher to resume.\n' "$actual" "$size" "$result" >&2
+          return 2
+        fi
+        # This is still unverified media. The full SHA-256 gate runs next.
+        install_promote_partial "$destination"; return $? ;;
       *) return 1 ;;
     esac
   done
@@ -126,13 +187,13 @@ install_setup() {
   say 'This script does not create a Controller, provision a Unit or publish a release.'
 }
 install_main() {
-  local arg mode=run file= parent= url name size digest confirm saved
+  local arg mode=run file= parent= url name size digest confirm saved record kind volume recorded_size recorded_digest recorded_parent recorded_file extra automatic=no explicit_parent=no
   while [ "$#" -gt 0 ]; do
     arg=$1; shift
     case "$arg" in
       --check) mode=check ;;
       --dmg|--parent) [ "$#" -gt 0 ] || { printf 'STOP: Missing argument.\n' >&2; return 1; }
-        case "$arg" in --dmg) file=$1 ;; --parent) parent=$1 ;; esac; shift ;;
+        case "$arg" in --dmg) file=$1 ;; --parent) parent=$1; explicit_parent=yes ;; esac; shift ;;
       *) printf 'STOP: Unknown install option.\n' >&2; return 1 ;;
     esac
   done
@@ -145,35 +206,60 @@ install_main() {
     say 'LOCAL HOST CHECKS PASS — DMG/install/Cloud access remain unchecked.'; return 0
   fi
   saved="$SDV_LAB_STATE/Install/selected-dmg"
-  if [ -z "$file" ] && { [ -e "$saved" ] || [ -L "$saved" ]; }; then
-    private_file "$saved" || die 'Unsafe saved DMG selection; preserved.'
+  record="$SDV_LAB_STATE/Install/download-selection"
+  if [ -z "$file" ] && [ "$explicit_parent" = no ] && { [ -e "$saved" ] || [ -L "$saved" ]; }; then
+    private_file "$saved" && [ "$(stat -f %z "$saved")" -le 4096 ] || die 'Unsafe saved DMG selection; preserved.'
     file=$(<"$saved")
-    safe_path "$file" && [ -f "$file" ] || { say 'ACTION: Saved DMG is unavailable. Reconnect its disk or deliberately select another with --dmg; no fallback.'; return 2; }
+    if [ -e "$record" ] || [ -L "$record" ]; then
+      private_file "$record" && [ "$(stat -f %z "$record")" -le 16384 ] &&
+        [ "$(wc -l < "$record" | tr -d ' ')" = 1 ] || die 'Unsafe saved download selection; preserved.'
+      IFS=$'\t' read -r kind volume recorded_size recorded_digest recorded_parent recorded_file extra < "$record" || return 1
+      [ "$kind" = sdv-dmg-download-v1 ] && [ -n "$volume" ] && [ -z "$extra" ] &&
+        [ "$recorded_size" = "$size" ] && [ "$recorded_digest" = "$digest" ] &&
+        [ "$recorded_file" = "$file" ] && [ "$file" = "$recorded_parent/sdv/cache/$name" ] || die 'Saved download selection differs from this package; preserved. Select a new parent explicitly.'
+      route_storage "$recorded_parent"
+      [ "$SELECTED_UUID" = "$volume" ] || die 'Saved download volume was replaced; reconnect the original disk. No fallback.'
+      parent=$recorded_parent; automatic=yes
+      safe_path "$file" && [ ! -L "$file" ] || die 'Unsafe saved download path; preserved.'
+    else
+      safe_path "$file" && [ -f "$file" ] || { say 'ACTION: Saved DMG is unavailable. Reconnect its disk, select a complete file with --dmg, or select a new download parent with --parent; no fallback.'; return 2; }
+    fi
     say "Previously selected DMG: $file"
   fi
   if [ -z "$file" ] && [ -z "$url" ]; then
     say 'The approved operator DMG has no public download yet. Select the complete file supplied by the release owner.'
     file=$(/usr/bin/osascript -e 'POSIX path of (choose file with prompt "Choose the approved AosEdge SDV Lab DMG" of type {"com.apple.disk-image-udif"})') || return 2
   fi
-  if [ -n "$file" ]; then
+  if [ -n "$file" ] && [ "$automatic" = no ]; then
     safe_path "$file" && [ -f "$file" ] || die 'Choose an existing absolute DMG path without links.'
     SDV_PARENT=
-  else
+  elif [ "$automatic" = no ]; then
     # Locator is reviewed catalog data, never an arbitrary user executable URL.
     case "$url" in https://drive.google.com/*|https://drive.usercontent.google.com/*|https://www.dropbox.com/scl/*) ;; *) die 'Unsupported operator download locator.' ;; esac
     [ -n "$parent" ] || parent=$(ask 'Existing download workspace parent folder' "$HOME")
     route_storage "$parent"; file="$SDV_ROOT/cache/$name"
+    automatic=yes
   fi
+  [ "$automatic" = no ] || say "Download cache: $SDV_ROOT/cache (not the installation or private-data folder)."
   say 'Plan: verify approved DMG and Setup identity, then open its signed installer.'
   [ "$(route_field operator.notarized)" = true ] || say 'Engineering preview: not notarized. Respect any macOS security refusal.'
   confirm=$(ask 'Proceed? (yes/no)' no)
   [ "$confirm" = yes ] || { say 'Cancelled. No installer was opened.'; return 2; }
   route_context Install
+  if [ "$automatic" = yes ]; then
+    { [ ! -e "$record" ] && [ ! -L "$record" ]; } || private_file "$record" || die 'Unsafe download selection; preserved.'
+    printf 'sdv-dmg-download-v1\t%s\t%s\t%s\t%s\t%s\n' "$SELECTED_UUID" "$size" "$digest" "$SDV_PARENT" "$file" > "$ROUTE_WORK/download-selection"
+    mv "$ROUTE_WORK/download-selection" "$record" || die 'Cannot save download selection.'
+  elif [ -e "$record" ] || [ -L "$record" ]; then
+    private_file "$record" && rm "$record" || die 'Unsafe previous download selection; preserved.'
+  fi
   { [ ! -e "$STATE/selected-dmg" ] && [ ! -L "$STATE/selected-dmg" ]; } || private_file "$STATE/selected-dmg" || die 'Unsafe saved DMG selection; preserved.'
   printf '%s\n' "$file" > "$ROUTE_WORK/selected-dmg"
   mv "$ROUTE_WORK/selected-dmg" "$STATE/selected-dmg" || die 'Cannot save DMG selection.'
   if [ ! -f "$file" ]; then
     [ ! -e "$file" ] && [ ! -L "$file" ] || die 'Existing download destination preserved.'
+    install_partial "$file" "$size" || die 'Partial download requires inspection; no transfer started.'
+    say "Downloading ${file##*/}: $INSTALL_PART_BYTES of $size bytes retained."
     run_install "Downloading $name" install_public_download "$url" "$file"
   fi
   install_verify_dmg "$file" "$size" "$digest"; install_mount "$file"; install_setup

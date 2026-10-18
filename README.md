@@ -146,6 +146,11 @@ opening Setup. No source checkout, Xcode, Python, Node or signing key is needed.
 If Docker is missing, it explains how to install and initialize Docker Desktop.
 It does not restart a running Engine or interfere with another project's data.
 
+The download-folder question chooses the **DMG cache**, not where the demo
+will be installed. See [file locations](docs/getting-started/installed-preview-cloud-first-use.md#file-locations).
+An interrupted owned download resumes when you rerun the same current launcher;
+it does not open Setup until the complete file passes checksum/identity checks.
+
 In **Setup**, follow **Install SDV Lab → Connect to Aos Cloud → Open SDV Lab**.
 The complete DMG already contains its matching Runtime Kit; leave it beside
 Setup in the mounted image. Opening the lab displays **Presenter**, the operator
@@ -199,6 +204,8 @@ an external disk. An external SSD is useful, not mandatory. Capacity is checked
 before downloads and large stages, including Docker's actual storage location.
 A missing or replaced disk stops the run; it never falls back to another disk.
 Shared Docker storage is not moved or restarted.
+Short socket-test scratch is selected automatically on that same volume;
+there is no extra path question and bulk build data stays in the workspace.
 
 The workflow rebuilds the demo's project components and installer while
 **reusing the prebuilt vehicle simulator and ARM64 virtual controller image

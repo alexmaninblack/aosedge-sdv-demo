@@ -55,8 +55,11 @@ sub attrs {
     }
     return %result;
 }
-my ($mode,$path,$original,$approved_size)=@ARGV; stop() unless @ARGV==3 || @ARGV==4;
+my ($mode,$path,$original,$approved_size,$offset)=@ARGV;
+my $transfer=$mode eq 'transfer-headers';
+stop() unless $transfer ? @ARGV==5 : (@ARGV==3 || @ARGV==4);
 stop() if defined($approved_size) && $approved_size !~ /\A[1-9][0-9]{0,18}\z/;
+stop() if $transfer && (!defined($approved_size) || $offset !~ /\A(?:0|[1-9][0-9]{0,18})\z/ || $offset >= $approved_size);
 my %expected=url($original);
 stop() unless -f $path && !-l $path && (-s $path)<=65536;
 open my $file,'<',$path or stop(); local $/; my $raw=<$file>;close $file;
@@ -64,10 +67,21 @@ if ($mode eq 'payload-status') {
     my $text=lc(decode($raw));
     $text =~ s/<[^>]*>/ /sg; $text =~ s/\s+/ /g;
     print $text =~ /quota exceeded|too many users.*downloaded|can't view or download this file/ ? "quota\n" : "unsupported\n";
-} elsif ($mode eq 'headers') {
+} elsif ($mode eq 'headers' || $transfer) {
     my @blocks=grep {/\AHTTP\//} split /\r?\n\r?\n/,$raw;
     stop() unless @blocks;my $head=$blocks[-1];
     stop() unless $head =~ /\AHTTP\/[0-9.]+ ([0-9]{3})\b/;my $status=$1;
+    if ($transfer) {
+        stop() unless $status==($offset ? 206 : 200);
+        my @ranges=($head =~ /^content-range:[ \t]*([^\r\n]+)\r?$/mig);
+        if ($offset) {
+            stop() unless @ranges==1 && $ranges[0] eq 'bytes '.$offset.'-'.($approved_size-1).'/'.$approved_size;
+        } else { stop() if @ranges; }
+        my @lengths=($head =~ /^content-length:[ \t]*([^\r\n]+)\r?$/mig);
+        stop() unless @lengths<=1 && (!@lengths || $lengths[0] eq ''.($approved_size-$offset));
+        my @encodings=($head =~ /^content-encoding:[ \t]*([^\r\n]+)\r?$/mig);
+        stop() unless @encodings<=1 && (!@encodings || lc($encodings[0]) eq 'identity');
+    }
     if ($status =~ /\A30[12378]\z/) {
         my @locations=($head =~ /^location:[ \t]*([^\r\n]+)\r?$/mig);stop() unless @locations==1;
         my $location=$locations[0];
@@ -88,9 +102,9 @@ if ($mode eq 'payload-status') {
         }
         print "redirect\t$location\n";
     } else {
-        stop() unless $status==200;
+        stop() unless $status==200 || ($transfer && $status==206);
         my @types=($head =~ /^content-type:\s*([^\r\n;]+)/mig);stop() unless @types==1;
-        if (lc($types[0]) eq 'text/html') {print "html\t$original\n";}
+        if (lc($types[0]) eq 'text/html') {stop() if $transfer;print "html\t$original\n";}
         elsif (lc($types[0]) =~ /\Aapplication\/(?:octet-stream|x-apple-diskimage|binary)\z/) {print "binary\t$original\n";}
         elsif (($expected{provider}//'') eq 'dropbox' && lc($types[0]) eq 'application/json') {
             # Folder-member links currently label the DMG as JSON/unspecified.
@@ -100,7 +114,8 @@ if ($mode eq 'payload-status') {
             stop() unless $original =~ m{\Ahttps://(?:[a-z0-9-]{1,100}\.)?dl\.dropboxusercontent\.com/};
             my @sizes=($head =~ /^content-length:[ \t]*([0-9]+)\r?$/mig);
             my @dispositions=($head =~ /^content-disposition:[ \t]*([^\r\n]+)\r?$/mig);
-            stop() unless defined($approved_size) && @sizes==1 && $sizes[0] eq $approved_size &&
+            my $length=defined($approved_size) ? $approved_size-($transfer ? $offset : 0) : undef;
+            stop() unless defined($length) && @sizes==1 && $sizes[0] eq $length &&
               @dispositions==1 && $dispositions[0] =~ /\Aattachment;[ \t]*filename=(?:unspecified|"unspecified")\z/i;
             print "binary\t$original\n";
         }

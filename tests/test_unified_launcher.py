@@ -162,22 +162,21 @@ lab_fetch developer
         body = f'''source {shlex.quote(str(ENTRY))}
 LAB_STATE={shlex.quote(str(self.state))}; LAB_MODE=run; LAB_FETCH_PID=; LAB_FETCH_TMP=; LAB_LOCKED=no
 lab_state; trap lab_cleanup EXIT; trap 'exit 143' TERM; lab_lock
-curl() {{ printf '%s' "$BASHPID" > {shlex.quote(str(pidfile))}; exec sleep 30; }}
+curl() {{ exec /bin/sh -c 'printf "%s" "$$" > "$1"; exec sleep 30' _ {shlex.quote(str(pidfile))}; }}
 lab_fetch developer
 '''
         process = subprocess.Popen(['/bin/bash', '-c', body], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:
             for _ in range(100):
-                if pidfile.exists(): break
+                if pidfile.exists() and pidfile.read_text(): break
                 time.sleep(.02)
             self.assertTrue(pidfile.exists())
-            # Apple's Bash 3.2 has no BASHPID; observe the sole direct child.
-            children = subprocess.check_output(['pgrep', '-P', str(process.pid)], text=True).split()
-            self.assertEqual(len(children), 1)
+            # Exact fixture PID, without whole-host process-list permission.
+            child_pid = int(pidfile.read_text())
             process.send_signal(signal.SIGTERM)
             process.communicate(timeout=8)
             self.assertEqual(process.returncode, 143)
-            with self.assertRaises(ProcessLookupError): os.kill(int(children[0]), 0)
+            with self.assertRaises(ProcessLookupError): os.kill(child_pid, 0)
             self.assertFalse((self.state/'active').exists())
             self.assertEqual([p.name for p in (self.state/'.tmp').iterdir()], ['.owner'])
         finally:
@@ -369,6 +368,167 @@ install_main''', script=INSTALL, ok=False)
         self.assertEqual(result.returncode, 2)
         self.assertIn('Saved DMG is unavailable', result.stdout)
         self.assertNotIn('UNEXPECTED_PICKER', result.stdout)
+
+    def download_fixture(self, mode='complete', volume='fixture-volume'):
+        """Real shell/parser/state with a nine-byte fake curl; never network/UI."""
+        digest = hashlib.sha256(b'abcdefghi').hexdigest()
+        parser = ROOT/'scripts/launcher/drive-download-macos.pl'
+        url = 'https://drive.google.com/uc?export=download&id=public_file_123456789'
+        return f'''install_import; install_import() {{ :; }}
+SDV_LAB_DRIVE_PARSER={shlex.quote(str(parser))}
+FIXTURE_MODE={shlex.quote(mode)}; FIXTURE_VOLUME={shlex.quote(volume)}
+route_host() {{ :; }}; install_docker() {{ :; }}
+route_field() {{ case "$1" in operator.bytes) echo 9 ;; operator.sha256) echo {digest} ;; operator.file) echo fixture.dmg ;; operator.downloadURL) echo {shlex.quote(url)} ;; *) echo fixture ;; esac; }}
+route_storage() {{ SDV_PARENT=$1; SDV_ROOT="$1/sdv"; SDV_TMP="$SDV_ROOT/.tmp"; SELECTED_UUID=$FIXTURE_VOLUME; }}
+route_context() {{ umask 077; STATE="$SDV_LAB_STATE/Install"; ROUTE_WORK={shlex.quote(str(self.root/'request'))}; mkdir -p "$STATE" "$ROUTE_WORK" "$SDV_ROOT/cache"; exec 9>&1; }}
+run_install() {{ shift; "$@" || die 'Fixture transfer stopped; repeat explicitly.'; }}
+install_mount() {{ echo MOUNTED; }}; install_setup() {{ echo OPENED; }}
+curl() {{
+  local out= headers= offset=0 head=no arg data=abcdefghi
+  printf '%s ' "$@" >> {shlex.quote(str(self.root/'curl-args'))}; printf '\\n' >> {shlex.quote(str(self.root/'curl-args'))}
+  while [ "$#" -gt 0 ]; do
+    arg=$1; shift
+    case "$arg" in --head) head=yes ;; --output) out=$1; shift ;; --dump-header) headers=$1; shift ;; --continue-at) offset=$1; shift ;; esac
+  done
+  if [ "$head" = yes ]; then printf 'HTTP/2 200\\r\\nContent-Type: application/octet-stream\\r\\nContent-Length: 9\\r\\n\\r\\n' > "$out"; return; fi
+  printf 'GET:%s\\n' "$offset" >> {shlex.quote(str(self.root/'gets'))}
+  if [ "$offset" = 0 ]; then printf 'HTTP/2 200\\r\\n'; else printf 'HTTP/2 206\\r\\nContent-Range: bytes %s-8/9\\r\\n' "$offset"; fi > "$headers"
+  printf 'Content-Type: application/octet-stream\\r\\nContent-Length: %s\\r\\n\\r\\n' "$((9-offset))" >> "$headers"
+  case "$FIXTURE_MODE" in
+    interrupt) printf abcd >> "$out"; return 18 ;;
+    terminate) printf abcd >> "$out"; kill -TERM $$; return 99 ;;
+    wrong-range) printf 'HTTP/2 206\\r\\nContent-Type: application/octet-stream\\r\\nContent-Range: bytes 4-8/99\\r\\nContent-Length: 5\\r\\n\\r\\n' > "$headers" ;;
+    ignored-range) printf 'HTTP/2 200\\r\\nContent-Type: application/octet-stream\\r\\nContent-Length: 9\\r\\n\\r\\n' > "$headers" ;;
+    html) printf 'HTTP/2 200\\r\\nContent-Type: text/html\\r\\n\\r\\n' > "$headers"; printf "Sorry, you can not download: quota exceeded" >> "$out"; return 0 ;;
+    oversized) printf efghij >> "$out"; return 0 ;;
+    collision) printf foreign > {shlex.quote(str(self.root/'sdv/cache/fixture.dmg'))} ;;
+  esac
+  printf '%s' "${{data:$offset}}" >> "$out"
+}}
+'''
+
+    def run_download(self, mode='complete', volume='fixture-volume', first=False, ok=True):
+        suffix = ' --parent ' + shlex.quote(str(self.root)) if first else ''
+        return self.shell(self.download_fixture(mode, volume) + 'install_main' + suffix,
+                          script=INSTALL, input='yes\n', ok=ok)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_download_interrupt_resume_then_verified_handoff(self):
+        first = self.run_download('interrupt', first=True, ok=False)
+        part = self.root/'sdv/cache/fixture.dmg.part'
+        self.assertNotEqual(first.returncode, 0)
+        self.assertEqual(part.read_bytes(), b'abcd')
+        self.assertNotIn('OPENED', first.stdout)
+        second = self.run_download()
+        self.assertIn('Previously selected DMG', second.stdout)
+        self.assertIn('OPENED', second.stdout)
+        self.assertEqual((self.root/'sdv/cache/fixture.dmg').read_bytes(), b'abcdefghi')
+        self.assertEqual((self.root/'gets').read_text().splitlines(), ['GET:0', 'GET:4'])
+        self.assertFalse(part.exists())
+        self.assertFalse(part.with_name(part.name+'.receipt').exists())
+        gets = (self.root/'gets').read_text()
+        self.run_download()
+        self.assertEqual((self.root/'gets').read_text(), gets)
+        transfer = [r for r in (self.root/'curl-args').read_text().splitlines() if '--dump-header' in r]
+        self.assertTrue(all('--speed-time 90' in r and '--max-time' not in r for r in transfer))
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_download_process_loss_is_resumable(self):
+        lost = self.run_download('terminate', first=True, ok=False)
+        self.assertNotEqual(lost.returncode, 0)
+        self.assertIn('OPENED', self.run_download().stdout)
+        self.assertEqual((self.root/'gets').read_text().splitlines(), ['GET:0', 'GET:4'])
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_bad_ranges_rollback_only_new_bytes(self):
+        self.run_download('interrupt', first=True, ok=False)
+        part = self.root/'sdv/cache/fixture.dmg.part'
+        for mode in ('wrong-range', 'ignored-range', 'oversized'):
+            result = self.run_download(mode, ok=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn('OPENED', result.stdout)
+            self.assertEqual(part.read_bytes(), b'abcd')
+        self.assertIn('OPENED', self.run_download().stdout)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_quota_html_never_becomes_retained_media(self):
+        result = self.run_download('html', first=True, ok=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn('OPENED', result.stdout)
+        self.assertEqual((self.root/'sdv/cache/fixture.dmg.part').read_bytes(), b'')
+        self.assertIn('quota exceeded', result.stdout+result.stderr)
+        self.assertIn('OPENED', self.run_download().stdout)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_replaced_volume_and_payload_identity_stop_before_network(self):
+        self.run_download('interrupt', first=True, ok=False)
+        calls = (self.root/'gets').read_text()
+        result = self.run_download(volume='replacement-volume', ok=False)
+        self.assertIn('volume was replaced', result.stderr)
+        self.assertEqual((self.root/'gets').read_text(), calls)
+        part = self.root/'sdv/cache/fixture.dmg.part'
+        part.rename(part.with_name('retained-original'))
+        part.write_bytes(b'abcd'); part.chmod(0o600)
+        result = self.run_download(ok=False)
+        self.assertIn('another package, file or volume', result.stderr)
+        self.assertEqual((self.root/'gets').read_text(), calls)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_changed_prefix_is_rejected_by_full_checksum(self):
+        self.run_download('interrupt', first=True, ok=False)
+        part = self.root/'sdv/cache/fixture.dmg.part'
+        part.write_bytes(b'Zbcd')
+        result = self.run_download(ok=False)
+        self.assertIn('checksum differs', result.stderr)
+        self.assertNotIn('MOUNTED', result.stdout)
+        self.assertNotIn('OPENED', result.stdout)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_unknown_partial_and_late_destination_are_preserved(self):
+        part = self.root/'sdv/cache/fixture.dmg.part'
+        part.parent.mkdir(parents=True); part.write_bytes(b'foreign'); part.chmod(0o600)
+        result = self.run_download(first=True, ok=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(part.read_bytes(), b'foreign')
+        self.assertFalse((self.root/'gets').exists())
+        part.unlink()  # only this test's exact fixture
+        result = self.run_download('collision', ok=False)
+        self.assertIn('both files preserved', result.stderr)
+        self.assertEqual((self.root/'sdv/cache/fixture.dmg').read_bytes(), b'foreign')
+        self.assertEqual(part.read_bytes(), b'abcdefghi')
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_complete_partial_needs_no_second_transfer(self):
+        self.run_download('interrupt', first=True, ok=False)
+        (self.root/'sdv/cache/fixture.dmg.part').write_bytes(b'abcdefghi')
+        calls = (self.root/'gets').read_text()
+        self.assertIn('OPENED', self.run_download().stdout)
+        self.assertEqual((self.root/'gets').read_text(), calls)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_changed_package_or_unsafe_receipt_never_transfers(self):
+        self.run_download('interrupt', first=True, ok=False)
+        calls = (self.root/'gets').read_text()
+        record = self.state/'Install/download-selection'
+        original = record.read_text()
+        record.write_text(original.replace(hashlib.sha256(b'abcdefghi').hexdigest(), 'a'*64))
+        result = self.run_download(ok=False)
+        self.assertIn('selection differs', result.stderr)
+        self.assertEqual((self.root/'gets').read_text(), calls)
+        record.write_text(original)
+        receipt = self.root/'sdv/cache/fixture.dmg.part.receipt'
+        receipt.write_text('x'*513+'\n')
+        result = self.run_download(ok=False)
+        self.assertIn('unsafe partial', result.stderr)
+        self.assertEqual((self.root/'gets').read_text(), calls)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS metadata and plutil')
+    def test_operator_explicit_new_parent_recovers_legacy_missing_selection(self):
+        selected = self.state/'Install/selected-dmg'; selected.parent.mkdir(parents=True)
+        missing = self.root/'legacy-missing.dmg'
+        selected.write_text(str(missing)); selected.chmod(0o600)
+        self.assertIn('OPENED', self.run_download(first=True).stdout)
+        self.assertFalse(missing.exists())
 
     def test_delegate_receives_interactive_input_and_exact_exit_status(self):
         child = self.root/'delegate.sh'

@@ -127,8 +127,10 @@ boundary outside this scope or when a mandatory tool control requires it.
   Keep verified caches, resumable downloads, final outputs and runtime state
   separate. Never repurpose scratch cleanup to remove them. Recover abandoned
   marked runs only after proving their owner and open handles are gone.
-- Gateway socket fixtures may require an explicitly selected shorter `.tmp`
-  on the same volume (29-byte parent limit); this is not bulk-build storage.
+- Gateway socket fixtures may require a shorter `.tmp` on the same volume
+  (29-byte parent limit). The launcher selects it automatically, with owned
+  creation only after workflow confirmation; direct specialist tools retain
+  explicit selection. This is not bulk-build storage or a different-disk fallback.
   Preserve existing transactional/credential/guest temporary-file boundaries.
 - Use the accepted warm Builder, download cache and shared-state cache. Never
   delete them as routine cleanup.

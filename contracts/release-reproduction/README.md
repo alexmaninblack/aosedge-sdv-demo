@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.29
+- Version: 1.30
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -180,6 +180,31 @@ The authenticated
 release index records the definition revision and file identity separately
 from build provenance. Source publication and access by another approved user
 remain distinct gates; this command grants no new readers automatically.
+
+### Resumable operator DMG acquisition
+
+Route A retains its automatic download selection separately from an explicitly
+supplied local DMG. Private metadata binds the approved package size/SHA-256,
+canonical destination and selected volume UUID. A missing finished file may
+resume only this exact download; an unrecorded missing local file remains a
+missing-input condition, never an automatic new download or disk fallback.
+An explicit `--parent` selects a new cache and preserves previous payloads.
+
+Owned `.part` receipts bind the private regular single-link payload's identity
+to that selection. Unknown, replaced, linked, oversized or differently bound
+partials fail without adoption. HTTP resume requires exact 206 start/end/total
+and, when provided, remaining Content-Length; encoded or ambiguous responses
+are rejected. An invalid response rolls back only the new suffix through the
+same checked file descriptor. A valid interrupted transfer retains received
+bytes, but no prefix is trusted as media until the full pinned SHA-256 passes.
+Destination collisions do not overwrite a completed file.
+
+Connection and stalled-transfer deadlines bound unavailable networking; there
+is no short total deadline for an advancing multi-gigabyte transfer. No automatic
+retry, account login, provider fallback, signature bypass, installation or Cloud
+action is added. Existing checksum, signed Setup identity and matching kit gates
+still precede handoff. Unmarked predecessor partials are preserved; a current
+launcher can explicitly select a new cache or a complete matching local file.
 
 ## Reusable simulation inputs
 
@@ -720,7 +745,13 @@ an existing `.tmp` directory on the same verified volume, with a path no longer 
 29 UTF-8 bytes. Only the invocation's private child directory is removed after
 testing. The shared scratch owner keeps the original nine-byte socket child
 suffix, allowing the launcher's ordinary workspace `.tmp` when it fits. A
-longer workspace needs an explicitly selected shorter socket-only `.tmp`; this
+longer workspace uses the launcher's automatic same-volume selection of a
+shorter socket-only `.tmp`. It checks a valid saved location, then private
+per-user candidates on the selected mount or the same writable Data device.
+Selection itself is read-only; marked private creation occurs only after the
+normal workflow confirmation. Linked, foreign, unavailable or other-device
+paths are rejected, with no manual path prompt, symlink or disk fallback.
+Direct specialist tools retain explicit `--test-tmp-parent` selection. This
 does not move compiler or media scratch. CARLA's test cache is explicitly inside the workspace. An inspected
 incomplete Gateway build may resume only with `--resume` and matching inputs;
 the first stage logs are retained. Raw outputs still require native packaging

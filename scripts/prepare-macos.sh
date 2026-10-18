@@ -4,7 +4,7 @@
 # Standalone before Git/Python/Homebrew. Compatible with Apple's Bash 3.2.
 # Sourceable by offline fixtures; execution always goes through main().
 
-SDV_PREP_VERSION=6
+SDV_PREP_VERSION=7
 SDV_CATALOG_RECORD=662f3fe4be0852452099f1fe8b6a30b1e607cf6694bf18fd4ab33e156aac1aa0
 SDV_PUBLIC_CATALOG_URL=https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json
 SDV_PUBLIC_CATALOG_RECORD=ed3f5d6492d9500d5c887d44a530c3032b0bb70815ed17792dce28c627dab292
@@ -195,13 +195,7 @@ choose_storage() {
   check_capacity
   SDV_ROOT="$SDV_PARENT/sdv"
   SDV_TMP="$SDV_ROOT/.tmp"
-  if [ "$(printf %s "$SDV_TMP" | wc -c | tr -d ' ')" -gt 29 ]; then
-    # Only socket tests need this exception. Compiler and archive scratch
-    # always remain under SDV_ROOT/.tmp, regardless of the socket selection.
-    SDV_TMP=$(state_get SDV_TMP)
-    case "$SDV_TMP" in */.tmp) ;; *) SDV_TMP= ;; esac
-    [ -n "$SDV_TMP" ] || SDV_TMP=$(ask 'Short socket-test path ending in /.tmp on the SAME volume (maximum 29 UTF-8 bytes)' '')
-  fi
+  choose_socket_scratch
   safe_path "$SDV_ROOT" && safe_path "$SDV_TMP" || die 'Workspace/scratch must be absolute paths without links or traversal.'
   for path in "$SDV_ROOT/tools" "$SDV_ROOT/cache" "$SDV_ROOT/.developer-preparation"; do
     safe_path "$path" || die 'Workspace tool/cache directories must not be symbolic links.'
@@ -210,10 +204,64 @@ choose_storage() {
   [ "$(printf %s "$SDV_TMP" | wc -c | tr -d ' ')" -le 29 ] || die 'Scratch path is longer than 29 UTF-8 bytes.'
   if [ "$SDV_TMP" != "$SDV_ROOT/.tmp" ]; then
     case "$SDV_TMP" in */.tmp) ;; *) die 'Socket scratch must end in /.tmp.' ;; esac
-    [ -d "$(dirname "$SDV_TMP")" ] && [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$(dirname "$SDV_TMP")")" ] || die 'Socket scratch parent must already exist on the selected volume.'
+    local socket_base
+    socket_base=$(dirname "$SDV_TMP")
+    [ -d "$socket_base" ] || socket_base=$(dirname "$socket_base")
+    [ -d "$socket_base" ] && [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$socket_base")" ] || die 'Socket scratch must stay on the selected volume.'
   fi
   say "Selected: $SDV_PARENT"
   awk -v k="$FREE_KIB" 'BEGIN {printf "Available: %.1f GiB (full build capacity is checked after cloning)\n",k/1048576}'
+}
+choose_socket_scratch() {
+  # Selection is read-only; owned creation remains behind confirmation.
+  local saved candidate base user marker
+  [ "$(printf %s "$SDV_TMP" | wc -c | tr -d ' ')" -gt 29 ] || return 0
+  saved=$(state_get SDV_TMP)
+  user=$(id -u)
+  socket_scratch_candidates "$saved" "$user"
+  SOCKET_PARENT_AUTO=no
+  for candidate in "${SOCKET_CANDIDATES[@]}"; do
+    [ -n "$candidate" ] && [ "$(printf %s "$candidate" | wc -c | tr -d ' ')" -le 29 ] || continue
+    case "$candidate" in */.tmp) ;; *) continue ;; esac
+    safe_path "$candidate" || continue
+    base=$(dirname "$candidate")
+    if [ -d "$base" ]; then
+      [ -w "$base" ] && [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$base")" ] || continue
+      if [ "$candidate" != "$saved" ]; then
+        marker="$base/.sdv-socket-owner"
+        [ "$(stat -f %u "$base")" = "$user" ] && [ "$(stat -f %Lp "$base")" = 700 ] &&
+          private_file "$marker" && [ "$(<"$marker")" = sdv-socket-parent-v1 ] || continue
+      fi
+    else
+      [ ! -e "$base" ] && [ -d "$(dirname "$base")" ] && [ -w "$(dirname "$base")" ] &&
+        [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$(dirname "$base")")" ] || continue
+    fi
+    SDV_TMP=$candidate
+    [ "$candidate" = "$saved" ] || SOCKET_PARENT_AUTO=yes
+    say "Socket-test scratch: $SDV_TMP (automatically selected on the workspace volume)."
+    return 0
+  done
+  die 'Cannot select a safe short socket path on this volume. Use a shorter APFS mount/parent path; no other disk or symlink was used.'
+}
+socket_scratch_candidates() {
+  SOCKET_CANDIDATES=("$1" "${VOLUME_MOUNT%/}/.s$2/.tmp" "/private/tmp/.s$2/.tmp")
+}
+socket_scratch_parent() {
+  local base marker
+  [ "$SDV_TMP" != "$SDV_ROOT/.tmp" ] || return 0
+  base=$(dirname "$SDV_TMP"); marker="$base/.sdv-socket-owner"
+  recheck_storage
+  safe_path "$SDV_TMP" || die 'Socket scratch path changed; preserved.'
+  if [ ! -d "$base" ]; then
+    safe_path "$base" && [ ! -e "$base" ] && [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$(dirname "$base")")" ] || die 'Socket parent volume changed; preserved.'
+    mkdir -m 700 "$base" || die 'Cannot create private socket scratch parent.'
+    printf '%s\n' sdv-socket-parent-v1 > "$marker" || die 'Cannot mark socket scratch parent.'
+  fi
+  [ "$(stat -f %d "$SDV_PARENT")" = "$(stat -f %d "$base")" ] || die 'Socket scratch volume changed; preserved.'
+  if [ "${SOCKET_PARENT_AUTO:-no}" = yes ]; then
+    [ "$(stat -f %u "$base")" = "$(id -u)" ] && [ "$(stat -f %Lp "$base")" = 700 ] &&
+      private_file "$marker" && [ "$(<"$marker")" = sdv-socket-parent-v1 ] || die 'Automatic socket scratch ownership changed; preserved.'
+  fi
 }
 load_choices() {
   SDV_DRIVE_ACCOUNT=$(state_get SDV_DRIVE_ACCOUNT)
@@ -347,6 +395,7 @@ setup_scratch() {
   local previous
   export SDV_SCRATCH_ROOT="$SDV_ROOT/.tmp"
   scratch_root "$SDV_SCRATCH_ROOT"
+  socket_scratch_parent
   [ "$SDV_TMP" = "$SDV_SCRATCH_ROOT" ] || scratch_root "$SDV_TMP"
   SDV_BOOTSTRAP_TMP="$SDV_SCRATCH_ROOT/.bootstrap"
   if [ -e "$SDV_BOOTSTRAP_TMP" ]; then
@@ -412,9 +461,10 @@ run_install() {
   "$@" >> "$LOG" 2>&1 & CHILD_PID=$!
   set +m
   while kill -0 "$CHILD_PID" 2>/dev/null; do
-    [ "$1" = download ] || activity_bar "$elapsed"
+    case "$1" in download|install_public_download) ;; *) activity_bar "$elapsed" ;; esac
     sleep 1; elapsed=$((elapsed+1))
-    [ "$elapsed" -lt 1800 ] || { stop_child; die "$title exceeded 30 minutes. Owned processes stopped; partial work preserved."; }
+    # Route A's curl enforces a bounded no-data timeout, not a total duration.
+    [ "$1" = install_public_download ] || [ "$elapsed" -lt 1800 ] || { stop_child; die "$title exceeded 30 minutes. Owned processes stopped; partial work preserved."; }
   done
   wait "$CHILD_PID"; result=$?; CHILD_PID=
   exec 9>&-

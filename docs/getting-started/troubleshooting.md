@@ -57,9 +57,11 @@ Follow the [installation steps](installed-preview-cloud-first-use.md) and
 | Node/npm version differs | Rerun **2 / B** and use its version check and isolated workspace installation. Do not replace a global Node or guess a newer version; the launcher owns the exact selected toolchain. |
 | No Apple Development signing identity | Follow [Apple signing access](macos-developer-tools.md#apple-signing-access). An Apple Account or certificate without its local private key is not yet a signing identity. A installation needs no personal signing key. |
 | Public input catalog or archive unavailable | Check internet access and the reported provider error. Ordinary builds need no Google login or binding JSON files; contact the release owner if a public link is unavailable. |
-| Interrupted transfer | Inspect the operation; reconcile its remote ID or reuse verified ranges/cache. Never create a duplicate or retry blindly. |
+| Interrupted A DMG download | Resolve the network issue and rerun the current launcher with A to resume its owned partial on the original volume. See [download recovery](unified-macos-launcher.md#operator-download-recovery), including older unmarked attempts. No Test or Cloud changes are needed. |
+| Interrupted B input transfer | Reuse the selected workflow's verified ranges/cache after resolving the error. Do not substitute another input or publisher account. |
 | Checksum/metadata mismatch | Preserve and investigate the exact object. Do not promote it or accept a new expected hash from the download itself. |
 | Wrong/missing build volume | Reconnect the original selected volume. The launcher does not switch to another disk automatically. |
+| Short socket scratch cannot be selected | Selection is automatic and same-volume only. Keep any reported conflicting directory intact. Choose an existing shorter APFS parent/mount path; do not create a symlink or change another directory's permissions. |
 | Docker storage fails capacity or compatibility checks | Use the reported Docker backing-disk requirement. Project and Docker storage may be separate local volumes; an internal disk is not itself an error. The build does not relocate Docker. |
 | Dirty checkout or foreign output | Preserve it. Select an empty owned workspace or resolve the exact change; do not reset another checkout. |
 | SSD device number changed | Use explicit `lab revalidate` only for supported completed input groups. It does not adopt changed content or repair all receipt types. |
