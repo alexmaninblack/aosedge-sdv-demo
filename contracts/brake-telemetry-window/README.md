@@ -21,10 +21,6 @@ remain invalid. PRE/ACTIVE/POST durations, trigger hold/clear rules, resource
 bounds, authorization lease, V2/V3 model timing and advisory expiry are
 independent and unchanged. This is a validation budget, not a new payload shape.
 
-Current product messages use the explicit v2 provenance schemas; legacy queues
-retain their original discriminator and bytes. The final provenance section
-defines that wire boundary rather than overriding the acquisition rules.
-
 <a id="authorized-source-cadence-amendment--18-september-2026"></a>
 <a id="authorized-demo-freshness-amendment--15-september-2026"></a>
 
@@ -42,14 +38,23 @@ six-signal acquisition subset, hard-braking trigger, bounded event window,
 logical chunk/completion messages, canonical hashing and service-local durable
 spool behavior.
 
-Files:
+## Current product messages
+
+New chunks and completions use `schemaVersion: 2`, `contractVersion: "2.0.0"`
+and [native product provenance](../service-runtime-inputs/product-message-migration.md):
+the immutable package release and native service/Subject/instance identity,
+without `serviceArtifactSha256`. Wire revision 2 is not the Brake functional
+profile. Acquisition, content hashes, receipt keys and spool rules remain
+current; only retained v1 wire provenance has compatibility-only scope.
+
+Files for current products and acquisition verification:
 
 - [profile](brake-telemetry-window-profile.v1.json);
 - [profile schema](brake-telemetry-window-profile.schema.json);
-- [chunk schema](brake-telemetry-window-chunk.schema.json);
-- [completion schema](brake-telemetry-window-completion.schema.json);
-- [golden chunk](fixtures/window-chunk.valid.json); and
-- [golden completion](fixtures/window-completion.valid.json).
+- [chunk schema](brake-telemetry-window-chunk.v2.schema.json);
+- [completion schema](brake-telemetry-window-completion.v2.schema.json);
+- [golden chunk](fixtures/brake-telemetry-window-chunk.v2.valid.json); and
+- [golden completion](fixtures/brake-telemetry-window-completion.v2.valid.json).
 
 ## Hashing
 
@@ -88,13 +93,17 @@ this contract.
 <a id="native-product-provenance--2026-09-11"></a>
 ## Current and legacy product provenance
 
-For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
-defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
-Use the immutable package release and native service/Subject/instance identity;
-do not require service/model OCI digest fields or relabel old queued records.
-Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Producer/input migration and backend consumers are implemented and
-have scoped live Test evidence. The complete negative/recovery acceptance matrix remains
-separate; see the protocol map above. Earlier sections and v1 schema
-files remain legacy evidence, not an instruction to reintroduce the digest
-dependency into new messages. Administrative/cleanup protocols are unaffected.
+Only the original wire-provenance schemas and their message fixtures are
+legacy compatibility inputs: [chunk](brake-telemetry-window-chunk.schema.json),
+[completion](brake-telemetry-window-completion.schema.json),
+[chunk fixture](fixtures/window-chunk.valid.json) and
+[completion fixture](fixtures/window-completion.valid.json). Retain their
+original discriminator, artifact provenance and queued bytes. Do not introduce
+that artifact-digest dependency into new v2 messages or mix provenance within
+one window.
+
+The profile, acquisition, hashing, idempotency and spool rules above remain
+current; their versioned fixture bytes are not a competing runtime algorithm.
+Administrative/cleanup protocols are unaffected. Scoped live evidence and the
+complete negative/recovery acceptance matrix remain separate, as stated in
+the protocol map above.

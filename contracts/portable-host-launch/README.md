@@ -3,11 +3,13 @@
 
 # Portable host launch inputs
 
-- Status: Accepted Stage 2 integration slice; not installation qualification.
-- Version: 1.0
+- Status: Accepted implemented host inputs; candidate-bound proof follows the current baseline
+- Version: 1.1
+- Updated: 2026-10-18
 - Prepared: 2026-09-26
 - Owner: Demo Solution Team
-- Parent: [distribution plan, Stage 2](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
+- Parent: [Integrated native Setup contract](../distribution-installation/native-setup.md#integrated-user-journey)
+  and [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md).
 
 ## Boundary
 
@@ -30,17 +32,20 @@ in-process against unchanged file identities/size/mtime/ctime; status reads do
 not repeatedly scan multi-gigabyte Game data. Manifest trust remains independent
 of that cache. A new process or changed identity requires verification again.
 
-Do not package credentials, identities, run state or model data. Gateway server
-TLS material remains the existing operator-provided `tls` launcher reference;
-only that reference is needed from `workspace/repositories.json` in packaged
-mode. First-use credential setup is a later installation contract. Local strict
-client admission, certificate validity/identity, assignment, guest enrollment
-and all VM/Cloud boundaries stay unchanged. Packaged OpenSSL uses a fixed
-public minimal request configuration, never an implicit Homebrew config/provider.
+Do not package credentials, identities, run state or model data. Installed mode
+uses [per-instance server trust](../distribution-installation/local-gateway-trust.md):
+the explicit Start simulator action initializes or validates that instance's
+private Gateway identity before native launch. Installation and read-only status
+do not generate trust or copy another instance's keys. Developer mode retains
+its explicit operator-provided `tls` reference from `workspace/repositories.json`;
+it is not an installed first-use prerequisite or fallback.
 
-Installed first use now follows the accepted
-[per-instance server-trust amendment](../distribution-installation/local-gateway-trust.md).
-The developer TLS reference and all client-admission rules above remain unchanged.
+Local strict client admission, certificate validity/identity, assignment, guest
+enrollment and all VM/Cloud boundaries stay unchanged. Packaged OpenSSL uses a
+fixed public minimal request configuration, never an implicit Homebrew
+config/provider. The [current baseline](../../docs/qualification/current-baseline.md)
+records scoped installed proof and remaining gates; input selection alone does
+not qualify installation or a different candidate.
 
 ## Existing lifecycle and visible behavior
 

@@ -27,18 +27,29 @@ remains an explicit state/outbox compatibility input, not the identity of new
 assessments. Retain old bytes and accumulated wear; adopt the new digest only
 on a successfully committed new assessment. Unknown profiles are not reset.
 
-Files:
+## Current product messages
+
+New assessments and events use `schemaVersion: 2`, `contractVersion: "2.0.0"`
+and [native product provenance](../service-runtime-inputs/product-message-migration.md):
+the immutable package release and native service/Subject/instance identity.
+`serviceArtifactSha256` and `modelArtifactSha256` are absent and rejected;
+`modelConfigSha256` remains the exact accepted model-profile digest above.
+Wire revision 2 is distinct from the Brake functional profile and model-contract
+version. The algorithm, input, persistent state and admission rules below apply
+to current products; they are not legacy-only rules.
+
+Files for current products and model verification:
 
 - [model profile](brake-health-model-profile.v1.json);
 - [completed-episode input schema](brake-health-model-input.schema.json);
-- [assessment schema](brake-health-assessment.schema.json);
-- [band-change event schema](brake-health-event.schema.json);
+- [assessment schema](brake-health-assessment.v2.schema.json);
+- [band-change event schema](brake-health-event.v2.schema.json);
 - [persistent-state schema](brake-health-state.schema.json);
 - [complete golden model input](fixtures/brake-health-model-input.valid.json);
 - [closed invalid-input cases](fixtures/brake-health-model-input-quality-cases.v1.json);
 - [closed conversion/quantization cases](fixtures/brake-health-model-quantization-cases.v1.json);
-- [golden assessment](fixtures/brake-health-assessment.valid.json);
-- [golden band-change event](fixtures/brake-health-event.valid.json); and
+- [golden assessment](fixtures/brake-health-assessment.v2.valid.json);
+- [golden band-change event](fixtures/brake-health-event.v2.valid.json); and
 - [golden post-assessment state](fixtures/brake-health-state.valid.json).
 
 ## Complete input and one-time conversion
@@ -114,12 +125,11 @@ LF or NUL in any field, join fields with one LF byte and append no trailing
 LF. UUIDv5 is deterministic identification only; it is not authentication,
 integrity protection, signing or a credential.
 
-`modelArtifactSha256` is the immutable deployed Brake Health Service artifact
-digest containing the compiled model. `modelConfigSha256` is the exact
-accepted model-profile file SHA-256 above. Both are distinct injected immutable
-deployment metadata; the core does not discover or hash its installation and
-no fake separate model file is introduced. A future separately packaged model
-requires a versioned contract change.
+Current messages bind the compiled model to the immutable package release and
+native instance, not an OCI artifact digest. `modelConfigSha256` independently
+identifies the accepted model profile. The core does not discover or hash its
+installation, and no fake separate model file is introduced. A future separately
+packaged model requires a versioned contract change.
 
 The source window spans the full retained PRE/ACTIVE/POST episode. Its start
 and end are the first and last retained source timestamps. Model features use
@@ -160,13 +170,17 @@ publication, Cloud/VM/Unit operation, push or merge by itself.
 <a id="native-product-provenance--2026-09-11"></a>
 ## Current and legacy product provenance
 
-For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
-defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
-Use the immutable package release and native service/Subject/instance identity;
-do not require service/model OCI digest fields or relabel old queued records.
-Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Producer/input migration and backend consumers are implemented and
-have scoped live Test evidence. Full current-image qualification remains
-separate; see the protocol map above. Earlier sections and v1 schema
-files remain legacy evidence, not an instruction to reintroduce the digest
-dependency into new messages. Administrative/cleanup protocols are unaffected.
+Only the original wire-provenance schemas and their message fixtures are
+legacy compatibility inputs: [assessment](brake-health-assessment.schema.json),
+[event](brake-health-event.schema.json), [assessment fixture](fixtures/brake-health-assessment.valid.json)
+and [event fixture](fixtures/brake-health-event.valid.json). Legacy v1 messages
+retain `serviceArtifactSha256` and its `modelArtifactSha256` alias for the
+deployed service containing the compiled model, separately from the real
+`modelConfigSha256`. Those fields are not inputs to new v2 messages.
+
+Retry old queued records byte-for-byte under their original discriminator;
+do not relabel them or reset accumulated state. Model/input/state schemas,
+algorithms, VDP hashes, receipt keys and authorization remain current under
+their own versions. Administrative/cleanup protocols are unaffected. Scoped
+live evidence and the remaining full acceptance matrix follow the protocol map
+above; compatibility fixtures alone establish neither.

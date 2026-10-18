@@ -107,11 +107,21 @@ receipts/history, cross-instance conflicts and query correlation. Both service
 readers use the separate inputs. Backend validation/storage and exact-retry
 checks include actual C++ output for all nine product kinds; consult the
 [protocol map](../implementation-status.md) for selected runtime evidence and
-remaining gates. Demo Control's existing private
-empty-store proof accepts Brake database 2/3 and Tire 2 without weakening its
-ownership, selector or empty-state checks. Real query/readiness/evidence
-consumers must use the matching query envelopes before claiming end-to-end
-compatibility.
+remaining gates.
+
+Current empty-store proofs describe Brake database schema 5 and Tire schema 4
+through the separate [Brake admin profile](../brake-cloud-api/current-admin-profile.v1.json)
+and [Tire admin profile](../tire-cloud-api/current-admin-profile.v1.json).
+Demo Control's reader also accepts retained Brake schemas 2/3/4 and Tire 2/3;
+the complete compatibility sets are Brake 2/3/4/5 and Tire 2/3/4. Each response
+must carry its exact supported shape: Brake 4/5 and Tire 3/4 require
+`resetProducers` and `resetCommands`, while current Brake 5/Tire 4 additionally
+require `functionObservations` and `functionObservationConflicts`. Compatibility
+does not weaken ownership, selector, counter or empty-state checks. The
+[reader](../../apps/demo-orchestrator/src/aosedge_demo_orchestrator/backend_retirement.py)
+owns those version-aware checks; a schema match alone never authorizes deletion.
+Real query/readiness/evidence consumers must use the matching query envelopes
+before claiming end-to-end compatibility.
 Tire load commands retain the accepted Unit/service/version/instance binding,
 authorization, fixed profile, lease, idempotency and 180-second ceiling;
 this migration does not invent its still-unimplemented transport or model.

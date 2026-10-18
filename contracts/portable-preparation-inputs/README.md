@@ -5,9 +5,11 @@
 
 - Status: Accepted preparation-input contract; runtime proof is separately scoped
 - Version: 1.1
+- Updated: 2026-10-18
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
-- Parent: [accepted distribution plan, Stage 2](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
+- Parent: [Integrated native Setup contract](../distribution-installation/native-setup.md#integrated-user-journey)
+  and [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md).
 - Authority: [unsigned inputs and session-scoped signing](../../docs/architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md#4-accepted-artifact-and-signing-contract).
 
 ## Selection and integrity

@@ -8,7 +8,8 @@
 - Updated: 2026-10-18
 - Prepared: 2026-09-26
 - Owner: Demo Solution Team
-- Parent: [distribution plan, Stage 2](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
+- Parent: [Integrated native Setup contract](../distribution-installation/native-setup.md#integrated-user-journey)
+  and [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md).
 
 ## Selection and dependency boundary
 

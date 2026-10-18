@@ -423,6 +423,82 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
         self.assertIn("CPU control is not implemented", text)
         self.assertIn("formal calibration and CPU worker remain open", text)
 
+    def test_current_product_links_precede_explicit_legacy_compatibility(self):
+        for family in ("brake-telemetry-window", "brake-health-model", "tire-health-model", "brake-cloud-api"):
+            with self.subTest(family=family):
+                text = read("contracts/" + family + "/README.md")
+                self.assertLess(text.index("## Current product messages"),
+                                text.index("## Current and legacy product provenance"))
+                self.assertIn("Only the original wire-provenance", text)
+                self.assertNotIn("Earlier sections and v1 schema", prose("contracts/" + family + "/README.md"))
+        model = read("contracts/brake-health-model/README.md")
+        self.assertIn("Model/input/state schemas", model)
+        self.assertIn("not an OCI artifact digest", prose("contracts/brake-health-model/README.md"))
+        self.assertIn("Administrative/cleanup protocols are unaffected", model)
+
+    def test_effective_gate_rejects_blanket_legacy_and_old_digest_rule(self):
+        for family in ("brake-telemetry-window", "brake-health-model", "tire-health-model", "brake-cloud-api"):
+            name = "contracts/" + family + "/README.md"
+            for stale in ("Earlier sections and v1 schema files remain legacy evidence",
+                          "`modelArtifactSha256` is the immutable deployed artifact digest"):
+                with self.subTest(family=family, stale=stale):
+                    documents = CHECK["markdown_documents"](ROOT)
+                    documents[(ROOT / name).resolve()] += "\n" + stale
+                    self.assertTrue(any(x.path == name and "legacy scope" in x.message
+                                        for x in CHECK["check_effective_contracts"](ROOT, documents)))
+
+    def test_effective_gate_rejects_a_legacy_schema_as_current_product_link(self):
+        for family, schema in (("brake-health-model", "brake-health-assessment"),
+                               ("brake-telemetry-window", "brake-telemetry-window-chunk"),
+                               ("tire-health-model", "tire-health-assessment"),
+                               ("brake-cloud-api", "query-page")):
+            with self.subTest(family=family):
+                issues = self.effective_issues("contracts/" + family + "/README.md",
+                                              "(" + schema + ".v2.schema.json)", "(" + schema + ".schema.json)")
+                self.assertTrue(any("current product provenance" in x.message for x in issues), issues)
+
+    def test_empty_store_summary_preserves_current_and_compatible_proof_shapes(self):
+        import ast
+        text = prose("contracts/service-runtime-inputs/product-message-migration.md")
+        path = ROOT / "apps/demo-orchestrator/src/aosedge_demo_orchestrator/backend_retirement.py"
+        assignments = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.Assign)
+                       and any(isinstance(t, ast.Name) and t.id == "supported_schema_versions" for t in n.targets)]
+        self.assertEqual(len(assignments), 1)
+        branch = assignments[0].value
+        self.assertIsInstance(branch, ast.IfExp)
+        for team, values in (("Brake", ast.literal_eval(branch.body)),
+                             ("Tire", ast.literal_eval(branch.orelse))):
+            self.assertIn(team + " " + "/".join(map(str, values)), text)
+            profile = json.loads(read("contracts/" + team.lower() + "-cloud-api/current-admin-profile.v1.json"))
+            self.assertEqual(profile["databaseSchemaVersion"], values[-1])
+        for counter in ("resetProducers", "resetCommands", "functionObservations", "functionObservationConflicts"):
+            self.assertIn(counter, text)
+        self.assertIn("schema match alone never authorizes deletion", text)
+        issues = self.effective_issues("contracts/service-runtime-inputs/product-message-migration.md",
+                                      "Brake database schema 5 and Tire schema 4", "Brake database 2/3 and Tire 2")
+        self.assertTrue(any("empty-store summary" in x.message for x in issues), issues)
+
+    def test_portable_contracts_use_current_parents_not_a_retired_stage_plan(self):
+        for family in ("portable-host-launch", "portable-vm-launch", "portable-cloud-backend-inputs",
+                       "portable-preparation-inputs"):
+            with self.subTest(family=family):
+                name = "contracts/" + family + "/README.md"
+                text = read(name)
+                self.assertNotIn("installable-distribution-and-reproducibility.md", text)
+                issues = self.effective_issues(name, "- Parent: [Integrated native Setup contract]",
+                                              "- Parent: [distribution plan, Stage 2]")
+                self.assertTrue(any("portable-input parent" in x.message for x in issues), issues)
+
+    def test_host_contract_separates_installed_trust_from_developer_tls(self):
+        text = prose("contracts/portable-host-launch/README.md")
+        for fact in ("Installed mode uses", "explicit Start simulator action", "Installation and read-only status",
+                     "do not generate trust", "Developer mode retains", "not an installed first-use prerequisite or fallback",
+                     "input selection alone does not qualify installation"):
+            self.assertIn(fact, text)
+        issues = self.effective_issues("contracts/portable-host-launch/README.md",
+                                      "Installed mode", "First-use credential setup is a later installation contract. Installed mode")
+        self.assertTrue(any("sequential Stage-2 framing" in x.message for x in issues), issues)
+
 
 if __name__ == "__main__":
     unittest.main()

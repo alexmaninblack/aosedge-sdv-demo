@@ -14,6 +14,23 @@ Implementation and qualification: [protocol status](../implementation-status.md)
   durable acknowledgement, persistence, Dashboard query/authority and exact
   current-run cleanup accepted 2026-08-23
 
+## Current product messages
+
+New products use `schemaVersion: 2`, `contractVersion: "2.0.0"` and
+[native product provenance](../service-runtime-inputs/product-message-migration.md):
+the immutable package release and native service/Subject/instance identity.
+`serviceArtifactSha256` and `modelArtifactSha256` are absent and rejected in
+new products. The current [advisory fact](brake-advisory-fact.v2.schema.json),
+[query page](query-page.v2.schema.json) and [window detail](window-detail.v2.schema.json)
+schemas distinguish native and retained legacy records explicitly. Stored v1
+messages keep their original bytes; query envelopes do not upgrade them.
+Function observations use their separate [v3 contract](../service-function-observation/v3-contract.md).
+
+Wire revisions do not replace this API family's accepted version, durable ACK,
+SSE, context or [current administration](current-admin-profile.v1.json).
+The transport, storage, query and cleanup rules below remain current; only the
+explicitly identified legacy formats have compatibility-only scope.
+
 ## Current context and lifecycle
 
 Use one current Test UID in installed Studio; dual-role context is an explicit
@@ -171,7 +188,7 @@ Files:
   cleanup profile; older two-UID examples retain compatibility scope;
 - [`brake-cloud-ack.schema.json`](brake-cloud-ack.schema.json) — closed durable
   acknowledgement schema;
-- [`brake-advisory-fact.schema.json`](brake-advisory-fact.schema.json) — closed
+- [`brake-advisory-fact.v2.schema.json`](brake-advisory-fact.v2.schema.json) — current closed
   Service-to-backend fact combining the accepted request identity with factual
   Gateway Status;
 - [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — retained
@@ -182,12 +199,12 @@ Files:
 - [`brake-cloud-query-admin-profile.v1.json`](brake-cloud-query-admin-profile.v1.json)
   — exact bounded REST pagination, closed error mapping, notification-only SSE
   and separate local-admin transport;
-- [`query-page.schema.json`](query-page.schema.json),
-  [`window-detail.schema.json`](window-detail.schema.json),
+- [`query-page.v2.schema.json`](query-page.v2.schema.json),
+  [`window-detail.v2.schema.json`](window-detail.v2.schema.json),
   [`error-response.schema.json`](error-response.schema.json) and
   [`sse-change-notification.schema.json`](sse-change-notification.schema.json)
-  — closed browser-query responses; the window-detail schema belongs only to
-  the additive 1.1.0 profile;
+  — current closed browser-query responses; page/detail envelopes use wire
+  revision 2, while error and SSE bodies retain their own unchanged versions;
 - [`cleanup-preview-request.schema.json`](cleanup-preview-request.schema.json),
   [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
   and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
@@ -198,9 +215,10 @@ Files:
   closed Unicode ordering, number serialization and duplicate-key edge-vector
   package;
 - [`fixtures/brake-cloud-ack.valid.json`](fixtures/brake-cloud-ack.valid.json)
-  [`fixtures/brake-advisory-fact.valid.json`](fixtures/brake-advisory-fact.valid.json)
-  and [`fixtures/cleanup-preview.valid.json`](fixtures/cleanup-preview.valid.json)
-  — ingestion/preview conformance fixtures; and
+  and [`fixtures/brake-advisory-fact.v2.valid.json`](fixtures/brake-advisory-fact.v2.valid.json)
+  — current ACK and native-product conformance fixtures;
+- [`fixtures/cleanup-preview.valid.json`](fixtures/cleanup-preview.valid.json)
+  — retained six-counter preview compatibility fixture;
 - the query page, closed error, SSE notification, cleanup preview request,
   cleanup execute request, cleanup result, Current Unit context, pending VDP
   provenance and RFC8785 edge files under `fixtures/`
@@ -246,8 +264,10 @@ a still-hidden later chunk.
 <a id="accepted-window-detail-amendment"></a>
 ## Window detail contract
 
-The accepted 1.1.0 Query/SSE/Admin profile adds one point read without changing
-the four accepted 1.0.0 collection bodies:
+The point-read route retains the logical bounds of the accepted 1.1.0
+Query/SSE/Admin profile. Current page/detail responses use the explicit
+revision-2 envelopes above; the original revision-1 bodies remain compatibility
+formats, not a second current query specification:
 
 ```text
 GET /api/v1/brake/units/{systemUid}/windows/{eventId}
@@ -255,7 +275,7 @@ GET /api/v1/brake/units/{systemUid}/windows/{eventId}
 
 The backend authorizes the exact Unit through the injected
 `CurrentUnitContext` before looking up the lowercase UUIDv4 event ID. The
-closed 1.0.0 detail body contains the existing query-window summary and zero
+closed revision-2 detail body contains the version-aware query-window summary and zero
 through 150 samples read from already validated canonical chunk content in
 ascending chunk-index and stored-array order. A completion-first partial
 window may therefore return zero samples. Every stored phase, value, quality,
@@ -277,7 +297,7 @@ Unit/event/chunk index. The point read is implemented and used by Presenter;
 its implementation/qualification status is recorded with the current protocol baseline.
 
 The Brake Dashboard obtains functional windows, assessments, events and
-advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated
+advisory facts only through bounded keyset-paginated revision-2
 REST queries for the exact current Test or Production Unit. `VALIDATION` is
 the wire identity for the Test Vehicle; the Dashboard label remains **Test
 Vehicle**. Server-Sent Events contain change notifications only. After every
@@ -293,7 +313,10 @@ Brake records.
 `BrakeHealthEvent` does not carry VDP contract fields. Its query projection
 therefore exposes `null` version/digest with
 `PENDING_ASSESSMENT_CORRELATION` until the exact assessment matches Unit,
-assessment/source IDs, Service version/artifact and model identity/config.
+assessment/source IDs, package release, version-aware service identity and model
+identity/config. Service identity means native instance for v2 and the original
+artifact digest for legacy v1; absence of an OCI digest never joins two native
+instances.
 Only then may the projection copy the assessment's exact VDP version/digest
 and become `CORRELATED_ASSESSMENT`; Service-version or nearby-record inference
 is forbidden.
@@ -318,13 +341,16 @@ This is an accepted fixture erratum, not a Brake Cloud API version change.
 <a id="native-product-provenance--2026-09-11"></a>
 ## Current and legacy product provenance
 
-For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
-defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
-Use the immutable package release and native service/Subject/instance identity;
-do not require service/model OCI digest fields or relabel old queued records.
-Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Producer/input migration and backend consumers are implemented and
-have scoped live Test evidence. Full current-image qualification remains
-separate; see the protocol map above. Earlier sections and v1 schema
-files remain legacy evidence, not an instruction to reintroduce the digest
-dependency into new messages. Administrative/cleanup protocols are unaffected.
+Only the original wire-provenance/query formats and their message fixtures
+have legacy compatibility scope: [advisory fact](brake-advisory-fact.schema.json),
+[query page](query-page.schema.json), [window detail](window-detail.schema.json)
+and [original advisory fixture](fixtures/brake-advisory-fact.valid.json).
+Retain the original discriminator, provenance, queued bytes and stored records;
+do not reintroduce artifact-digest fields into new v2 messages. The fixture
+interpretation above applies only to that original advisory fixture.
+
+Current transport, storage, context, query, hashing and authorization rules
+remain normative. Administration is independently defined by the current
+ten-category profile; its legacy six-counter fixtures are separately bounded
+above. Scoped live evidence and the remaining full acceptance matrix follow
+the protocol map, not a blanket legacy label or a compatibility fixture pass.

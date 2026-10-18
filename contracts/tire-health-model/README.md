@@ -9,6 +9,20 @@ Implementation and qualification: [protocol status](../implementation-status.md)
 - Lifecycle state: `ACCEPTED`
 - Contract version: `1.1.2`
 
+## Current product messages
+
+New assessments and events use `schemaVersion: 2`, `contractVersion: "2.0.0"`
+and [native product provenance](../service-runtime-inputs/product-message-migration.md):
+the immutable package release and native service/Subject/instance identity,
+without `serviceArtifactSha256`. Wire revision 2 is distinct from Tire's
+functional V1 and this model-contract version. The model, state, advisory and
+resource obligations below remain current, not legacy-only rules.
+
+Use the current [assessment](tire-health-assessment.v2.schema.json) and
+[event](tire-health-event.v2.schema.json) schemas for new products.
+
+## Model and runtime obligations
+
 Current packages request 600 DMIPS through signed native metadata. Full
 resource acceptance and the fixed CPU-isolation demonstration remain separate
 D4-023 obligations; a quota declaration or monitoring is not enforcement proof.
@@ -124,17 +138,17 @@ remaining-life, safety or diagnostic model. Exact numeric separation is a
 D4-003 calibration gate: the artifact/product is not accepted until the frozen
 live exercise proves the required healthy/pre-aged bands repeatedly.
 
-Files:
+Files for current products and model verification:
 
 - [`tire-health-product-profile.v1.json`](tire-health-product-profile.v1.json)
   — input, episode, estimator, hysteresis, advisory, persistence, runtime and
   evidence rules;
-- [`tire-health-assessment.schema.json`](tire-health-assessment.schema.json),
-  [`tire-health-event.schema.json`](tire-health-event.schema.json) and
+- [`tire-health-assessment.v2.schema.json`](tire-health-assessment.v2.schema.json),
+  [`tire-health-event.v2.schema.json`](tire-health-event.v2.schema.json) and
   [`tire-health-state.schema.json`](tire-health-state.schema.json) — closed
   logical schemas;
-- [`fixtures/tire-health-assessment.valid.json`](fixtures/tire-health-assessment.valid.json),
-  [`fixtures/tire-health-event.valid.json`](fixtures/tire-health-event.valid.json)
+- [`fixtures/tire-health-assessment.v2.valid.json`](fixtures/tire-health-assessment.v2.valid.json),
+  [`fixtures/tire-health-event.v2.valid.json`](fixtures/tire-health-event.v2.valid.json)
   and [`fixtures/tire-health-state.valid.json`](fixtures/tire-health-state.valid.json)
   — deterministic review fixtures.
 
@@ -144,13 +158,15 @@ creation, artifact publication, Cloud mutation or Unit deployment by itself.
 <a id="native-product-provenance--2026-09-11"></a>
 ## Current and legacy product provenance
 
-For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
-defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
-Use the immutable package release and native service/Subject/instance identity;
-do not require service/model OCI digest fields or relabel old queued records.
-Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Producer/input migration and backend consumers are implemented and
-have scoped live Test evidence. Full current-image qualification remains
-separate; see the protocol map above. Earlier sections and v1 schema
-files remain legacy evidence, not an instruction to reintroduce the digest
-dependency into new messages. Administrative/cleanup protocols are unaffected.
+Only the original wire-provenance schemas and their message fixtures are
+legacy compatibility inputs: [assessment](tire-health-assessment.schema.json),
+[event](tire-health-event.schema.json), [assessment fixture](fixtures/tire-health-assessment.valid.json)
+and [event fixture](fixtures/tire-health-event.valid.json). Retain their original
+discriminator, artifact provenance and queued bytes; do not add that digest
+dependency to new v2 messages or rebind an old advisory to a new release.
+
+The product profile, model/state schema, algorithms, VDP hashes, receipt keys,
+authorization and resource obligations remain current under their own versions.
+Administrative/cleanup protocols are unaffected. Scoped live evidence and the
+remaining full acceptance matrix follow the protocol map above; retained
+compatibility fixtures do not close calibration or resource qualification.
