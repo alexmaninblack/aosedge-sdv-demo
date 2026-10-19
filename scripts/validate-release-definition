@@ -228,13 +228,17 @@ def resolve(value, root=ROOT):
     require(plan.get('baseDefinitionSha256') == cache['definitionDigest'] and
             plan.get('resultPolicy') == 'seal-developer-results-v1', 'Developer plan input identity mismatch')
     catalog = read_json(safe_path(root,value['operatorSelection']))
-    delivery = read_json(safe_path(root,catalog['operatorDescriptor']))
+    # A's public delivery advances independently of B's immutable binary/cache
+    # inputs. Validate the selected descriptor itself, not equality with the
+    # earlier cached DMG retained in that input lock.
+    from reproduction.delivery import descriptor
+    try:
+        delivery = descriptor(safe_path(root,catalog['operatorDescriptor']).resolve())
+    except (ValueError,RuntimeError,TypeError,KeyError):
+        raise DefinitionError('Invalid selected operator delivery descriptor') from None
     require(catalog.get('product') == 'aosedge-sdv-lab', 'Wrong operator product')
     for field in ('productVersion','status','file','bytes','sha256','manifestSha256','notarized'):
         require(field in delivery and delivery[field] == catalog['operator'].get(field), 'Operator descriptor mismatch: '+field)
-    dmg=result['artifacts']['dmg']
-    require(all(dmg[k]==delivery[field] for k,field in [('name','file'),('bytes','bytes'),('sha256','sha256')]),
-            'Operator artifact cache identity differs from delivery')
     unique(value['documentation'],'documentation')
     for path in value['documentation']: require(safe_path(root,path).is_file(), 'Missing current documentation')
     return result

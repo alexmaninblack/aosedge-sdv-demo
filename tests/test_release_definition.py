@@ -40,6 +40,35 @@ class ReleaseDefinitionTests(unittest.TestCase):
             with patch.object(gate.subprocess,'run',side_effect=AssertionError('No subprocess')):
                 self.assertEqual(gate.resolve(self.selected,root),self.value)
             self.assertFalse((root/'.git').exists());self.assertFalse((root/'workspace/checkpoints').exists())
+    def operator_fixture(self,root,**changes):
+        self.copy_current_fixture(root)
+        catalog_path=root/self.selected['operatorSelection']
+        catalog=gate.read_json(catalog_path)
+        delivery_path=root/catalog['operatorDescriptor']
+        delivery=gate.read_json(delivery_path)
+        delivery.update(changes)
+        for field in ('productVersion','status','file','bytes','sha256','manifestSha256','notarized'):
+            catalog['operator'][field]=delivery[field]
+        delivery_path.write_text(json.dumps(delivery));catalog_path.write_text(json.dumps(catalog))
+        return catalog_path
+    def test_operator_successor_preserves_frozen_developer_input_and_cache_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            self.operator_fixture(root,productVersion='1.2.0-rc.99',
+                file='AosEdge-SDV-Lab-1.2.0-rc.99.dmg',bytes=456,sha256='a'*64)
+            before={p:(root/p).read_bytes() for p in self.selected['inputs'].values()}
+            self.assertEqual(gate.resolve(self.selected,root),self.value)
+            self.assertTrue(all((root/p).read_bytes()==raw for p,raw in before.items()))
+    def test_operator_mismatch_or_invalid_successor_is_rejected(self):
+        for changes in (dict(sha256='invalid'),dict(bytes=True),dict(notarized=True)):
+            with self.subTest(changes=changes),tempfile.TemporaryDirectory() as temporary:
+                root=Path(temporary);self.operator_fixture(root,**changes)
+                with self.assertRaises(gate.DefinitionError):gate.resolve(self.selected,root)
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);path=self.operator_fixture(root)
+            catalog=gate.read_json(path);catalog['operator']['sha256']='a'*64
+            path.write_text(json.dumps(catalog))
+            with self.assertRaises(gate.DefinitionError):gate.resolve(self.selected,root)
     def test_schema_negative_matrix(self):
         cases=[('unknown',lambda v:v.update(ready=True)),('profile',lambda v:v['profiles'][0].update(id='automatic')),
                ('bool-size',lambda v:v['inputs'][0].update(bytes=True)),('branch',lambda v:v['sources'][0].update(revision='main')),

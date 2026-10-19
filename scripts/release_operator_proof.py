@@ -203,11 +203,20 @@ print(json.dumps(dict(oldTransferRemoved=deleted,bytesReclaimed=OLD['bytes'] if 
 '''
     reclaimed=h.parse(run(capacity,timeout=180))
     marker=owner.root/'consumer-launcher.intent.json'
-    if marker.exists():
+    recovery=owner.root/'operator-retained-recovery.json'
+    recovering=recovery.exists()
+    if recovering:
+        saved=read(recovery)
+        require(read(marker)==saved['failedConsumerIntent'] and
+                intent['launcherSha256']==saved['launcherSha256'] and
+                saved['remoteDmg']==dmg,'RETAINED_CONSUMER_RECOVERY_CHANGED')
+        prove_retained_delivery(owner,read(marker),saved['mediaIdentity'])
+    elif marker.exists():
         # Never repeat an uncertain graphical handoff. Read its persisted output,
         # file and actual mounted signed Setup; recovery is observation only.
         raise CampaignError('OPERATOR_CONSUMER_RECONCILIATION_REQUIRED')
-    atomic(marker,dict(launcherSha256=intent['launcherSha256'],source=intent['target'],remoteDmg=dmg))
+    else:
+        atomic(marker,dict(launcherSha256=intent['launcherSha256'],source=intent['target'],remoteDmg=dmg))
     launcher=parent+'/aosedge-sdv-lab.sh'
     url='https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/'+intent['target']+'/scripts/aosedge-sdv-lab.sh'
     script='set -eu\numask 077\n'
@@ -217,10 +226,19 @@ print(json.dumps(dict(oldTransferRemoved=deleted,bytesReclaimed=OLD['bytes'] if 
     script+='printf "yes\\n" | /bin/bash '+shlex.quote(launcher)+' --route A --parent '+shlex.quote(parent)+' --state-dir '+shlex.quote(parent+'/launcher-state')+'\n'
     mounted=False;opened=False;setup_path=None;failure=None;facts={}
     try:
-        print('    M1 anonymous A download → checksum/signature → visible Setup',flush=True)
-        with j.Progress('anonymous-operator-download',emit=lambda value:print(value,flush=True)):
-            output=h.remote(transport,script,timeout=1900)
-        require('SETUP HANDOFF REQUESTED' in output,'OPERATOR_HANDOFF_UNCONFIRMED')
+        if recovering:
+            print('    Reconcile exact retained M1 delivery; no download or launcher replay',flush=True)
+            # The earlier exact guard failure was after signed Setup handoff,
+            # before launch. Remount only for trusted read-only verification.
+            run('import plistlib,subprocess\nDMG='+repr(dmg)+'''\nimages=plistlib.loads(subprocess.check_output(['/usr/bin/hdiutil','info','-plist']))['images']
+assert not any(i.get('image-path')==DMG for i in images),'RECOVERY_MEDIA_ALREADY_MOUNTED'
+subprocess.run(['/usr/bin/hdiutil','attach','-readonly','-nobrowse','-mountpoint','/Volumes/SDV-Operator-Recovery',DMG],check=True,stdout=subprocess.DEVNULL,timeout=180)
+''',timeout=190)
+        else:
+            print('    M1 anonymous A download → checksum/signature → visible Setup',flush=True)
+            with j.Progress('anonymous-operator-download',emit=lambda value:print(value,flush=True)):
+                output=h.remote(transport,script,timeout=1900)
+            require('SETUP HANDOFF REQUESTED' in output,'OPERATOR_HANDOFF_UNCONFIRMED')
         inspect='import plistlib,subprocess,json\nDMG='+repr(dmg)+'''
 images=plistlib.loads(subprocess.check_output(['/usr/bin/hdiutil','info','-plist']))['images']
 matches=[row['mount-point'] for image in images if image.get('image-path')==DMG for row in image['system-entities'] if row.get('mount-point')]
@@ -234,7 +252,10 @@ print(json.dumps(dict(mount=matches[0])))
         # Launcher itself performed full consumer SHA and codesign verification.
         # Bind to the exact signed executable and installed manifest again here.
         media.mount(reconcile=True)
-        installed=media.setup('install');prepared=media.setup('prepare')
+        installed=media.setup('install',reconcile=recovering)
+        # This campaign preserves the qualified Test. Selecting even the same
+        # version correctly refuses a retained run; observe its selection instead.
+        prepared=media.setup('prepare',reconcile=True)
         resources=setup_path+'/Contents/Resources'
         launch='RESOURCES='+repr(resources)+'\nSTATE='+repr(config['instanceRoot'])+'''
 import json,sys
@@ -248,10 +269,12 @@ print(json.dumps(value))
         opened_facts=h.parse(run(launch,timeout=150,python=resources+'/python/bin/python3.12'))
         require(opened_facts.get('presenterObserved') is True,'OPERATOR_PRESENTER_NOT_OBSERVED')
         facts=dict(anonymousDownload=True,checksumAndSignature=True,setupHandoff=True,
-            installed=True,installedReused=installed.get('reused'),presenterObserved=True,
+            installed=True,installedReused=True if recovering else installed.get('reused'),presenterObserved=True,
             testPreserved=test,nativeSetupClicks='NOT_RUN',cleanFirstUse='NOT_RUN',
             fullE2E='NOT_COMPLETE',enginePolicy='PRESERVED',launcherSha256=intent['launcherSha256'])
         facts['mediaCleanup']=reclaimed
+        if recovering:
+            facts.update(previousHandoffReconciled=True,launcherReplayed=False,payloadDownloadedAgain=False)
     except BaseException as error:failure=error
     finally:
         try:
@@ -329,6 +352,11 @@ def verify_saved(owner,facts):
 
 def reconcile(owner,previous):
     amendment=owner.root/'operator-amendment.json'
+    recovery=owner.root/'operator-retained-recovery.json'
+    if amendment.exists() and recovery.exists() and not (owner.root/'consumer-result.json').exists():
+        value=read(recovery)
+        prove_retained_delivery(owner,value['failedConsumerIntent'],value['mediaIdentity'])
+        return True
     if amendment.exists() and not (owner.root/'consumer-launcher.intent.json').exists():
         value=read(amendment)
         prove_no_handoff(owner,value['failedConsumerIntent'])
@@ -343,11 +371,43 @@ AMEND_PATHS=frozenset(('scripts/launcher/drive-download-macos.pl','scripts/launc
     'scripts/release_automation.py','scripts/release_owners.py','scripts/release_operator_proof.py',
     'tests/test_drive_download_parser.py','tests/test_unified_launcher.py',
     'tests/test_release_automation.py','tests/test_release_operator_amendment.py',
+    'scripts/validate-release-definition','tests/test_release_definition.py',
     'docs/development/release-campaign.md'))
 
 
 def allowed_amendment(paths,projection_paths):
     require(bool(paths) and set(paths)<=AMEND_PATHS|set(projection_paths),'OPERATOR_AMEND_SCOPE_INVALID')
+
+
+def retained_recovery_allowed(failed,stage):
+    return (failed==dict(outcome='BLOCKED',facts=dict(cleanupConfirmed=True)) and
+            stage.get('outcome')=='UNCERTAIN' and
+            stage.get('code')=='INSTALLED_CURRENT_RUN_RETAINED' and stage.get('facts')=={})
+
+
+def prove_retained_delivery(owner,failed,identity=None):
+    """Observe the exact downloaded bytes after a known pre-launch guard refusal."""
+    h,j,t,c=connection(owner)
+    from campaign import Media
+    expected=descriptor(owner)
+    target=('/Users/'+t['user']+'/SDV-Qualification/operator-'+owner.config['version']+
+            ('-dropbox' if owner.config['delivery'].get('provider')=='dropbox' else '')+
+            '/sdv/cache/'+expected['file'])
+    require(failed.get('remoteDmg')==target and
+            failed.get('launcherSha256')==sha(ROOT/'scripts/aosedge-sdv-lab.sh'),
+            'RETAINED_DELIVERY_BINDING_CHANGED')
+    media=Media(t,c,dict(remotePath=target),emit=lambda value:print(value,flush=True))
+    before=media.file_identity()
+    require(identity is None or before==identity,'RETAINED_DELIVERY_IDENTITY_CHANGED')
+    if identity is None:
+        observed=media.remote('/usr/bin/shasum -a 256 '+shlex.quote(target),timeout=240).split()[0]
+        require(observed==expected['sha256'],'RETAINED_DELIVERY_DIGEST_CHANGED')
+    require(before==media.file_identity() and int(before.split(':')[2])==expected['bytes'],
+            'RETAINED_DELIVERY_CHANGED')
+    require(not any(i.get('image-path')==target for i in media.attachments()),'RETAINED_DELIVERY_MOUNTED')
+    now=owner.remote()
+    require(now['demoProcesses']==0 and now['busyPorts']==0,'RETAINED_DELIVERY_OWNERS_ACTIVE')
+    return dict(remoteDmg=target,mediaIdentity=before,sha256=expected['sha256'],ownersClosed=True)
 
 
 def prove_no_handoff(owner,failed):
@@ -395,7 +455,20 @@ def amend(owner):
         paths=git(ROOT,'diff','--name-only',old['source']['integration'],current['source']['integration']).splitlines()
         allowed_amendment(paths,intent['paths'])
         failed_intent=read(owner.root/'consumer-launcher.intent.json')
-        observed=prove_no_handoff(owner,failed_intent)
+        retained=retained_recovery_allowed(failed,read(owner.root/'operator-promotion.json'))
+        if retained:
+            # A completed handoff may only continue for this exact known guard
+            # refusal. No launcher/catalog/content change is acceptable here.
+            changed=git(ROOT,'diff','--name-only',intent['target'],current['source']['integration']).splitlines()
+            require(bool(changed) and set(changed)<={
+                'scripts/release_operator_proof.py','tests/test_release_operator_amendment.py',
+                'scripts/validate-release-definition','tests/test_release_definition.py',
+                'docs/development/release-campaign.md'},'RETAINED_RECOVERY_SCOPE_INVALID')
+            require(failed_intent['source']==intent['target'] and
+                    failed_intent['launcherSha256']==intent['launcherSha256'],'RETAINED_HANDOFF_CHANGED')
+            observed=prove_retained_delivery(owner,failed_intent)
+        else:
+            observed=prove_no_handoff(owner,failed_intent)
         owner.product();owner.artifact()
         from release_publication import verify_saved
         verify_saved(owner,'publication',read(owner.root/'publication.json')['facts'])
@@ -403,12 +476,16 @@ def amend(owner):
         gates=owner.source_gates()
         require(owner.binding(allow_readonly_restart=True)==current,'AMENDED_SOURCE_CHANGED_DURING_GATES')
         amendment=dict(oldBinding=old,newBinding=current,sourceGates=gates,
-            failedConsumerIntent=failed_intent,noHandoff=observed,
-            previousConsumerResult=failed,previousOperatorStage=read(owner.root/'operator-promotion.json'))
+            failedConsumerIntent=failed_intent,noHandoff=observed if not retained else None,
+            retainedDelivery=observed if retained else None,
+            previousConsumerResult=failed,previousOperatorStage=read(owner.root/'operator-promotion.json'),
+            previousReport=read(owner.root/'report.json'))
         intent=dict(intent,target=current['source']['integration'],
-                    launcherSha256=sha(ROOT/'scripts/aosedge-sdv-lab.sh'),consumerAttempt=previous_attempt+1)
+                    launcherSha256=sha(ROOT/'scripts/aosedge-sdv-lab.sh'),
+                    consumerAttempt=previous_attempt if retained else previous_attempt+1)
         atomic(owner.root/'operator-intent.json',intent)
         for name in ('consumer-result.json','consumer-launcher.intent.json'):
+            if retained and name=='consumer-launcher.intent.json':continue
             path=owner.root/name;archive=owner.root/(name+'.attempt-'+str(previous_attempt))
             require(not archive.exists(),'CONSUMER_ARCHIVE_COLLISION');path.rename(archive)
         prior_amendment=owner.root/'operator-amendment.json'
@@ -416,4 +493,7 @@ def amend(owner):
             archive=owner.root/('operator-amendment.json.attempt-'+str(previous_attempt))
             require(not archive.exists(),'AMENDMENT_ARCHIVE_COLLISION');prior_amendment.rename(archive)
         atomic(owner.root/'operator-amendment.json',amendment)
+        if retained:
+            atomic(owner.root/'operator-retained-recovery.json',dict(observed,
+                failedConsumerIntent=failed_intent,launcherSha256=intent['launcherSha256']))
     finally:os.close(fd)

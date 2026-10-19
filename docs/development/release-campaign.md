@@ -102,6 +102,23 @@ This is an engineering consumer-path proof, not native Setup button-input or
 clean-first-user acceptance. Those limitations remain explicit in its report.
 An uncertain graphical handoff is not replayed automatically.
 
+For an already installed qualified Test, the consumer verifies the existing
+selection through Setup's read-only status owner; it does not reselect a package
+or bypass the retained-run guard. A known `INSTALLED_CURRENT_RUN_RETAINED`
+refusal after the signed handoff and before launch can be reconciled by the
+operator-tooling amendment path. It requires the exact closed failed stage,
+unchanged launcher/catalog/product, full checksum and identity proof of the
+already downloaded M1 media, and fresh signed Setup/installed selection checks.
+The original failure is archived. Only the not-yet-started launch continues;
+there is no new download, launcher replay, Test deletion or selection mutation.
+Other uncertain handoffs and changed bytes still stop for reconciliation.
+
+Operator catalog/descriptor agreement and descriptor identity are checked
+independently of the retained DMG in B's binary-input lock. Advancing A must not
+rewrite that frozen lock or its cache closure. The input-definition gate keeps
+validating all developer authorities and separately validates the current A
+descriptor; it does not require the two different media generations to match.
+
 ### Automatic Dropbox publication
 
 The operator authorized unattended publication of new DMGs on 15 October 2026.
