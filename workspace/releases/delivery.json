@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "productVersion": "1.2.0-rc.2",
+  "productVersion": "1.2.0-rc.3",
   "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
-  "file": "AosEdge-SDV-Lab-1.2.0-rc.2.dmg",
-  "bytes": 14159474231,
-  "sha256": "71063a5d05ce9287feb0964d661b8408343aa85a58b4c3baaed8c0fd14664270",
-  "buildKey": "aeea26e3370bdaa54ca2083f7aa82eeffd0a1bee8aa71709ae47e8f523b6dd78",
-  "producerRevision": "ab9d9deec9b3c786d4558b0857fb87f4211b20b1",
-  "manifestSha256": "0f6216c8f300d5106e5ad80cc5ebe25682e397b7ae4174977055018477ffedb8",
+  "file": "AosEdge-SDV-Lab-1.2.0-rc.3.dmg",
+  "bytes": 14156820119,
+  "sha256": "25b2f89eb64bb8b58cbfca18e46ef2d6c59450dcdb2f316b168155842328355e",
+  "buildKey": "73baacc6608e62783471ad40bf09025e166091445679c00898b37d9c6f2f9062",
+  "producerRevision": "e787b926471dc096ed365efe0178d8d0181de1a5",
+  "manifestSha256": "b6884145a5098eeec0bad1a95182a060655b0c6451c1d1a040bf3fea0a9ba595",
   "signing": "apple-development-local-only",
   "notarized": false
 }
