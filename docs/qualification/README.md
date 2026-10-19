@@ -12,11 +12,11 @@ apply only to the exact source, media and profile identified by their receipt.
 - [Publisher evidence and procedure](../development/release-campaign.md#publisher-evidence):
   scoped sender transport proof; not another product-release acceptance.
 - [M1 runtime and native Setup record](m1-clean-install-e2e-2026-10-14.md):
-  the 15 October corrected Production runtime passed 118 API and 42 visible
-  browser UI checks with actual native driving input. A separate native Setup
-  profile passed new certificate issuance for existing authorized accounts.
+  rc.3 passed 118 API and 42 visible browser UI checks with actual native driving
+  input. The separate rc.2 native Setup profile passed new certificate issuance
+  for existing authorized accounts; that proof does not transfer to rc.3.
   Earlier failures remain chronological evidence, not the final outcome.
-- [Release automation and public delivery](release-automation-2026-10-13.md#successor-published-on-15-october-120-rc2):
+- [Release automation and public delivery](release-automation-2026-10-13.md#published-release-120-rc3):
   main/tag publication and anonymous M1 download/verification/open passed for
   the selected successor. Its public consumer reused the installed certificate
   instance; it is not another clean-first-user proof.
