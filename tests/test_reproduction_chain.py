@@ -174,6 +174,8 @@ class ExecuteTests(StorageFixture, unittest.TestCase):
         self.assertFalse(first['profileReady']); self.assertFalse(first['published'])
         self.assertEqual(self.invocations[0][0][0], self.options['ui_python'])
         self.assertEqual(self.invocations[1][0][0], self.options['python'])
+        self.assertTrue(all(request['options']['product_version']==chain.read_plan(self.release)['productVersion']
+                            for _,request in self.invocations))
         self.created.clear()
         self.assertEqual(self.execute(), first)
         self.assertEqual(self.created, set())

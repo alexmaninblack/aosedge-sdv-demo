@@ -52,10 +52,13 @@ def verify(output, inputs, receipt=None):
     return receipt
 
 
-def assemble(storage, state, target, kit, python, progress, input_checkpoint=None, developer_results=False):
+def assemble(storage, state, target, kit, python, progress, input_checkpoint=None, developer_results=False,
+             product_version=None):
     require(storage.profile == 'developer' and target in MANIFESTS, 'Unsupported package target/profile')
     require(type(developer_results) is bool and not (developer_results and input_checkpoint is not None),
             'Cannot mix developer results and reviewed checkpoints')
+    require(product_version is None or developer_results,
+            'Product version requires selected developer results')
     verify_sources(storage, state)
     storage.check(additional=(40 if target == 'application' else 1)*GIB, reserve=90*GIB)
     require(developer_results or input_checkpoint is not None, 'Select verified developer results or an explicit reviewed input checkpoint')
@@ -75,7 +78,7 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
     seal_args = []
     if developer_results:
         from .build_results import seal
-        sealed, seal_key, checkpoint, _ = seal(storage, chosen, paths)
+        sealed, seal_key, checkpoint, _ = seal(storage, chosen, paths, product_version=product_version)
         seal_args = ['--developer-seal', str(sealed), seal_key]
     retained_pin = None
     if target == 'vm-runtime':

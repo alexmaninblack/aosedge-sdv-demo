@@ -4,6 +4,7 @@
 """Project current metadata pins only. Never builds, downloads or edits receipts."""
 import argparse
 import ast
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -13,7 +14,12 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 def canonical(v):return hashlib.sha256(json.dumps(v,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--write',action='store_true');parser.add_argument('--check',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--write',action='store_true');parser.add_argument('--check',action='store_true')
+    parser.add_argument('--new-record-id',help='Explicit immutable public successor ID ending in -dropbox; no payload upload')
+    args=parser.parse_args()
+    if args.new_record_id and (not args.write or not re.fullmatch(r'[a-z0-9][a-z0-9.-]{0,90}-dropbox',args.new_record_id)):
+        raise SystemExit('A new record requires --write and an explicit bounded -dropbox ID.')
     changes={}
     def read(p):return changes.get(p,(ROOT/p).read_bytes())
     def value(p):return json.loads(read(p))
@@ -28,8 +34,30 @@ def main():
     path='scripts/developer_catalog.py';text=read(path).decode();tree=ast.parse(text)
     assignments={n.targets[0].id:n for n in tree.body if isinstance(n,ast.Assign) and isinstance(n.targets[0],ast.Name)}
     pin=ast.literal_eval(assignments['PIN'].value);public=ast.literal_eval(assignments['PUBLIC_PIN'].value)
-    pin['sourceFiles']={p:hashlib.sha256(read(p)).hexdigest() for p in pin['sourceFiles']}
-    catalog=value('workspace/dependencies/catalog.json');record=catalog['releases'][0];record['sourceFiles']=pin['sourceFiles'];save('workspace/dependencies/catalog.json',catalog)
+    source_files={p:hashlib.sha256(read(p)).hexdigest() for p in pin['sourceFiles']}
+    catalog=value('workspace/dependencies/catalog.json')
+    ids=[r['id'] for r in catalog['releases']]
+    if len(ids)!=len(set(ids)) or ids.count(public['releaseId'])!=1:
+        raise SystemExit('Missing or duplicate selected catalog record; no changes written.')
+    prior=catalog['releases'][ids.index(public['releaseId'])]
+    if canonical(prior)!=public['recordSha256']:
+        raise SystemExit('Selected catalog record changed; no automatic adoption.')
+    record=copy.deepcopy(prior)
+    record['sourceFiles']=source_files
+    record['productVersion']=value(selector['path'])['productVersion']
+    if args.new_record_id:
+        record['id']=args.new_record_id
+    if record!=prior:
+        if not args.new_record_id or args.new_record_id==prior['id']:
+            raise SystemExit('Source selection changed: use an explicit --new-record-id. Published records cannot be rewritten.')
+        if record['id'] in ids:
+            if catalog['releases'][ids.index(record['id'])]!=record:
+                raise SystemExit('Immutable successor ID collision; no changes written.')
+        else:
+            catalog['releases'].append(record);catalog['catalogRevision']+=1
+    public['releaseId']=record['id']
+    pin['sourceFiles']=source_files
+    save('workspace/dependencies/catalog.json',catalog)
     public['recordSha256']=canonical(record);pin['recordSha256']=canonical({**record,'id':pin['releaseId']})
     for name,v in [('PIN',pin),('PUBLIC_PIN',public)]:text=re.sub('^'+name+r' = .*$',lambda _:name+' = '+repr(v),text,flags=re.M)
     changes[path]=text.encode()

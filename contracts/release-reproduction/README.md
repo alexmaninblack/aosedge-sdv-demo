@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.30
+- Version: 1.31
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -810,6 +810,14 @@ Seals are immutable, digest-addressed records on the selected build volume,
 binding the base definition, source selections and upstream result keys. Workers
 require the independently passed seal digest and preserve all payload validators.
 They reject changed, linked, incomplete or mixed historical/developer inputs.
+
+The chain forwards its exact `productVersion` to downstream result sealing.
+Group/application seals, Setup's developer label and the DMG filename use that
+selected version; no fixed candidate number is substituted. Different versions
+have different seal/build identities. Separately built reproduction media may
+have different signed bytes and does not overwrite the public delivery with
+the same product-version label. Reviewed-checkpoint operations cannot accept a
+developer version override, and frozen predecessor owners are unchanged.
 
 Setup embeds the sealed group locks and application digest before signing.
 Installation still requires exact manifests and payload hashes; it has no

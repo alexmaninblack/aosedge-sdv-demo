@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from test_reproduction import StorageFixture
 from reproduction import core, build_results, chain, chain_worker, package_chain, media
+from reproduction.media_worker import media_filename
 
 sys.path.insert(0, str(core.ROOT/'scripts/distribution'))
 from developer_inputs import DeveloperInputs
@@ -86,6 +87,32 @@ class SealedResultsTests(StorageFixture, unittest.TestCase):
         self.assertEqual(candidate_inputs.setup_release(core.ROOT, selected), trusted)
         self.assertEqual(json.loads(selected.release_bytes()), trusted)
 
+    def test_selected_version_flows_to_seal_setup_label_and_dmg_filename(self):
+        kit = self.base/'application'; kit.mkdir()
+        pins = {k: core.read_json(core.ROOT/'contracts'/v)['manifest'] for k,v in candidate_inputs.LOCKS.items()}
+        (kit/'application-manifest.json').write_text(json.dumps({'inputs':pins}))
+        identities=[]
+        for version in ('1.2.0-rc.3','2.0.0-rc.1'):
+            path,key,checkpoint,trusted=build_results.seal(self.storage,{'application':'b'*64},{},
+                application=kit,product_version=version)
+            selected=DeveloperInputs.load(path,key)
+            self.assertEqual(checkpoint['productVersion'],version)
+            self.assertEqual(trusted['label'],'AosEdge SDV Lab '+version+' developer build')
+            self.assertEqual(media_filename(core.ROOT,selected),'AosEdge-SDV-Lab-'+version+'.dmg')
+            identities.append(key)
+        self.assertNotEqual(*identities)
+
+    def test_invalid_or_unreviewed_version_cannot_enter_seal_or_checkpoint_route(self):
+        for version in ('../foreign','1.2.0/escape','1.2.0\n',True,42,''):
+            with self.subTest(version=version),self.assertRaises(core.LabError):
+                build_results.seal(self.storage,{}, {},product_version=version)
+        with self.assertRaisesRegex(core.LabError,'requires selected'):
+            media.assemble(self.storage,self.state,'setup',sys.executable,'A'*40,None,
+                'groups.json','release.json',product_version='1.2.0-rc.3')
+        with self.assertRaisesRegex(core.LabError,'requires selected'):
+            package_chain.assemble(self.storage,self.state,'application',None,sys.executable,None,
+                'groups.json',product_version='1.2.0-rc.3')
+
     def test_modes_cannot_be_mixed_before_upstream_work(self):
         with patch.object(package_chain, 'verify_sources') as verify:
             with self.assertRaisesRegex(core.LabError, 'Cannot mix'):
@@ -112,11 +139,12 @@ class SealedResultsTests(StorageFixture, unittest.TestCase):
 
     def test_policy_forwarded_only_to_downstream_owners(self):
         options = dict(python='python', kit_inputs='kit', signing_identity='A'*40,
-                       developer_results=True, prepare_dependencies=False)
+                       developer_results=True, prepare_dependencies=False,product_version='1.2.0-rc.3')
         for target in ('backend-inputs', 'vm-runtime', 'application', 'setup', 'dmg'):
             with patch.object(chain_worker.importlib, 'import_module') as module:
                 chain_worker.dispatch(None, None, target, None, options, None)
                 self.assertTrue(module.return_value.assemble.call_args.kwargs['developer_results'])
+                self.assertEqual(module.return_value.assemble.call_args.kwargs['product_version'],'1.2.0-rc.3')
 
 
 if __name__ == '__main__':

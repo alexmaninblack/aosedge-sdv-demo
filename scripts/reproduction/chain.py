@@ -226,6 +226,7 @@ def execute(storage, state, args, progress):
         require(not any(name in config for name in ('input_checkpoint', 'release_checkpoint')),
                 'Developer chain cannot select reviewed output checkpoints')
         config['developer_results'] = True
+        config['product_version'] = plan['productVersion']
     # Preserve mandatory per-owner guards; this is not a measured cold peak.
     storage.check(additional=76*GIB, reserve=90*GIB)
     docker_storage = containers.inspect_storage(args.docker, storage.environment(create=False), storage.root)

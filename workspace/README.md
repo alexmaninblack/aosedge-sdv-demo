@@ -52,6 +52,11 @@ python3 -B scripts/sync-launcher-pins --check
 
 After an authorized metadata edit, use `scripts/sync-workspace-inputs --write`,
 then `scripts/sync-preparation-catalog` and `scripts/sync-launcher-pins --write`.
+If the selected build/source requirements change, the first command requires
+an explicit `--new-record-id <reviewed-id>-dropbox`. It appends a distinct
+catalog record and advances the current pin, preserving every existing record
+and all archive bindings/bytes. A repeated ID with different content is rejected;
+there is no automatic mutation of a published record or input/cache namespace.
 Review all projections. These commands never build or publish. Existing package
 names and bytes stay unchanged; consumers still check their exact manifests and
 hashes. See the [reproduction contract](../contracts/release-reproduction/README.md)

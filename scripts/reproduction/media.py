@@ -32,11 +32,13 @@ def verify(output, inputs):
 
 
 def assemble(storage, state, target, python, signing_identity, progress,
-             input_checkpoint=None, release_checkpoint=None, developer_results=False):
+             input_checkpoint=None, release_checkpoint=None, developer_results=False, product_version=None):
     require(storage.profile == 'developer' and target in TARGETS, 'Unsupported media target/profile')
     require(type(developer_results) is bool and not (developer_results and
             (input_checkpoint is not None or release_checkpoint is not None)),
             'Cannot mix developer results and reviewed checkpoints')
+    require(product_version is None or developer_results,
+            'Product version requires selected developer results')
     verify_sources(storage, state)
     storage.check(additional=(76 if target == 'dmg' else 2)*GIB, reserve=90*GIB)
     from .cloud import relative
@@ -55,7 +57,8 @@ def assemble(storage, state, target, python, signing_identity, progress,
     seal_args = []
     if developer_results:
         from .build_results import seal
-        sealed, seal_key, _, trusted = seal(storage, {'application': kit_key}, {}, application=kit)
+        sealed, seal_key, _, trusted = seal(storage, {'application': kit_key}, {}, application=kit,
+                                         product_version=product_version)
         seal_args = ['--developer-seal', str(sealed), seal_key]
     require(sha256(regular(kit/'application-manifest.json')) == trusted['manifestSha256'],
             'Application differs from independent Setup checkpoint')

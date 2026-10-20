@@ -3,6 +3,7 @@
 """Seal only upstream results already verified by the canonical build adapters."""
 import hashlib
 import json
+import re
 
 from .core import ROOT, require, regular, read_json
 from .artifacts import sha256
@@ -17,7 +18,13 @@ MANIFESTS = {
 }
 
 
-def seal(storage, chosen, paths, application=None):
+def seal(storage, chosen, paths, application=None, *, product_version=None):
+    if product_version is None:
+        from .chain import read_plan
+        product_version = read_plan(storage.release)['productVersion']
+    require(isinstance(product_version, str) and
+            re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?', product_version),
+            'Invalid selected developer product version')
     manifests = {}
     for role, path in paths.items():
         if role not in MANIFESTS:
@@ -32,9 +39,9 @@ def seal(storage, chosen, paths, application=None):
         manifest = regular(application/'application-manifest.json')
         require(0 < manifest.stat().st_size <= 8*2**20, 'Developer application manifest size invalid')
         manifests = read_json(manifest)['inputs']
-        release = {'schemaVersion': 1, 'label': 'AosEdge SDV Lab developer build',
+        release = {'schemaVersion': 1, 'label': 'AosEdge SDV Lab '+product_version+' developer build',
                    'manifestSha256': sha256(manifest)}
-    checkpoint = {'schemaVersion': 1, 'kind': 'developer-packaging-inputs', 'productVersion': '1.2.0-rc.1',
+    checkpoint = {'schemaVersion': 1, 'kind': 'developer-packaging-inputs', 'productVersion': product_version,
                   'baseDefinitionSha256': storage.release.key, 'manifests': manifests}
     value = {'schemaVersion': 1, 'kind': 'developer-build-results', 'checkpoint': checkpoint,
              'release': release, 'sources': storage.release.sources, 'upstreamBuilds': chosen}

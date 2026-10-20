@@ -6,6 +6,19 @@ from pathlib import Path
 import sys
 
 
+def media_filename(root, checkpoint):
+    """Name media from its verified source/typed seal, never a fixed release."""
+    from candidate_inputs import LOCKS, pins
+    pins(root, checkpoint, LOCKS)
+    from developer_inputs import DeveloperInputs
+    if isinstance(checkpoint, DeveloperInputs):
+        version=checkpoint.value()['checkpoint']['productVersion']
+    else:
+        from candidate_inputs import read
+        version=json.loads(read(root,checkpoint))['productVersion']
+    return 'AosEdge-SDV-Lab-'+version+'.dmg'
+
+
 if __name__ == '__main__':
     root, target, kit, setup, output, signer, checkpoint, release = sys.argv[1:9]
     root, kit, output = Path(root), Path(kit), Path(output)
@@ -25,6 +38,6 @@ if __name__ == '__main__':
             raise ValueError('Unknown media target')
         import full_dmg
         output.mkdir(mode=0o700)
-        result = full_dmg.build(kit, Path(setup), output/'AosEdge-SDV-Lab-1.2.0-rc.1.dmg',
+        result = full_dmg.build(kit, Path(setup), output/media_filename(root, checkpoint),
             release_checkpoint=release, progress=lambda row: print(json.dumps(row), flush=True))
     print(json.dumps({'status': result['status']}), flush=True)

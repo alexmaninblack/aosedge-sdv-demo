@@ -44,11 +44,15 @@ def dispatch(storage, state, target, profile, options, progress):
         optional = {'input_checkpoint': options['input_checkpoint']} if target != 'backend-inputs' and options.get('input_checkpoint') else {}
         if options.get('developer_results'):
             optional['developer_results'] = True
+            if 'product_version' in options:
+                optional['product_version'] = options['product_version']
         return owner.assemble(storage, state, target, options['kit_inputs'], python, progress, **optional)
     if target in ('setup', 'dmg'):
         optional = {name:options[name] for name in ('input_checkpoint','release_checkpoint') if name in options}
         if options.get('developer_results'):
             optional['developer_results'] = True
+            if 'product_version' in options:
+                optional['product_version'] = options['product_version']
         return owner.assemble(storage, state, target, python, options['signing_identity'], progress, **optional)
     raise ValueError('Unknown build-only owner target')
 
