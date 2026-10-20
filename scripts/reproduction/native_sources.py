@@ -48,8 +48,15 @@ def prepare(storage,selection,acquire,progress):
         if head.returncode:
             require(acquire and {p.name for p in path.iterdir()}=={'.git'},'Incomplete native source; preserved')
             progress('PREPARE_NATIVE_SOURCE',role)
-            # Use locally available immutable commits without another network transfer.
-            local=ROOT if role=='integration' else None
+            # A frozen producer may be shallow. Reuse its exact Git object only
+            # when present; otherwise acquire the same pinned commit from the
+            # already-declared origin under the explicit acquire permission.
+            local=None
+            if role=='integration':
+                require(git(ROOT,['remote','get-url','origin'],env)==row['repository'],
+                        'Native producer repository differs')
+                available=run_command(['git','-C',ROOT,'cat-file','-e',row['revision']+'^{commit}'],env=env)
+                if available.returncode==0:local=ROOT
             git(path,['fetch','--quiet','--depth=1','--no-tags',str(local or 'origin'),row['revision']],env,timeout=180)
             git(path,['checkout','--quiet','--detach',row['revision']],env)
         check_source(path,row,env)

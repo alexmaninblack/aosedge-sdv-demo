@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.31
+- Version: 1.32
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -838,6 +838,10 @@ An exact object already in the explicitly selected root repository can be
 prepared without network; fetching a missing object requires
 `--prepare-dependencies`. Wrong remotes, revisions, dirty checkouts and unowned
 paths fail without reset. Each worker imports only its selected frozen adapter.
+Native/UI source acquisition follows the same rule: a shallow producer does
+not imply that the selected application commit is present locally. With explicit
+acquisition enabled, a missing exact object comes from its declared origin;
+an available object may be reused from the verified producer repository.
 This separates application generation from the later source-reviewed Setup pin
 without a circular source-to-manifest hash or implicit current-HEAD selection.
 
