@@ -6,7 +6,7 @@
 - Status: as-built candidate view; not blanket requirements acceptance
 - Version: 2.2
 - Prepared: 2026-10-07
-- Updated: 2026-10-18
+- Updated: 2026-10-20
 - Owner: SDV Lab integration
 - Current selection: [launcher catalog](../../workspace/launcher-catalog.json) and its immutable delivery descriptor
 - Source inputs: [current source lock](../../workspace/inputs/sources.lock.json)
@@ -51,10 +51,13 @@ silently adopt a foreign instance or replace a live selected version.
 The first-use topology is one OEM and one associated SP with independent Brake
 and Tire identities. Cloud reads and backend-image preparation are explicit
 steps. Open demo opens Presenter; it does not create or start a controller.
-Integrated Install / Connect / Open is implemented; native issuance/connection
-with existing accounts passed on M1 Production. Ordinary retained-Test
-Stop/Start is implemented and passed the separate visible UI campaign.
-New-account registration and broader interruption/recovery cases remain separate.
+Integrated Install / Connect / Open is implemented. The
+[current baseline](../qualification/current-baseline.md#qualified-current-profiles)
+distinguishes rc.3 runtime API/UI proof from the rc.2 native Setup
+issuance/connection proof with existing accounts on M1 and Production Aos Cloud.
+The native no-ready-certificate pass is not inherited by rc.3. Ordinary
+retained-Test Stop/Start passed the rc.3 runtime campaign; new-account
+registration and broader interruption/recovery cases remain separate.
 See the [native Setup contract](../../contracts/distribution-installation/native-setup.md).
 
 ## Runtime and authority
@@ -88,8 +91,11 @@ credentials. See the [protocol status map](../../contracts/implementation-status
 The current source also enforces fingerprint-only browser identity projection
 at the common Presenter JSON boundary. Exact Cloud/backend joins remain on the
 server; opaque references preserve display correlation and fixed selectors.
-This source correction has isolated tests, not new package/M1 qualification;
-the selected DMG and its recorded evidence remain unchanged.
+The selected rc.3 DMG includes this boundary and passed its exact-package M1
+API/UI profiles. The independently rebuilt rc.3 package has its own separate
+proof; neither result qualifies different bytes. See the
+[current baseline](../qualification/current-baseline.md#input-provenance) for
+candidate identities, isolated regression coverage and acceptance limits.
 
 ## Effective design boundaries
 
@@ -123,7 +129,7 @@ cases and final acceptance remain as stated below and in the dated receipts.
 | [Tire Cloud](../requirements/components/tire-health-cloud.md) | [backend source](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/store.mjs), Presenter | Separate persistence/ACK/query/SSE/Reset/cleanup; fixed CPU qualification endpoint is not implemented; retained legacy cleanup schema differs from current Studio handler |
 | [Demo orchestration](../requirements/components/demo-orchestration.md) | [orchestrator](../../apps/demo-orchestrator), [Presenter](../../apps/presenter-ui) | Shared guarded commands, bounded read paths, source attachment, layout, resources, Finish and boot recovery; host sleep/wake remains planning |
 | [Cross-cutting](../requirements/components/cross-cutting.md) | Native policy/identity, contracts and repository/security gates | Enforcing/private credentials, separate teams, bounded transport and scoped negatives; no production safety/security certification inferred |
-| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | Current runtime passed 118 API and 42 visible browser UI checks plus required native driving input; separate native Setup first use passed. New-account signup, full native return journey, full P8 dossier, long soak and nonempty-queue power loss are not closed |
+| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | rc.3 runtime passed 118 API and 42 visible browser UI checks plus required native driving input; native Setup without ready certificates passed for rc.2 only. New-account signup, full native return journey, full P8 dossier, long soak and nonempty-queue power loss are not closed |
 
 ## Protocol, compatibility and resource facts
 

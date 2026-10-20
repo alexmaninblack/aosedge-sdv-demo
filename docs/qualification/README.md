@@ -11,7 +11,7 @@ apply only to the exact source, media and profile identified by their receipt.
 
 - [Publisher evidence and procedure](../development/release-campaign.md#publisher-evidence):
   scoped sender transport proof; not another product-release acceptance.
-- [Independent developer workspace](../development/release-reproduction-r2.md#current-independent-workspace-proof):
+- [Independent developer workspace](developer-reproduction.md):
   published B rebuilt a distinct package from fresh sources and verified binary
   archives; its own M1 API and visible UI profiles passed. Existing host/tools
   were reused. This does not close fresh-host R4 or promote public option A.
@@ -19,7 +19,8 @@ apply only to the exact source, media and profile identified by their receipt.
   rc.3 passed 118 API and 42 visible browser UI checks with actual native driving
   input. The separate rc.2 native Setup profile passed new certificate issuance
   for existing authorized accounts; that proof does not transfer to rc.3.
-  Earlier failures remain chronological evidence, not the final outcome.
+  Superseded campaigns and failures remain immutable evidence, not another
+  current release or a substitute for exact-candidate proof.
 - [Release automation and public delivery](release-automation-2026-10-13.md#published-release-120-rc3):
   main/tag publication and anonymous M1 download/verification/open passed for
   the selected successor. Its public consumer reused the installed certificate

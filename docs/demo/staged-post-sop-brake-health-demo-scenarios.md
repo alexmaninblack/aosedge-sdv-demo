@@ -5,7 +5,7 @@
 
 - Status: Accepted
 - Version: 2.3
-- Updated: 2026-10-18
+- Updated: 2026-10-20
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: Demo Architecture
@@ -14,7 +14,7 @@
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.8, with detailed interaction mapping in Demo Scenario Architecture Flows
-  2.3
+  2.4
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),

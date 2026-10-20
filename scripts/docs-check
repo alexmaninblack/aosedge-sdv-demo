@@ -1233,9 +1233,9 @@ def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Is
         if body and not all(fact in body for fact in facts):
             issue(name, "effective installed/expanded profile applicability is missing or contradictory")
     aliases = (
-        (r'\b(?:Demo )?Scenarios? (\d+\.\d+)\b', "docs/demo/staged-post-sop-brake-health-demo-scenarios.md"),
-        (r'\b(?:Architecture )?Flows (\d+\.\d+)\b', "docs/architecture/demo-scenario-architecture-flows.md"),
-        (r'\bSystem Requirements(?: and Traceability)? (\d+\.\d+)\b', "docs/requirements/system-requirements-and-traceability.md"),
+        (r'\b(?:Demo\s+)?Scenarios?\s+(\d+\.\d+)\b', "docs/demo/staged-post-sop-brake-health-demo-scenarios.md"),
+        (r'\b(?:Architecture\s+)?Flows\s+(\d+\.\d+)\b', "docs/architecture/demo-scenario-architecture-flows.md"),
+        (r'\bSystem\s+Requirements(?:\s+and\s+Traceability)?\s+(\d+\.\d+)\b', "docs/requirements/system-requirements-and-traceability.md"),
     )
     for pattern, owner in aliases:
         expected_version = metadata(documents.get((root / owner).resolve(), ""), "Version")
@@ -1246,7 +1246,7 @@ def check_effective_contracts(root: Path, documents: dict[Path, str]) -> list[Is
                 continue
             for found in re.finditer(pattern, text):
                 if found[1] != expected_version:
-                    issue(relative(root, path), "plain-text design-chain version is stale: " + found[0])
+                    issue(relative(root, path), "plain-text design-chain version is stale: " + " ".join(found[0].split()))
     # Existing frozen fixtures remain compatibility checks. Current admin
     # schema closure is separately checked, with no backend/runtime execution.
     admin = runpy.run_path(str(Path(__file__).with_name("admin_contract_check.py")))

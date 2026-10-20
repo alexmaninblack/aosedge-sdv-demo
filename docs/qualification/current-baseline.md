@@ -33,7 +33,7 @@ artifact pins or inherit another candidate's passes.
 | Visible product UI | rc.3: 42/42 browser stages and required actual native driving input passed, with Presenter/CARLA/Driving Control visible |
 | Native Setup without ready certificates | rc.2 only: empty fields, fresh M1-generated OEM/SP keys, issuance using existing accounts, Production connection and Presenter opening passed; not rerun or inherited by rc.3 |
 | Public option A consumer | rc.3: anonymous Dropbox download, full checksum/signature, signed Setup handoff, read-only retained selection, Presenter opening and verified closure passed; no fresh enrollment or launcher replay |
-| Independent developer workspace | Published B at `315064b` built a distinct rc.3 DMG from fresh sources and five verified binary archives; that exact new package passed 118 API and 42 visible UI checks on M1. Existing developer host/tools were reused; no fresh-host claim or option A promotion. [Identities, scope and measurements](../development/release-reproduction-r2.md#current-independent-workspace-proof) |
+| Independent developer workspace | Published B at `315064b` built a distinct rc.3 DMG from fresh sources and five verified binary archives; that exact new package passed 118 API and 42 visible UI checks on M1. Existing developer host/tools were reused; no fresh-host claim or option A promotion. [Identities, scope and measurements](developer-reproduction.md) |
 
 Runtime proofs include serial VDP V1/V2/V3 Safe Stop FOTA, Brake V1/V2/V3,
 Tire V1, real products/advisories, moving QM updates, independent Reset/history,

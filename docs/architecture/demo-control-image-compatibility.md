@@ -3,8 +3,8 @@
 
 # Demo Control: image-bound component support
 
-This contract describes the current image compatibility reader and producer
-metadata, not a dated Factory migration. The image is selected by the
+This contract describes the image compatibility reader and producer
+metadata. The image is selected by the
 [controller input lock](../../workspace/inputs/controller-images.lock.json);
 the [baseline](../qualification/current-baseline.md) owns actual runtime proof.
 
@@ -28,7 +28,7 @@ exactly these fields:
 
 Missing declarations, unsupported paths, mismatching SHA/source/type and
 conflicting declarations are explicit blockers. Unknown images are not admitted
-through a `.31` fallback. The declaration is a producer compatibility claim,
+through a hard-coded image-version fallback. The declaration is a producer compatibility claim,
 not live install/runtime evidence, and must not assert advisory support from
 the telemetry-only VDP profiles.
 
@@ -44,5 +44,3 @@ Verify version-independent declarations, exact image/source/type binding,
 unsupported paths, missing/conflicting metadata, unsafe files, immutable-image
 preservation and idempotent repeat. A declaration is producer compatibility,
 not proof of live installation, service permission or a healthy VDP process.
-The former `.31` registration and its test diary remain in Git history, not the
-current image selector.

@@ -55,10 +55,63 @@ class EffectiveDesignDocumentationTests(unittest.TestCase):
         self.assertTrue(any("plain-text design-chain" in x.message for x in self.effective_issues(
             "docs/architecture/current-implementation.md", "Flows " + current, "Flows 0.0")))
 
+    def test_effective_gate_checks_wrapped_plain_design_versions(self):
+        cases = (
+            ("Demo Scenario", "docs/demo/staged-post-sop-brake-health-demo-scenarios.md"),
+            ("Architecture Flows", "docs/architecture/demo-scenario-architecture-flows.md"),
+            ("System Requirements and Traceability", "docs/requirements/system-requirements-and-traceability.md"),
+        )
+        path = (ROOT / "docs/architecture/current-implementation.md").resolve()
+        for title, owner in cases:
+            version = CHECK["metadata"](read(owner), "Version")
+            for separator in ("\n  ", "\t", "  "):
+                for stale in (False, True):
+                    with self.subTest(title=title, separator=separator, stale=stale):
+                        documents = CHECK["markdown_documents"](ROOT)
+                        documents[path] += "\n" + title + separator + ("0.0" if stale else version) + ".\n"
+                        issues = CHECK["check_effective_contracts"](ROOT, documents)
+                        messages = [x.message for x in issues if "plain-text design-chain" in x.message]
+                        self.assertEqual(bool(messages), stale, messages)
+                        self.assertTrue(all("\n" not in message for message in messages))
+
     def test_effective_gate_rejects_duplicate_non_identifier_anchor(self):
         marker = '<a id="independent-window-metadata--accepted-29-september-2026"></a>'
         self.assertTrue(any("duplicate explicit anchor" in x.message for x in self.effective_issues(
             "contracts/distribution-installation/native-setup.md", marker, marker + "\n" + marker)))
+
+    def test_current_status_preserves_candidate_specific_setup_scope(self):
+        for path in ("docs/architecture/current-implementation.md",
+                     "docs/requirements/components/demo-orchestration.md"):
+            with self.subTest(path=path):
+                text = prose(path)
+                self.assertIn("rc.2", text)
+                self.assertIn("rc.3", text)
+                self.assertIn("not inherited by rc.3", text)
+                self.assertIn("current-baseline.md#qualified-current-profiles", text)
+                self.assertNotIn("not new package/M1 qualification", text)
+                self.assertNotIn("native/live activation remains open", text)
+
+    def test_reproduction_evidence_is_not_a_second_build_procedure(self):
+        guide = prose("docs/development/release-reproduction-r2.md")
+        proof = prose("docs/qualification/developer-reproduction.md")
+        self.assertIn("../qualification/developer-reproduction.md", guide)
+        for campaign_detail in ("7412.094", "14,158,955,472", "r4-rc3-20261020"):
+            self.assertNotIn(campaign_detail, guide)
+            self.assertIn(campaign_detail, proof)
+        self.assertIn("not fresh-macOS or cold-cache proof", proof)
+        self.assertIn("not root-caused", proof)
+        self.assertIn("option A selection were not overwritten or promoted", proof)
+        self.assertIn("for this exact rebuilt media", proof)
+
+    def test_native_setup_keeps_unique_runtime_provenance_without_old_campaign_diary(self):
+        text = prose("docs/qualification/m1-clean-install-e2e-2026-10-14.md")
+        self.assertIn("71063a5d05ce9287feb0964d661b8408343aa85a58b4c3baaed8c0fd14664270", text)
+        self.assertIn("0f6216c8f300d5106e5ad80cc5ebe25682e397b7ae4174977055018477ffedb8", text)
+        self.assertIn("blob/35dcdeb0cbd859f016148a505437b9b74886b261/", text)
+        self.assertIn('id="corrected-immutable-candidate-complete-production-api-and-visible-ui-pass"', text)
+        self.assertIn("not another current release or qualification of rc.3 bytes", text)
+        self.assertNotIn("These are isolated correction branches", text)
+        self.assertNotIn("separate subsequent release gates", text)
 
     def test_effective_gate_rejects_missing_explicit_test_timing_exception(self):
         path = "docs/requirements/components/factory-substrate.md"

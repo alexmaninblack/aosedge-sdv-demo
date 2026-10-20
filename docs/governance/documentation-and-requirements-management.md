@@ -6,7 +6,7 @@
 - Status: Accepted
 - Version: 1.5
 - Prepared: 2026-10-09
-- Updated: 2026-10-18
+- Updated: 2026-10-20
 - Owner: System Architecture
 
 ## Purpose
@@ -243,6 +243,8 @@ metadata, including cross-repository links. Focused negative cases also cover
 transport-authentication summaries, local installed/expanded applicability and
 current native provenance/observation ordering. Browser disclosure is verified
 by isolated server/projection and consumer tests, not by a wording check.
+Plain-text design-chain version checks also cover line-wrapped and tab-separated
+mentions, not only single-line link labels.
 Frozen producer/source checkouts use their own revision-matched checks; they
 are not the maintained current-documentation workspace.
 

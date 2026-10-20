@@ -6,7 +6,7 @@
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
 - Version: 1.6
-- Updated: 2026-10-18
+- Updated: 2026-10-20
 - Prepared: 2026-08-19
 - Accepted: 2026-09-27
 - Owner: Demo Solution Team
@@ -39,8 +39,12 @@ The [portable host launch contract](../../../contracts/portable-host-launch/READ
 also requires prebuilt native execution, independent manifest trust, exact
 ownership and idempotent start/normal stop. Missing operator TLS is explicit;
 there is no copied credential or developer-path fallback. Existing geometry,
-source admission and UI idle/recovery guards remain requirements. Installer,
-full guest/Cloud binding and clean-machine live acceptance remain separate gates.
+source admission and UI idle/recovery guards remain requirements. Exact-package
+installation and guest/Cloud binding have scoped M1 runtime evidence; native
+Setup first use has its separate candidate-bound proof. The
+[current baseline](../../qualification/current-baseline.md#qualified-current-profiles)
+owns those results. Fresh-macOS consent, installation interruption/repair and
+broader recovery acceptance remain separate gates.
 The [portable VM input contract](../../../contracts/portable-vm-launch/README.md)
 extends those fixed-input, integrity and no-fallback obligations to image tools,
 QEMU, firmware and the DNS helper. Interpreter-independent helper commands must
@@ -86,7 +90,7 @@ blocks without rotation. Cloud identities and client mTLS remain distinct.
 - Parent: [separate installed data authority](../system-requirements-and-traceability.md#sys-dist-001).
 - Flow: [distribution entry](../../architecture/demo-scenario-architecture-flows.md#af-dist-entry).
 - Components/interfaces: `CMP-ORCH`, `IF-DEMO-001`.
-- Verification: Unit, Contract, isolated installed-package Integration; native/live activation remains open.
+- Verification: Unit, Contract and isolated installed-package Integration, supplemented by the exact-candidate M1 runtime and native Setup profiles in the [current baseline](../../qualification/current-baseline.md#qualified-current-profiles). Those passes do not close fresh-macOS consent, interruption/repair or the broader negative matrix.
 - Contract: [installed state](../../../contracts/distribution-installation/installed-state.md) and its [version-selection/recovery detail](../../../contracts/distribution-installation/version-selection.md).
 
 <a id="ut-demo-025"></a>
@@ -857,7 +861,7 @@ See [implementation and qualification](README.md#implementation-and-qualificatio
 | --- | --- |
 | Implemented workflow | Shared CLI/Presenter lifecycle, selected Cloud/roles, unsigned catalogues, session signing, serial Test updates, exact source attachment, operation registry, Reset, offline switch and confirmed Finish exist. |
 | Implemented presentation | Measured window placement/z-order, backend popups/charts, resource/freshness views and native control are implemented. Current status authority is defined in the operator guide, not the old mockup. |
-| Current runtime and Setup proof | 118 API and 42 visible browser UI checks plus actual native driving input passed, including moving QM updates and retained Stop/Start. Separate native new-certificate first use passed with existing accounts. Installation interruption/repair and broader negative matrices remain separate. |
+| Current runtime and Setup proof | rc.3 runtime passed 118 API and 42 visible browser UI checks plus actual native driving input, including moving QM updates and retained Stop/Start. Native Setup without ready certificates passed with existing accounts for rc.2 only; that pass is not inherited by rc.3. The [current baseline](../../qualification/current-baseline.md#qualified-current-profiles) separates published and independently rebuilt artifacts. Installation interruption/repair and broader negative matrices remain separate. |
 | Recovery limits | Guarded same-identity controller ignition is implemented; cold externalOFF ignition and host laptop sleep/wake are not qualified. Park/Resume is retired from Studio. |
 | Unimplemented qualification feature | Fixed Tire CPU control/worker and the full resource-isolation dossier remain open. Existing Cloud charts do not prove CPU stress isolation. |
 | Scope and contract maintenance | The current milestone is Test-only; Production is preserved. Legacy dual-Unit contract annotations and the Tire cleanup executable-schema drift must not drive destructive current-Test behavior. |
