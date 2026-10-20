@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
-  "productVersion": "1.2.0-rc.1",
+  "productVersion": "1.2.0-rc.3",
   "baseDefinitionSha256": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
   "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
   "producers": {
     "components": "82dc1cca93645e0e5d4597dc41c32d5010fc7c81",
-    "preparation": "0597aa46dbda35e504dac25acb05f9e6668dc68f",
-    "host": "0597aa46dbda35e504dac25acb05f9e6668dc68f",
-    "inputs": "0597aa46dbda35e504dac25acb05f9e6668dc68f",
-    "application": "0597aa46dbda35e504dac25acb05f9e6668dc68f",
-    "media": "0597aa46dbda35e504dac25acb05f9e6668dc68f",
-    "native-ui": "0597aa46dbda35e504dac25acb05f9e6668dc68f"
+    "preparation": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
+    "host": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
+    "inputs": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
+    "application": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
+    "media": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
+    "native-ui": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1"
   },
   "steps": [
     {
@@ -168,11 +168,11 @@
   "nativeSources": {
     "integration": {
       "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
-      "revision": "0597aa46dbda35e504dac25acb05f9e6668dc68f"
+      "revision": "e787b926471dc096ed365efe0178d8d0181de1a5"
     },
     "vehicle-gateway": {
       "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
-      "revision": "b4c505561f9d2bcdf75ee322f973c85d4b18380d"
+      "revision": "19354402594ab2facf5f99f58bc3105740b4ad55"
     }
   }
 }

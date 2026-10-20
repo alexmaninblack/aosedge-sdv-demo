@@ -5,9 +5,9 @@
 # Sourceable by offline fixtures; execution always goes through main().
 
 SDV_PREP_VERSION=7
-SDV_CATALOG_RECORD=662f3fe4be0852452099f1fe8b6a30b1e607cf6694bf18fd4ab33e156aac1aa0
+SDV_CATALOG_RECORD=3a78d97dbcdaaccc32b50676cbd695a592cdf2e0b4e8370e5a9462ddae50e0d5
 SDV_PUBLIC_CATALOG_URL=https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json
-SDV_PUBLIC_CATALOG_RECORD=ed3f5d6492d9500d5c887d44a530c3032b0bb70815ed17792dce28c627dab292
+SDV_PUBLIC_CATALOG_RECORD=9257665b5c17ecc5537ea5dd0a5e5bca9ea5bbd4bbdde6a8e1758564b7d9bf1b
 # Bootstrap projection of the source-owned requirements; parity is tested.
 SDV_MACOS_MIN=26
 SDV_PYTHON_MINOR=3.12
@@ -697,8 +697,8 @@ import urllib.parse
 import urllib.request
 import public_drive
 
-PIN = {'releaseId': 'sdv-lab-inputs', 'recordSha256': '662f3fe4be0852452099f1fe8b6a30b1e607cf6694bf18fd4ab33e156aac1aa0', 'lockDigests': {'buildInputs': 'f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0', 'simulation': '18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e'}, 'sourceFiles': {'workspace/build-definition.json': 'e961bad8e5d155aa872f36c2eebf34c1885591a8212fc51ecf9110404d92971e', 'workspace/releases/build-plan.json': 'c55f8c7447ca48e6f1c2a05fedacbea39f2e0ef85e254552a3d29b9c6fe4813d', 'workspace/inputs/build-policy.json': '11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc', 'workspace/inputs/cache-compatibility.json': 'a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a', 'workspace/inputs/controller-images.lock.json': 'e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47', 'workspace/inputs/product-inputs.schema.json': 'f8c7982c48cc1860fed65d4da3bbc6a924ebddd636229f5c04a2f60cec7cf9b9', 'workspace/inputs/runtime-inputs.lock.json': 'd2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d', 'workspace/inputs/service-inputs.lock.json': 'beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae', 'workspace/inputs/sources.lock.json': '019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068', 'workspace/dependencies/carla-macos-arm64-r1.lock.json': '37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f', 'workspace/dependencies/developer-factory41-r1.lock.json': '734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f'}}
-PUBLIC_PIN = {'url': 'https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json', 'releaseId': 'sdv-lab-inputs-dropbox', 'recordSha256': 'ed3f5d6492d9500d5c887d44a530c3032b0bb70815ed17792dce28c627dab292'}
+PIN = {'releaseId': 'sdv-lab-inputs', 'recordSha256': '3a78d97dbcdaaccc32b50676cbd695a592cdf2e0b4e8370e5a9462ddae50e0d5', 'lockDigests': {'buildInputs': 'f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0', 'simulation': '18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e'}, 'sourceFiles': {'workspace/build-definition.json': 'e961bad8e5d155aa872f36c2eebf34c1885591a8212fc51ecf9110404d92971e', 'workspace/releases/build-plan.json': '5c5d4959a51cac5acfe60416d76e5af6d2e91b4c9d1c1fd4dfd1a3b2310cfcaf', 'workspace/inputs/build-policy.json': '11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc', 'workspace/inputs/cache-compatibility.json': 'a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a', 'workspace/inputs/controller-images.lock.json': 'e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47', 'workspace/inputs/product-inputs.schema.json': 'f8c7982c48cc1860fed65d4da3bbc6a924ebddd636229f5c04a2f60cec7cf9b9', 'workspace/inputs/runtime-inputs.lock.json': 'd2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d', 'workspace/inputs/service-inputs.lock.json': 'beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae', 'workspace/inputs/sources.lock.json': '019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068', 'workspace/dependencies/carla-macos-arm64-r1.lock.json': '37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f', 'workspace/dependencies/developer-factory41-r1.lock.json': '734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f'}}
+PUBLIC_PIN = {'url': 'https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json', 'releaseId': 'sdv-lab-rc3-inputs-dropbox', 'recordSha256': '9257665b5c17ecc5537ea5dd0a5e5bca9ea5bbd4bbdde6a8e1758564b7d9bf1b'}
 ROLES = {'buildInputs': {'vehicle-bases', 'factory-image'},
          'simulation': {'carla-runtime', 'host-support', 'gateway-sdk'}}
 LIMIT = 1024 * 1024
