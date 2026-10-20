@@ -5,12 +5,12 @@
   "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
   "producers": {
     "components": "82dc1cca93645e0e5d4597dc41c32d5010fc7c81",
-    "preparation": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
-    "host": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
-    "inputs": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
-    "application": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
-    "media": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1",
-    "native-ui": "6643bd073cb94b5f4d6b2770d5205bb4fc9027e1"
+    "preparation": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
+    "host": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
+    "inputs": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
+    "application": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
+    "media": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
+    "native-ui": "13bcc4f48a635f93f1cadaf816b35abe019dff3b"
   },
   "steps": [
     {
