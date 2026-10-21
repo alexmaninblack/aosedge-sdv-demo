@@ -4,7 +4,7 @@
   "baseDefinitionSha256": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
   "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
   "producers": {
-    "components": "82dc1cca93645e0e5d4597dc41c32d5010fc7c81",
+    "components": "c44de757f13d2a6a0dbc2fe50c064ff0fea98205",
     "preparation": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
     "host": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",
     "inputs": "13bcc4f48a635f93f1cadaf816b35abe019dff3b",

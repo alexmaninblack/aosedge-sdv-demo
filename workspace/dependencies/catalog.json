@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "product": "aosedge-sdv-lab",
-  "catalogRevision": 4,
+  "catalogRevision": 5,
   "releases": [
     {
       "id": "sdv-lab-inputs-dropbox",
@@ -154,6 +154,78 @@
       "sourceFiles": {
         "workspace/build-definition.json": "e961bad8e5d155aa872f36c2eebf34c1885591a8212fc51ecf9110404d92971e",
         "workspace/releases/build-plan.json": "32e830d37fbec6a8f09c27fe9a1a88291c85d69759df4b28768b206b5c8ef36a",
+        "workspace/inputs/build-policy.json": "11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc",
+        "workspace/inputs/cache-compatibility.json": "a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a",
+        "workspace/inputs/controller-images.lock.json": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47",
+        "workspace/inputs/product-inputs.schema.json": "f8c7982c48cc1860fed65d4da3bbc6a924ebddd636229f5c04a2f60cec7cf9b9",
+        "workspace/inputs/runtime-inputs.lock.json": "d2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d",
+        "workspace/inputs/service-inputs.lock.json": "beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae",
+        "workspace/inputs/sources.lock.json": "019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068",
+        "workspace/dependencies/carla-macos-arm64-r1.lock.json": "37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f",
+        "workspace/dependencies/developer-factory41-r1.lock.json": "734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f"
+      },
+      "dependencyGroups": {
+        "buildInputs": {
+          "binding": {
+            "schemaVersion": 2,
+            "transport": "dropbox-public",
+            "lockDigest": "f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0",
+            "files": {
+              "factory-image": "https://www.dropbox.com/scl/fi/wsev1pe8bgscu3qyqlhv6/developer-factory41-r1-factory-image.tar.gz?rlkey=5v22h2285ajhln5sgziaew9si&dl=1",
+              "vehicle-bases": "https://www.dropbox.com/scl/fi/d18mypr3e4o0fjsi28e3g/developer-factory41-r1-vehicle-bases.tar.gz?rlkey=32da5jp62zxxakr526yxzxcgz&dl=1"
+            }
+          },
+          "packages": {
+            "factory-image": {
+              "file": "developer-factory41-r1-factory-image.tar.gz",
+              "bytes": 316796441,
+              "sha256": "fa98b49a2d84a5f832df54d8d079905dd06193d4c0ba7fcac116bfca463d5be2"
+            },
+            "vehicle-bases": {
+              "file": "developer-factory41-r1-vehicle-bases.tar.gz",
+              "bytes": 20797429,
+              "sha256": "ae2da1a5a7dd06e878a588833dc90c9100d0d73fef11f5195859b35c46f5e3d6"
+            }
+          }
+        },
+        "simulation": {
+          "binding": {
+            "schemaVersion": 2,
+            "transport": "dropbox-public",
+            "lockDigest": "18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e",
+            "files": {
+              "carla-runtime": "https://www.dropbox.com/scl/fi/n7qus5mcdj3xl6tfw1nh2/carla-macos-arm64-r1-carla-runtime.tar.gz?rlkey=7gdccnfzj8t7f8gusxtmon795&dl=1",
+              "gateway-sdk": "https://www.dropbox.com/scl/fi/9ba78wswcuokcc6ygkz77/carla-macos-arm64-r1-gateway-sdk.tar.gz?rlkey=e40b8mt46ys2sk8ihi1ut1jj6&dl=1",
+              "host-support": "https://www.dropbox.com/scl/fi/a6pjceem1ggl6x7suqtk1/carla-macos-arm64-r1-host-support.tar.gz?rlkey=933vvik5vm7hy91mslvbp7qq9&dl=1"
+            }
+          },
+          "packages": {
+            "carla-runtime": {
+              "file": "carla-macos-arm64-r1-carla-runtime.tar.gz",
+              "bytes": 13302049728,
+              "sha256": "3d680119205aace4bc61572eebfd3b2b9cd091db614df498c7e40ca7be96b105"
+            },
+            "gateway-sdk": {
+              "file": "carla-macos-arm64-r1-gateway-sdk.tar.gz",
+              "bytes": 32520332,
+              "sha256": "e03889a39412e4a771263a9914f8862986418082ad3fbeb68ba6fa463c1d629c"
+            },
+            "host-support": {
+              "file": "carla-macos-arm64-r1-host-support.tar.gz",
+              "bytes": 23975979,
+              "sha256": "313356e1b142277ea5784f8fba310e34522e058cd34f9d48f3147cfdc58f25a0"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sdv-lab-rc3-docker-storage-dropbox",
+      "productVersion": "1.2.0-rc.3",
+      "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
+      "sourceFiles": {
+        "workspace/build-definition.json": "e961bad8e5d155aa872f36c2eebf34c1885591a8212fc51ecf9110404d92971e",
+        "workspace/releases/build-plan.json": "10b5388e742ba533bb17ec2bbcea8751cdf49b1aa412547b05c5eab4059d8bb0",
         "workspace/inputs/build-policy.json": "11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc",
         "workspace/inputs/cache-compatibility.json": "a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a",
         "workspace/inputs/controller-images.lock.json": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47",
