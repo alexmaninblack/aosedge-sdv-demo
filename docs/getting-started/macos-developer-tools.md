@@ -69,6 +69,15 @@ complete build's size. After cloning, the build-space planner checks workspace
 and Docker capacity against the selected build. Docker may use a separate
 local volume; neither preparation nor the build relocates its data.
 
+Docker's standard disk location works without customization. If Docker has
+entered Resource Saver mode, the build checks its disk and headroom, then uses
+a read-only Engine query to wake it and verifies the same disk is actually
+open. It does not disable Resource Saver, restart Docker, create a helper
+container or treat a cached API response as proof. A missing, changed or
+inaccessible disk still stops the workflow. See Docker's
+[default disk location](https://docs.docker.com/desktop/settings-and-maintenance/backup-and-restore/#if-docker-desktop-fails-to-start-or-you-want-to-back-up-the-whole-docker-desktop-vm)
+and [Resource Saver behavior](https://docs.docker.com/desktop/use-desktop/resource-saver/).
+
 <a id="capacity-planning"></a>
 
 ### Capacity planning before a fresh build

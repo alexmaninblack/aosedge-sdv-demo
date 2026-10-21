@@ -1136,16 +1136,47 @@ class GatewayBuildTests(StorageFixture, unittest.TestCase):
                 gateway.test_result(report, ['one'])
 
 class DockerStorageTests(StorageFixture, unittest.TestCase):
-    def test_unconfigured_docker_never_guesses_another_disk(self):
-        for setting in ({}, {'DataFolder':'relative'}):
+    def default_disk(self):
+        disk = self.base/'Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw'
+        disk.parent.mkdir(parents=True)
+        disk.touch()
+        return disk
+
+    def test_omitted_default_selects_only_documented_regular_disk(self):
+        disk = self.default_disk()
+        with patch('reproduction.containers.Path.home', return_value=self.base), \
+             patch('reproduction.containers.read_json', return_value={}):
+            self.assertEqual(containers.backing_disk(), disk)
+            disk.unlink()
+            with self.assertRaises(FileNotFoundError):
+                containers.backing_disk()
+
+    def test_invalid_explicit_setting_never_falls_back_to_default(self):
+        self.default_disk()
+        for setting in ({'DataFolder':'relative'}, {'DataFolder':None}, {'DataFolder':''}, []):
             with patch('reproduction.containers.read_json', return_value=setting):
-                with self.assertRaisesRegex(core.LabError, 'Cannot resolve Docker'):
+                with self.assertRaises(core.LabError):
+                    containers.backing_disk()
+        with patch('reproduction.containers.Path.home', return_value=self.base), \
+             patch('reproduction.containers.read_json', return_value={'DataFolder':str(self.base/'missing')}):
+            with self.assertRaises(FileNotFoundError):
+                containers.backing_disk()
+
+    def test_default_link_and_configured_link_are_rejected(self):
+        disk = self.default_disk()
+        target = self.base/'other.raw'; target.touch()
+        disk.unlink(); disk.symlink_to(target)
+        for setting in ({}, {'DataFolder':str(disk.parent)}):
+            with patch('reproduction.containers.Path.home', return_value=self.base), \
+                 patch('reproduction.containers.read_json', return_value=setting):
+                with self.assertRaisesRegex(core.LabError, 'Symlink'):
                     containers.backing_disk()
 
     def test_read_only_probe_accepts_active_internal_disk_without_relocation(self):
         disk = self.base/'Docker.raw'; disk.touch()
         internal = {**self.volume, 'internal':True, 'uuid':'INTERNAL', 'pool':'disk3'}
-        with patch('reproduction.containers.command', side_effect=['unix://'+str(disk), '123']) as command, \
+        with patch('reproduction.containers.command', return_value='unix://'+str(disk)) as command, \
+             patch('reproduction.containers.active_disk', return_value=True), \
              patch('reproduction.containers.stat.S_ISSOCK', return_value=True), \
              patch('reproduction.containers.read_json', return_value={'DataFolder':str(self.base)}), \
              patch('reproduction.containers.storage_volume', return_value=internal):
@@ -1153,9 +1184,62 @@ class DockerStorageTests(StorageFixture, unittest.TestCase):
             result = containers.inspect_storage(sys.executable, {}, self.base)
             self.assertEqual(result['volume']['uuid'], 'INTERNAL')
             self.assertEqual(sorted(self.base.rglob('*')), before)
-            self.assertEqual(len(command.call_args_list), 2)
+            self.assertEqual(len(command.call_args_list), 1)
             self.assertIn('context', command.call_args_list[0].args[0])
-            self.assertEqual(command.call_args_list[1].args[0][0], '/usr/sbin/lsof')
+
+    def test_active_handle_result_is_strict_and_command_errors_fail_closed(self):
+        for code, output, expected in ((0,b'123\n456\n',True), (1,b'',False),
+                                      (2,b'',None), (0,b'',None),
+                                      (0,b'error\n',None), (1,b'123\n',None)):
+            with patch('reproduction.containers.run_command', return_value=SimpleNamespace(
+                    returncode=code,stdout=output)):
+                if expected is None:
+                    with self.assertRaises(core.LabError):
+                        containers.active_disk(self.base/'Docker.raw',{},self.base)
+                else:
+                    self.assertEqual(containers.active_disk(self.base/'Docker.raw',{},self.base), expected)
+
+    def test_sleeping_engine_must_open_same_disk_after_read_only_query(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        endpoint = 'unix:///checked/socket'
+        with patch('reproduction.containers.active_disk', side_effect=[False,True]), \
+             patch('reproduction.containers.backing_disk', return_value=disk), \
+             patch('reproduction.containers.command', return_value='Images') as command:
+            containers.require_active_disk(sys.executable,disk,self.volume,endpoint,{},self.base)
+            args = command.call_args.args[0]
+            self.assertEqual(args[-4:], ['system','df','--format','{{.Type}}'])
+            self.assertEqual(args[3:5], ['--host', endpoint])
+            self.assertEqual(command.call_count, 1)
+
+    def test_sleeping_disk_cannot_skip_headroom_guard_or_accept_changed_config(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        with patch('reproduction.containers.active_disk', return_value=False), \
+             patch('reproduction.containers.require_capacity', side_effect=core.LabError('capacity')), \
+             patch('reproduction.containers.command') as command:
+            with self.assertRaisesRegex(core.LabError, 'capacity'):
+                containers.require_active_disk(sys.executable,disk,self.volume,'unix:///checked',{},self.base)
+            command.assert_not_called()
+        with patch('reproduction.containers.active_disk', return_value=False), \
+             patch('reproduction.containers.backing_disk', return_value=self.base/'different'), \
+             patch('reproduction.containers.command', return_value='Images'):
+            with self.assertRaisesRegex(core.LabError, 'changed during'):
+                containers.require_active_disk(sys.executable,disk,self.volume,'unix:///checked',{},self.base)
+
+    def test_replaced_disk_or_failed_read_query_never_passes_activity_check(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        held = self.base/'retained.raw'
+        def replace(*args,**kwargs):
+            disk.rename(held); disk.touch()
+            return 'Images'
+        with patch('reproduction.containers.active_disk', return_value=False), \
+             patch('reproduction.containers.backing_disk', return_value=disk), \
+             patch('reproduction.containers.command', side_effect=replace):
+            with self.assertRaisesRegex(core.LabError, 'changed during'):
+                containers.require_active_disk(sys.executable,disk,self.volume,'unix:///checked',{},self.base)
+        with patch('reproduction.containers.active_disk', return_value=False), \
+             patch('reproduction.containers.command', side_effect=core.LabError('query failed')):
+            with self.assertRaisesRegex(core.LabError, 'query failed'):
+                containers.require_active_disk(sys.executable,disk,self.volume,'unix:///checked',{},self.base)
 
     def test_replaced_or_reconfigured_docker_disk_rejected(self):
         disk = self.base/'Docker.raw'; disk.touch()
@@ -1174,7 +1258,8 @@ class DockerStorageTests(StorageFixture, unittest.TestCase):
 
     def test_inactive_disk_is_not_an_active_engine_proof(self):
         disk = self.base/'Docker.raw'; disk.touch()
-        with patch('reproduction.containers.command', side_effect=['unix://'+str(disk), '']), \
+        with patch('reproduction.containers.command', side_effect=['unix://'+str(disk), 'Images']), \
+             patch('reproduction.containers.active_disk', return_value=False), \
              patch('reproduction.containers.stat.S_ISSOCK', return_value=True), \
              patch('reproduction.containers.backing_disk', return_value=disk), \
              patch('reproduction.containers.storage_volume', return_value=self.volume):

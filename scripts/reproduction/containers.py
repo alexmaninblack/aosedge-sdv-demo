@@ -62,11 +62,43 @@ def build_context(checkout, revision, destination, env):
             'Exported backend recipe differs')
 
 def backing_disk():
-    settings = Path.home() / 'Library/Group Containers/group.com.docker/settings-store.json'
-    folder = read_json(settings).get('DataFolder')
+    home = Path.home()
+    settings = home / 'Library/Group Containers/group.com.docker/settings-store.json'
+    value = read_json(settings)
+    require(isinstance(value, dict), 'Invalid Docker Desktop storage settings')
+    # Docker omits unchanged defaults from settings-store.json. Only an absent
+    # key selects its documented default; invalid/absent explicit disks never
+    # fall back to a different location. Existence is not activity proof.
+    folder = value.get('DataFolder', str(home / 'Library/Containers/com.docker.docker/Data/vms/0/data'))
     require(isinstance(folder, str) and Path(folder).is_absolute(),
             'Cannot resolve Docker backing disk; check Docker Desktop storage settings')
     return regular(Path(folder) / 'Docker.raw')
+
+def active_disk(disk, env, cwd):
+    result = run_command(['/usr/sbin/lsof', '-t', disk], env=env, cwd=cwd, timeout=15)
+    require(result.returncode in (0, 1) and len(result.stdout) <= 4096,
+            'Cannot verify Docker backing disk activity')
+    pids = result.stdout.splitlines()
+    require((result.returncode == 1 and not pids) or
+            (result.returncode == 0 and pids and all(p.isdigit() for p in pids)),
+            'Invalid Docker backing disk activity result')
+    return result.returncode == 0
+
+def require_active_disk(docker, disk, volume, endpoint, env, cwd):
+    """A read-only daemon query may wake Resource Saver; never trust cached info."""
+    if active_disk(disk, env, cwd):
+        return
+    before = regular(disk).stat()
+    require_capacity([('docker', disk, volume, 2*GIB, 60*GIB)])
+    # Pin the previously checked local socket, not the current user context or
+    # a selected buildx driver which might create a helper container.
+    command([docker, '--config', Path.home()/'.docker', '--host', endpoint,
+             'system', 'df', '--format', '{{.Type}}'], env, cwd, timeout=45)
+    after = regular(disk).stat()
+    require(backing_disk() == disk and (before.st_dev, before.st_ino) == (after.st_dev, after.st_ino),
+            'Docker backing disk changed during activity check')
+    require(active_disk(disk, env, cwd),
+            'Docker backing disk is not active after a read-only Engine query; check Docker Desktop')
 
 def inspect_storage(docker, env, cwd):
     """Read-only: resolve the existing Engine and actual active local disk."""
@@ -77,7 +109,7 @@ def inspect_storage(docker, env, cwd):
     require(stat.S_ISSOCK(Path(endpoint[len('unix://'):]).stat().st_mode), 'Local Docker Desktop socket unavailable')
     disk = backing_disk()
     volume = storage_volume(disk)
-    require(command(['/usr/sbin/lsof', '-t', disk], env, cwd), 'Docker backing disk is not active')
+    require_active_disk(docker, disk, volume, endpoint, env, cwd)
     return {'docker':docker, 'endpoint':endpoint, 'disk':disk, 'volume':volume}
 
 def capacity_requests(storage, disk, volume, additional=2*GIB, reserve=60*GIB):
@@ -92,7 +124,7 @@ class Desktop:
         self.additional, self.reserve = additional, reserve
         selected = inspect_storage(docker, storage.environment(create=False), storage.root)
         self.docker, self.disk, self.volume = selected['docker'], selected['disk'], selected['volume']
-        endpoint = selected['endpoint']
+        self.endpoint = endpoint = selected['endpoint']
         info = self.disk.stat()
         self.disk_identity = (info.st_dev, info.st_ino)
         self.check_storage()
@@ -126,8 +158,7 @@ class Desktop:
 
     def run(self, args, timeout=30):
         self.check_storage()
-        require(command(['/usr/sbin/lsof', '-t', self.disk], self.env, self.storage.root),
-                'Docker backing disk is no longer active')
+        require_active_disk(self.docker, self.disk, self.volume, self.endpoint, self.env, self.storage.root)
         result = command(self.args + args, self.env, self.storage.root, timeout=timeout)
         self.check_storage()
         return result

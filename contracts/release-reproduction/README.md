@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.32
+- Version: 1.33
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -629,8 +629,17 @@ extraction is disposable bootstrap scratch. Atomic metadata writes and security-
 sensitive runtime/guest temporary files retain their existing boundaries.
 
 Docker is the declared exception: its already-running local Desktop Engine may
-use another internal or external APFS volume. Verify the configured disk, actual
-open backing file and local socket without creating containers or moving data.
+use another internal or external APFS volume. An explicit `DataFolder` selects
+its exact `Docker.raw`; only an omitted key selects Docker's documented macOS
+default under `~/Library/Containers/com.docker.docker/Data/vms/0/data`.
+Invalid explicit settings or a missing/linked disk never select another path.
+Verify the regular single-link file, actual open backing file and local socket
+without creating containers or moving data. Cached `info` is not activity proof.
+If no open handle is visible, a bounded read-only `system df` query to that
+exact checked local endpoint may wake Docker's Resource Saver VM. Check Docker
+headroom before that query, then require an open handle on the same configured
+device/inode; a failed query, changed disk or still-inactive disk fails closed.
+No Desktop settings or idle timer are changed, and no helper container is used.
 Before Docker operations, reject a changed backing-file identity/configuration
 and check both workspace and Docker capacity. No Engine start/stop, shared
 storage migration, remote daemon or Docker credential inheritance is introduced.
