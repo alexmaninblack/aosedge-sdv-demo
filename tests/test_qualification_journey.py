@@ -654,6 +654,25 @@ class ProjectionTests(unittest.TestCase):
             quality='VALID_DEMO_SYNTHETIC',currentBand='INSPECTION_RECOMMENDED')])
         self.assertNotIn('SECRET',json.dumps(w.backend_projection(raw)))
 
+    def test_retained_brake_v3_refresh_pins_older_active_decision_to_this_release(self):
+        assessment=dict(id='retained-decision',version='older-v2',quality='VALID_DEMO_SYNTHETIC',
+                        currentBand='INSPECTION_RECOMMENDED')
+        fact=dict(assessmentId='retained-decision',version='new-v3',state='APPLIED')
+        before=dict(products=[assessment],productIds=['retained-decision'],advisories=[fact])
+        check=dict(test='advisory-applied',actual=copy.deepcopy(before),version='new-v3',
+            before=before,activationSourceVersion='immediately-previous-v2')
+        self.assertTrue(p.evaluate(check,{}))
+        for key,value in (('version','old-v3'),('state','RECEIVED'),('assessmentId','unrelated')):
+            bad=copy.deepcopy(check);bad['before']['advisories'][0][key]=value
+            self.assertFalse(p.evaluate(bad,{}))
+        for key,value in (('quality','INVALID'),('currentBand','GOOD')):
+            bad=copy.deepcopy(check);bad['before']['products'][0][key]=value
+            self.assertFalse(p.evaluate(bad,{}))
+        bad=copy.deepcopy(check);bad['before']['advisories']=[]
+        self.assertFalse(p.evaluate(bad,{}))
+        bad=copy.deepcopy(check);bad['actual']['advisories'][0]['state']='EXPIRED'
+        self.assertFalse(p.evaluate(bad,{}))
+
     def test_only_brake_v3_plan_allows_persisted_activation(self):
         steps={s['id']:s for s in p.plan(dict(image='image'))}
         self.assertEqual(steps['brake-v3-advisory']['until']['activationSourceVersion'],

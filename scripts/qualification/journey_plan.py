@@ -80,6 +80,17 @@ def evaluate(check, context):
                 if row['id'] in old and row['version'] == args['activationSourceVersion']
                 and row.get('quality') == 'VALID_DEMO_SYNTHETIC'
                 and row.get('currentBand') == 'INSPECTION_RECOMMENDED')
+            # A retained producer may already have an older active decision.
+            # Pin that exact valid assessment to APPLIED evidence from this
+            # newly deployed V3 release in the pre-exercise observation. Do not
+            # accept arbitrary historical assessments or another release's fact.
+            before = args.get('before', {})
+            applied = {row['assessmentId'] for row in before.get('advisories', [])
+                if row.get('version') == args['version'] and row.get('state') == 'APPLIED'}
+            eligible.update(row['id'] for row in before.get('products', [])
+                if row['id'] in old and row['id'] in applied
+                and row.get('quality') == 'VALID_DEMO_SYNTHETIC'
+                and row.get('currentBand') == 'INSPECTION_RECOMMENDED')
         return any(row['version'] == args['version'] and row['state'] == 'APPLIED'
                    and row['assessmentId'] in eligible
                    for row in args['actual'].get('advisories', []))

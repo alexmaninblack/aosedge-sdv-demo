@@ -28,6 +28,21 @@ apply only to the exact source, media and profile identified by their receipt.
 - [D4-003 stimulus calibration plan](d4-003-stimulus-calibration-plan.md):
   an outstanding accepted verification obligation, not a passed calibration.
 
+## Retained-Test correlation
+
+A retained profile preserves the existing Test, model, advisory producer and
+history. It does not manufacture or provision another controller. Brake's
+accepted advisory policy keeps an active decision across same-band assessments
+and ordinary restart/update cycles; its source assessment can therefore predate
+the V2 release published by the current campaign.
+
+The API check may use that exact retained assessment only when the pre-exercise
+observation already binds its valid inspection condition to Gateway `APPLIED`
+evidence from the newly deployed V3 release. The post-exercise observation must
+still correlate `APPLIED` for that release and decision. An unrelated historical
+assessment, another release's fact or received/expired evidence is not a pass.
+See the [accepted Brake policy](../../contracts/brake-health-advisory-policy/README.md).
+
 ## Provenance without historical report dependencies
 
 The [current build definition](../../workspace/build-definition.json) binds
