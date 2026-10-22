@@ -43,8 +43,13 @@ def fixed_reason(value):
 
 
 @contextlib.contextmanager
-def preparation_writer(environment):
-    """Wait at most five seconds for the normal lock, before any action begins."""
+def preparation_writer(environment, *, wait_owner=None):
+    """Acquire before any effect; optionally wait for a known Presenter owner.
+
+    Unknown contention retains the five-second budget. The normal idle observer
+    may finish a bounded known background operation before another acquisition;
+    the action body itself is never retried.
+    """
     deadline = time.monotonic() + 5
     with contextlib.ExitStack() as stack:
         while True:
@@ -54,7 +59,10 @@ def preparation_writer(environment):
             except ValueError as error:
                 if str(error) != 'CURRENT_RUN_BUSY' or time.monotonic() >= deadline:
                     raise
-                time.sleep(.1)
+                if wait_owner is None:
+                    time.sleep(.1)
+                else:
+                    wait_owner()
         # Body exceptions are outside the acquisition loop: never replay RPCs.
         yield
 
@@ -1008,7 +1016,8 @@ class Worker:
         if self.request['phase'] == 'prepare':
             self.idle(); driver.ready(state)
             return result(dict(validated=True))
-        with preparation_writer(self.app.environment_service), driver.operation(timeout=25):
+        with preparation_writer(self.app.environment_service, wait_owner=self.idle), driver.operation(timeout=25):
+            state = self.binding()  # Revalidate after a background owner finishes.
             source = state['source']
             if self.request['phase'] != 'reconcile':
                 self.attempted = True

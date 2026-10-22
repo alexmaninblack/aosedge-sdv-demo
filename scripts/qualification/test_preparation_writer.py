@@ -34,6 +34,21 @@ class PreparationWriter(unittest.TestCase):
         environment._writer.assert_called_once();sleep.assert_not_called()
         self.assertEqual(events,['acquired','released'])
 
+    def test_known_background_owner_finishes_before_effect_and_fresh_acquisition(self):
+        events=[]
+        environment=SimpleNamespace(_writer=Mock(side_effect=[self.context('CURRENT_RUN_BUSY'),self.context(events=events)]))
+        with preparation_writer(environment,wait_owner=lambda:events.append('known-owner-finished')):
+            events.append('action')
+        self.assertEqual(events,['known-owner-finished','acquired','action','released'])
+        self.assertEqual(environment._writer.call_count,2)
+
+    def test_known_owner_uncertainty_never_reaches_action(self):
+        environment=SimpleNamespace(_writer=Mock(return_value=self.context('CURRENT_RUN_BUSY')))
+        with self.assertRaisesRegex(ValueError,'OWNER_UNCERTAIN'):
+            with preparation_writer(environment,wait_owner=Mock(side_effect=ValueError('OWNER_UNCERTAIN'))):
+                self.fail('No effect before owner reconciliation')
+        self.assertEqual(environment._writer.call_count,1)
+
     def test_acquisition_timeout_preserves_original_refusal(self):
         environment=SimpleNamespace(_writer=Mock(return_value=self.context('CURRENT_RUN_BUSY')))
         with patch('journey_worker.time.monotonic',side_effect=[0,6]),patch('journey_worker.time.sleep') as sleep:
