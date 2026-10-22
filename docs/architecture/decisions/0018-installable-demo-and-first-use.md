@@ -119,7 +119,7 @@ integrated Setup, backend-image preparation, Cloud connection/enrollment/recover
 and Presenter launch through existing owners. The current Presenter also
 provides Stop demo and keep data / Start controller for a retained Test.
 The [current baseline](../../qualification/current-baseline.md) separates
-118 API/42 visible UI, native Setup issuance, public consumer and remaining
+exact-candidate retained-Test API/UI, native Setup issuance, public consumer and remaining
 installation/recovery/distribution gates. The ownership allocation below is
 effective architecture, not a chronological missing-feature list.
 

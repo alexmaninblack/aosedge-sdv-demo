@@ -34,7 +34,7 @@ class SigningTests(unittest.TestCase):
                         patch.object(builder, 'supported_platform'), \
                         patch.object(signing, 'select', return_value='-'), \
                         patch.object(builder, 'Bundle') as bundle:
-                    with self.assertRaisesRegex(ValueError, 'CHECKPOINT_PAIR_REQUIRED'):
+                    with self.assertRaisesRegex(ValueError, 'EXPLICIT_CHECKPOINTS_REQUIRED'):
                         builder.build(Path(scratch)/'kit', Path(scratch)/'new', ad_hoc=True, **kwargs)
                     bundle.assert_not_called()
 
@@ -43,12 +43,15 @@ class SigningTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as scratch:
             output = Path(scratch) / 'new-output'
             with patch.object(sys, 'path', [str(fixtures.SCRIPTS), *sys.path]), \
-                    patch.object(builder, 'supported_platform'), patch.object(builder, 'Bundle') as bundle:
+                    patch.object(builder, 'supported_platform'), patch.object(builder, 'Bundle') as bundle, \
+                    patch('candidate_inputs.setup_release', return_value={'manifestSha256': 'b'*64}):
                 with self.assertRaisesRegex(ValueError, 'MODE_REQUIRED'):
-                    builder.build(Path(scratch) / 'kit', output)
+                    builder.build(Path(scratch) / 'kit', output,
+                                  input_checkpoint='inputs.json', release_checkpoint='release.json')
                 with patch.object(signing, 'run', return_value='0 valid identities found'):
                     with self.assertRaisesRegex(ValueError, 'UNAVAILABLE'):
-                        builder.build(Path(scratch) / 'kit', output, signing_identity=KEY)
+                        builder.build(Path(scratch) / 'kit', output, signing_identity=KEY,
+                                      input_checkpoint='inputs.json', release_checkpoint='release.json')
                 bundle.assert_not_called()
                 self.assertFalse(output.exists())
 
@@ -105,9 +108,11 @@ class SigningTests(unittest.TestCase):
             output = Path(scratch) / 'new-output'
             with patch.object(sys, 'path', [str(fixtures.SCRIPTS), *sys.path]), \
                     patch.object(builder, 'supported_platform'), patch.object(builder, 'Bundle') as bundle, \
+                    patch('candidate_inputs.setup_release', return_value={'manifestSha256': 'b'*64}), \
                     patch.object(signing, 'run', return_value='0 valid identities found'):
                 with self.assertRaisesRegex(ValueError, 'UNAVAILABLE'):
-                    builder.build(Path(scratch)/'kit', output, developer_id_identity=KEY)
+                    builder.build(Path(scratch)/'kit', output, developer_id_identity=KEY,
+                                  input_checkpoint='inputs.json', release_checkpoint='release.json')
                 bundle.assert_not_called()
                 self.assertFalse(output.exists())
 

@@ -15,13 +15,13 @@ import tempfile
 from build_scratch import directory
 
 from installation_inputs import Bundle, digest, file_info, require, unlinked
-from setup_bridge import release, supported_platform
+from setup_bridge import supported_platform
 import setup_signing
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PYTHON = 'demo-artifacts/aosedge-sdv-demo/host-runtime/python/'
-HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_workflow.py', 'setup_signing.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py', 'retained_update.py')
+HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_workflow.py', 'setup_signing.py', 'installation.py', 'installation_inputs.py', 'version_management.py', 'retained_update.py')
 
 
 def python_files(bundle):
@@ -66,6 +66,10 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
           input_checkpoint=None, release_checkpoint=None):
     from application import export_plan, LOCKS
     from developer_inputs import DeveloperInputs
+    require(input_checkpoint is not None and release_checkpoint is not None,
+            'SETUP_EXPLICIT_CHECKPOINTS_REQUIRED')
+    from candidate_inputs import setup_release
+    trusted = setup_release(ROOT, release_checkpoint)
     supported_platform()
     # Fail before copying or compiling when stable signing is unavailable.
     distribution = developer_id_identity is not None
@@ -75,15 +79,9 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
             'SETUP_SIGNING_HARDENED_MODE_INVALID')
     signer = setup_signing.select(developer_id_identity if distribution else signing_identity,
                                   ad_hoc, distribution=distribution)
-    require((input_checkpoint is None) == (release_checkpoint is None), 'SETUP_CHECKPOINT_PAIR_REQUIRED')
     kit, output = unlinked(kit), unlinked(output)
     require(output.parent.is_dir() and not output.exists(), 'SETUP_OUTPUT_MUST_BE_NEW')
     require(not output.is_relative_to(kit) and not kit.is_relative_to(output), 'SETUP_OUTPUT_OVERLAP')
-    if release_checkpoint is None:
-        trusted = release()
-    else:
-        from candidate_inputs import setup_release
-        trusted = setup_release(ROOT, release_checkpoint)
     bundle = Bundle(kit, trusted['manifestSha256'])
     rows = python_files(bundle)
     application_sources = export_plan(ROOT) if input_checkpoint is None else export_plan(ROOT, input_checkpoint)
@@ -104,11 +102,11 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     for leaf in HELPERS:
         target = resources / 'tooling/scripts/distribution' / leaf
         target.parent.mkdir(parents=True, exist_ok=True)
-        if leaf == 'setup_release.json' and isinstance(release_checkpoint, DeveloperInputs):
-            target.write_bytes(release_checkpoint.release_bytes())
-        else:
-            source = ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint else HERE/leaf
-            shutil.copyfile(source, target)
+        shutil.copyfile(HERE/leaf, target)
+    # Runtime reads this generated, signed record. Source builds have no
+    # adjacent release default and cannot infer trust from the supplied kit.
+    (resources/'tooling/scripts/distribution/setup_release.json').write_text(
+        json.dumps(trusted, sort_keys=True, indent=2)+'\n')
     for name, raw in application_sources.items():
         relative = Path(name)
         target = resources / 'tooling' / relative
@@ -135,10 +133,10 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     require(probe.returncode == 1 and probe.stderr == b''
             and json.loads(probe.stdout) == dict(kind='error', code='SETUP_ACTION_INVALID'),
             'SETUP_EMBEDDED_PROBE_FAILED')
-    source_files = [ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint
-                   and not isinstance(release_checkpoint, DeveloperInputs) else HERE/leaf
-                    for leaf in HELPERS] + [
+    source_files = [HERE/leaf for leaf in HELPERS] + [
         HERE / 'native/Setup.swift', HERE / 'setup_build.py', HERE / 'setup_signing.py']
+    if not isinstance(release_checkpoint, DeveloperInputs):
+        source_files.append(ROOT/release_checkpoint)
     source_files += [ROOT / name for name in application_sources]
     receipt = dict(schemaVersion=1, status=('DISTRIBUTION_SETUP_UNNOTARIZED' if distribution
                                           else 'LOCAL_NATIVE_SETUP_PREVIEW'), manifestSha256=bundle.pin,
@@ -164,8 +162,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--kit', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--input-checkpoint')
-    parser.add_argument('--release-checkpoint')
+    parser.add_argument('--input-checkpoint', required=True)
+    parser.add_argument('--release-checkpoint', required=True)
     signing = parser.add_mutually_exclusive_group(required=True)
     signing.add_argument('--signing-identity', help='Exact SHA-1 identity from security find-identity; Apple Development only')
     signing.add_argument('--developer-id-identity', help='Exact Developer ID Application SHA-1; hardened/timestamped output, no notarization submission')

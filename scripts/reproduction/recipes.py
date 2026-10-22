@@ -156,9 +156,6 @@ def paths(root, tracked, target):
         chosen.update(('LICENSE', 'workspace/repositories.json', 'config/aosvm-single-node-unitconfig.json',
                        'contracts/qm-advisory-profile/advisory-readiness.v1.json'))
         chosen.update('contracts/'+name for name in CONTRACTS)
-    if target in ('setup', 'dmg'):
-        # Kept even for successor mode: release() remains an imported fallback guard.
-        chosen.add(DIST+'/setup_release.json')
     if target == 'setup':
         chosen.add(DIST+'/native/Setup.swift')
         # Shipped helper inputs are not necessarily imported during compilation.

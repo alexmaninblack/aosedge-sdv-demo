@@ -13,7 +13,6 @@ from build_scratch import directory
 
 from installation_inputs import Bundle, digest, parse, read_small, require, unlinked
 from installation import copy_file
-from setup_bridge import release
 import setup_signing
 
 APP = 'AosEdge SDV Lab Setup.app'
@@ -93,12 +92,10 @@ def copy_payload(bundle, destination, progress=lambda row: None):
 
 
 def build(kit, setup, output, *, progress=lambda row: None, release_checkpoint=None):
+    require(release_checkpoint is not None, 'MEDIA_EXPLICIT_RELEASE_REQUIRED')
+    from candidate_inputs import setup_release
+    pin = setup_release(Path(__file__).resolve().parents[2], release_checkpoint)['manifestSha256']
     kit, setup, output = validate_paths(kit, setup, output)
-    if release_checkpoint is None:
-        pin = release()['manifestSha256']
-    else:
-        from candidate_inputs import setup_release
-        pin = setup_release(Path(__file__).resolve().parents[2], release_checkpoint)['manifestSha256']
     bundle = Bundle(kit, pin)
     app, signature = setup_pin(setup, pin)
     # Allow an ordinary staging copy plus compressed-image worst case. Never
@@ -140,7 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--kit', required=True, type=Path)
     parser.add_argument('--setup', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--release-checkpoint')
+    parser.add_argument('--release-checkpoint', required=True)
     args = parser.parse_args()
     result = build(args.kit, args.setup, args.output, progress=lambda row: print(json.dumps(row), flush=True),
                    release_checkpoint=args.release_checkpoint)

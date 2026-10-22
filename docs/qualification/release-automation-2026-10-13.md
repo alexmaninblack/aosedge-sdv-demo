@@ -1,15 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Current release publication and public delivery
+# Predecessor release publication and public delivery evidence
 
 Recorded on 19 October 2026. Product qualification, native first use and the
 anonymous operator consumer retain their separate exact-candidate boundaries.
+This record belongs to rc.3. Current rc.4 selection and results are in the
+[baseline](current-baseline.md) and [rc.4 record](current-rc4.md); no earlier
+result is silently transferred to those bytes.
 
 ## Published release: 1.2.0-rc.3
 
-All seven release stages passed and option A now selects the immutable
-[rc.3 delivery descriptor](../../workspace/releases/delivery.json) and its
+All seven release stages passed for that campaign and option A then selected the immutable
+[rc.3 delivery descriptor](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/50121df7fd4a4361f6337a6c6ac097fdc53fb263/workspace/releases/delivery.json) and its
 [public Dropbox DMG](https://www.dropbox.com/scl/fi/4p5we60443lxxrv5hx1zs/AosEdge-SDV-Lab-1.2.0-rc.3.dmg?rlkey=4ci22xl2q1dletz32z1s03zkb&dl=1).
 The preceding rc.2 identity remains recorded in its exact qualification proof;
 its DMG is not a current build input or required local rollback artifact.

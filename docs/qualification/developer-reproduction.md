@@ -9,7 +9,8 @@
 - Owner: SDV Lab integration
 
 The [current baseline](current-baseline.md) separates this independently rebuilt
-package from the published operator DMG. The
+rc.3 package from the published rc.4 operator DMG and the newer B source
+selection. This earlier proof does not qualify a newly assembled rc.4 B package. The
 [specialist reference](../development/release-reproduction-r2.md) owns the
 reusable build procedure; this page records one completed campaign, not another
 required developer checklist.

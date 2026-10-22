@@ -4,7 +4,7 @@
 # Native Setup — Installation and First-use Actions
 
 - Status: Accepted bounded implementation detail of ADR 0018 / REQ-DEMO-025
-- Version: 2.1
+- Version: 2.2
 - Date: 2026-10-22
 - Parent: [installation](README.md), [installed state](installed-state.md),
   [version selection](version-selection.md)
@@ -417,6 +417,11 @@ unverified kit code; explicit launch uses the verified selected CLI above.
 The builder authenticates the bootstrap Python files against the
 pinned kit inventory before and after copying. Local ad-hoc signing is only an
 engineering check, not Developer ID/notarization or redistribution approval.
+Source builders require explicit reviewed group/release inputs or the ordered
+chain's authenticated developer result seal. They ship no fixed release default.
+The validated release record is generated inside the app before signing; runtime
+continues to consume only that embedded pin. Missing selection fails before
+copying, compilation or signing and never infers authority from the kit itself.
 
 ### Local signing and permission continuity
 

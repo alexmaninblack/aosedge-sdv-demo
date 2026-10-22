@@ -197,6 +197,62 @@ class PlatformTests(unittest.TestCase):
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_explicit_release_and_inputs_required_before_host_or_signing(self):
+        for inputs, release in ((None, None), ('inputs.json', None), (None, 'release.json')):
+            with self.subTest(inputs=inputs, release=release), \
+                 patch.object(builder, 'supported_platform') as host, \
+                 patch.object(builder.setup_signing, 'select') as signing:
+                with self.assertRaisesRegex(ValueError, 'SETUP_EXPLICIT_CHECKPOINTS_REQUIRED'):
+                    builder.build(self.source, self.target, input_checkpoint=inputs,
+                                  release_checkpoint=release)
+                host.assert_not_called()
+                signing.assert_not_called()
+        self.assertFalse(self.target.exists())
+
+    def test_source_does_not_ship_a_release_default(self):
+        self.assertNotIn('setup_release.json', builder.HELPERS)
+        self.assertFalse((builder.HERE/'setup_release.json').exists())
+
+    def test_explicit_bad_release_stops_before_host_or_signing(self):
+        with patch('candidate_inputs.setup_release', side_effect=ValueError('invalid reviewed pin')), \
+             patch.object(builder, 'supported_platform') as host, \
+             patch.object(builder.setup_signing, 'select') as signing:
+            with self.assertRaisesRegex(ValueError, 'invalid reviewed pin'):
+                builder.build(self.source, self.target, input_checkpoint='inputs.json',
+                              release_checkpoint='release.json')
+            host.assert_not_called()
+            signing.assert_not_called()
+        self.assertFalse(self.target.exists())
+
+    def test_embedded_release_is_generated_from_verified_selection_before_signing(self):
+        from types import SimpleNamespace
+        import application
+        trusted = dict(schemaVersion=1, label='AosEdge SDV Lab 1.2.0-rc.4 developer build',
+                       manifestSha256='b'*64)
+        def sign(app, *args, **kwargs):
+            embedded=app/'Contents/Resources/tooling/scripts/distribution/setup_release.json'
+            self.assertEqual(json.loads(embedded.read_bytes()), trusted)
+            return dict(signing='fixture', stableSigningIdentity=True)
+        response=SimpleNamespace(returncode=1, stderr=b'',
+                                 stdout=b'{"kind":"error","code":"SETUP_ACTION_INVALID"}')
+        with patch('candidate_inputs.setup_release', return_value=trusted), \
+             patch('candidate_inputs.identity', return_value={'kind':'fixture','sha256':'c'*64}), \
+             patch.object(builder, 'supported_platform'), \
+             patch.object(builder.setup_signing, 'select', return_value='fixture'), \
+             patch.object(builder.setup_signing, 'sign', side_effect=sign), \
+             patch.object(builder, 'Bundle', return_value=SimpleNamespace(pin=trusted['manifestSha256'])), \
+             patch.object(builder, 'python_files', return_value={}), \
+             patch.object(builder, 'copy_python', return_value=12), \
+             patch.object(application, 'export_plan', return_value={}), \
+             patch.object(application, 'LOCKS', {}), \
+             patch.object(builder.shutil, 'disk_usage', return_value=SimpleNamespace(free=100*2**30)), \
+             patch.object(builder.subprocess, 'run', return_value=response), \
+             patch.object(builder, 'digest', return_value='b'*64):
+            receipt=builder.build(self.source, self.target, signing_identity='fixture',
+                                  input_checkpoint='inputs.json', release_checkpoint='release.json')
+        self.assertEqual(receipt['manifestSha256'], trusted['manifestSha256'])
+        self.assertNotIn('scripts/distribution/setup_release.json', receipt['sources'])
+
     def test_native_busy_state_hides_completed_step_guidance(self):
         source = (builder.HERE / 'native/Setup.swift').read_text()
         refresh = source.split('    private func refresh() {', 1)[1].split('\n    }', 1)[0]

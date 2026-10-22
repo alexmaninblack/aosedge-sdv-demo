@@ -4,8 +4,8 @@
 # Current demo baseline
 
 - Status: engineering preview; scoped qualification, not general-public release acceptance
-- Version: 3.3
-- Prepared: 2026-10-20
+- Version: 3.4
+- Prepared: 2026-10-22
 - Owner: SDV Lab integration
 
 ## Current selection
@@ -16,30 +16,30 @@ The [developer selection](../../workspace/current-developer-build.json) separate
 binds option B's producer plan. Product version, functional profile, Cloud build
 number and document version are different namespaces.
 
-The [release report](release-automation-2026-10-13.md#published-release-120-rc3)
-records the published successor, main/tag identities and anonymous M1 consumer.
-The [M1 report](m1-clean-install-e2e-2026-10-14.md#mainline-candidate-120-rc3-api-and-visible-ui-pass)
-records rc.3 runtime qualification separately from its now-published
-operator delivery. Its earlier
-[native Setup continuation](m1-clean-install-e2e-2026-10-14.md#native-setup-with-no-ready-certificates-pass-on-15-october)
-binds the corrected Setup separately. Documentation changes do not advance
-artifact pins or inherit another candidate's passes.
+The [rc.4 record](current-rc4.md) binds the delivered bytes, supported
+retained-Test update, pending-FOTA recovery, M1 API/UI results and option A
+consumer. Its delivery rename preserves the original build and qualification
+receipts. The [earlier M1 record](m1-clean-install-e2e-2026-10-14.md) and
+[independent B record](developer-reproduction.md) describe different candidates,
+not current rc.4 passes. Documentation changes do not advance artifact pins or
+inherit another candidate's qualification.
 
 ## Qualified current profiles
 
 | Profile | Recorded result and scope |
 | --- | --- |
-| Installed runtime API | rc.3: 118/118 checks passed on M1 internal storage using Production Aos Cloud and a Test vehicle |
-| Visible product UI | rc.3: 42/42 browser stages and required actual native driving input passed, with Presenter/CARLA/Driving Control visible |
-| Native Setup without ready certificates | rc.2 only: empty fields, fresh M1-generated OEM/SP keys, issuance using existing accounts, Production connection and Presenter opening passed; not rerun or inherited by rc.3 |
-| Public option A consumer | rc.3: anonymous Dropbox download, full checksum/signature, signed Setup handoff, read-only retained selection, Presenter opening and verified closure passed; no fresh enrollment or launcher replay |
-| Independent developer workspace | Published B at `315064b` built a distinct rc.3 DMG from fresh sources and five verified binary archives; that exact new package passed 118 API and 42 visible UI checks on M1. Existing developer host/tools were reused; no fresh-host claim or option A promotion. [Identities, scope and measurements](developer-reproduction.md) |
+| Installed runtime API | rc.4 retained Test: 115/115 checks passed on M1 internal storage using Production Aos Cloud and a Test vehicle |
+| Visible product UI | rc.4: 42/42 stages passed with actual native Driving Control input and visible demo surfaces |
+| Supported package update and pending FOTA | rc.4: retained Test/data preserved; unchanged-boot/same-enrollment recovery passed without deleting the transaction or changing security policy |
+| Native Setup without ready certificates | NOT_RUN for rc.4. The earlier rc.2 existing-account issuance proof is candidate-specific, not inherited |
+| Public option A consumer | rc.4: exact already transferred media checksum/signature, signed Setup handoff, unchanged retained selection and closure passed. No redundant payload download, fresh installation or enrollment |
+| Independent developer workspace | Current B selects rc.4-compatible product sources; its new complete build and exact-package qualification are NOT_RUN. The earlier independently rebuilt rc.3 has [separate evidence](developer-reproduction.md), not an rc.4 B pass |
 
-Runtime proofs include serial VDP V1/V2/V3 Safe Stop FOTA, Brake V1/V2/V3,
-Tire V1, real products/advisories, moving QM updates, independent Reset/history,
-five-minute offline local operation and delivery recovery, ignition,
-Stop/Start preservation, layout and final closure. Earlier failures remain
-explicit in the report; a later pass does not erase their original receipts.
+The recorded retained-Test scenario covers runtime updates, products/advisories,
+Reset/history, offline recovery, ignition, Stop/Start and closure within its
+exact declared profile. It is not a fresh sequential bootstrap or the separate
+moving-SOTA/native acceptance matrix. Earlier failures remain explicit in the
+receipts; a later pass does not erase them.
 
 ## Implemented system and ordinary return
 
@@ -59,7 +59,8 @@ is a separate destructive operation. Shared Docker Engine is not a demo owner.
 
 - Apple Development signing is not Developer ID/notarized general-public distribution.
 - New-company/account registration and every clean-macOS consent path are not qualified.
-- Target-host installation interruption/repair/update/removal and broader recovery/negative matrices remain candidate-specific gates; ordinary tested Stop/Start is not host sleep/wake.
+- Supported retained-Test package update passed for rc.4; installation interruption/repair/removal and broader recovery/negative matrices remain separate. Ordinary tested Stop/Start is not host sleep/wake.
+- Native first use without ready certificates, moving-SOTA acceptance and the full native operator journey remain unqualified for rc.4.
 - Full-source fresh Builder/CARLA/Unreal closure and R4 fresh-host developer reproduction remain separate.
 - Formal stimulus/model calibration, fixed Tire CPU-load isolation, expanded dual-role/provider proof and a full acceptance dossier are not supplied by sampled functional results.
 - Cold externalOFF ignition, nonempty-outbox power loss and laptop sleep/wake remain unqualified.
@@ -75,7 +76,7 @@ Current Brake/Tire private admin schemas and negative fixtures describe the
 implemented handlers separately from retained legacy compatibility inputs.
 Their source conformance is not a new live result or a change to this DMG.
 
-The rc.3 candidate includes the accepted fingerprint-only Presenter boundary:
+The rc.4 candidate retains the accepted fingerprint-only Presenter boundary:
 private identities are projected server-side before browser JSON, with bounded
 opaque selectors and isolated regression coverage. Its new exact-DMG API/UI
 proof is recorded above; a source/documentation commit alone never advances

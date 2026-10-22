@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.35
+- Version: 1.36
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -811,6 +811,12 @@ default. All contract fields and VM-to-host bindings remain enforced. Missing,
 changed or incomplete pins cannot produce a complete application. Low-level
 media requires either verified developer results or both explicit group and
 Setup pins. No command silently adopts an adjacent result.
+Direct Setup and DMG builders also require explicit source-reviewed checkpoints
+or the typed developer seal passed by the ordered chain. No fixed release JSON
+is shipped in the source tree. Setup generates its signed embedded release record
+from that validated input; missing selection fails before host/signing, copy or
+compression work. Runtime still reads only that embedded record, never a mutable
+source catalog or an adjacent kit's self-reported hash.
 `setup` requires an explicitly selected authorized signing identity; it has no
 automatic ad-hoc fallback. `dmg` reuses the verified Setup built for that same
 application and independent source pin. Neither target launches Setup or the

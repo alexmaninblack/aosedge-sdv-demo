@@ -4,9 +4,9 @@
 # Implemented architecture and traceability
 
 - Status: as-built candidate view; not blanket requirements acceptance
-- Version: 2.2
+- Version: 2.3
 - Prepared: 2026-10-07
-- Updated: 2026-10-20
+- Updated: 2026-10-22
 - Owner: SDV Lab integration
 - Current selection: [launcher catalog](../../workspace/launcher-catalog.json) and its immutable delivery descriptor
 - Source inputs: [current source lock](../../workspace/inputs/sources.lock.json)
@@ -53,10 +53,10 @@ and Tire identities. Cloud reads and backend-image preparation are explicit
 steps. Open demo opens Presenter; it does not create or start a controller.
 Integrated Install / Connect / Open is implemented. The
 [current baseline](../qualification/current-baseline.md#qualified-current-profiles)
-distinguishes rc.3 runtime API/UI proof from the rc.2 native Setup
-issuance/connection proof with existing accounts on M1 and Production Aos Cloud.
-The native no-ready-certificate pass is not inherited by rc.3. Ordinary
-retained-Test Stop/Start passed the rc.3 runtime campaign; new-account
+distinguishes rc.4 retained-Test runtime/update API/UI proof from the earlier
+native Setup issuance/connection proof with existing accounts. That earlier
+no-ready-certificate pass is not inherited by rc.4. The current M1 campaign
+preserved its Test and data on Production Aos Cloud; fresh first use, new-account
 registration and broader interruption/recovery cases remain separate.
 See the [native Setup contract](../../contracts/distribution-installation/native-setup.md).
 
@@ -91,9 +91,10 @@ credentials. See the [protocol status map](../../contracts/implementation-status
 The current source also enforces fingerprint-only browser identity projection
 at the common Presenter JSON boundary. Exact Cloud/backend joins remain on the
 server; opaque references preserve display correlation and fixed selectors.
-The selected rc.3 DMG includes this boundary and passed its exact-package M1
-API/UI profiles. The independently rebuilt rc.3 package has its own separate
-proof; neither result qualifies different bytes. See the
+The selected rc.4 DMG includes this boundary and passed its exact-package M1
+retained-Test API/UI profiles. An earlier independently rebuilt rc.3 package
+has separate proof; current B source alignment is not a completed rc.4 build.
+Neither result qualifies different bytes. See the
 [current baseline](../qualification/current-baseline.md#input-provenance) for
 candidate identities, isolated regression coverage and acceptance limits.
 
@@ -121,7 +122,7 @@ cases and final acceptance remain as stated below and in the dated receipts.
 | [Vehicle Gateway](../requirements/components/vehicle-gateway.md) | [runtime source](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/src/runtime_carla.cpp), [tests](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/tests/qm_advisory_test.cpp) | Sampling/units, bounded control handoff, strict selected-peer VISS, typed advisory and native telemetry implemented; complete hardware/actuator and dual-role matrix remain broader obligations |
 | [Factory Substrate](../requirements/components/factory-substrate.md) | [platform layer](https://github.com/alexmaninblack/aos-vehicle-platform/tree/main/meta-aos-vehicle-platform) | Retained immutable .41 controller image with native managers, KUKSA/KAC, VLAN allocation and source-timestamp corrections; current installed runtime passed API/visible UI checks, not all Factory requirement cases |
 | [KUKSA compatibility](../requirements/components/kuksa-authorization-compatibility.md) | [KAC source](https://github.com/alexmaninblack/aos-vehicle-platform/tree/main/authorization/aos-kuksa-compat) | Real IAM/TLS/token renewal and offline-local operation; removable compatibility layer, not future native API or hardware-HSM certification |
-| [VDP](../requirements/components/vehicle-data-platform.md) | [provider](https://github.com/alexmaninblack/aos-vehicle-platform/tree/main/providers/carla-viss-kuksa), Demo Control component preparation | Common current runtime, profile-bound 7/15/23 telemetry paths, typed V3 output; current M1 runtime passed serial V1→V2→V3 Safe Stop FOTA and moving QM service updates; VDP-TIMEOUT-01 remains deferred |
+| [VDP](../requirements/components/vehicle-data-platform.md) | [provider](https://github.com/alexmaninblack/aos-vehicle-platform/tree/main/providers/carla-viss-kuksa), Demo Control component preparation | Common runtime, profile-bound 7/15/23 telemetry paths and typed V3 output; rc.4 passed retained-Test FOTA recovery. Fresh sequential bootstrap and moving-SOTA acceptance remain separate profiles; VDP-TIMEOUT-01 remains deferred |
 | [Aos lifecycle](../requirements/components/aos-lifecycle.md) | Demo Control Unit, component/service publication and assignment modules; native AosCore/Cloud | Guarded Test provision/publish/assign/retire implemented; current Production-environment Test passed ignition/offline checks, not separate vehicle Production-role promotion or new native service-to-FOTA pre-transfer admission |
 | [Brake service](../requirements/components/brake-health-service.md) | [service source](https://github.com/alexmaninblack/brake-health-service/blob/main/src/runtime/product.cpp), [runtime profiles](https://github.com/alexmaninblack/brake-health-service/blob/main/docs/runtime-profiles.md) | V1 captures, V2 analyzes, V3 preserves model and adds advisory; real inputs/delivery/reset; quota stress/calibration/crash matrix not all complete |
 | [Brake Cloud](../requirements/components/brake-health-cloud.md) | [backend](https://github.com/alexmaninblack/brake-health-cloud/blob/main/README.md), Presenter | Durable ACK/idempotency, windows/details, products, function observation, Reset and exact cleanup implemented; production ingestion authentication and standalone live dashboard are not claimed |
@@ -129,7 +130,7 @@ cases and final acceptance remain as stated below and in the dated receipts.
 | [Tire Cloud](../requirements/components/tire-health-cloud.md) | [backend source](https://github.com/alexmaninblack/tire-health-cloud/blob/main/src/store.mjs), Presenter | Separate persistence/ACK/query/SSE/Reset/cleanup; fixed CPU qualification endpoint is not implemented; retained legacy cleanup schema differs from current Studio handler |
 | [Demo orchestration](../requirements/components/demo-orchestration.md) | [orchestrator](../../apps/demo-orchestrator), [Presenter](../../apps/presenter-ui) | Shared guarded commands, bounded read paths, source attachment, layout, resources, Finish and boot recovery; host sleep/wake remains planning |
 | [Cross-cutting](../requirements/components/cross-cutting.md) | Native policy/identity, contracts and repository/security gates | Enforcing/private credentials, separate teams, bounded transport and scoped negatives; no production safety/security certification inferred |
-| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | rc.3 runtime passed 118 API and 42 visible browser UI checks plus required native driving input; native Setup without ready certificates passed for rc.2 only. New-account signup, full native return journey, full P8 dossier, long soak and nonempty-queue power loss are not closed |
+| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | rc.4 retained-Test runtime/update passed 115 API checks and 42 visible UI stages with native driving input. Fresh first use without certificates, new-account signup, moving-SOTA/native return journey, full P8 dossier, long soak and nonempty-queue power loss are not closed |
 
 ## Protocol, compatibility and resource facts
 

@@ -9,21 +9,26 @@ apply only to the exact source, media and profile identified by their receipt.
 
 ## Current evidence
 
+- [rc.4 retained-Test and delivery](current-rc4.md): supported package update,
+  pending-FOTA recovery, 115 API checks and 42 visible UI stages passed on M1.
+  Option A passed exact-media/retained-selection handoff and cleanup without a
+  redundant payload download. Fresh first use remains separate.
 - [Publisher evidence and procedure](../development/release-campaign.md#publisher-evidence):
   scoped sender transport proof; not another product-release acceptance.
 - [Independent developer workspace](developer-reproduction.md):
-  published B rebuilt a distinct package from fresh sources and verified binary
+  the earlier B rebuilt a distinct rc.3 package from fresh sources and verified binary
   archives; its own M1 API and visible UI profiles passed. Existing host/tools
-  were reused. This does not close fresh-host R4 or promote public option A.
+  were reused. This does not qualify the current rc.4 B selection, close
+  fresh-host R4 or promote public option A.
 - [M1 runtime and native Setup record](m1-clean-install-e2e-2026-10-14.md):
-  rc.3 passed 118 API and 42 visible browser UI checks with actual native driving
+  predecessor rc.3 passed 118 API and 42 visible browser UI checks with actual native driving
   input. The separate rc.2 native Setup profile passed new certificate issuance
-  for existing authorized accounts; that proof does not transfer to rc.3.
+  for existing authorized accounts; that proof does not transfer to rc.4.
   Superseded campaigns and failures remain immutable evidence, not another
   current release or a substitute for exact-candidate proof.
 - [Release automation and public delivery](release-automation-2026-10-13.md#published-release-120-rc3):
-  main/tag publication and anonymous M1 download/verification/open passed for
-  the selected successor. Its public consumer reused the installed certificate
+  predecessor main/tag publication and anonymous M1 download/verification/open.
+  That public consumer reused the installed certificate
   instance; it is not another clean-first-user proof.
 - [D4-003 stimulus calibration plan](d4-003-stimulus-calibration-plan.md):
   an outstanding accepted verification obligation, not a passed calibration.

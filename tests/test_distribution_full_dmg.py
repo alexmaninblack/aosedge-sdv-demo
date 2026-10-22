@@ -77,7 +77,7 @@ class CompleteMediaTests(unittest.TestCase):
                     if fail:
                         raise subprocess.CalledProcessError(1, command)
                 return subprocess.CompletedProcess(command, 0)
-            with patch.object(media, 'release', return_value={'manifestSha256': self.f.pin}), \
+            with patch('candidate_inputs.setup_release', return_value={'manifestSha256': self.f.pin}), \
                  patch.object(media, 'setup_pin', return_value=(self.setup, {'signing': 'fixture'})), \
                  patch.object(media, 'copy_file', side_effect=shutil.copy2), \
                  patch.object(media.setup_signing, 'run'), \
@@ -85,12 +85,23 @@ class CompleteMediaTests(unittest.TestCase):
                  patch.object(media.shutil, 'disk_usage', return_value=type('Usage', (), {'free': 100*2**30})()):
                 if fail:
                     with self.assertRaises(subprocess.CalledProcessError):
-                        media.build(self.f.source, self.setup, output, progress=stages.append)
+                        media.build(self.f.source, self.setup, output, progress=stages.append,
+                                    release_checkpoint='reviewed-release.json')
                     self.assertEqual(json.loads(output.with_suffix('.failure.json').read_text())['status'], 'MEDIA_FAILED')
                 else:
-                    self.assertEqual(media.build(self.f.source, self.setup, output, progress=stages.append)['status'],
+                    self.assertEqual(media.build(self.f.source, self.setup, output, progress=stages.append,
+                                                 release_checkpoint='reviewed-release.json')['status'],
                                      'COMPLETE_MEDIA_BUILT_NOT_INSTALLED')
             staging = Path(next(s['path'] for s in stages if s['stage'] == 'MEDIA_STAGING'))
             self.assertFalse(staging.exists())
             self.assertTrue(output.exists())
             fixtures.Bundle(self.f.source, self.f.pin).verify()
+
+    def test_missing_release_stops_before_input_or_process_access(self):
+        with patch.object(media, 'validate_paths') as inputs, \
+             patch.object(media.subprocess, 'run') as command:
+            with self.assertRaisesRegex(ValueError, 'MEDIA_EXPLICIT_RELEASE_REQUIRED'):
+                media.build(self.f.source, self.setup, self.f.root/'missing.dmg')
+            inputs.assert_not_called()
+            command.assert_not_called()
+        self.assertFalse((self.f.root/'missing.dmg').exists())
