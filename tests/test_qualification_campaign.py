@@ -72,6 +72,17 @@ class CampaignTests(unittest.TestCase):
         with self.assertRaises(h.Error): c.media_input(dmg,dict(manifestSha256='c'*64),
             '/Users/tester/SDV-Qualification/run/lab.dmg','tester')
 
+    def test_consumer_only_receipt_is_explicit_and_cannot_copy_a_missing_payload(self):
+        receipt=self.root/'lab.receipt.json'
+        receipt.write_text(json.dumps(dict(dmgBytes=7,dmgSha256='a'*64,manifestSha256='b'*64)))
+        value=c.media_input(receipt,dict(manifestSha256='b'*64),
+                            '/Users/tester/SDV-Qualification/run/lab.dmg','tester')
+        self.assertIsNone(value['path'])
+        media=c.Media({}, {}, value);media.remote=Mock(return_value='ABSENT')
+        with self.assertRaisesRegex(h.Error,'CONSUMER_MEDIA_MISSING'):media.transfer()
+        with self.assertRaises((h.Error,OSError)):c.media_input(self.root/'absent.dmg',dict(manifestSha256='b'*64),
+                            '/Users/tester/SDV-Qualification/run/lab.dmg','tester')
+
     def test_capacity_recovery_is_explicit_and_requires_independent_no_effect_proof(self):
         for proof in (dict(installationEffectsAbsent=True,capacityNowSufficient=True),
                       dict(installationEffectsAbsent=False,capacityNowSufficient=True)):

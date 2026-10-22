@@ -63,6 +63,14 @@ class WorkflowTests(unittest.TestCase):
             workflow.perform(self.value(), self.pin)
         step.assert_not_called()
 
+    def test_different_package_status_offers_update_without_changing_selection(self):
+        self.f.run_action('install');self.f.run_action('prepare')
+        path=self.f.state/'installation.json';before=path.read_bytes()
+        result=workflow.status(self.f.state,'b'*64)
+        self.assertEqual(result['status'],'SETUP_UPDATE_AVAILABLE')
+        self.assertFalse(result['localInstalled']);self.assertFalse(result['launcherObserved'])
+        self.assertEqual(before,path.read_bytes())
+
 
 class LauncherTests(unittest.TestCase):
     def setUp(self):

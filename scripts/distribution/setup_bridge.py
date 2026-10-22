@@ -159,7 +159,8 @@ def perform(value, pin, emit=lambda event: None):
     require(state.exists() or value['revision'] == 0, 'SELECTION_STALE_REVISION')
     emit(dict(kind='progress', stage='VERIFYING_LOCAL_SELECTION'))
     runtime_paths.create_instance(state)
-    result = Versions(store, state).change('select', value['revision'], pin)
+    retained = (state / '.run/demo-current/journal.json').exists()
+    result = Versions(store, state).change('upgrade' if retained else 'select', value['revision'], pin)
     return dict(result, cloudAccessed=False, cloudConfigured=False, demoReady=False,
                 dockerApplicationPresent=Path('/Applications/Docker.app').is_dir(),
                 dockerEngineChecked=False)

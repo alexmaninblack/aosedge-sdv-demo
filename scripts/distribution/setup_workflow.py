@@ -58,7 +58,10 @@ def status(state, pin):
     if not selected or selected['current'] is None:
         return dict(status='SETUP_NOT_INSTALLED', runtimeChanged=False, cloudAccessed=False,
                     demoReady=False, localInstalled=False, backendsObserved=False, launcherObserved=False)
-    require(selected['current'] == pin, 'SETUP_LOCAL_PREPARATION_REQUIRED')
+    if selected['current'] != pin:
+        return dict(status='SETUP_UPDATE_AVAILABLE', runtimeChanged=False, cloudAccessed=False,
+                    demoReady=False, localInstalled=False, backendsObserved=False,
+                    launcherObserved=False)
     program = Path(selected['storePath']) / 'versions' / pin / 'aosedge-sdv-demo'
     with runtime_paths.installed_session(root, _program=program):
         compatible(Bundle(program.parent, pin))

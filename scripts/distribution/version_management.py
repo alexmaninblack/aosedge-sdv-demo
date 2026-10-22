@@ -4,6 +4,7 @@
 """Engineering selection/recovery, independent of native activation and Cloud."""
 
 import argparse
+from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
@@ -47,17 +48,18 @@ class Versions:
                         runtimeChanged=False, userDataChanged=False)
 
     def change(self, action, revision, digest=None):
-        require(action in ('select', 'rollback', 'unselect'), 'SELECTION_ACTION_INVALID')
+        require(action in ('select', 'upgrade', 'rollback', 'unselect'), 'SELECTION_ACTION_INVALID')
         require(type(revision) is int and 0 <= revision < 2**53, 'SELECTION_REVISION_INVALID')
-        if action == 'select':
+        if action in ('select', 'upgrade'):
             control.pin(digest)
         else:
             require(digest is None, 'SELECTION_UNEXPECTED_VERSION')
         require(self.store.inspect(), 'INSTALL_STORE_MISSING')
-        with self.store.writer(), control.lease(self.state / control.LOCK, exclusive=True):
+        with self.store.writer(), control.lease(self.state / control.LOCK, exclusive=True), ExitStack() as held:
             value = self.read()
             require(revision == (value['revision'] if value else 0), 'SELECTION_STALE_REVISION')
-            control.quiescent(self.state, self.store.root)
+            if action != 'upgrade':
+                control.quiescent(self.state, self.store.root)
             current = value['current'] if value else None
             previous = value['previous'] if value else None
             if action == 'rollback':
@@ -65,16 +67,27 @@ class Versions:
                 digest = previous
             if digest is not None:
                 control.repair_complete(self.store.root, digest)
-                with control.lease(self.store.root / 'receipts' / (digest + '.use.lock')):
-                    bundle = Bundle(self.store.root / 'versions' / digest, digest)
-                    compatible(bundle)
-                    bundle.verify()
-                    receipt, _ = small_json(self.store.root / 'receipts' / (digest + '.json'), 4096, owned=True)
-                    require(receipt == self.store.receipt(bundle, bool(receipt.get('reused'))), 'INSTALL_RECEIPT_INVALID')
+                held.enter_context(control.lease(self.store.root / 'receipts' / (digest + '.use.lock')))
+                bundle = Bundle(self.store.root / 'versions' / digest, digest)
+                compatible(bundle)
+                bundle.verify()
+                receipt, _ = small_json(self.store.root / 'receipts' / (digest + '.json'), 4096, owned=True)
+                require(receipt == self.store.receipt(bundle, bool(receipt.get('reused'))), 'INSTALL_RECEIPT_INVALID')
+            proof = {}
+            if action == 'upgrade':
+                require(current is not None, 'UPDATE_CURRENT_SELECTION_REQUIRED')
+                control.repair_complete(self.store.root, current)
+                if current != digest:
+                    held.enter_context(control.lease(self.store.root / 'receipts' / (current + '.use.lock')))
+                before = Bundle(self.store.root / 'versions' / current, current)
+                compatible(before)
+                self.store.verify(current)
+                from retained_update import proof as retained_proof
+                proof = held.enter_context(retained_proof(self.state, self.store.root, before, bundle))
             if current == digest:
                 return dict(status='SELECTED_NOT_STARTED' if current else 'NOT_SELECTED', revision=revision,
                             current=current, previous=previous, reused=True, runtimeChanged=False,
-                            userDataChanged=False, bytesFreed=0)
+                            userDataChanged=False, bytesFreed=0, **{k:v for k,v in proof.items() if k != 'userDataChanged'})
             require(revision + 1 < 2**53, 'SELECTION_REVISION_EXHAUSTED')
             # Unselect retains the last chosen version for an explicit restore.
             next_value = dict(schemaVersion=1, instanceId=self.identity, storePath=str(self.store.root),
@@ -85,7 +98,8 @@ class Versions:
             require(self.read() == next_value, 'SELECTION_POSTCONDITION_FAILED')
             return dict(status='SELECTED_NOT_STARTED' if digest else 'UNSELECTED_DATA_RETAINED',
                         revision=next_value['revision'], current=digest, previous=next_value['previous'],
-                        reused=False, runtimeChanged=False, userDataChanged=False, bytesFreed=0)
+                        reused=False, runtimeChanged=False, userDataChanged=False, bytesFreed=0,
+                        **{k:v for k,v in proof.items() if k != 'userDataChanged'})
 
 
 def repair(store, source, digest, *, copier=None, checkpoint=lambda stage: None):
@@ -172,7 +186,7 @@ def repair(store, source, digest, *, copier=None, checkpoint=lambda stage: None)
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('status', 'select', 'rollback', 'unselect', 'repair'))
+    parser.add_argument('action', choices=('status', 'select', 'upgrade', 'rollback', 'unselect', 'repair'))
     parser.add_argument('--store', type=Path, required=True)
     parser.add_argument('--volume-uuid', required=True)
     parser.add_argument('--instance-root', type=Path)

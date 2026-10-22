@@ -63,6 +63,14 @@ Cloud compatibility before costly preparation or a live mutation. Freeze whether
 the scenario retains an existing compatible Test or prepares a new one.
 Local directory separation does not isolate Cloud resources.
 
+For a retained-Test package-update campaign, the private journey may explicitly
+bind `retainedTest` to its existing UUID. The API profile then validates that
+binding and runs the complete publication, product/advisory, Reset, offline,
+ignition and Stop/Start matrix without Create, provisioning or credential/
+Subject replacement. Record those fresh-first-use gates as outside this profile,
+not inherited passes. A changed Test fails closed. Use the new candidate's own
+media/installation records; never rebind a predecessor's campaign receipt.
+
 Use the existing OEM/SP account topology. Production Cloud requires an explicit
 `cloudDomain: aoscloud.io` plus authenticated OEM/SP owner IDs in the private
 selection. A Test vehicle in Production Cloud is not a Production-role vehicle.
@@ -73,6 +81,11 @@ Media is verified against its receipt at the actual consumer boundary. Reuse an
 unchanged verified file and healthy tool cache; do not copy or hash a multi-GB
 DMG again merely for a status update. The persistent launcher must match the
 selected installed package; runtime installation alone is not that proof.
+For media built on M1, `--dmg` and the UI plan's `dmg` may explicitly name its
+small `.receipt.json` on the orchestrating host. The payload must already exist
+at `remoteDmg`; the normal consumer checksum, signature, mount and installation
+checks still run. Missing media fails closed without a transfer fallback. This
+avoids copying an M1-built DMG to the development Mac merely to copy it back.
 
 Capacity preflight counts the 90 GiB reserve, unpacked runtime and any missing
 DMG copy separately. A capacity refusal may use `--resume-capacity-preflight`

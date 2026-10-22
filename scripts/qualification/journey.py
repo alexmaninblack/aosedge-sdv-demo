@@ -26,7 +26,7 @@ DOMAIN = 'aws-stage.epmp-aos.projects.epam.com'
 FIELDS = {'schemaVersion', 'manifestSha256', 'packageRoot', 'instanceRoot',
           'setupApp', 'setupSha256', 'sourceRoot', 'storeRoot', 'image',
           'oemCertificate', 'spCertificate', 'records'}
-OPTIONAL_FIELDS = {'subjectReferences', 'vmPasswordFile', 'cloudDomain', 'cloudOwners'}
+OPTIONAL_FIELDS = {'subjectReferences', 'vmPasswordFile', 'cloudDomain', 'cloudOwners', 'retainedTest'}
 
 
 def configuration(path, user):
@@ -38,6 +38,10 @@ def configuration(path, user):
     h.require(isinstance(value, dict) and FIELDS <= set(value) <= FIELDS | OPTIONAL_FIELDS and value['schemaVersion'] == 1,
               'JOURNEY_CONFIG_INVALID')
     cloud_scope(value)
+    if 'retainedTest' in value:
+        from uuid import UUID
+        h.require(isinstance(value['retainedTest'], str)
+                  and str(UUID(value['retainedTest'])) == value['retainedTest'], 'RETAINED_TEST_INVALID')
     references = value.get('subjectReferences', [])
     h.require(isinstance(references, list) and len(references) <= 2, 'SUBJECT_REFERENCES_INVALID')
     teams = set()

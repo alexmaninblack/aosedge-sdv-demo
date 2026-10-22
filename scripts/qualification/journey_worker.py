@@ -22,7 +22,7 @@ BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
               'stop-demo', 'start-demo'}
-QUERIES = {'installed', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
+QUERIES = {'installed', 'retained-test', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
            'snapshot', 'publication', 'demo-stopped', 'exercise'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
@@ -376,6 +376,9 @@ class Worker:
     def __init__(self, request):
         self.request = request
         self.config, self.args = request['config'], request['args']
+        if self.config.get('retainedTest'):
+            require(request['expectedRun'] in (None, self.config['retainedTest']), 'RETAINED_TEST_CHANGED')
+            self.request['expectedRun'] = self.config['retainedTest']
         self.domain, self.owners = cloud_scope(self.config)
         self.state, self.package = Path(self.config['instanceRoot']), Path(self.config['packageRoot'])
         self.pin = self.config['manifestSha256']
@@ -656,6 +659,11 @@ class Worker:
             require(self.args['browserProjection'] is True and query in ('backend','combined'), 'PROJECTION_SCOPE_INVALID')
         if query == 'installed': return self.installed()
         state = self.binding()
+        if query == 'retained-test':
+            require(self.config.get('retainedTest') == state['vehicles']['test']['localVmId'],
+                    'RETAINED_TEST_CHANGED')
+            return dict(runId=self.config['retainedTest'], testPreserved=True,
+                        manufacturePerformed=False, provisioningPerformed=False)
         if query == 'exercise':
             source=state.get('source') or {}; exercise=source.get('exercise') or {}; result=exercise.get('result') or {}
             return dict(id=exercise.get('id'),kind=exercise.get('kind'),phase=exercise.get('phase'),

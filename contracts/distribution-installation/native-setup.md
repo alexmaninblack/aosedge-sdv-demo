@@ -4,8 +4,8 @@
 # Native Setup — Installation and First-use Actions
 
 - Status: Accepted bounded implementation detail of ADR 0018 / REQ-DEMO-025
-- Version: 2.0
-- Date: 2026-10-11
+- Version: 2.1
+- Date: 2026-10-22
 - Parent: [installation](README.md), [installed state](installed-state.md),
   [version selection](version-selection.md)
 
@@ -52,6 +52,13 @@ do not fabricate percentages or time estimates. Finish by installing the small,
 signed persistent launcher, without copying the Runtime Kit again. Replace only
 an existing same-identifier, same-team signed launcher. A foreign application,
 active selection lease, pending transaction or incompatible state blocks safely.
+
+When another package is selected, show **Update SDV Lab**, not an installed or
+ready indicator for this candidate. Explicit Update installs the new verified
+version then uses the [retained-Test upgrade proof](version-selection.md#retained-test-package-update)
+when a Test journal exists. A busy, unknown or incompatible retained Test blocks
+without deletion. Existing Cloud access is observed after selection; no new
+enrollment, Factory/CARLA build or backend-image activation is implicit.
 
 The completed screen says **Installed** and advances to Cloud access. It does
 not say the vehicle is ready, does not create a vehicle journal, and does not

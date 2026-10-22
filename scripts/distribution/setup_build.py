@@ -21,7 +21,7 @@ import setup_signing
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PYTHON = 'demo-artifacts/aosedge-sdv-demo/host-runtime/python/'
-HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_workflow.py', 'setup_signing.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py')
+HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_workflow.py', 'setup_signing.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py', 'retained_update.py')
 
 
 def python_files(bundle):

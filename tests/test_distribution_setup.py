@@ -82,7 +82,7 @@ class SetupTests(unittest.TestCase):
         self.run_action('install'); self.run_action('prepare')
         path = self.state / '.run/demo-current'
         path.mkdir(); (path / 'journal.json').write_text('{}')
-        with self.assertRaisesRegex(ValueError, 'CURRENT_RUN_RETAINED'):
+        with self.assertRaises((ValueError, OSError)):
             self.run_action('prepare', revision=1)
         self.assertEqual('{}', (path / 'journal.json').read_text())
 

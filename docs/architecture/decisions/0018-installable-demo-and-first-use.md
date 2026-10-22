@@ -4,9 +4,9 @@
 # ADR 0018: Installable Demo and First-use Boundary
 
 - Status: Accepted and implemented for the engineering preview; remaining distribution/qualification gates explicit
-- Version: 1.2
+- Version: 1.3
 - Prepared: 2026-09-27
-- Implementation review: 2026-10-15
+- Implementation review: 2026-10-22
 - Owner: Demo Solution Team
 - Change class: C for installed-state/first-use integration; the first delivery
   slice is an offline, non-activating installation tool
@@ -136,10 +136,14 @@ the transaction readiness authority.
 The [version-selection/recovery detail](../../../contracts/distribution-installation/version-selection.md)
 implements explicit compatible manifest selection,
 runtime-use leases, stale-action rejection and program-only recovery with the
-original bytes retained. This engineering layer permits only quiescent instances
-without a retained current run; it does not authorize deleting run data to allow
-an update. Native activation, retained-run updates and destructive removal remain
-separate gates, not consequences of a successful local selection.
+original bytes retained. Ordinary selection requires no retained current run.
+The separately guarded retained-Test `upgrade` operation permits a compatible
+package change around one stopped Test, preserving its journal, VM, credentials,
+backend bindings and history. It changes only the atomic package selection and
+retains the predecessor; it does not migrate schemas or operate Cloud. See the
+exact [update proof](../../../contracts/distribution-installation/version-selection.md#retained-test-package-update).
+Native activation, the exact candidate's live update proof, retained-run rollback
+and destructive removal remain separate gates.
 
 The [native Setup](../../../contracts/distribution-installation/native-setup.md)
 wraps the engines with bounded progress, explicit local preparation and launch.

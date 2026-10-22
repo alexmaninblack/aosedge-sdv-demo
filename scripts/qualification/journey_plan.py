@@ -189,19 +189,25 @@ def plan(config):
     add('docker', 'dependency', timeout=120)
     add('backend-images', 'setup', args=dict(action='prepare-backends'), timeout=180)
     add('installed-launcher', 'setup', args=dict(action='install-launcher'), timeout=150)
-    add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
+    if not config.get('retainedTest'):
+        add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
     add('cloud-ready', 'setup', args=dict(action='cloud-check'), timeout=150)
     add('vm-access', 'vm-access', timeout=30)
-    add('cloud-subjects', 'setup', args=dict(action='cloud-subjects'), timeout=150)
+    if not config.get('retainedTest'):
+        add('cloud-subjects', 'setup', args=dict(action='cloud-subjects'), timeout=150)
     add('presenter', 'presenter-start', timeout=90)
-    op('controller-create', 'create', image=config['image'])
+    if config.get('retainedTest'):
+        read('retained-test-binding', 'retained-test')
+    else:
+        op('controller-create', 'create', image=config['image'])
     op('controller-start', 'start-vms')
     # Provision binds Gateway credentials before Test-set membership only
     # when the simulator is already running. Membership may immediately
     # offer the existing Cloud component, so starting simulation later can
     # deadlock first onboarding against an active FOTA transaction.
     op('simulation', 'start-simulation')
-    op('provision', 'provision')
+    if not config.get('retainedTest'):
+        op('provision', 'provision')
     vdp('v1'); service('brake', 'v1', first=True)
     vdp('v2'); service('brake', 'v2')
     vdp('v3'); service('brake', 'v3'); service('tire', 'v1', first=True)

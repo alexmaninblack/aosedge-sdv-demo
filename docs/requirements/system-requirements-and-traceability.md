@@ -5,7 +5,7 @@
 
 - Status: Accepted
 - Version: 2.4
-- Updated: 2026-10-18
+- Updated: 2026-10-22
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
@@ -32,8 +32,9 @@ services, not cross-provider qualification.
 The [version-selection/recovery contract](../../contracts/distribution-installation/version-selection.md)
 is an implementation refinement of this same data-preservation obligation:
 explicit compatibility, leased runtime use, atomic version selection and
-program-only recovery. It does not establish permission to migrate retained
-runs, remove data or activate a native installation.
+program-only recovery. Its explicit stopped-Test upgrade preserves the existing
+run under exact-owner and compatibility proofs; it does not authorize general
+state migration, data removal, retained-Production updates or runtime activation.
 
 For that first-install scope, the logical OEM/Brake/Tire publication roles in
 [role-bound publication](#sys-rel-011) remain distinct, but the two service

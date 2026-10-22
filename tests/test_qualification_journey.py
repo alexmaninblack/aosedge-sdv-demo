@@ -23,6 +23,23 @@ class Clock:
 
 
 class JourneyTests(unittest.TestCase):
+    def test_retained_profile_keeps_full_runtime_matrix_without_create_or_provision(self):
+        test='ec72a0cf-5751-41ef-9939-d7c39c3cbfd7'
+        fresh=p.plan({'image':'factory'})
+        retained=p.plan({'image':'factory','retainedTest':test})
+        ids={s['id'] for s in retained}
+        self.assertTrue({'retained-test-binding','vdp-v1-publish','vdp-v3-publish','brake-v3-publish',
+            'tire-v1-publish','offline-soak','ignition-preserved','demo-restart-preserved','shutdown'}<=ids)
+        self.assertFalse({'cloud-pair','cloud-subjects','controller-create','provision'} & ids)
+        self.assertEqual(len(retained),len(fresh)-3)
+        self.assertFalse(any(s.get('args',{}).get('action') in ('create','provision') for s in retained))
+        request=dict(config={'retainedTest':test},args={},expectedRun=None,phase='observe',requestId=test)
+        # Constructor also enforces the ordinary configured package/domain fields.
+        request['config'].update(instanceRoot='/Users/test/state',packageRoot='/Users/test/package',manifestSha256='a'*64)
+        worker=w.Worker(request);self.assertEqual(worker.request['expectedRun'],test)
+        with self.assertRaises(ValueError):
+            w.Worker(dict(request,expectedRun='6b9e8097-e32e-439d-af4d-831ff7c96c18'))
+
     def test_installation_includes_pinned_launcher_before_cloud_and_runtime(self):
         steps = p.plan({'image': 'factory'})
         ids = [step['id'] for step in steps]
@@ -707,7 +724,7 @@ class DockerPolicyTests(unittest.TestCase):
             if name=='snapshot':return {'runId':None}
             return dict(sessionId='session',cloudDomain=w.DOMAIN,active=None,uncertain=False,
                         workspaceBusy=clock.value<1,sourceRecoveryBusy=False)
-        with patch.object(w,'exchange',side_effect=exchange), \
+        with patch.object(worker,'snapshot',return_value={'runId':None}), patch.object(w,'exchange',side_effect=exchange), \
              patch.object(w.time,'sleep',clock.sleep),patch.object(w.time,'monotonic',clock.now):
             self.assertFalse(worker.idle()['workspaceBusy'])
             self.assertEqual(clock.value,1)
@@ -715,8 +732,8 @@ class DockerPolicyTests(unittest.TestCase):
 
     def test_idle_never_waits_past_uncertain_owner(self):
         worker=self.worker()
-        with patch.object(w,'exchange',side_effect=[{'runId':None},dict(sessionId='s',
-                cloudDomain=w.DOMAIN,active=None,uncertain=True)]),patch.object(w.time,'sleep') as sleep:
+        with patch.object(worker,'snapshot',return_value={'runId':None}), patch.object(w,'exchange',return_value=dict(sessionId='s',
+                cloudDomain=w.DOMAIN,active=None,uncertain=True)),patch.object(w.time,'sleep') as sleep:
             with self.assertRaisesRegex(ValueError,'OWNER_UNCERTAIN'):worker.idle()
             sleep.assert_not_called()
 

@@ -4,8 +4,8 @@
 # Installed Version Selection and Recovery
 
 - Status: Accepted implemented selection/lease contract; scoped proof in the current baseline
-- Version: 1.1
-- Updated: 2026-10-18
+- Version: 1.2
+- Updated: 2026-10-22
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team
 - Parent: [Installed state](installed-state.md) and [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
@@ -39,7 +39,7 @@ Unselect is not a complete application uninstall or package garbage collection.
 
 Engineering entry: `scripts/distribution/version_management.py` from the trusted
 integration source, not a script loaded from an unverified candidate. Every
-operation requires explicit `--store` and `--volume-uuid`. `status`, `select`,
+operation requires explicit `--store` and `--volume-uuid`. `status`, `select`, `upgrade`,
 `rollback` and `unselect` additionally require an already initialized
 `--instance-root`; changes require the revision returned by status through
 `--revision`. Select requires the independent `--manifest-sha256`. Repair uses
@@ -61,12 +61,44 @@ packages require explicit selection; legacy engineering probes remain separate.
 
 Selection also blocks on current-run journals, working VM overlays and any
 other owned process holding files under the instance or store. Inspection must
-succeed completely; failure is not treated as idle. Managed selection permits
-only quiescent instances without a retained current run.
-It does not force Finish or erase a journal to unblock an update. Supporting
-an update around a retained provisioned run requires a later exact-owner proof.
+succeed completely; failure is not treated as idle. Ordinary select, rollback
+and unselect still require no retained run. They never force Finish or erase a
+journal to unblock an update.
 Open-handle checks catch detached native consumers after a CLI has returned.
 No process is killed and no motion control is exercised.
+
+## Retained-Test package update
+
+The operator authorized this bounded extension on 22 October 2026. Explicit
+`upgrade` (or Install/Update followed by native Setup preparation) can select a
+new compatible package around one stopped Test. It is not a general schema
+migration and does not support a Production-role or dual-role journal.
+
+Hold the existing store writer, exclusive instance lease, both verified package
+leases and the existing journal writer lock across the atomic selection. Do not
+create a missing journal lock, hide a journal, rewrite a receipt or adopt another
+Test. Both packages must declare the same supported installed-state contract.
+The Factory, VDP/runtime and service profiles, simulator identity, VM payloads
+and Cloud runtime must match the bounded compatibility checks. Native host/UI
+programs may change; unknown state or incompatible inputs fail closed.
+
+Validate the existing journal through the ordinary Test lifecycle and status
+readers. Require a stopped unassigned Test/VM/source/backend stack, terminal
+operations, no pending journal write, no active native consumer, no QEMU owner
+for the overlay and no running container owning/mounting the instance or store.
+Docker must be observable and unchanged; unrelated containers are not stopped.
+The update never activates a replacement backend image: existing backend image
+bindings, volumes and model/history data remain the runtime owner's inputs.
+
+The sole durable mutation is one atomic `installation.json` selection change,
+recording the former current package as predecessor. Compare unchanged state
+identities across this change, excluding that selection record. Preserve Test,
+Unit/Node IDs, VM/backing files, credentials, release ledgers and history.
+Repeat/restart revalidates the same proof and reuses the current selection.
+An interrupted atomic write preserves the old selection or the committed new
+selection; never silently retry an unknown result. Opening remains a separate
+runtime action. Local fixtures and the exact M1 update/API/UI campaign are
+separate acceptance gates; this contract alone claims no live pass.
 
 ## Program-only repair
 
@@ -112,5 +144,5 @@ fixtures; do not corrupt large retained packages or the working demo merely
 to demonstrate this engine. Native Setup activation and installed live profiles
 have scoped proof in the [current baseline](../../docs/qualification/current-baseline.md),
 not blanket selection/recovery acceptance. Target-host interruption, repair,
-rollback/update around a retained run, migration, destructive pruning/uninstall
+rollback around a retained run, general migration, destructive pruning/uninstall
 and the complete clean-macOS consent/recovery matrix remain separate gates.

@@ -34,20 +34,30 @@ def consumer_space_required(receipt, media_cached, candidate_present):
     return 90*2**30 + (0 if candidate_present else logical) + (0 if media_cached else compressed)
 
 
+def receipt_only(path):
+    return path.name.endswith('.receipt.json')
+
+
+def media_receipt_path(path):
+    return path if receipt_only(path) else path.with_suffix('.receipt.json')
+
+
 def media_input(dmg, config, remote_dmg, user):
     dmg = h.unlinked(dmg)
-    receipt = h.parse(h.unlinked(dmg.with_suffix('.receipt.json')).read_bytes())
+    receipt = h.parse(h.unlinked(media_receipt_path(dmg)).read_bytes())
     h.require(receipt.get('manifestSha256') == config['manifestSha256']
               and isinstance(receipt.get('dmgSha256'), str)
               and re.fullmatch('[a-f0-9]{64}', receipt['dmgSha256'])
               and type(receipt.get('dmgBytes')) is int
-              and dmg.is_file() and dmg.stat().st_size == receipt['dmgBytes'], 'MEDIA_RECEIPT_MISMATCH')
+              and receipt['dmgBytes'] > 0
+              and (receipt_only(dmg) or dmg.is_file() and dmg.stat().st_size == receipt['dmgBytes']),
+              'MEDIA_RECEIPT_MISMATCH')
     remote = Path(remote_dmg)
     home = Path('/Users') / user / 'SDV-Qualification'
     h.require(remote.is_absolute() and str(remote) == remote_dmg and '..' not in remote.parts
               and remote.is_relative_to(home) and remote.parent != home
               and remote.suffix == '.dmg' and not any(ord(c) < 32 for c in remote_dmg), 'MEDIA_TARGET_INVALID')
-    return dict(path=str(dmg), remotePath=remote_dmg, bytes=receipt['dmgBytes'],
+    return dict(path=None if receipt_only(dmg) else str(dmg), remotePath=remote_dmg, bytes=receipt['dmgBytes'],
                 sha256=receipt['dmgSha256'])
 
 
@@ -91,6 +101,7 @@ class Media:
         exists = self.remote('\n'.join(checks)).strip()
         if exists == 'ABSENT':
             h.require(not reconcile, 'TRANSFER_ABSENT_AFTER_INTERRUPTION')
+            h.require(self.media['path'] is not None, 'CONSUMER_MEDIA_MISSING')
             h.require(h.digest(Path(self.media['path'])) == self.media['sha256'], 'LOCAL_MEDIA_CHANGED')
             options = h.ssh_args(self.transport)[1:-1]
             options.remove('-T')
@@ -278,7 +289,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--journey', type=Path, required=True)
-    parser.add_argument('--dmg', type=Path, required=True)
+    parser.add_argument('--dmg', type=Path, required=True,
+                        help='Local DMG, or explicit .receipt.json for media already on M1; absent consumer media never falls back')
     parser.add_argument('--remote-dmg', required=True)
     parser.add_argument('--until')
     parser.add_argument('--resume-partial-create', action='store_true')
@@ -294,7 +306,7 @@ def main():
     h.require(probe['console'] == transport['user'] and probe['internal'] == 'true', 'TARGET_LOGIN_OR_STORAGE_REQUIRED')
     client = Media(transport, config, media, emit=lambda value: print(value, flush=True))
     allocation = client.allocation()
-    receipt = h.parse(args.dmg.with_suffix('.receipt.json').read_bytes())
+    receipt = h.parse(media_receipt_path(args.dmg).read_bytes())
     needed = consumer_space_required(receipt, allocation['mediaCached'], allocation['candidatePresent'])
     h.require(probe['memoryBytes'] >= 16*2**30 and probe['freeKiB']*1024 >= needed,
               'TARGET_CAPACITY_REQUIRED')

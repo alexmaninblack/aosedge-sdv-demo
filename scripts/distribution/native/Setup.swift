@@ -223,7 +223,7 @@ struct SetupExchange {
                 guard reply.oemPath != nil, reply.spPath != nil else { throw SetupFault.protocolFailure }
             } else { guard ["oem", "sp"].contains(reply.role ?? "") else { throw SetupFault.protocolFailure } }
         case "setup-status":
-            guard ["SETUP_NOT_INSTALLED", "SETUP_INSTALLED_OBSERVED"].contains(reply.status),
+            guard ["SETUP_NOT_INSTALLED", "SETUP_UPDATE_AVAILABLE", "SETUP_INSTALLED_OBSERVED"].contains(reply.status),
                   reply.localInstalled == (reply.status == "SETUP_INSTALLED_OBSERVED"),
                   reply.backendsObserved != nil, reply.launcherObserved != nil,
                   reply.localInstalled == true || (reply.backendsObserved == false && reply.launcherObserved == false),
@@ -928,6 +928,11 @@ final class SetupApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             install.title = localInstalled ? (backendsObserved && launcherObserved ? "Check installation again" : "Continue installation") : "1. Install SDV Lab"
             status.stringValue = localInstalled ? "Installed — connect to Aos Cloud" : "Ready to install SDV Lab"
             detail.stringValue = localInstalled ? (backendsObserved ? "Program and backend images verified. Connect your OEM and Service Provider accounts next." : "Program is installed. Local Docker or its backend images need attention. Continue installation after starting Docker.") : "Everything is included in the DMG. Install prepares the program, backend images and a persistent launcher."
+            if reply.status == "SETUP_UPDATE_AVAILABLE" {
+                install.title = "1. Update SDV Lab"
+                status.stringValue = "A different SDV Lab package is installed"
+                detail.stringValue = "Stop the demo before updating. Setup verifies compatibility and preserves your Test, VM, certificates and history. Incompatible or busy state blocks the update without deleting data."
+            }
             next.stringValue = "Later, open AosEdge SDV Lab from your user Applications folder. Create Controller and the simulated vehicle journey remain in Presenter."
             refresh()
             if localInstalled && backendsObserved && launcherObserved && !oem.stringValue.isEmpty && !sp.stringValue.isEmpty && FileManager.default.fileExists(atPath: oem.stringValue) && FileManager.default.fileExists(atPath: sp.stringValue) {

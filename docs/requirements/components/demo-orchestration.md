@@ -5,8 +5,8 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 1.6
-- Updated: 2026-10-20
+- Version: 1.7
+- Updated: 2026-10-22
 - Prepared: 2026-08-19
 - Accepted: 2026-09-27
 - Owner: Demo Solution Team
@@ -110,7 +110,13 @@ redaction and journal preservation before native acceptance.
 Engineering acceptance detail: prove explicit compatible selection, stale-revision
 rejection, runtime/package lease exclusion, retained-run and detached-consumer
 blocking, compatible rollback, interrupted program repair and byte-for-byte
-state preservation. This refines the existing obligation; it is not a native
+state preservation. The explicitly authorized retained-Test upgrade additionally
+requires exact stopped-owner proof, matching state/input compatibility, both
+package leases and journal writer exclusion, atomic first/repeat/restart
+selection and unchanged Test/VM/credential/backend/history data. Active,
+Production-role, incompatible, pending, stale and uncertain inputs must reject
+without deletion or implicit runtime/Cloud action. This refines the same ID;
+it is not a native
 activation, migration or data-removal acceptance claim.
 
 The [native setup detail](../../../contracts/distribution-installation/native-setup.md)
