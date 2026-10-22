@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Current M1 runtime and native Setup acceptance
+# Predecessor M1 runtime and native Setup evidence
 
-The profiles below ran on the dedicated M1 internal disk with Production
+These rc.3/rc.2 profiles ran on the dedicated M1 internal disk with Production
 Aos Cloud. Runtime and native Setup results bind different exact candidates;
 they do not qualify different bytes. The [current baseline](current-baseline.md)
-records remaining acceptance limits and separately links the
+selects current rc.4 evidence, records remaining acceptance limits and separately links the
 [independently rebuilt package](developer-reproduction.md).
 
 ## Mainline candidate 1.2.0-rc.3: API and visible UI PASS
 
-The new immutable DMG uses the current mainline application/Presenter/Setup
+That immutable DMG used the then-selected mainline application/Presenter/Setup
 sources and retained binary dependencies. CARLA and the Factory controller
 image were **not rebuilt**. Application source is integration
 `e787b926471dc096ed365efe0178d8d0181de1a5`; Platform is

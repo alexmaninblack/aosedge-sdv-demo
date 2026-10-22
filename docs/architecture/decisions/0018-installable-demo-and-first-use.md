@@ -23,7 +23,7 @@ repair without Test deletion, paired token enrollment with official registration
 handoff, and a signed per-user persistent launcher. Reuse all existing owners;
 no new lifecycle/readiness store. The [native contract](../../../contracts/distribution-installation/native-setup.md)
 defines the exact paths and operations. Integrated installation/access/open
-is implemented. Current native issuance/connection for existing accounts and
+is implemented. Candidate-specific native issuance/connection for existing accounts and
 separate runtime API/UI profiles passed; broader gates follow the current
 baseline. This decision alone does not close a qualification or distribution gate.
 
