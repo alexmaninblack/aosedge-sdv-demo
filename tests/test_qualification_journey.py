@@ -931,5 +931,25 @@ class DockerPolicyTests(unittest.TestCase):
             self.assertEqual(answer['facts']['dockerEnginePolicy'],'PRESERVED')
             info.assert_not_called();run.assert_not_called()
 
+    def test_shutdown_closes_owned_workspace_after_presenter_already_exited(self):
+        from types import SimpleNamespace as N
+        worker=self.worker();worker.request['kind']='shutdown'
+        calls=[]
+        def execute(request):
+            calls.append((request.domain,request.action))
+            return N(to_dict=lambda:dict(state='COMPLETED'))
+        worker.app=N(environment_service=None,execute=execute)
+        modules={
+            'aosedge_demo_orchestrator':N(presenter=N(stop=lambda:self.fail('No Presenter owner'))),
+            'aosedge_demo_orchestrator.models':N(OperationRequest=lambda domain,action,**kw:N(domain=domain,action=action),VehicleTarget=N(TEST='test')),
+            'aosedge_demo_orchestrator.backends':N(BackendService=lambda env:N(stop_stack=lambda:dict(state='STOPPED'))),
+            'aosedge_demo_orchestrator.host_runtime':N(selected=lambda state:N(cli=lambda state:['democtl'])),
+            'setup_launch':N(owner=lambda command:None),
+        }
+        with patch.dict(sys.modules,modules),patch.object(worker,'binding',return_value={'currentVehicle':None}), \
+             patch.object(w,'wait_for_exit',return_value=dict(ownedDemoListeners=0,ownedDemoProcesses=0)):
+            self.assertEqual(worker.shutdown()['outcome'],'PASS')
+        self.assertEqual(calls,[('simulation','stop'),('vm','stop'),('workspace','close')])
+
 
 if __name__=='__main__':unittest.main()

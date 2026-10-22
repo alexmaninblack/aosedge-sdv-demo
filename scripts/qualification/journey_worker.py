@@ -1079,9 +1079,10 @@ class Worker:
                 raw = self.app.execute(OperationRequest(domain,action,target=target,timeout=60)).to_dict()
                 require(raw['state'] == 'COMPLETED', 'OWNER_SHUTDOWN_UNCONFIRMED')
             require(BackendService(self.app.environment_service).stop_stack()['state'] == 'STOPPED', 'BACKEND_STOP_UNCONFIRMED')
-        if owner:
+        if state or owner:
             raw = self.app.execute(OperationRequest('workspace','close')).to_dict()
             require(raw['state'] == 'COMPLETED', 'WORKSPACE_CLOSE_UNCONFIRMED')
+        if owner:
             require(presenter.stop() == 0, 'PRESENTER_STOP_UNCONFIRMED')
         exited = wait_for_exit()
         # Docker is shared background infrastructure, not a demo-owned process.
