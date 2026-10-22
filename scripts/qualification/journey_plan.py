@@ -164,7 +164,7 @@ def plan(config):
         op(key+'-prepare', 'prepare', profile=profile)
         op(key+'-publish', 'publish', version='$'+key+'-prepare.version')
         read(key+'-ready', 'component', dict(test='ready-vdp', actual='$sample', version='$'+key+'-prepare.version'))
-        if profile == 'v1':
+        if profile == 'v1' and not config.get('retainedTest'):
             op('connect', 'connect-test')
     def service(team, profile, first=False):
         key = team + '-' + profile
@@ -206,7 +206,7 @@ def plan(config):
         read('retained-test-binding', 'retained-test')
     else:
         op('controller-create', 'create', image=config['image'])
-    op('controller-start', 'start-vms')
+    op('controller-start', 'start-demo' if config.get('retainedTest') else 'start-vms')
     # Provision binds Gateway credentials before Test-set membership only
     # when the simulator is already running. Membership may immediately
     # offer the existing Cloud component, so starting simulation later can
@@ -214,6 +214,11 @@ def plan(config):
     op('simulation', 'start-simulation')
     if not config.get('retainedTest'):
         op('provision', 'provision')
+    else:
+        # Restore the retained controller/backends and its authenticated source
+        # before requesting FOTA. Fresh Provision owns the initial assignment;
+        # a stopped retained Test has no such new provisioning operation.
+        op('connect', 'connect-test')
     vdp('v1'); service('brake', 'v1', first=True)
     vdp('v2'); service('brake', 'v2')
     vdp('v3'); service('brake', 'v3'); service('tire', 'v1', first=True)

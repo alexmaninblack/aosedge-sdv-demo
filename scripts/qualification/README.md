@@ -75,6 +75,12 @@ media/installation records; never rebind a predecessor's campaign receipt.
 The retained Cloud prerequisite authenticates the already selected pair and
 checks its domain, pinned owners and publication permissions without repeating
 the fresh-Setup certificate-selection operation.
+The retained profile uses ordinary Start demo to restore both VM and backend
+owners, then starts the simulator and connects the existing Test before FOTA.
+It must not reuse the fresh-Provision ordering or publish before reconnecting
+the authenticated source. Interrupted FOTA recovery remains the native runtime's
+responsibility; this profile never deletes its transaction or bypasses trust
+restoration guards to continue.
 
 Use the existing OEM/SP account topology. Production Cloud requires an explicit
 `cloudDomain: aoscloud.io` plus authenticated OEM/SP owner IDs in the private

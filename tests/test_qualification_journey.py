@@ -37,6 +37,13 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual((backend['kind'],backend['args']),('observe',dict(query='retained-backends')))
         cloud=next(s for s in retained if s['id']=='cloud-ready')
         self.assertEqual((cloud['kind'],cloud['args']),('observe',dict(query='retained-cloud')))
+        ordered=[s['id'] for s in retained]
+        self.assertEqual(next(s for s in retained if s['id']=='controller-start')['args']['action'],'start-demo')
+        self.assertLess(ordered.index('simulation'),ordered.index('connect'))
+        self.assertLess(ordered.index('connect'),ordered.index('vdp-v1-safe'))
+        self.assertEqual(ordered.count('connect'),1)
+        fresh_ids=[s['id'] for s in fresh]
+        self.assertLess(fresh_ids.index('vdp-v1-ready'),fresh_ids.index('connect'))
         request=dict(config={'retainedTest':test},args={},expectedRun=None,phase='observe',requestId=test)
         # Constructor also enforces the ordinary configured package/domain fields.
         request['config'].update(instanceRoot='/Users/test/state',packageRoot='/Users/test/package',manifestSha256='a'*64)
