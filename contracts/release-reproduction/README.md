@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.34
+- Version: 1.35
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -53,10 +53,12 @@ ignore mismatches or rewrite existing prepared state and completed receipts.
 
 ## Authority and immutable inputs
 
-The [source lock](../../workspace/inputs/sources.lock.json) binds exact source and
-original build revisions. [Runtime inputs](../../workspace/inputs/runtime-inputs.lock.json)
-bind the retained manifests and their original provenance; an original dirty
-build does not become clean through this migration. [Controller image identities](../../workspace/inputs/controller-images.lock.json)
+The [source lock](../../workspace/inputs/sources.lock.json) binds exact component
+source and build revisions. [Runtime inputs](../../workspace/inputs/runtime-inputs.lock.json)
+bind retained dependency-group manifests, not a preceding complete application.
+Archive identities and original receipts remain unchanged; current application
+and Setup results have independent source and integrity evidence.
+[Controller image identities](../../workspace/inputs/controller-images.lock.json)
 separate prebuilt and independently rebuilt images. [Service inputs](../../workspace/inputs/service-inputs.lock.json)
 retain all four exact binary profile identities.
 
@@ -97,8 +99,11 @@ python3 -B scripts/validate-release-definition --kit-root /path/to/existing-kit
 python3 -B scripts/validate-release-definition --source-workspace /path/to/existing-workspace
 ```
 
-Exit `0` means `DEFINITION_VALID` and, if requested, six small matching kit
-manifests. It does not verify the payload files or claim successful installation.
+Exit `0` means `DEFINITION_VALID` and, if requested, five small matching retained
+dependency-group manifests, including their VM-to-host binding. No preceding
+application manifest is required. This is not a current candidate/installer gate:
+the existing package/installation owners still verify the complete current
+application, group bindings, payload sizes and hashes before use.
 Exit `1` rejects malformed definitions, unknown fields/profiles, changed pins,
 missing authorities, escaping paths, duplicate records, dependency cycles,
 missing metadata or mismatched manifests. Exit `2` means the requested profile
@@ -880,6 +885,20 @@ effective only in those selected committed owners, not merely in the launcher's
 working tree. Previous plan revisions retain their original inputs and receipts;
 they are not competing current defaults or silently upgraded producers.
 
+Current-product maintenance advances only the reviewed application and media
+owners needed for that product. Unchanged native/UI and heavy component inputs
+retain their exact pins. A source commit is frozen before a successor plan
+selects it; no moving HEAD, self-reference or receipt rewrite is permitted.
+The current B selection targets the same product version as the selected A
+delivery, but newly signed B results are independent media and cannot replace
+or inherit acceptance from A. Local source checks are not a completed B build.
+Before binary-input acquisition, launcher B compares the declared application
+and media owners' Git blobs/modes with the current file-level packaging recipe
+closure. A stale owner, missing local object or changed relevant input stops
+without fetching or executing an owner. Documentation-only changes do not
+change that closure. This check never adopts a newer producer or rewrites a
+receipt; explicit source/plan maintenance owns the successor selection.
+
 The complete chain requires explicit retained kit/SDK inputs on the bound volume,
 declared build tools, a short same-volume test directory and an authorized signing
 fingerprint. It retains the per-owner guards and preflights 76 GiB additional
@@ -932,6 +951,10 @@ This is explicit recovery, not an implicit status repair or a new build.
 
 `cache --storage <destination> --cache-from <existing-workspace>` reuses only
 declared complete build-input digest-cache objects, never operator DMGs.
+The current inventory consists of the five acquired dependency archives and
+the selected wheel lock. Original raw Factory provenance is not a missing B
+download; prebuilt/rebuilt controller identities remain independently checked
+by their normal consumers.
 Both workspaces must be separate,
 ownership-marked and on the same bound volume. Expected sizes and
 hashes come from the selected release; developer wheels additionally require

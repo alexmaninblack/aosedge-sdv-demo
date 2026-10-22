@@ -5,9 +5,9 @@
 # Sourceable by offline fixtures; execution always goes through main().
 
 SDV_PREP_VERSION=7
-SDV_CATALOG_RECORD=575182f5394c96cc45a3be76454ddb0c8023f3b667fd2b0a86310be0b5718460
+SDV_CATALOG_RECORD=efeafbe495c4c50cd003fc776b280c53ddf13cb856502399b9bfdfdebad1d7bf
 SDV_PUBLIC_CATALOG_URL=https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json
-SDV_PUBLIC_CATALOG_RECORD=7a261a53b1306e7a1ab68b46a3da8223bcf805aa47136de37522d836bb34d258
+SDV_PUBLIC_CATALOG_RECORD=8c8c4a233d94d0d86479e2be5a712578f896361dbad84028d6993c88cf3fad77
 # Bootstrap projection of the source-owned requirements; parity is tested.
 SDV_MACOS_MIN=26
 SDV_PYTHON_MINOR=3.12
@@ -697,8 +697,8 @@ import urllib.parse
 import urllib.request
 import public_drive
 
-PIN = {'releaseId': 'sdv-lab-inputs', 'recordSha256': '575182f5394c96cc45a3be76454ddb0c8023f3b667fd2b0a86310be0b5718460', 'lockDigests': {'buildInputs': 'f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0', 'simulation': '18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e'}, 'sourceFiles': {'workspace/build-definition.json': '55381fe287ca7900e52707f5fab8620a6a28e73938e446a4ba0aa380d7ea71e4', 'workspace/releases/build-plan.json': '10b5388e742ba533bb17ec2bbcea8751cdf49b1aa412547b05c5eab4059d8bb0', 'workspace/inputs/build-policy.json': '11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc', 'workspace/inputs/cache-compatibility.json': 'd3e86ca575ca2c20918a9e7b72a9b40946200e0b74fcf5555e61dffa0b9af235', 'workspace/inputs/controller-images.lock.json': 'e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47', 'workspace/inputs/product-inputs.schema.json': 'acad624aaea734985cb6ab5f3aea95687d1486613cb600751b8cd554171d23d2', 'workspace/inputs/runtime-inputs.lock.json': '2ce51691863c27597a06b6cbe8eb90332643c5ed204f7eab6002e645e71104f2', 'workspace/inputs/service-inputs.lock.json': 'beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae', 'workspace/inputs/sources.lock.json': '019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068', 'workspace/dependencies/carla-macos-arm64-r1.lock.json': '37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f', 'workspace/dependencies/developer-factory41-r1.lock.json': '734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f'}}
-PUBLIC_PIN = {'url': 'https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json', 'releaseId': 'sdv-lab-build-inputs-only-dropbox', 'recordSha256': '7a261a53b1306e7a1ab68b46a3da8223bcf805aa47136de37522d836bb34d258'}
+PIN = {'releaseId': 'sdv-lab-inputs', 'recordSha256': 'efeafbe495c4c50cd003fc776b280c53ddf13cb856502399b9bfdfdebad1d7bf', 'lockDigests': {'buildInputs': 'f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0', 'simulation': '18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e'}, 'sourceFiles': {'workspace/build-definition.json': '63732d63b5313969161f6935673fef0f6c768670d561bdfdead9cb92194b7f05', 'workspace/releases/build-plan.json': '12a3d51424165e0803369107f31d3c0b510e19265362a31430b535623933d9f2', 'workspace/inputs/build-policy.json': '4d71e1d9f869be5e084e8d4976bdaccafd670275ec8e8c7e97b9ac6bfbde313e', 'workspace/inputs/cache-compatibility.json': '26cebe2e4a854defa2e898651b1ad2a9d8565aef8170b85a762e88548556bfe7', 'workspace/inputs/controller-images.lock.json': 'e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47', 'workspace/inputs/product-inputs.schema.json': '630a051e84a893739cabfa5b875dd5e84f62a26d9387d736fa248b67bb15221e', 'workspace/inputs/runtime-inputs.lock.json': '3e23a2cdf191aea71620485e7bfec488388b155decd25a0e4de67d87b646c13b', 'workspace/inputs/service-inputs.lock.json': 'beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae', 'workspace/inputs/sources.lock.json': '019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068', 'workspace/dependencies/carla-macos-arm64-r1.lock.json': '37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f', 'workspace/dependencies/developer-factory41-r1.lock.json': '734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f'}}
+PUBLIC_PIN = {'url': 'https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/workspace/dependencies/catalog.json', 'releaseId': 'sdv-lab-current-product-inputs-dropbox', 'recordSha256': '8c8c4a233d94d0d86479e2be5a712578f896361dbad84028d6993c88cf3fad77'}
 ROLES = {'buildInputs': {'vehicle-bases', 'factory-image'},
          'simulation': {'carla-runtime', 'host-support', 'gateway-sdk'}}
 LIMIT = 1024 * 1024
@@ -790,7 +790,7 @@ def select_record(catalog, public=False):
     pin = PUBLIC_PIN if public else PIN
     require(isinstance(catalog, dict) and set(catalog) == {'schemaVersion', 'product', 'catalogRevision', 'releases'}
             and type(catalog['schemaVersion']) is int and catalog['schemaVersion'] == 1,
-            'Unsupported release catalog format. Download the current preparation script from README B1.')
+            'Unsupported release catalog format. Download the current launcher from README option 2.')
     require(catalog['product'] == 'aosedge-sdv-lab'
             and type(catalog['catalogRevision']) is int and catalog['catalogRevision'] >= 1
             and isinstance(catalog['releases'], list) and 0 < len(catalog['releases']) <= 1000,
@@ -1015,7 +1015,7 @@ def main(args):
         print('Checking the compatible public SDV Lab release (no Google login)…')
         record = public_discover()
         save_generation(state, record, public=True)
-        print('Selected release: ' + record['productVersion'] + ' — engineering candidate (not qualified).')
+        print('Selected build plan: ' + record['productVersion'] + ' — engineering candidate (not qualified).')
         print('Public catalog pin verified; all five input links/lengths checked. No archives downloaded; complete SHA-256 verification happens during acquisition.')
         return 0
     client = Client(gcloud, account)
@@ -1026,7 +1026,7 @@ def main(args):
     client.check_inputs(bindings, record)
     save_generation(state, record)
     if record:
-        print('Selected release: ' + record['productVersion'] + ' — source-Factory engineering candidate (not qualified).')
+        print('Selected build plan: ' + record['productVersion'] + ' — source-Factory engineering candidate (not qualified).')
         print('CARLA, controller base and supporting inputs: available. Input files prepared automatically.')
     print('Drive account and access to all five inputs checked (metadata only; no archives downloaded).')
     return 0

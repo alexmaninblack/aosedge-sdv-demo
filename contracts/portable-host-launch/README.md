@@ -38,6 +38,8 @@ the explicit Start simulator action initializes or validates that instance's
 private Gateway identity before native launch. Installation and read-only status
 do not generate trust or copy another instance's keys. Developer mode retains
 its explicit operator-provided `tls` reference from `workspace/repositories.json`;
+the current source/payload contains empty layout arrays, not machine-specific
+Editor defaults. A missing explicit developer layout blocks before launch;
 it is not an installed first-use prerequisite or fallback.
 
 Local strict client admission, certificate validity/identity, assignment, guest

@@ -61,9 +61,32 @@ class ReleaseDefinitionTests(unittest.TestCase):
             self.assertTrue(all((root/p).read_bytes()==raw for p,raw in before.items()))
     def test_operator_media_is_not_a_runtime_build_input(self):
         self.assertNotIn('dmg', self.value['artifacts'])
+        self.assertNotIn('application', self.value)
+        self.assertNotIn('applicationManifest', self.value['artifacts'])
         value=copy.deepcopy(self.value)
         value['artifacts']['dmg']=dict(name='obsolete.dmg',bytes=123,sha256='a'*64,digestEvidence='fixture')
         with self.assertRaises(gate.DefinitionError):gate.validate_inputs(value)
+    def test_retained_groups_do_not_require_an_old_application(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);rows=[]
+            for name in ('host-runtime','preparation-inputs','vm-runtime','cloud-runtime','backend-inputs'):
+                value={'fixture':name}
+                if name=='vm-runtime':value['hostManifest']={k:rows[0][k] for k in ('path','bytes','sha256')}
+                raw=json.dumps(value).encode();path=name+'.json';(root/path).write_bytes(raw)
+                rows.append(dict(id=name,path=path,kitPath=path,bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest()))
+            value={'inputs':rows}
+            self.assertEqual(gate.verify_kit(value,root),5)
+            self.assertFalse((root/'application-manifest.json').exists())
+            (root/'host-runtime.json').write_bytes(b'changed')
+            with self.assertRaisesRegex(gate.DefinitionError,'digest/size mismatch'):gate.verify_kit(value,root)
+    def test_retained_vm_host_binding_is_still_independently_required(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);rows=[]
+            for name in ('host-runtime','vm-runtime'):
+                raw=json.dumps({'hostManifest':{}}).encode();path=name+'.json';(root/path).write_bytes(raw)
+                rows.append(dict(id=name,path=path,kitPath=path,bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest()))
+            with self.assertRaisesRegex(gate.DefinitionError,'VM/host manifest binding mismatch'):
+                gate.verify_kit({'inputs':rows},root)
     def test_changed_material_closure_cannot_reuse_cache_namespace_automatically(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);self.copy_current_fixture(root)
@@ -95,7 +118,7 @@ class ReleaseDefinitionTests(unittest.TestCase):
         for name,change in [('source',lambda v:v['sources'][0].update(revision='a'*40)),
                             ('access',lambda v:next(s for s in v['sources'] if s['id']=='unreal-engine').update(access='public-git')),
                             ('manifest',lambda v:v['inputs'][0].update(sha256='a'*64)),
-                            ('provenance',lambda v:v['application'].update(originalBuildHadUncommittedSources=False))]:
+                            ('old-application',lambda v:v.update(application={'sha256':'a'*64}))]:
             v=copy.deepcopy(self.value);change(v)
             with self.subTest(name=name),self.assertRaises(gate.DefinitionError):gate.validate_inputs(v)
     def test_dependency_cycle_and_unknown_dependency_rejected(self):

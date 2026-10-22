@@ -43,6 +43,10 @@ class WorkspaceDoctorTests(unittest.TestCase):
             self.assertTrue(item["repository"].startswith("https://github.com/"))
             self.assertIn(item["visibility"], {"public", "private"})
 
+    def test_no_historical_machine_layout_is_selected_by_current_metadata(self):
+        self.assertEqual(self.manifest['launcherPaths'], [])
+        self.assertEqual(self.manifest['launchers'], [])
+
     def test_current_map_is_default_and_has_no_release_or_launcher_claim(self):
         api = runpy.run_path(str(DOCTOR))
         current = ROOT / 'workspace/repository-map.json'

@@ -27,6 +27,12 @@ checks Docker's actual backing disk separately. Frozen predecessor plans keep
 their original storage policy and source identities. Do not mutate those plans
 to make another environment pass.
 
+The current B plan selects the current product's application and Setup owners,
+including retained-Test package updates and pending-FOTA trust recovery. It
+retains unchanged UI and CARLA/Factory input pins. Source alignment is not a
+completed rebuild or qualification, and independently signed B media must not
+overwrite the published A DMG even when its product-version label matches.
+
 Installer DMGs are outputs, not build inputs. B acquires five independently
 locked dependency archives and assembles new media; it needs no preceding DMG.
 Launcher A owns the separately selected delivery and its download cache. The

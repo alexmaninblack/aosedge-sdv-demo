@@ -243,6 +243,12 @@ class HostTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, 'SOURCE_OPERATOR_TLS_REQUIRED'):
             self.driver.assets()
 
+    def test_empty_source_layout_is_explicit_without_an_editor_fallback(self):
+        (self.app / 'workspace/repositories.json').write_text('{"launcherPaths": []}')
+        with patch('aosedge_demo_orchestrator.host_runtime.selected', return_value=None), \
+                self.assertRaisesRegex(EnvironmentError, 'SOURCE_ASSET_UNAVAILABLE:SOURCE_LAYOUT'):
+            self.driver.assets()
+
 
 if __name__ == '__main__':
     unittest.main()

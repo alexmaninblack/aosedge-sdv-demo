@@ -33,6 +33,22 @@ class CurrentSourceScopeTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256((ROOT / selection['path']).read_bytes()).hexdigest(),
                          selection['sha256'])
 
+    def test_committed_current_build_default_tracks_current_product_not_old_media(self):
+        selector=json.loads((ROOT/'workspace/current-developer-build.json').read_bytes())
+        plan=json.loads((ROOT/selector['path']).read_bytes())
+        delivery=json.loads((ROOT/'workspace/releases/delivery.json').read_bytes())
+        self.assertEqual(plan['productVersion'], delivery['productVersion'])
+        self.assertEqual(plan['producers']['application'], plan['producers']['media'])
+        runtime=json.loads((ROOT/'workspace/inputs/runtime-inputs.lock.json').read_bytes())
+        self.assertNotIn('application', runtime)
+        self.assertNotIn('dmg', runtime['artifacts'])
+        self.assertNotIn('applicationManifest', runtime['artifacts'])
+        # These existing source-owned mechanisms must remain in current inputs.
+        self.assertTrue((ROOT/'scripts/distribution/retained_update.py').is_file())
+        source=(ROOT/'apps/demo-orchestrator/src/aosedge_demo_orchestrator/source_trust_guest.py').read_text()
+        self.assertIn('def unchanged_restore(',source)
+        self.assertIn('def pause_waiting_reconfiguration(',source)
+
     def test_closed_documentation_diaries_are_not_current_product_inputs(self):
         for name in ('docs/qualification/documentation-review-2026-10-15.md',
                      'apps/presenter-ui/tests/human/full-screen-review.md'):

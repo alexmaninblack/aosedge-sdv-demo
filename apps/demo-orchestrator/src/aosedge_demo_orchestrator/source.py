@@ -79,6 +79,11 @@ class SourceDriver:
             if not all(paths[k].is_file() and not paths[k].is_symlink() for k in ("ca", "key")):
                 raise EnvironmentError("SOURCE_OPERATOR_TLS_REQUIRED")
             return paths
+        # Source-only development may supply the existing explicit layout, but
+        # current source/package metadata carries no historical machine defaults.
+        required = {"carla-root", "runtime-root", "runtime-build", "python", "tls", "unreal-editor", "keyboard-app"}
+        if not required <= paths.keys():
+            raise EnvironmentError("SOURCE_ASSET_UNAVAILABLE:SOURCE_LAYOUT")
         paths.update(project=paths["carla-root"] / "Unreal/CarlaUnreal/CarlaUnreal.uproject",
             config=paths["runtime-root"] / "config/m6_2_town10hd_handover.json",
             runner=paths["runtime-root"] / "tools/run_m6_interactive.py",

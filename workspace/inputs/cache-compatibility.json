@@ -6,8 +6,8 @@
     "workspace/inputs/controller-images.lock.json": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47",
     "workspace/inputs/service-inputs.lock.json": "beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae",
     "workspace/inputs/sources.lock.json": "019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068",
-    "workspace/inputs/runtime-inputs.lock.json": "2ce51691863c27597a06b6cbe8eb90332643c5ed204f7eab6002e645e71104f2",
-    "workspace/inputs/build-policy.json": "11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc"
+    "workspace/inputs/runtime-inputs.lock.json": "3e23a2cdf191aea71620485e7bfec488388b155decd25a0e4de67d87b646c13b",
+    "workspace/inputs/build-policy.json": "4d71e1d9f869be5e084e8d4976bdaccafd670275ec8e8c7e97b9ac6bfbde313e"
   },
   "sourceControllerCheckpointSha256": "870948a9c30da401d4c164f8e4eba4e0c3f97d59c2b01ce82055c434bf47ba80",
   "scope": "Cache/prepared-input namespace only. Operator delivery metadata is excluded; material inputs, source controller provenance and existing namespaces are unchanged. Not product identity, qualification or permission to alter old receipts."

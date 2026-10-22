@@ -16,6 +16,7 @@ import threading
 from developer_bootstrap import WorkflowError, require, safe, read, save, validate_checkout
 from developer_catalog import source_check, CatalogError
 from reproduction.core import LabError
+from reproduction.product_sources import check as verify_current_owners
 from developer_progress import Display
 from developer_result import expose_result
 
@@ -174,6 +175,7 @@ def execute(config, owner, resolve=resolve_dmg, expose=expose_result):
     validate_checkout(source, selected['revision'])
     source_check(config['SDV_PREPARED_SOURCE'], source)
     active_plan=selected_plan(source)
+    verify_current_owners(source, active_plan)
     build = root/'build'
     inputs = root/'inputs'
     progress = dict(schemaVersion=1, rootRevision=selected['revision'], status='RUNNING', stage='plan')

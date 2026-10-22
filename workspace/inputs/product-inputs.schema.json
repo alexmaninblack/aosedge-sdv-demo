@@ -4,7 +4,6 @@
   "required": [
     "sources",
     "inputs",
-    "application",
     "artifacts",
     "profiles",
     "components",
@@ -94,43 +93,10 @@
         }
       }
     },
-    "application": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kitPath",
-        "bytes",
-        "sha256",
-        "inputLogicalBytes",
-        "originalBuildHadUncommittedSources"
-      ],
-      "properties": {
-        "kitPath": {
-          "type": "string",
-          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
-        },
-        "bytes": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "inputLogicalBytes": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "originalBuildHadUncommittedSources": {
-          "type": "boolean"
-        }
-      }
-    },
     "artifacts": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "applicationManifest",
         "hostManifest",
         "preparationManifest",
         "vmManifest",
@@ -138,19 +104,6 @@
         "factory"
       ],
       "properties": {
-        "applicationManifest": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "sha256"
-          ],
-          "properties": {
-            "sha256": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
-            }
-          }
-        },
         "hostManifest": {
           "type": "object",
           "additionalProperties": false,

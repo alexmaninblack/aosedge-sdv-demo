@@ -16,7 +16,7 @@
   "authorities": [
     {
       "path": "workspace/repositories.json",
-      "sha256": "80b4ae374f1a415ca532a702a0855a5c59b1897108ed5fc98cd5f3d42b4fcfed"
+      "sha256": "4b9dd34e36e78f32641c6cbc5b6c386fb428b0c7296533ede03d071b01d0daba"
     },
     {
       "path": "workspace/cloud-worker-wheels.lock.json",
@@ -68,15 +68,15 @@
     },
     {
       "path": "workspace/inputs/runtime-inputs.lock.json",
-      "sha256": "2ce51691863c27597a06b6cbe8eb90332643c5ed204f7eab6002e645e71104f2"
+      "sha256": "3e23a2cdf191aea71620485e7bfec488388b155decd25a0e4de67d87b646c13b"
     },
     {
       "path": "workspace/inputs/build-policy.json",
-      "sha256": "11a9588d6cfd77226707e5982d02384375e479d251a988ab1e70d8cc19596acc"
+      "sha256": "4d71e1d9f869be5e084e8d4976bdaccafd670275ec8e8c7e97b9ac6bfbde313e"
     },
     {
       "path": "workspace/inputs/cache-compatibility.json",
-      "sha256": "d3e86ca575ca2c20918a9e7b72a9b40946200e0b74fcf5555e61dffa0b9af235"
+      "sha256": "26cebe2e4a854defa2e898651b1ad2a9d8565aef8170b85a762e88548556bfe7"
     }
   ],
   "documentation": [

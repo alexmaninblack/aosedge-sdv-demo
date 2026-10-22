@@ -30,7 +30,7 @@
       "platform": "macOS-arm64",
       "prerequisites": [
         "Supported Apple Silicon macOS",
-        "Docker Engine and authorized staging accounts for live demo",
+        "Docker Engine and authorized accounts for the selected Aos Cloud environment for live demo",
         "User-granted native permissions"
       ]
     },

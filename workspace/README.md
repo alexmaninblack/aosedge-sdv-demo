@@ -28,9 +28,12 @@ not as prerequisites in a clean checkout.
 The default `scripts/workspace-doctor` consumes the current repository map;
 it does not require Unreal Editor, old launchers or a runtime VM. It checks
 local tracking state without fetching. Optional simulator source inspection is
-explicit. `repositories.json` and its schema remain hash-bound compatibility
-inputs of existing build/payload definitions, not the current maintenance map.
-Do not delete or rewrite them while that product depends on their exact bytes.
+explicit. `repositories.json` and its schema bind component source identities,
+not the current maintenance checkout map. Its source-only layout arrays are
+empty: no old Editor, build-directory or per-user launcher path is selected or
+shipped. Explicit developer layouts retain their existing guarded interface;
+installed runtime uses independent per-instance paths and Gateway trust.
+Frozen products keep their original metadata and receipts unchanged.
 
 Vehicle preparation reads the firmware/VDP definition and service input lock.
 It does not use a host-observation report or a second copied service inventory.

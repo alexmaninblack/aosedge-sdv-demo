@@ -42,17 +42,7 @@
       "kitPath": "demo-artifacts/aosedge-sdv-demo/backend-inputs/backend-image-manifest.json"
     }
   ],
-  "application": {
-    "kitPath": "application-manifest.json",
-    "bytes": 19594,
-    "sha256": "1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef",
-    "inputLogicalBytes": 28453262020,
-    "originalBuildHadUncommittedSources": true
-  },
   "artifacts": {
-    "applicationManifest": {
-      "sha256": "1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef"
-    },
     "hostManifest": {
       "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2"
     },

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "product": "aosedge-sdv-lab",
-  "catalogRevision": 6,
+  "catalogRevision": 7,
   "releases": [
     {
       "id": "sdv-lab-inputs-dropbox",
@@ -303,6 +303,78 @@
         "workspace/inputs/controller-images.lock.json": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47",
         "workspace/inputs/product-inputs.schema.json": "acad624aaea734985cb6ab5f3aea95687d1486613cb600751b8cd554171d23d2",
         "workspace/inputs/runtime-inputs.lock.json": "2ce51691863c27597a06b6cbe8eb90332643c5ed204f7eab6002e645e71104f2",
+        "workspace/inputs/service-inputs.lock.json": "beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae",
+        "workspace/inputs/sources.lock.json": "019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068",
+        "workspace/dependencies/carla-macos-arm64-r1.lock.json": "37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f",
+        "workspace/dependencies/developer-factory41-r1.lock.json": "734927ac6c1f8efaf464884773fca37f117ef8ec96f5107ff17a254e6251fe0f"
+      },
+      "dependencyGroups": {
+        "buildInputs": {
+          "binding": {
+            "schemaVersion": 2,
+            "transport": "dropbox-public",
+            "lockDigest": "f69665e4218111c3f13f35a8ecd6fe2ecdbc7dd3c6c36c46f650f31c479a77b0",
+            "files": {
+              "factory-image": "https://www.dropbox.com/scl/fi/wsev1pe8bgscu3qyqlhv6/developer-factory41-r1-factory-image.tar.gz?rlkey=5v22h2285ajhln5sgziaew9si&dl=1",
+              "vehicle-bases": "https://www.dropbox.com/scl/fi/d18mypr3e4o0fjsi28e3g/developer-factory41-r1-vehicle-bases.tar.gz?rlkey=32da5jp62zxxakr526yxzxcgz&dl=1"
+            }
+          },
+          "packages": {
+            "factory-image": {
+              "file": "developer-factory41-r1-factory-image.tar.gz",
+              "bytes": 316796441,
+              "sha256": "fa98b49a2d84a5f832df54d8d079905dd06193d4c0ba7fcac116bfca463d5be2"
+            },
+            "vehicle-bases": {
+              "file": "developer-factory41-r1-vehicle-bases.tar.gz",
+              "bytes": 20797429,
+              "sha256": "ae2da1a5a7dd06e878a588833dc90c9100d0d73fef11f5195859b35c46f5e3d6"
+            }
+          }
+        },
+        "simulation": {
+          "binding": {
+            "schemaVersion": 2,
+            "transport": "dropbox-public",
+            "lockDigest": "18769de4641b3b7e2955123094ba7ac983a6af1a734a8fe25c8fd100f3d24e5e",
+            "files": {
+              "carla-runtime": "https://www.dropbox.com/scl/fi/n7qus5mcdj3xl6tfw1nh2/carla-macos-arm64-r1-carla-runtime.tar.gz?rlkey=7gdccnfzj8t7f8gusxtmon795&dl=1",
+              "gateway-sdk": "https://www.dropbox.com/scl/fi/9ba78wswcuokcc6ygkz77/carla-macos-arm64-r1-gateway-sdk.tar.gz?rlkey=e40b8mt46ys2sk8ihi1ut1jj6&dl=1",
+              "host-support": "https://www.dropbox.com/scl/fi/a6pjceem1ggl6x7suqtk1/carla-macos-arm64-r1-host-support.tar.gz?rlkey=933vvik5vm7hy91mslvbp7qq9&dl=1"
+            }
+          },
+          "packages": {
+            "carla-runtime": {
+              "file": "carla-macos-arm64-r1-carla-runtime.tar.gz",
+              "bytes": 13302049728,
+              "sha256": "3d680119205aace4bc61572eebfd3b2b9cd091db614df498c7e40ca7be96b105"
+            },
+            "gateway-sdk": {
+              "file": "carla-macos-arm64-r1-gateway-sdk.tar.gz",
+              "bytes": 32520332,
+              "sha256": "e03889a39412e4a771263a9914f8862986418082ad3fbeb68ba6fa463c1d629c"
+            },
+            "host-support": {
+              "file": "carla-macos-arm64-r1-host-support.tar.gz",
+              "bytes": 23975979,
+              "sha256": "313356e1b142277ea5784f8fba310e34522e058cd34f9d48f3147cfdc58f25a0"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sdv-lab-current-product-inputs-dropbox",
+      "productVersion": "1.2.0-rc.4",
+      "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
+      "sourceFiles": {
+        "workspace/build-definition.json": "63732d63b5313969161f6935673fef0f6c768670d561bdfdead9cb92194b7f05",
+        "workspace/releases/build-plan.json": "12a3d51424165e0803369107f31d3c0b510e19265362a31430b535623933d9f2",
+        "workspace/inputs/build-policy.json": "4d71e1d9f869be5e084e8d4976bdaccafd670275ec8e8c7e97b9ac6bfbde313e",
+        "workspace/inputs/cache-compatibility.json": "26cebe2e4a854defa2e898651b1ad2a9d8565aef8170b85a762e88548556bfe7",
+        "workspace/inputs/controller-images.lock.json": "e62139deb6df31ac21cf2d7594aa07964205f88e10e5cab3b881a432e2ac5d47",
+        "workspace/inputs/product-inputs.schema.json": "630a051e84a893739cabfa5b875dd5e84f62a26d9387d736fa248b67bb15221e",
+        "workspace/inputs/runtime-inputs.lock.json": "3e23a2cdf191aea71620485e7bfec488388b155decd25a0e4de67d87b646c13b",
         "workspace/inputs/service-inputs.lock.json": "beda7dd9e3a74882e97d6f5e64369c7468ad53cc2472c2fa9a753b4a9a9ce2ae",
         "workspace/inputs/sources.lock.json": "019f478ce882642abe72e728df4875aa39cbd5f60b5a95b3b68cd84aefdd8068",
         "workspace/dependencies/carla-macos-arm64-r1.lock.json": "37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f",

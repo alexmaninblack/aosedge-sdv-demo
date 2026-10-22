@@ -170,6 +170,7 @@ class WorkflowTests(unittest.TestCase):
         self.addCleanup(patch.stopall)
         patch.object(workflow, 'validate_checkout', return_value='a'*40).start()
         patch.object(workflow, 'source_check').start()
+        self.product_check = patch.object(workflow, 'verify_current_owners').start()
 
     def owner(self, label, args):
         args = list(map(str, args))
@@ -187,6 +188,13 @@ class WorkflowTests(unittest.TestCase):
             workflow.execute(self.config, self.owner, resolve=lambda *a: ('/fixture/result.dmg', '/fixture/receipt.json'),
                              expose=lambda *a: str(self.root/'output/result.dmg'))
         return screen.getvalue()
+
+    def test_stale_product_owner_stops_before_input_acquisition_or_build(self):
+        self.product_check.side_effect = workflow.LabError('Selected application/Setup owner differs')
+        with self.assertRaisesRegex(workflow.LabError, 'owner differs'):
+            self.execute()
+        self.assertEqual(self.calls, [])
+        self.assertFalse((self.control/'workflow.json').exists())
 
     def test_complete_sequence_and_repeat_delegate_to_canonical_owners(self):
         output = self.execute()

@@ -144,7 +144,7 @@ def validate_inputs(value, root=ROOT):
         require(role in sources and sources[role]['revision'] == row['acceptedRevision'] and
                 sources[role]['repository'] == row['repository'], 'Workspace source pin mismatch: ' + role)
     runtime = read_json(root / selected['inputs']['runtime'])
-    for key in ('inputs', 'application', 'artifacts'):
+    for key in ('inputs', 'artifacts'):
         require(value[key] == runtime[key], 'Runtime input/provenance mismatch: ' + key)
     groups = indexed(value['inputs'], 'id', 'input groups')
     require(set(groups) == GROUPS, 'Incomplete input manifest set')
@@ -215,7 +215,7 @@ def resolve(value, root=ROOT):
                for role,path in value['inputs'].items() if role != 'cache'}
     require(cache['inputClosure'] == closure, 'Cache compatibility input closure differs')
     result = {'id':value['id'], 'sources':data['sources']['sources'],
-              **{k:data['runtime'][k] for k in ('inputs','application','artifacts')},
+              **{k:data['runtime'][k] for k in ('inputs','artifacts')},
               **{k:data['policy'][k] for k in ('profiles','components','toolchains','gates')}}
     validate_inputs(result,root)
     selection = read_json(safe_path(root,value['developerSelection']))
@@ -253,21 +253,16 @@ def cache_identity(selected, root=ROOT):
 
 
 def verify_kit(value, kit):
-    """Check existing small manifests, not payload integrity or runtime behavior."""
+    """Check five retained group manifests, not an old application or current DMG."""
     checked = {}
-    for row in [dict(value['application'], id='application'), *value['inputs']]:
+    for row in value['inputs']:
         data = read_bytes(safe_path(kit, row['kitPath']))
         require(len(data) == row['bytes'] and hashlib.sha256(data).hexdigest() == row['sha256'],
                 f'{row["id"]}: kit manifest digest/size mismatch')
         checked[row['id']] = json.loads(data, object_pairs_hook=unique_pairs)
-    require(checked['application']['inputs'] == {
-        row['id']: {k: row[k] for k in ('path', 'bytes', 'sha256')} for row in value['inputs']
-    }, 'Application input bindings mismatch')
     host = next(row for row in value['inputs'] if row['id'] == 'host-runtime')
     require(checked['vm-runtime']['hostManifest'] == {k: host[k] for k in ('path', 'bytes', 'sha256')},
             'VM/host manifest binding mismatch')
-    require(checked['application']['inputLogicalBytes'] == value['application']['inputLogicalBytes'],
-            'Recorded input size mismatch')
     return len(checked)
 
 
@@ -318,7 +313,7 @@ def readiness(value, profile):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest', type=Path, default=ROOT / DEFAULT)
-    parser.add_argument('--kit-root', type=Path, help='Optional existing kit; read six small manifests only')
+    parser.add_argument('--kit-root', type=Path, help='Optional retained input directory; read five group manifests, not a current application or DMG')
     parser.add_argument('--source-workspace', type=Path, help='Optional existing sibling sources; inspect pinned Git objects without fetching or changing checkouts')
     parser.add_argument('--profile', help='Require reproduction readiness; unresolved candidate exits 2')
     args = parser.parse_args(argv)
@@ -328,7 +323,7 @@ def main(argv=None):
         print(f'DEFINITION_VALID: {selected["id"]}; 3 profiles, {len(value["components"])} components')
         if args.kit_root:
             count = verify_kit(value, args.kit_root)
-            print(f'KIT_METADATA_MATCH: {count} manifests; payloads and runtime NOT checked')
+            print(f'RETAINED_INPUT_METADATA_MATCH: {count} manifests; application, payloads and runtime NOT checked')
         if args.source_workspace:
             sources, recipes = verify_sources(value, args.source_workspace)
             print(f'SOURCE_OBJECTS_MATCH: {sources} roles, {recipes} recipe files; build NOT checked')

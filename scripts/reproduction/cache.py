@@ -42,9 +42,12 @@ def catalogue(storage, donor=None, *, allow_unprepared=False):
     # Operator media and its resumable cache belong to launcher A, not this
     # build-input namespace. Never import an old delivery as a B dependency.
     if storage.profile != 'operator':
-        for name, row in storage.release.value['artifacts'].items():
-            if 'bytes' in row and 'sha256' in row:
-                add(row, name)
+        # B acquires these five archives, not the original raw Factory recorded
+        # as provenance. Keep the archive owners' exact ancestry/byte checks.
+        from . import build_inputs, dependencies
+        for owner in (build_inputs, dependencies):
+            for name, row in owner.read_lock(owner.LOCK, storage.release)['packages'].items():
+                add(row, 'input/' + name)
     if storage.profile != 'operator':
         expected = storage.release.sources['integration']
         owner = None

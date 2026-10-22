@@ -159,8 +159,11 @@ class CatalogueTests(StorageFixture, unittest.TestCase):
     def test_expected_rows_only_and_deduplicated(self):
         self.fixture(); self.write([self.row, {**self.row,'file':'alias.whl'}])
         rows = cache.catalogue(self.storage)
-        self.assertEqual(len(rows), 2)  # required retained artifact and one wheel digest; no operator DMG
+        self.assertEqual(len(rows), 6)  # five acquired archives and one wheel digest
         self.assertFalse(any('dmg' in row['names'] for row in rows.values()))
+        self.assertEqual({name for row in rows.values() for name in row['names'] if name.startswith('input/')},
+            {'input/carla-runtime','input/host-support','input/gateway-sdk','input/vehicle-bases','input/factory-image'})
+        self.assertNotIn(self.release.value['artifacts']['factory']['sha256'], rows)
         self.assertEqual(len(rows['a'*64]['names']), 2)
         self.assertEqual(self.check.call_args.args[1]['revision'], self.release.sources['integration']['revision'])
         self.assertEqual(self.check.call_args.args[2]['GIT_OPTIONAL_LOCKS'], '0')
