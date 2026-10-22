@@ -86,6 +86,78 @@ def unchanged_restore(request, selected, files):
         assignmentGeneration=generation,**observed)
 
 
+def pause_waiting_reconfiguration(request):
+    try:
+        return _pause_waiting_reconfiguration(request)
+    except (KeyError, TypeError, OSError, json.JSONDecodeError) as error:
+        raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE') from None
+
+
+def _pause_waiting_reconfiguration(request):
+    """Quiesce only native SM's validated queued wait, retaining its intent.
+
+    Reconnecting the same Test can advance the Gateway CAS generation. Restore
+    only that existing enrollment, while the sole component writer is stopped.
+    SM's ordinary startup validates/resumes the unchanged transaction; it alone
+    reconstructs Safe Stop and changes slots. Never interrupt a destructive phase.
+    """
+    transaction_path=INPUTS.parent/'state/transaction.json'
+    def read(path):
+        safe(path)
+        info=path.stat()
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink!=1
+                or not 0<info.st_size<16384):
+            raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+        return path.read_bytes()
+    selected=json.loads(read(INPUTS/'selected.json'))['selectedSource']
+    if (selected.get('unitId')!=request['vehicle']['unitId']
+            or selected.get('nodeId')!=request['vehicle']['nodeId']
+            or selected.get('clientCertificateSha256')!=request['fingerprints']['vdp']
+            or type(selected.get('assignmentGeneration')) is not int
+            or request['generation']<selected['assignmentGeneration']):
+        raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+    files={'ca':INPUTS/'viss-update-ca'}
+    for name,role in (('vdp','selected-platform-unit'),('runtime','platform-update-runtime')):
+        files[name+'Certificate']=STORE/role/'client.pem'
+        files[name+'Key']=STORE/role/'client-key.pem'
+    if set(request['material'])!=set(files) or any(read(path).decode()!=request['material'][name] for name,path in files.items()):
+        raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+    unchanged_restore(request,selected,files)
+    def native_state():
+        tx=read(transaction_path);installed=read(INPUTS.parent/'state/installed.json')
+        pending=json.loads(tx);committed=json.loads(installed)
+        selector=INPUTS.parent/'active'
+        fields=('ItemId','SubjectId','Instance','Version','ManifestDigest','RuntimeId','Preinstalled')
+        if (pending.get('schemaVersion')!=2 or pending.get('phase')!='waiting-for-safe-stop'
+                or pending.get('operation') not in ('remove','install-or-replace')
+                or pending.get('hasPrevious') is not True or committed.get('schemaVersion')!=1
+                or committed.get('slot') not in ('a','b') or pending.get('previousSlot')!=committed['slot']
+                or any(k not in committed or pending.get('previous'+k)!=committed[k] for k in fields)
+                or not selector.is_symlink() or os.readlink(selector)!='slots/'+committed['slot']
+                or json.loads(read(INPUTS.parent/'slots'/committed['slot']/'.aos-instance.json'))!=committed):
+            raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+        return tx,installed,os.readlink(selector)
+    before=native_state()
+    call(['systemctl','--no-block','stop','aos-sm.service'])
+    deadline=time.monotonic()+20
+    while True:
+        values=dict(line.split('=',1) for line in call(['systemctl','show','aos-sm.service','-p','ActiveState','-p','Job']).splitlines() if '=' in line)
+        if values.get('ActiveState')=='inactive' and values.get('Job') in ('','0'):
+            break
+        if time.monotonic()>=deadline:
+            raise ValueError('SOURCE_TRUST_FOTA_PAUSE_UNCONFIRMED')
+        time.sleep(.25)
+    try:
+        if native_state()!=before:
+            raise ValueError('SOURCE_TRUST_FOTA_STATE_CHANGED')
+    except BaseException:
+        # The stop is confirmed; restore the ordinary owner without writing
+        # any projection. A changed transaction never authorizes credential edits.
+        call(['systemctl','--no-block','start','aos-sm.service'])
+        raise
+    return True
+
+
 def call(argv, data=None):
     result = subprocess.run(argv, input=data, text=True, capture_output=True, timeout=25)
     if result.returncode:
@@ -206,8 +278,9 @@ def execute(request):
     if type(generation) is not int or not 1 <= generation < 2**63:
         raise ValueError("SOURCE_TRUST_GENERATION_INVALID")
     # Do not interrupt an in-flight FOTA slot transaction.
+    recovery=False
     if (INPUTS.parent / "state/transaction.json").exists():
-        raise ValueError("SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE")
+        recovery=pause_waiting_reconfiguration(request)
     material = request["material"]
     expected = {"ca", "vdpCertificate", "vdpKey", "runtimeCertificate", "runtimeKey"}
     if set(material) != expected or any(not isinstance(v, str) or not 0 < len(v) < 16384 for v in material.values()):
@@ -249,7 +322,7 @@ def execute(request):
         + "\nLoadCredential=viss-client-key.pem:" + str(STORE / "selected-platform-unit/client-key.pem")
         + "\nLoadCredential=viss-server-ca.pem:" + str(INPUTS / "viss-update-ca")
         + "\nLoadCredential=viss-selected-source.json:" + str(INPUTS / "selected.json") + "\n")
-    sm_changed = write(SM_DROPIN, sm_text, 0o644)
+    sm_changed = write(SM_DROPIN, sm_text, 0o644) or recovery
     vdp_changed = write(VDP_DROPIN, vdp_text, 0o644) or vdp_changed
     if sm_changed or vdp_changed:
         call(["systemctl", "daemon-reload"])

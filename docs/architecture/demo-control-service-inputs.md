@@ -185,8 +185,16 @@ certificate fingerprints, key pairs, public bindings, existing systemd
 declarations and loaded SM credential snapshot to match. The observation
 writes nothing and restarts no consumer; it is not a new source assignment or
 permission to repair credentials during FOTA. Missing or contradictory
-projections still block. Native SM alone resumes the transaction, reconstructs
-fresh Safe Stop evidence and owns completion or bounded failure.
+projections still block. A normal reconnect can advance the Gateway assignment
+generation for the same enrolled Test. If a queued FOTA wait prevents that
+reconnect, Demo Control may quiesce SM once, then revalidate the unchanged
+waiting intent, committed predecessor and active selector before updating only
+the existing enrollment's public binding. A destructive phase, changed native
+state, new key/leaf or different identity rejects this recovery. After the
+ordinary consumer activation, native SM alone resumes the unchanged transaction,
+reconstructs fresh Safe Stop evidence and owns slot changes and completion.
+This is a bounded recovery operation, not an SM restart on routine deployment,
+transaction deletion, new runtime owner or new credential authority.
 
 The current Test uses native IAM `fileidentifier`, with `systemIDPath` equal
 to `/etc/machine-id`; its value matches the observed IAM v6 response and Test

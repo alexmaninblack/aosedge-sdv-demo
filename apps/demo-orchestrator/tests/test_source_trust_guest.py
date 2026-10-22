@@ -219,6 +219,86 @@ class TrustGuestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'IDENTITY_MISMATCH'):
             guest.execute(request)
 
+    def queued_transaction(self, operation='install-or-replace', phase='waiting-for-safe-stop'):
+        request=self.pending_restore()
+        installed=dict(schemaVersion=1,slot='a',ItemId='vdp',SubjectId='oem',Instance=0,
+            Version='85.0.0',ManifestDigest='sha256:'+'a'*64,RuntimeId='native',Preinstalled=False)
+        state=self.inputs.parent/'state'
+        (state/'installed.json').write_text(json.dumps(installed))
+        slot=self.inputs.parent/'slots/a';slot.mkdir(parents=True)
+        (slot/'.aos-instance.json').write_text(json.dumps(installed))
+        (self.inputs.parent/'active').symlink_to('slots/a')
+        pending=dict(schemaVersion=2,operation=operation,phase=phase,hasPrevious=True,previousSlot='a',candidateSlot='a')
+        pending.update({'previous'+k:v for k,v in installed.items() if k not in ('slot','schemaVersion')})
+        pending.update({'candidate'+k:v for k,v in installed.items() if k not in ('slot','schemaVersion')})
+        (state/'transaction.json').write_text(json.dumps(pending))
+        return request
+
+    def test_same_enrollment_reconnect_quiesces_wait_without_changing_native_intent(self):
+        self.queued_transaction()
+        native={p:p.read_bytes() for p in (self.inputs.parent/'state').iterdir()}
+        paused=False
+        original=guest.call
+        def command(args,data=None):
+            nonlocal paused
+            if args==['systemctl','--no-block','stop','aos-sm.service']:
+                paused=True
+            if args==['systemctl','show','aos-sm.service','-p','ActiveState','-p','Job']:
+                self.calls.append(args)
+                return 'ActiveState=inactive\nJob=\n'
+            return original(args,data)
+        def write(path,data,mode=0o600):
+            self.assertTrue(paused,'No projection writes before native writer quiesces')
+            return real_write(path,data,mode)
+        real_write=guest.write
+        with patch.object(guest,'call',side_effect=command),patch.object(guest,'write',side_effect=write):
+            result=guest.execute(dict(self.request,generation=3))
+        self.assertTrue(result['smRestarted'] and result['vdpRestarted'])
+        self.assertEqual(1,sum(c==['systemctl','--no-block','stop','aos-sm.service'] for c in self.calls))
+        self.assertTrue(all(p.read_bytes()==data for p,data in native.items()))
+        self.assertEqual('slots/a',str((self.inputs.parent/'active').readlink()))
+        self.assertEqual(3,json.loads((self.inputs/'selected.json').read_text())['selectedSource']['assignmentGeneration'])
+
+    def test_destructive_transaction_and_foreign_material_never_stop_sm(self):
+        self.queued_transaction(phase='unavailable')
+        with self.assertRaisesRegex(ValueError,'TRANSACTION_ACTIVE'):
+            guest.execute(dict(self.request,generation=3))
+        self.assertFalse(any('stop' in c or 'restart' in c for c in self.calls))
+
+    def test_transaction_progress_during_stop_is_rejected_and_owner_restored(self):
+        self.queued_transaction()
+        before=(self.inputs/'selected.json').read_bytes()
+        original=guest.call
+        def command(args,data=None):
+            if args==['systemctl','--no-block','stop','aos-sm.service']:
+                path=self.inputs.parent/'state/transaction.json'
+                value=json.loads(path.read_text());value['phase']='unavailable';path.write_text(json.dumps(value))
+            if args==['systemctl','show','aos-sm.service','-p','ActiveState','-p','Job']:
+                self.calls.append(args);return 'ActiveState=inactive\nJob=\n'
+            return original(args,data)
+        with patch.object(guest,'call',side_effect=command):
+            with self.assertRaisesRegex(ValueError,'TRANSACTION_ACTIVE'):
+                guest.execute(dict(self.request,generation=3))
+        self.assertEqual(before,(self.inputs/'selected.json').read_bytes())
+        self.assertIn(['systemctl','--no-block','start','aos-sm.service'],self.calls)
+
+    def test_pending_recovery_never_pauses_for_replacement_material(self):
+        self.queued_transaction(operation='remove')
+        request=dict(self.request,generation=3,material=dict(self.request['material'],runtimeKey='replacement'))
+        with self.assertRaisesRegex(ValueError,'TRANSACTION_ACTIVE'):
+            guest.execute(request)
+        self.assertFalse(any('stop' in c or 'restart' in c for c in self.calls))
+
+    def test_unconfirmed_pause_does_not_write_or_submit_a_second_stop(self):
+        self.queued_transaction()
+        before=(self.inputs/'selected.json').read_bytes()
+        with patch.object(guest.time,'monotonic',side_effect=[0,21]):
+            with self.assertRaisesRegex(ValueError,'PAUSE_UNCONFIRMED'):
+                guest.execute(dict(self.request,generation=3))
+        self.assertEqual(before,(self.inputs/'selected.json').read_bytes())
+        self.assertEqual(1,sum(c==['systemctl','--no-block','stop','aos-sm.service'] for c in self.calls))
+        self.assertFalse(any('restart' in c for c in self.calls))
+
 
 if __name__ == "__main__":
     unittest.main()
