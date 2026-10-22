@@ -194,7 +194,10 @@ def plan(config):
     add('installed-launcher', 'setup', args=dict(action='install-launcher'), timeout=150)
     if not config.get('retainedTest'):
         add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
-    add('cloud-ready', 'setup', args=dict(action='cloud-check'), timeout=150)
+    if config.get('retainedTest'):
+        add('cloud-ready', 'observe', args=dict(query='retained-cloud'), timeout=150)
+    else:
+        add('cloud-ready', 'setup', args=dict(action='cloud-check'), timeout=150)
     add('vm-access', 'vm-access', timeout=30)
     if not config.get('retainedTest'):
         add('cloud-subjects', 'setup', args=dict(action='cloud-subjects'), timeout=150)

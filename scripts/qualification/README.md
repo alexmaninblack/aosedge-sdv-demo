@@ -72,6 +72,9 @@ stopped image bindings and current package inputs, not another image import or
 backend activation. Record those fresh-first-use gates as outside this profile,
 not inherited passes. A changed Test fails closed. Use the new candidate's own
 media/installation records; never rebind a predecessor's campaign receipt.
+The retained Cloud prerequisite authenticates the already selected pair and
+checks its domain, pinned owners and publication permissions without repeating
+the fresh-Setup certificate-selection operation.
 
 Use the existing OEM/SP account topology. Production Cloud requires an explicit
 `cloudDomain: aoscloud.io` plus authenticated OEM/SP owner IDs in the private

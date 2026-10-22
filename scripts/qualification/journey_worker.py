@@ -22,7 +22,7 @@ BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
               'stop-demo', 'start-demo'}
-QUERIES = {'installed', 'retained-test', 'retained-backends', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
+QUERIES = {'installed', 'retained-test', 'retained-backends', 'retained-cloud', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
            'snapshot', 'publication', 'demo-stopped', 'exercise'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
@@ -176,6 +176,26 @@ def retained_backend_images(state, owner):
                 and labels.get('org.opencontainers.image.revision') == row['sourceRevision'],
                 'RETAINED_BACKEND_IMAGE_CHANGED')
     return dict(imagesVerified=2, importAttempted=False, backendBindingsPreserved=True)
+
+
+def retained_cloud_check(connection, setup, config, owners):
+    """Authenticated existing-account checks, not first-use certificate selection."""
+    saved = connection._configuration().get('cloudProfiles', {})
+    oem, sp = config['oemCertificate'], config['spCertificate']
+    require(all(saved.get(role, {}).get('credential') == expected for role, expected in
+                [('oem-delivery', oem), ('service-provider', sp)]), 'RETAINED_CLOUD_CERTIFICATE_CHANGED')
+    before = connection._pair_stamp(oem, sp, connect=True)
+    require(connection.inspect(oem)['domain'] == connection.inspect(sp)['domain'] == config['cloudDomain'],
+            'QUALIFICATION_CLOUD_CHANGED')
+    report = setup.check(first_use=True)  # Includes the complete publication permission checks.
+    require(before == connection._pair_stamp(oem, sp, connect=True), 'CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW')
+    require(report['domain'] == config['cloudDomain'], 'QUALIFICATION_CLOUD_CHANGED')
+    require(owners is None or report['owners'] == owners, 'QUALIFICATION_CLOUD_OWNERS_CHANGED')
+    require(report['stage'] == 'READY' and not any(row['state'] in ('BLOCKED', 'CONFLICT', 'MISSING')
+                for row in report['checks']) and all(any(row['key'] == role and row['state'] == 'READY'
+                for row in report['checks']) for role in ('oem', 'sp', 'componentDelivery', 'serviceDelivery')),
+            'CLOUD_PREREQUISITES_NOT_READY')
+    return dict(cloudStage='READY', rolesChecked=True, credentialsPreserved=True, cloudMutation=False)
 
 
 def pair_selection_request(domain, pair):
@@ -688,6 +708,13 @@ class Worker:
                     'RETAINED_BACKEND_PREREQUISITES_REQUIRED')
             from aosedge_demo_orchestrator.backends import BackendService
             return retained_backend_images(state, BackendService(self.app.environment_service))
+        if query == 'retained-cloud':
+            require(self.config.get('retainedTest') == state['vehicles']['test']['localVmId'],
+                    'RETAINED_TEST_CHANGED')
+            from aosedge_demo_orchestrator.cloud_connection import CloudConnection
+            from aosedge_demo_orchestrator.cloud_setup import CloudSetup
+            return retained_cloud_check(CloudConnection(self.app.environment_service),
+                CloudSetup(self.app.unit_service), self.config, self.owners)
         if query == 'exercise':
             source=state.get('source') or {}; exercise=source.get('exercise') or {}; result=exercise.get('result') or {}
             return dict(id=exercise.get('id'),kind=exercise.get('kind'),phase=exercise.get('phase'),

@@ -35,6 +35,8 @@ class JourneyTests(unittest.TestCase):
         self.assertFalse(any(s.get('args',{}).get('action') in ('create','provision') for s in retained))
         backend=next(s for s in retained if s['id']=='backend-images')
         self.assertEqual((backend['kind'],backend['args']),('observe',dict(query='retained-backends')))
+        cloud=next(s for s in retained if s['id']=='cloud-ready')
+        self.assertEqual((cloud['kind'],cloud['args']),('observe',dict(query='retained-cloud')))
         request=dict(config={'retainedTest':test},args={},expectedRun=None,phase='observe',requestId=test)
         # Constructor also enforces the ordinary configured package/domain fields.
         request['config'].update(instanceRoot='/Users/test/state',packageRoot='/Users/test/package',manifestSha256='a'*64)
@@ -384,6 +386,26 @@ class JourneyTests(unittest.TestCase):
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_retained_cloud_checks_roles_permissions_domain_owners_and_unchanged_pair(self):
+        config=dict(oemCertificate='/private/oem',spCertificate='/private/sp',cloudDomain='aoscloud.io')
+        owners=dict(oem='oem-owner',sp='sp-owner');connection=Mock();setup=Mock()
+        saved=dict(cloudProfiles={role:dict(credential=path) for role,path in
+                   [('oem-delivery',config['oemCertificate']),('service-provider',config['spCertificate'])]})
+        connection._configuration.return_value=saved
+        connection._pair_stamp.return_value='same';connection.inspect.return_value=dict(domain='aoscloud.io')
+        report=dict(stage='READY',domain='aoscloud.io',owners=owners,checks=[dict(key=role,state='READY')
+                    for role in ('oem','sp','componentDelivery','serviceDelivery')])
+        setup.check.return_value=report
+        self.assertTrue(w.retained_cloud_check(connection,setup,config,owners)['credentialsPreserved'])
+        setup.check.assert_called_once_with(first_use=True)
+        connection.select_pair.assert_not_called();connection.inspect_pair.assert_not_called();setup.prepare.assert_not_called()
+        for field,bad in [('stage','BLOCKED'),('domain','other.invalid'),('owners',dict(oem='other',sp='sp-owner')),
+                          ('checks',report['checks'][:-1])]:
+            setup.check.return_value=dict(report,**{field:bad})
+            with self.subTest(field=field),self.assertRaises(ValueError):w.retained_cloud_check(connection,setup,config,owners)
+        setup.check.return_value=report;connection._pair_stamp.side_effect=['before','after']
+        with self.assertRaisesRegex(ValueError,'CERTIFICATE_CHANGED'):w.retained_cloud_check(connection,setup,config,owners)
+
     def test_retained_backend_check_is_exact_read_only_and_rejects_missing_or_changed_images(self):
         state=dict(backends={team:dict(state='STOPPED',imageId='sha256:'+letter*64,sourceRevision=letter*40)
                             for team,letter in [('brake','a'),('tire','b')]})
