@@ -7,10 +7,10 @@ SDV_LAB_VERSION=1
 # BEGIN VERIFIED MODULE PINS — maintained by scripts/sync-launcher-pins
 lab_spec() {
   case "$1" in
-    developer) printf '%s\n' '054e463c609007c308818c9326272c0f7902e4a3 8e11d2facc822f07376516c5d47a0ec40ae4f41f691fb603633f8b0cf055bafa 89314' ;;
-    install) printf '%s\n' 'b1cc4fc1c9a19a630b6c2f2bc8d13f5db395b707 7df16218d581da133f684f58995f7860434ca1f87c46309e143caea7b736c35f 18246' ;;
-    heavy) printf '%s\n' 'fc15b348e9a37797edba6403409eb8defc21ccd7 91e003e1d31b66e95bc59487255e22a35b5bbb5a9cd9de29b92465ab1f43be58 8225' ;;
-    common) printf '%s\n' '85c262656bc6b6cfd815b0763c2435126fd5d914 08437a2e64fa7489639504806f86bf1e12aa3e3c9594db2978cdc9837c13384f 5401' ;;
+    developer) printf '%s\n' '114e02b5c3f468b808499ae4c386f27629b9b3bd 87cdc828069d898d06afdab8cb030a97ebfbd575b5c1cdb4cead66dd6b367ac1 89314' ;;
+    install) printf '%s\n' '1a4477f0de4ebf3d8310f52f65e744e191a20125 4308dad66f4b59264f3cbd1632bf83c9f9a3281ffa2a64a32cea324d758bb8f1 18246' ;;
+    heavy) printf '%s\n' '77f9ef4d49d2eb74fcf28174cd1476ae9cc614fd f99114dc36c2e1a5d3f673796f78fa9f2247e14c83a3b9a4f1660baccb1ec031 8225' ;;
+    common) printf '%s\n' '8f59cbfab28b6072d08db60fe6b93b191bacad68 988565a620665624bd434816765d7af708f617b860e3c232c0da0e2cb6a53c49 5401' ;;
     catalog) printf '%s\n' '11b7fb1debb415451e100bba4e0ad660e6128549 8991d11663cd02c73af8df5554b06a045a83cc0d9d348972d3a15ed7bc854e0d 1223' ;;
     drive-parser) printf '%s\n' '5399fcd3af3c86c2b69e383395f2d22b5ae65702 b43c73e9e4256bae5bdd045bd0769f0e083298d75866bc13f5540fd8acb24bd3 8646' ;;
     *) return 1 ;;
