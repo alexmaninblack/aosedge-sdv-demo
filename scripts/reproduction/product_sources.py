@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: MIT
 """Read-only current-product owner check; no fetching, execution or receipt edits."""
 import os
+import hashlib
+from pathlib import Path
 import re
 import subprocess
 
@@ -40,6 +42,18 @@ def compare(current, selected, names):
 
 def check(root, plan_path):
     root = no_links(root)
+    selector_path = 'workspace/current-developer-build.json'
+    selector = read_json(root / selector_path)
+    require(set(selector) == {'schemaVersion', 'path', 'sha256'}
+            and type(selector['schemaVersion']) is int and selector['schemaVersion'] == 1
+            and isinstance(selector['path'], str)
+            and Path(selector['path']).parent == Path('workspace/releases')
+            and Path(selector['path']).suffix == '.json', 'Invalid current product selector')
+    plan_path = no_links(plan_path)
+    require(plan_path == no_links(root / selector['path'])
+            and plan_path.stat().st_size <= 2**20
+            and hashlib.sha256(plan_path.read_bytes()).hexdigest() == selector['sha256'],
+            'Current product selector digest differs')
     plan = read_json(plan_path)
     current = tree(root, 'HEAD')
     checked = {}
@@ -47,6 +61,10 @@ def check(root, plan_path):
         revision = plan['producers'][role]
         selected = tree(root, revision)
         names = set().union(*(recipes.paths(root, current, target) for target in targets))
+        # These two control records select the frozen owner and cannot contain
+        # their own resulting Git commit. They are authenticated above, not
+        # treated as payload equivalence. Keep them in normal recipe/cache keys.
+        names -= {selector_path, selector['path']}
         compare(current, selected, names)
         checked[role] = dict(revision=revision, verifiedFiles=len(names))
     return checked

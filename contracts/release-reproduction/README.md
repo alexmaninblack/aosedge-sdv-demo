@@ -898,6 +898,10 @@ closure. A stale owner, missing local object or changed relevant input stops
 without fetching or executing an owner. Documentation-only changes do not
 change that closure. This check never adopts a newer producer or rewrites a
 receipt; explicit source/plan maintenance owns the successor selection.
+The current developer selector and its selected plan are control records, not
+payload equivalence inputs: their path and complete digest are checked separately
+to avoid a source-commit/selector self-reference. They remain in normal recipe
+fingerprints and cache keys. No other recipe input is excluded from comparison.
 
 The complete chain requires explicit retained kit/SDK inputs on the bound volume,
 declared build tools, a short same-volume test directory and an authorized signing
