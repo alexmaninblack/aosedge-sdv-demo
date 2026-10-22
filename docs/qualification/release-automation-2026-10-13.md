@@ -11,7 +11,8 @@ anonymous operator consumer retain their separate exact-candidate boundaries.
 All seven release stages passed and option A now selects the immutable
 [rc.3 delivery descriptor](../../workspace/releases/delivery.json) and its
 [public Dropbox DMG](https://www.dropbox.com/scl/fi/4p5we60443lxxrv5hx1zs/AosEdge-SDV-Lab-1.2.0-rc.3.dmg?rlkey=4ci22xl2q1dletz32z1s03zkb&dl=1).
-The preceding rc.2 media remains available for explicit rollback.
+The preceding rc.2 identity remains recorded in its exact qualification proof;
+its DMG is not a current build input or required local rollback artifact.
 
 | Release item | Accepted identity |
 | --- | --- |

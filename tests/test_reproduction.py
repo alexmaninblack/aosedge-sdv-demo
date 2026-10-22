@@ -48,6 +48,19 @@ class ReleaseTests(unittest.TestCase):
             self.assertTrue(set(row['requires']).issubset(seen))
             seen.add(row['id'])
 
+    def test_legacy_media_acquisition_is_rejected_before_any_preparation(self):
+        for args in (['--drive-binding', '/missing-binding.json'], ['--drive-token-fd', '3']):
+            with self.subTest(args=args), patch.object(cli, 'Release', side_effect=AssertionError('No effects')), \
+                    redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.main(['prepare', *args]), 1)
+                self.assertIn('Legacy DMG acquisition is retired', output.getvalue())
+
+    def test_operator_cache_routes_to_launcher_without_creating_storage(self):
+        with patch.object(cli, 'Storage') as storage, redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cli.main(['cache', '--profile', 'operator', '--storage', '/unused']), 1)
+            storage.return_value.locked.assert_not_called()
+            self.assertIn('owned by launcher A', output.getvalue())
+
 
 class StorageFixture:
     def setUp(self):
@@ -465,13 +478,13 @@ class ArtifactTests(StorageFixture, unittest.TestCase):
 
     def test_binding_cannot_override_identity_or_embed_credentials(self):
         binding = {'schemaVersion': 1, 'releaseDigest': self.release.key,
-                   'folderId': 'test-folder-identifier', 'files': {'dmg': {'fileId': 'test-file-identifier'}}}
-        _, folder, expected = artifacts.binding_entry(binding, self.release, 'dmg')
+                   'folderId': 'test-folder-identifier', 'files': {'factory': {'fileId': 'test-file-identifier'}}}
+        _, folder, expected = artifacts.binding_entry(binding, self.release, 'factory')
         self.assertEqual(folder, binding['folderId'])
-        self.assertEqual(expected, self.release.value['artifacts']['dmg'])
-        binding['files']['dmg']['token'] = 'forbidden'
+        self.assertEqual(expected, self.release.value['artifacts']['factory'])
+        binding['files']['factory']['token'] = 'forbidden'
         with self.assertRaisesRegex(core.LabError, 'credentials'):
-            artifacts.binding_entry(binding, self.release, 'dmg')
+            artifacts.binding_entry(binding, self.release, 'factory')
 
     def test_redirect_and_tokens_not_exposed(self):
         token = 'private-fixture-token'

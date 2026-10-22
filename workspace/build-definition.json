@@ -68,7 +68,7 @@
     },
     {
       "path": "workspace/inputs/runtime-inputs.lock.json",
-      "sha256": "d2c7cd71a424bd5e0cbe3d5768d821eea2a8c30ecf5d62d7f7684538b4f5986d"
+      "sha256": "2ce51691863c27597a06b6cbe8eb90332643c5ed204f7eab6002e645e71104f2"
     },
     {
       "path": "workspace/inputs/build-policy.json",
@@ -76,7 +76,7 @@
     },
     {
       "path": "workspace/inputs/cache-compatibility.json",
-      "sha256": "a96a2d7f60bfd1a18a3ab664ee93bf377acc68b55be5eb3cb5a750b1219ef19a"
+      "sha256": "d3e86ca575ca2c20918a9e7b72a9b40946200e0b74fcf5555e61dffa0b9af235"
     }
   ],
   "documentation": [

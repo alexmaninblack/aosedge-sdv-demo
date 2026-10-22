@@ -4,7 +4,6 @@
 import argparse
 import http.client
 import json
-import os
 import re
 from pathlib import Path
 import shutil
@@ -12,7 +11,7 @@ import sys
 from distribution.build_scratch import ScratchError
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
-from .artifacts import Drive, binding_entry, download, cached
+from .artifacts import cached
 from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media, chain, cache, space
 
 def emit(value):
@@ -96,8 +95,8 @@ def main(argv=None):
     parser.add_argument('--manifest', type=Path)
     parser.add_argument('--sources-only', action='store_true')
     parser.add_argument('--cache-from', type=Path, help='Explicit existing workspace on the same volume for verified digest-cache reuse')
-    parser.add_argument('--drive-binding', type=Path)
-    parser.add_argument('--drive-token-fd', type=int)
+    parser.add_argument('--drive-binding', type=Path, help=argparse.SUPPRESS)
+    parser.add_argument('--drive-token-fd', type=int, help=argparse.SUPPRESS)
     parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime', *package_chain.MANIFESTS, *media.TARGETS), default='all')
     parser.add_argument('--signing-identity', help='Explicit authorized Apple Development certificate fingerprint for Setup')
     parser.add_argument('--build-plan', type=Path, help='Reviewed ordered producer plan for --target all')
@@ -118,6 +117,8 @@ def main(argv=None):
     parser.add_argument('--prepare-dependencies', action='store_true')
     args = parser.parse_args(argv)
     try:
+        require(args.drive_binding is None and args.drive_token_fd is None,
+                'Legacy DMG acquisition is retired; use launcher A for operator media or lab inputs for build dependencies')
         release = Release(args.manifest)
         profile = args.profile
         if profile is None and args.storage and (args.storage / 'preparation.json').exists():
@@ -137,6 +138,7 @@ def main(argv=None):
             emit(result)
             return 0 if result['fitsCheckedPools'] and result['storagePreflightComplete'] else 2
         if args.action == 'cache':
+            require(profile != 'operator', 'Operator media cache is owned by launcher A, not lab cache')
             require(args.cache_from is not None, 'Specify --cache-from with an existing prepared workspace')
             require(profile != 'full-source', 'Full-source cache closure is not yet supported')
         if args.action in ('status', 'verify', 'revalidate'):
@@ -155,13 +157,6 @@ def main(argv=None):
                 if args.sources_only:
                     emit({'status': 'SOURCES_PREPARED', 'profileReady': False, 'sourceCount': len(state['sources'])})
                     return 0
-                if args.drive_binding:
-                    require(args.drive_token_fd is not None and args.drive_token_fd >= 0, 'Authorized Drive token descriptor required')
-                    token = os.read(args.drive_token_fd, 4097).decode().strip()
-                    file_id, folder_id, expected = binding_entry(read_json(args.drive_binding), release, 'dmg')
-                    download(storage, Drive(token), file_id, folder_id, expected, progress)
-                    state['artifacts']['dmg'] = expected['sha256']
-                    storage.save(state)
                 emit(status(storage, state))
                 emit({'status': 'PROFILE_BLOCKED', 'reason': 'Source preparation is complete; artifact/profile gates remain. See plan.'})
                 return 2

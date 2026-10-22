@@ -228,9 +228,8 @@ def resolve(value, root=ROOT):
     require(plan.get('baseDefinitionSha256') == cache['definitionDigest'] and
             plan.get('resultPolicy') == 'seal-developer-results-v1', 'Developer plan input identity mismatch')
     catalog = read_json(safe_path(root,value['operatorSelection']))
-    # A's public delivery advances independently of B's immutable binary/cache
-    # inputs. Validate the selected descriptor itself, not equality with the
-    # earlier cached DMG retained in that input lock.
+    # Operator media is a delivery output, never a developer build input.
+    # Validate A's independently selected descriptor, not B's input lock.
     from reproduction.delivery import descriptor
     try:
         delivery = descriptor(safe_path(root,catalog['operatorDescriptor']).resolve())

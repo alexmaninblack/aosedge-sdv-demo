@@ -27,6 +27,12 @@ checks Docker's actual backing disk separately. Frozen predecessor plans keep
 their original storage policy and source identities. Do not mutate those plans
 to make another environment pass.
 
+Installer DMGs are outputs, not build inputs. B acquires five independently
+locked dependency archives and assembles new media; it needs no preceding DMG.
+Launcher A owns the separately selected delivery and its download cache. The
+obsolete `lab prepare --drive-binding/--drive-token-fd` media path and operator
+use of `lab cache` are rejected before preparation or credential access.
+
 ## Read-only specialist inspection
 
 From the selected integration checkout:

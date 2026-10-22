@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.33
+- Version: 1.34
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -42,6 +42,14 @@ provenance for unchanged material inputs. It is not product versioning, current
 qualification or permission to alter an old receipt. Its complete input closure
 must match; automatic semantic rebinding is forbidden. Frozen producer checkouts
 keep their original source and receipts; current maintenance does not edit them.
+
+Operator DMGs are delivery outputs, not entries in the runtime build-input
+lock or its schema. The namespace remains bound to the unchanged material
+inputs: source revisions, retained manifests, controller identity and the five
+dependency archives. Removing the obsolete delivery-output entry explicitly
+preserves that namespace after comparison of those inputs; the current file
+closure is still checked in full. Projection tools do not infer compatibility,
+ignore mismatches or rewrite existing prepared state and completed receipts.
 
 ## Authority and immutable inputs
 
@@ -692,14 +700,14 @@ report complete without the profile's required verified inputs. `status` and
 `plan` distinguish source readiness, artifact readiness, supported target builds
 and full-profile qualification. They never start or install the demo.
 
-The default Dropbox acquisition follows the anonymous contract above. Explicit
-legacy Google Drive acquisition consumes a separate non-secret binding of release
-digest, artifact name and file ID. Expected size/digest come from the release,
-not the binding. A short-lived authorized OAuth token may be supplied through
-an inherited file descriptor; it is not a command argument, logged value or
-stored receipt. Downloads enforce byte ranges, metadata consistency and final
-SHA-256 before atomic promotion. Partial files stay on the selected volume for resume.
-An absent binding or credentials is an explicit acquisition failure.
+The default Dropbox acquisition follows the anonymous contract above. Private
+dependency maintenance remains available through `lab inputs` and
+`lab dependencies` with their explicit bindings and authenticated owners.
+The obsolete `lab prepare --drive-binding/--drive-token-fd` DMG path is rejected
+before source preparation or token access. Operator downloads and their
+resumable caches belong to launcher A and its selected delivery descriptor;
+`lab cache --profile operator` cannot import an installer into build storage.
+No public/private transport fallback or new credential authority is introduced.
 
 Build adapters use exact source roles and existing recipes, with explicit
 toolchain identity, workspace caches/temp/output and recorded input fingerprints.
@@ -923,7 +931,8 @@ metadata change, missing receipt or content mismatch fails without resealing.
 This is explicit recovery, not an implicit status repair or a new build.
 
 `cache --storage <destination> --cache-from <existing-workspace>` reuses only
-declared complete digest-cache objects. Both workspaces must be separate,
+declared complete build-input digest-cache objects, never operator DMGs.
+Both workspaces must be separate,
 ownership-marked and on the same bound volume. Expected sizes and
 hashes come from the selected release; developer wheels additionally require
 the clean exact integration source and its wheel lock in either the destination

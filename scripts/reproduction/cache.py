@@ -39,9 +39,12 @@ def catalogue(storage, donor=None, *, allow_unprepared=False):
                 and type(size) is int and 0 < size < 2**40, 'Invalid cache object identity')
         require(key not in selected or selected[key]['bytes'] == size, 'Conflicting cache object sizes')
         selected.setdefault(key, {'sha256':key, 'bytes':size, 'names':[]})['names'].append(name)
-    for name, row in storage.release.value['artifacts'].items():
-        if 'bytes' in row and 'sha256' in row and (storage.profile != 'operator' or name == 'dmg'):
-            add(row, name)
+    # Operator media and its resumable cache belong to launcher A, not this
+    # build-input namespace. Never import an old delivery as a B dependency.
+    if storage.profile != 'operator':
+        for name, row in storage.release.value['artifacts'].items():
+            if 'bytes' in row and 'sha256' in row:
+                add(row, name)
     if storage.profile != 'operator':
         expected = storage.release.sources['integration']
         owner = None

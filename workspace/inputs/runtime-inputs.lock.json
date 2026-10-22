@@ -70,12 +70,6 @@
       "name": "main-qemuarm64.img",
       "bytes": 6997147648,
       "sha256": "361c187374469f4a97b3b9c74cb755ce432bc5287fb19ccd2f6bfb9c3eb46769"
-    },
-    "dmg": {
-      "name": "AosEdge-SDV-Lab-1.2.0-rc.2.dmg",
-      "bytes": 14159474231,
-      "sha256": "71063a5d05ce9287feb0964d661b8408343aa85a58b4c3baaed8c0fd14664270",
-      "digestEvidence": "Selected immutable operator descriptor; payload and qualification unchanged."
     }
   }
 }

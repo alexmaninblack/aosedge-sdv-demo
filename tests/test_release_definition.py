@@ -59,6 +59,21 @@ class ReleaseDefinitionTests(unittest.TestCase):
             before={p:(root/p).read_bytes() for p in self.selected['inputs'].values()}
             self.assertEqual(gate.resolve(self.selected,root),self.value)
             self.assertTrue(all((root/p).read_bytes()==raw for p,raw in before.items()))
+    def test_operator_media_is_not_a_runtime_build_input(self):
+        self.assertNotIn('dmg', self.value['artifacts'])
+        value=copy.deepcopy(self.value)
+        value['artifacts']['dmg']=dict(name='obsolete.dmg',bytes=123,sha256='a'*64,digestEvidence='fixture')
+        with self.assertRaises(gate.DefinitionError):gate.validate_inputs(value)
+    def test_changed_material_closure_cannot_reuse_cache_namespace_automatically(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);self.copy_current_fixture(root)
+            selected=copy.deepcopy(self.selected)
+            path=selected['inputs']['runtime']
+            runtime=gate.read_json(root/path);runtime['artifacts']['factory']['sha256']='f'*64
+            raw=(json.dumps(runtime,indent=2)+'\n').encode();(root/path).write_bytes(raw)
+            next(row for row in selected['authorities'] if row['path']==path)['sha256']=hashlib.sha256(raw).hexdigest()
+            with self.assertRaisesRegex(gate.DefinitionError,'Cache compatibility input closure differs'):
+                gate.resolve(selected,root)
     def test_operator_mismatch_or_invalid_successor_is_rejected(self):
         for changes in (dict(sha256='invalid'),dict(bytes=True),dict(notarized=True)):
             with self.subTest(changes=changes),tempfile.TemporaryDirectory() as temporary:

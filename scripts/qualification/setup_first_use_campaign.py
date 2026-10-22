@@ -48,12 +48,32 @@ def local_certificate(role):
     return str(Path.home() / '.aos' / 'security prod' / ('aos-user-' + role + '.p12'))
 
 
+def supplied_media(media, config, remote_root, user):
+    """Select one explicit media directory, never a fixed version or newest file."""
+    from campaign import media_input
+    media = h.unlinked(media)
+    h.require(media.is_dir(), 'FIRST_USE_MEDIA_DIRECTORY_REQUIRED')
+    candidates = list(media.glob('*.dmg'))
+    h.require(len(candidates) == 1, 'FIRST_USE_MEDIA_SELECTION_AMBIGUOUS')
+    path = h.unlinked(candidates[0])
+    selected = media_input(path, config, remote_root + '/' + path.name, user)
+    return path, selected
+
+
 class Campaign:
     def __init__(self, build, records, reconcile=False, installed=False, media=None, effects=False):
         os.umask(0o077)
         self.t, _ = h.configuration(ROOT / '.local/remote-qualification/m1-20261001.json')
         self.c = j.configuration(ROOT / '.local/remote-qualification/m1-production-clock-full-20261015/journey.json', self.t['user'])
         self.remote_root, self.remote_dmg = remote_paths(self.t['user'])
+        self.media_dmg = self.selected_media = None
+        if media:
+            self.media_dmg, self.selected_media = supplied_media(media, self.c, self.remote_root, self.t['user'])
+            receipt=h.parse(h.unlinked(media/'Setup/build-receipt.json').read_bytes())
+            h.require(receipt['manifestSha256']==self.c['manifestSha256'], 'RUNTIME_PRODUCT_CHANGED')
+            self.c=dict(self.c,setupApp='/Volumes/SDV-First-Use-20261015/AosEdge SDV Lab Setup.app',
+                sourceRoot='/Volumes/SDV-First-Use-20261015/Runtime Kit',setupSha256=receipt['binarySha256'])
+            self.remote_dmg = self.selected_media['remotePath']
         self.build, self.records = build, records
         if effects:
             prior=h.parse((records/'report.json').read_bytes())
@@ -87,12 +107,6 @@ class Campaign:
         self.mounted = False
         self.effects=effects
         self.media=media
-        if media:
-            receipt=h.parse((media/'Setup/build-receipt.json').read_bytes())
-            h.require(receipt['manifestSha256']==self.c['manifestSha256'],'RUNTIME_PRODUCT_CHANGED')
-            self.c=dict(self.c,setupApp='/Volumes/SDV-First-Use-20261015/AosEdge SDV Lab Setup.app',
-                sourceRoot='/Volumes/SDV-First-Use-20261015/Runtime Kit',setupSha256=receipt['binarySha256'])
-            self.remote_dmg=self.remote_root+'/AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
         if effects:
             h.require(media is not None,'CORRECTED_MEDIA_REQUIRED')
             self.parked=True;self.mounted=True
@@ -200,8 +214,8 @@ assert all(not p.exists() for p in paths),'PARKING_UNCONFIRMED'
     def launch(self):
         if self.media:
             from campaign import Media,media_input
-            path=self.media/'AosEdge-SDV-Lab-1.2.0-rc.2.dmg'
-            selected=media_input(path,self.c,self.remote_dmg,self.t['user'])
+            selected=media_input(self.media_dmg,self.c,self.remote_dmg,self.t['user'])
+            h.require(selected == self.selected_media, 'FIRST_USE_MEDIA_SELECTION_CHANGED')
             Media(self.t,self.c,selected,emit=lambda s:print(s,flush=True)).transfer()
         mount = str(Path(self.c['setupApp']).parent)
         h.remote(self.t, shlex.join(['/usr/bin/hdiutil', 'attach', self.remote_dmg, '-nobrowse', '-readonly', '-mountpoint', mount]) + ' >/dev/null\n', timeout=90)

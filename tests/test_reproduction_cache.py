@@ -159,7 +159,8 @@ class CatalogueTests(StorageFixture, unittest.TestCase):
     def test_expected_rows_only_and_deduplicated(self):
         self.fixture(); self.write([self.row, {**self.row,'file':'alias.whl'}])
         rows = cache.catalogue(self.storage)
-        self.assertEqual(len(rows), 3)  # current DMG, required retained artifact and one wheel digest
+        self.assertEqual(len(rows), 2)  # required retained artifact and one wheel digest; no operator DMG
+        self.assertFalse(any('dmg' in row['names'] for row in rows.values()))
         self.assertEqual(len(rows['a'*64]['names']), 2)
         self.assertEqual(self.check.call_args.args[1]['revision'], self.release.sources['integration']['revision'])
         self.assertEqual(self.check.call_args.args[2]['GIT_OPTIONAL_LOCKS'], '0')
@@ -177,8 +178,7 @@ class CatalogueTests(StorageFixture, unittest.TestCase):
             cache.catalogue(self.storage)
         self.storage.profile = 'operator'
         rows = cache.catalogue(self.storage)
-        self.assertEqual(list(rows.values())[0]['names'], ['dmg'])
-        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows, {})  # A owns operator delivery/cache independently.
 
 
 class SpaceTests(StorageFixture, unittest.TestCase):

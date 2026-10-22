@@ -13,7 +13,7 @@ metadata, not installer releases. Validation requires no Git history or network.
 | Current maintenance owners (no release selection) | [Repository map](repository-map.json) |
 | Vehicle preparation firmware and unsigned VDP bases | [Vehicle build inputs](inputs/vehicle-build-inputs.json) |
 | Source revisions and access | [Source lock](inputs/sources.lock.json) |
-| Runtime manifest identities | [Runtime inputs](inputs/runtime-inputs.lock.json) |
+| Runtime manifest and retained build-input identities (no installer DMG) | [Runtime inputs](inputs/runtime-inputs.lock.json) |
 | Prebuilt and independently rebuilt controller images | [Controller images](inputs/controller-images.lock.json); these have distinct digests |
 | Reviewed service binaries | [Service inputs](inputs/service-inputs.lock.json) |
 | Component graph and build profiles | [Build policy](inputs/build-policy.json) |
@@ -38,10 +38,14 @@ The selected controller input is a bootable Linux/AosEdge image for the ARM64
 virtual controller, not the separate Linux VM used to build that image.
 
 The cache compatibility record preserves exact namespaces and input provenance.
-Its storage label is not the product version or qualification status. A changed
-input closure requires an explicitly reviewed successor namespace; projection
-tools refuse automatic rebinding. Source maintenance never rewrites a frozen
-producer, completed recipe receipt or selected DMG.
+Its storage label is not the product version or qualification status. Removing
+obsolete delivery-output metadata preserves the namespace only after explicit
+review of unchanged material inputs; it does not rewrite prepared state or
+receipts. Changed material inputs require a reviewed successor namespace.
+The complete current file closure remains checked, and projection tools refuse
+automatic rebinding. Source maintenance never rewrites a frozen producer,
+completed recipe receipt or selected DMG. Operator media and its cache belong
+to launcher A, independently of B's five dependency archives.
 
 ```sh
 python3 -B scripts/validate-release-definition
