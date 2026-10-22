@@ -22,7 +22,7 @@ BASE = 'http://127.0.0.1:18080'
 OPERATIONS = {'create', 'start-vms', 'provision', 'start-simulation', 'connect-test',
               'prepare', 'publish', 'service-prepare', 'service-publish', 'service-assign', 'backend-reset',
               'stop-demo', 'start-demo'}
-QUERIES = {'installed', 'retained-test', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
+QUERIES = {'installed', 'retained-test', 'retained-backends', 'component', 'component-idle', 'component-installed', 'service', 'backend', 'local', 'combined', 'platform',
            'snapshot', 'publication', 'demo-stopped', 'exercise'}
 DOCKER = '/Applications/Docker.app/Contents/Resources/bin/docker'
 PORTS = (18080,18600,2000,2001,2002,10022,10023)
@@ -160,6 +160,22 @@ def validate_binding(state, expected, domain=DOMAIN):
     require(set(state['vehicles']) == {'test'}, 'EXACT_TEST_ONLY_REQUIRED')
     require(state['vehicles']['test']['localVmId'] == expected, 'TEST_IDENTITY_CHANGED')
     require(state.get('selectedCloudDomain') == domain, 'QUALIFICATION_CLOUD_CHANGED')
+
+
+def retained_backend_images(state, owner):
+    """Observe exact stopped image bindings, never import or activate a candidate."""
+    records = state.get('backends', {})
+    require(set(records) == {'brake', 'tire'}, 'RETAINED_BACKEND_BINDINGS_REQUIRED')
+    for team, row in records.items():
+        require(row.get('state') == 'STOPPED' and isinstance(row.get('sourceRevision'), str)
+                and re.fullmatch('[a-f0-9]{40}', row['sourceRevision']), 'RETAINED_BACKEND_NOT_STOPPED')
+        image = owner._image(row.get('imageId'))
+        labels = (image.get('Config') or {}).get('Labels') or {}
+        require(image.get('Id') == row.get('imageId') and image.get('Architecture') == 'arm64'
+                and image.get('Os') == 'linux' and labels.get('tech.aosedge.demo.team') == team
+                and labels.get('org.opencontainers.image.revision') == row['sourceRevision'],
+                'RETAINED_BACKEND_IMAGE_CHANGED')
+    return dict(imagesVerified=2, importAttempted=False, backendBindingsPreserved=True)
 
 
 def pair_selection_request(domain, pair):
@@ -664,6 +680,14 @@ class Worker:
                     'RETAINED_TEST_CHANGED')
             return dict(runId=self.config['retainedTest'], testPreserved=True,
                         manufacturePerformed=False, provisioningPerformed=False)
+        if query == 'retained-backends':
+            require(self.config.get('retainedTest') == state['vehicles']['test']['localVmId'],
+                    'RETAINED_TEST_CHANGED')
+            observed = self.setup_call('setup-status')
+            require(observed.get('localInstalled') is True and observed.get('backendsObserved') is True,
+                    'RETAINED_BACKEND_PREREQUISITES_REQUIRED')
+            from aosedge_demo_orchestrator.backends import BackendService
+            return retained_backend_images(state, BackendService(self.app.environment_service))
         if query == 'exercise':
             source=state.get('source') or {}; exercise=source.get('exercise') or {}; result=exercise.get('result') or {}
             return dict(id=exercise.get('id'),kind=exercise.get('kind'),phase=exercise.get('phase'),

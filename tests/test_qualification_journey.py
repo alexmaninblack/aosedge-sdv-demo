@@ -33,6 +33,8 @@ class JourneyTests(unittest.TestCase):
         self.assertFalse({'cloud-pair','cloud-subjects','controller-create','provision'} & ids)
         self.assertEqual(len(retained),len(fresh)-3)
         self.assertFalse(any(s.get('args',{}).get('action') in ('create','provision') for s in retained))
+        backend=next(s for s in retained if s['id']=='backend-images')
+        self.assertEqual((backend['kind'],backend['args']),('observe',dict(query='retained-backends')))
         request=dict(config={'retainedTest':test},args={},expectedRun=None,phase='observe',requestId=test)
         # Constructor also enforces the ordinary configured package/domain fields.
         request['config'].update(instanceRoot='/Users/test/state',packageRoot='/Users/test/package',manifestSha256='a'*64)
@@ -382,6 +384,27 @@ class JourneyTests(unittest.TestCase):
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_retained_backend_check_is_exact_read_only_and_rejects_missing_or_changed_images(self):
+        state=dict(backends={team:dict(state='STOPPED',imageId='sha256:'+letter*64,sourceRevision=letter*40)
+                            for team,letter in [('brake','a'),('tire','b')]})
+        owner=Mock()
+        def image(identity):
+            team=next(t for t,r in state['backends'].items() if r['imageId']==identity)
+            return dict(Id=identity,Architecture='arm64',Os='linux',Config=dict(Labels={
+                'tech.aosedge.demo.team':team,'org.opencontainers.image.revision':state['backends'][team]['sourceRevision']}))
+        owner._image.side_effect=image
+        self.assertEqual(w.retained_backend_images(state,owner),
+                         dict(imagesVerified=2,importAttempted=False,backendBindingsPreserved=True))
+        self.assertEqual([call[0][0] for call in owner._image.call_args_list],
+                         [r['imageId'] for r in state['backends'].values()])
+        owner.execute.assert_not_called()
+        for change in ('missing','running','image'):
+            changed=copy.deepcopy(state)
+            if change=='missing':changed['backends'].pop('tire')
+            if change=='running':changed['backends']['tire']['state']='RUNNING'
+            if change=='image':owner._image.side_effect=lambda identity:dict(Id=identity,Architecture='arm64',Os='linux',Config={})
+            with self.subTest(change=change),self.assertRaises(ValueError):w.retained_backend_images(changed,owner)
+
     def test_launcher_install_requires_fresh_status_and_reconcile_never_replays(self):
         with tempfile.TemporaryDirectory() as tmp:
             app = Path(tmp) / 'Setup.app'

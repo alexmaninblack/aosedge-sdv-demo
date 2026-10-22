@@ -67,7 +67,9 @@ For a retained-Test package-update campaign, the private journey may explicitly
 bind `retainedTest` to its existing UUID. The API profile then validates that
 binding and runs the complete publication, product/advisory, Reset, offline,
 ignition and Stop/Start matrix without Create, provisioning or credential/
-Subject replacement. Record those fresh-first-use gates as outside this profile,
+Subject replacement. Its backend prerequisite is a read-only check of the exact
+stopped image bindings and current package inputs, not another image import or
+backend activation. Record those fresh-first-use gates as outside this profile,
 not inherited passes. A changed Test fails closed. Use the new candidate's own
 media/installation records; never rebind a predecessor's campaign receipt.
 

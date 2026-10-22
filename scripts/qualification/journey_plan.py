@@ -187,7 +187,10 @@ def plan(config):
             read(key+'-advisory', 'backend', check, team=team)
     add('installed', 'observe', args=dict(query='installed'))
     add('docker', 'dependency', timeout=120)
-    add('backend-images', 'setup', args=dict(action='prepare-backends'), timeout=180)
+    if config.get('retainedTest'):
+        add('backend-images', 'observe', args=dict(query='retained-backends'), timeout=45)
+    else:
+        add('backend-images', 'setup', args=dict(action='prepare-backends'), timeout=180)
     add('installed-launcher', 'setup', args=dict(action='install-launcher'), timeout=150)
     if not config.get('retainedTest'):
         add('cloud-pair', 'setup', args=dict(action='cloud-pair'), timeout=150)
