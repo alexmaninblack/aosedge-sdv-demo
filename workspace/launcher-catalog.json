@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "catalogRevision": 6,
+  "catalogRevision": 7,
   "product": "aosedge-sdv-lab",
   "operator": {
-    "productVersion": "1.2.0-rc.3",
+    "productVersion": "1.2.0-rc.4",
     "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
-    "file": "AosEdge-SDV-Lab-1.2.0-rc.3.dmg",
-    "bytes": 14156820119,
-    "sha256": "25b2f89eb64bb8b58cbfca18e46ef2d6c59450dcdb2f316b168155842328355e",
-    "manifestSha256": "b6884145a5098eeec0bad1a95182a060655b0c6451c1d1a040bf3fea0a9ba595",
-    "downloadURL": "https://www.dropbox.com/scl/fi/4p5we60443lxxrv5hx1zs/AosEdge-SDV-Lab-1.2.0-rc.3.dmg?rlkey=4ci22xl2q1dletz32z1s03zkb&dl=1",
+    "file": "AosEdge-SDV-Lab-1.2.0-rc.4.dmg",
+    "bytes": 14159664289,
+    "sha256": "420a559daaff3fe6e3b2f9b898fc189c367754aee3a3eeab0164d30c537dc830",
+    "manifestSha256": "a982ad8f620415669ec92b8b68cc2f82e316c90ad6e44ce5e7c5fb59b3281884",
+    "downloadURL": "https://www.dropbox.com/scl/fi/0a3kolvd9bpqr74icgh2h/AosEdge-SDV-Lab-1.2.0-rc.4.dmg?rlkey=3fre7d7xdsfq9l8irkzauvfec&dl=1",
     "setupBundle": "AosEdge SDV Lab Setup.app",
     "kitDirectory": "Runtime Kit",
     "setupIdentifier": "org.aosedge.sdvlab.setup.preview",
-    "setupTeam": "3NF57VKB3V",
+    "setupTeam": "HSCPC84Q5H",
     "notarized": false
   },
   "specialist": {
