@@ -179,6 +179,15 @@ withhold incomplete or contradictory data, not prevent SM from performing
 its recovery. No new SM hook, daemon, independent VDP launcher, persistent
 metadata authority or container startup retry is authorized by this split.
 
+An existing Test enrollment may be **observed unchanged** while native FOTA
+recovery is pending. This requires the exact enrolled Unit/Node, generation,
+certificate fingerprints, key pairs, public bindings, existing systemd
+declarations and loaded SM credential snapshot to match. The observation
+writes nothing and restarts no consumer; it is not a new source assignment or
+permission to repair credentials during FOTA. Missing or contradictory
+projections still block. Native SM alone resumes the transaction, reconstructs
+fresh Safe Stop evidence and owns completion or bounded failure.
+
 The current Test uses native IAM `fileidentifier`, with `systemIDPath` equal
 to `/etc/machine-id`; its value matches the observed IAM v6 response and Test
 provisioning context. Cold preparation may read this same native source,

@@ -33,7 +33,8 @@ class TrustGuestTests(unittest.TestCase):
         machine = root / "machine-id"
         machine.write_text(VEHICLE["cloud"]["identity"]["nodeHardwareId"])
         for name, value in dict(INPUTS=self.inputs, STORE=root / "private", MACHINE_ID=machine,
-                SM_DROPIN=root / "sm/dropin.conf", VDP_DROPIN=root / "vdp/dropin.conf").items():
+                SM_DROPIN=root / "sm/dropin.conf", VDP_DROPIN=root / "vdp/dropin.conf",
+                LIVE_CREDENTIALS=root / 'live-credentials').items():
             self.stack.enter_context(patch.object(guest, name, value))
         # Real filesystem permission tests are in test_source_trust; this
         # root-only remote worker is exercised in a non-root unit harness.
@@ -151,6 +152,72 @@ class TrustGuestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "CREDENTIAL_CONFLICT"):
             guest.execute(self.request)
         self.assertEqual([], self.calls)
+
+    def pending_restore(self):
+        guest.execute(self.request)
+        live = guest.LIVE_CREDENTIALS / 'aos-sm.service'
+        live.mkdir(parents=True)
+        for name, source in (('viss-update-certificate', 'client.pem'), ('viss-update-private-key', 'client-key.pem')):
+            (live/name).write_bytes((guest.STORE/'platform-update-runtime'/source).read_bytes())
+            (live/name).chmod(0o400)
+        state=self.inputs.parent/'state'
+        state.mkdir()
+        (state/'transaction.json').write_text('{"phase":"waiting-for-safe-stop"}')
+        self.calls.clear()
+        return dict(action='trust-restore',role='test',vehicle=self.request['vehicle'],
+            fingerprints=self.request['fingerprints'])
+
+    def test_pending_fota_existing_boot_projection_is_read_only_and_repeatable(self):
+        request=self.pending_restore()
+        paths=[p for root in (guest.STORE,self.inputs.parent,guest.SM_DROPIN.parent,guest.VDP_DROPIN.parent)
+            for p in root.rglob('*') if p.is_file()]
+        before={p:p.read_bytes() for p in paths}
+        with patch.object(guest,'write',side_effect=AssertionError('NO_WRITES_DURING_FOTA')):
+            for _ in range(2):
+                result=guest.execute(request)
+                self.assertTrue(result['noOp'])
+                self.assertFalse(result['smRestarted'] or result['vdpRestarted'])
+        self.assertTrue(all(p.read_bytes()==raw for p,raw in before.items()))
+        self.assertFalse(any('restart' in c or 'daemon-reload' in c for c in self.calls))
+
+    def test_pending_fota_restore_does_not_repair_missing_or_foreign_projection(self):
+        request=self.pending_restore()
+        original=guest.SM_DROPIN.read_text()
+        guest.SM_DROPIN.write_text('foreign declaration')
+        with self.assertRaisesRegex(ValueError,'TRANSACTION_ACTIVE'):
+            guest.execute(request)
+        self.assertEqual('foreign declaration',guest.SM_DROPIN.read_text())
+        guest.SM_DROPIN.write_text(original)
+        guest.SM_DROPIN.unlink()
+        with self.assertRaises(FileNotFoundError):
+            guest.execute(request)
+        self.assertFalse(guest.SM_DROPIN.exists())
+        self.assertFalse(any('restart' in c or 'daemon-reload' in c for c in self.calls))
+
+    def test_pending_fota_requires_live_sm_snapshot_not_only_dropin(self):
+        request=self.pending_restore()
+        path=guest.LIVE_CREDENTIALS/'aos-sm.service/viss-update-private-key'
+        path.chmod(0o600)
+        path.write_text('not the loaded key')
+        with self.assertRaisesRegex(ValueError,'TRANSACTION_ACTIVE'):
+            guest.execute(request)
+        self.assertEqual('not the loaded key',path.read_text())
+
+    def test_pending_fota_cannot_change_generation_or_reconfigure(self):
+        request=self.pending_restore()
+        with self.assertRaisesRegex(ValueError,'TRANSACTION_ACTIVE'):
+            guest.execute(dict(self.request,generation=3))
+        binding=json.loads((self.inputs/'viss-update-binding').read_text())
+        binding['assignmentGeneration']=3
+        (self.inputs/'viss-update-binding').write_text(json.dumps(binding))
+        with self.assertRaisesRegex(ValueError,'IDENTITY_MISMATCH'):
+            guest.execute(request)
+
+    def test_pending_fota_rejects_foreign_runtime_fingerprint(self):
+        request=self.pending_restore()
+        request['fingerprints']=dict(request['fingerprints'],runtime='a'*64)
+        with self.assertRaisesRegex(ValueError,'IDENTITY_MISMATCH'):
+            guest.execute(request)
 
 
 if __name__ == "__main__":

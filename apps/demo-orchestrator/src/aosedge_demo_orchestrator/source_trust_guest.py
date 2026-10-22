@@ -16,6 +16,74 @@ MACHINE_ID = Path("/etc/machine-id")
 OWNER = 0
 SM_DROPIN = Path("/run/systemd/system/aos-sm.service.d/85-democtl-viss-mtls.conf")
 VDP_DROPIN = Path("/run/systemd/system/aos-vehicle-data-provider.service.d/85-democtl-viss-mtls.conf")
+LIVE_CREDENTIALS = Path('/run/credentials')
+
+
+def unchanged_restore(request, selected, files):
+    """Observe the boot-restored enrollment, without interrupting native FOTA.
+
+    This is not permission to configure during a transaction. Every declaration,
+    public binding and live credential must already match the enrolled identity.
+    No files, services, generation, selector or transaction are changed.
+    """
+    import ssl
+    item = request['vehicle']
+    generation = selected.get('assignmentGeneration')
+    if (type(generation) is not int or not 1 <= generation < 2**63
+            or selected.get('role') != 'SELECTED_PLATFORM_UNIT'):
+        raise ValueError('SOURCE_TRUST_GENERATION_INVALID')
+    sm_binding = dict(schemaVersion=1, unitId=item['unitId'],
+        nodeId=item['cloud']['identity']['nodeHardwareId'], role='PLATFORM_UPDATE_RUNTIME',
+        clientCertificateSha256=request['fingerprints']['runtime'], assignmentGeneration=generation)
+    vdp_binding = dict(schemaVersion=2, viss=dict(uri='wss://10.0.0.1:6443', tlsServerName='127.0.0.1'),
+        selectedSource=selected)
+    checked = {}
+    def read(path, mode):
+        safe(path)
+        info=path.stat()
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                or stat.S_IMODE(info.st_mode) != mode or not 0 < info.st_size < 16384):
+            raise ValueError('SOURCE_TRUST_GUEST_FILE_UNSAFE')
+        value=path.read_bytes()
+        checked[path]=(info, value)
+        return value
+    for path, expected in ((INPUTS/'selected.json',vdp_binding), (INPUTS/'viss-update-binding',sm_binding)):
+        if json.loads(read(path,0o644)) != expected:
+            raise ValueError('SOURCE_TRUST_GUEST_IDENTITY_MISMATCH')
+    for name,role in (('vdp','selected-platform-unit'),('runtime','platform-update-runtime')):
+        cert=files[name+'Certificate']; key=files[name+'Key']
+        certificate=read(cert,0o600)
+        read(key,0o600)
+        if hashlib.sha256(ssl.PEM_cert_to_DER_cert(certificate.decode())).hexdigest()!=request['fingerprints'][name]:
+            raise ValueError('SOURCE_TRUST_CREDENTIAL_FINGERPRINT_MISMATCH')
+        san=call(['openssl','x509','-in',str(cert),'-noout','-ext','subjectAltName']).splitlines()
+        if len(san)!=2 or san[1].strip()!='URI:urn:aosedge:demo:viss-client:v1:'+role+':'+item['unitId']+':'+item['nodeId']:
+            raise ValueError('SOURCE_TRUST_GUEST_CERTIFICATE_IDENTITY_MISMATCH')
+        if call(['openssl','x509','-in',str(cert),'-pubkey','-noout'])!=call(['openssl','pkey','-in',str(key),'-pubout']):
+            raise ValueError('SOURCE_TRUST_GUEST_KEY_MISMATCH')
+    declarations={SM_DROPIN:('[Service]\nLoadCredential=viss-update-certificate:'+str(files['runtimeCertificate'])
+        +'\nLoadCredential=viss-update-private-key:'+str(files['runtimeKey'])+'\n'),
+        VDP_DROPIN:('[Service]\nLoadCredential=viss-client-cert.pem:'+str(files['vdpCertificate'])
+        +'\nLoadCredential=viss-client-key.pem:'+str(files['vdpKey'])
+        +'\nLoadCredential=viss-server-ca.pem:'+str(files['ca'])
+        +'\nLoadCredential=viss-selected-source.json:'+str(INPUTS/'selected.json')+'\n')}
+    for path,expected in declarations.items():
+        if read(path,0o644).decode()!=expected:
+            raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+    # An existing drop-in alone does not prove that SM loaded its snapshot.
+    for name,filename in (('runtimeCertificate','viss-update-certificate'),('runtimeKey','viss-update-private-key')):
+        path=LIVE_CREDENTIALS/'aos-sm.service'/filename
+        safe(path)
+        if not path.is_file() or path.read_bytes()!=files[name].read_bytes():
+            raise ValueError('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+    observed=status()
+    for path,(info,value) in checked.items():
+        after=path.stat()
+        if (any(getattr(info,k)!=getattr(after,k) for k in ('st_dev','st_ino','st_mode','st_uid','st_size','st_mtime_ns','st_ctime_ns'))
+                or path.read_bytes()!=value):
+            raise ValueError('SOURCE_TRUST_RESTORE_CHANGED')
+    return dict(configured=True,smRestarted=False,vdpRestarted=False,noOp=True,
+        assignmentGeneration=generation,**observed)
 
 
 def call(argv, data=None):
@@ -127,6 +195,9 @@ def execute(request):
                     or stat.S_IMODE(info.st_mode) != (0o644 if name == "ca" else 0o600)
                     or not 0 < info.st_size < 16384):
                 raise ValueError("SOURCE_TRUST_GUEST_FILE_UNSAFE")
+        transaction=INPUTS.parent/'state/transaction.json'
+        if transaction.exists() or transaction.is_symlink():
+            return unchanged_restore(request, selected, files)
         return execute(dict(request, action="trust-configure", generation=selected["assignmentGeneration"],
             material={name: path.read_text() for name, path in files.items()}))
     if request["action"] != "trust-configure":
