@@ -119,6 +119,11 @@ def main(argv=None):
     try:
         require(args.drive_binding is None and args.drive_token_fd is None,
                 'Legacy DMG acquisition is retired; use launcher A for operator media or lab inputs for build dependencies')
+        if args.action == 'space':
+            from .space_probe import probe
+            result = probe(args, progress)
+            emit(result)
+            return 0 if result['fitsCheckedPools'] and result['storagePreflightComplete'] else 2
         release = Release(args.manifest)
         profile = args.profile
         if profile is None and args.storage and (args.storage / 'preparation.json').exists():
@@ -129,14 +134,6 @@ def main(argv=None):
             return 0
         require(args.storage is not None, 'Specify --storage as an explicit directory on a writable local APFS volume')
         storage = Storage(args.storage, release, profile)
-        if args.action == 'space':
-            state = storage.state() if storage.state_path.exists() else {
-                'binding':storage.binding, 'sources':{}, 'artifacts':{}, 'builds':{}}
-            require(storage.state_path.exists() or not storage.root.exists() or not any(storage.root.iterdir()),
-                    'Refusing an unowned nonempty workspace')
-            result = space.report(storage, state, args.target, args.build_plan, args.cache_from, args.docker)
-            emit(result)
-            return 0 if result['fitsCheckedPools'] and result['storagePreflightComplete'] else 2
         if args.action == 'cache':
             require(profile != 'operator', 'Operator media cache is owned by launcher A, not lab cache')
             require(args.cache_from is not None, 'Specify --cache-from with an existing prepared workspace')

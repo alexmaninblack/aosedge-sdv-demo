@@ -62,9 +62,11 @@ def footprint(path, check):
     return result
 
 
-def report(storage, state, target='all', build_plan=None, donor_path=None, docker=None):
+def report(storage, state, target='all', build_plan=None, donor_path=None, docker=None,
+           progress=lambda event, detail: None):
     require(storage.profile in ('developer','operator'), 'Full-source capacity closure is not yet supported')
     check = lambda: storage.check(reserve=0)
+    progress('SPACE_STAGE', 'cache')
     check()
     donor = cache.source(storage, donor_path) if donor_path is not None else None
     wheel_scope_complete = storage.profile == 'operator' or any(
@@ -78,6 +80,7 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
             shared.append(key)
         else:
             missing.append(key)
+    progress('SPACE_STAGE', 'plan')
     steps = []
     if storage.profile == 'developer':
         plan = chain.read_plan(storage.release, build_plan)
@@ -109,6 +112,7 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
     docker_volume = None
     needs_docker = storage.profile == 'developer' and target in (
         'all', 'brake-backend', 'tire-backend', 'backend-export', 'brake-service', 'tire-service')
+    progress('SPACE_STAGE', 'docker')
     if docker is not None and needs_docker:
         try:
             selected = containers.inspect_storage(docker, storage.environment(create=False), existing)
@@ -119,8 +123,14 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
             docker_status = {'status':'BLOCKED', 'reason':str(error)[:1000]}
         except OSError:
             docker_status = {'status':'BLOCKED', 'reason':'Cannot verify active local Docker storage; check Engine, disk and permissions'}
+    progress('SPACE_STAGE', 'capacity-pools')
     pools = capacity_report(requests)
+    progress('SPACE_STAGE', 'producer-policy')
     compatibility = chain.storage_compatibility(storage, plan, docker_volume) if storage.profile == 'developer' and target == 'all' else None
+    inventory = {}
+    for name in ('sources','cache','inputs','builds','.tmp','tmp'):
+        progress('SPACE_STAGE', 'inventory-'+name)
+        inventory[name] = footprint(storage.path(name), check)
     return {'status':'SPACE_REPORT', 'profile':storage.profile, 'freeBytes':free,
         'storage':storage.volume, 'capacityPools':pools, 'fitsCheckedPools':all(p['fits'] for p in pools),
         'dockerStorage':docker_status, 'producerStorageCompatibility':compatibility,
@@ -132,7 +142,7 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
                  'shareableLogicalBytes':sum(rows[k]['bytes'] for k in shared),
                  'absentFromCachesLogicalBytes':sum(rows[k]['bytes'] for k in missing),
                  'cacheAbsenceIsNotMissingRetainedInput':True},
-        'workspace':{name:footprint(storage.path(name), check) for name in ('sources','cache','inputs','builds','.tmp','tmp')},
+        'workspace':inventory,
         'ownerGuards':steps, 'largestStepGuardBytes':largest, 'fitsLargestStepGuard':free >= largest,
         'sumOfStepReservationsBytes':envelope, 'fitsSumOfStepReservations':free >= envelope,
         'reservationSumIsNotPeak':True, 'coldBuildPeakBytes':None,

@@ -240,7 +240,11 @@ class SpaceTests(StorageFixture, unittest.TestCase):
 
     def test_cli_space_does_not_initialize_new_workspace(self):
         self.fixture(); destination = self.base/'new-space'
-        with redirect_stdout(io.StringIO()):
+        from reproduction import space_probe
+        def inspect(args, progress):
+            return space_probe.inspect_request({key:str(getattr(args,key)) if getattr(args,key) is not None
+                else None for key in space_probe.FIELDS}, progress)
+        with redirect_stdout(io.StringIO()), patch.object(space_probe, 'probe', side_effect=inspect):
             self.assertEqual(cli.main(['space','--profile','operator','--storage',str(destination)]), 0)
         self.assertFalse(destination.exists())
 

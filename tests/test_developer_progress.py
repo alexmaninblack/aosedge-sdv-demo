@@ -71,6 +71,16 @@ class ProgressTests(unittest.TestCase):
         self.assertIn('Stopped', screen.getvalue())
         self.assertNotIn('Done.', screen.getvalue())
 
+    def test_capacity_stages_show_current_work_without_paths_or_fake_percent(self):
+        display, screen = self.display()
+        display.event('SPACE_STAGE', 'docker')
+        display.event('SPACE_STAGE', 'inventory-sources')
+        display.event('SPACE_STAGE', '/private/unknown')
+        self.assertIn('Checking Docker storage', screen.getvalue())
+        self.assertIn('Counting workspace sources', screen.getvalue())
+        self.assertNotIn('/private/unknown', screen.getvalue())
+        self.assertNotIn('%', screen.getvalue())
+
     def test_steps_count_only_verified_results_and_no_build_eta(self):
         display, screen = self.display()
         display.event('CHAIN_STARTED', 17)

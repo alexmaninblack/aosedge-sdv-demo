@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: current definition v3; engineering build/delivery implemented; fresh reproduction remains unqualified
-- Version: 1.36
+- Version: 1.37
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: engineering build/delivery and [independent reproduction](../../docs/planning/roadmap.md#fresh-developer-reproduction)
@@ -988,6 +988,13 @@ nothing and does not set artifact/source/build readiness receipts. Existing
 verified objects are reused on repeat. Full-source cache closure remains gated.
 
 `space` is read-only and does not initialize a workspace. It reports declared
+capacity/cache/Docker/producer/inventory stages before inspecting them. The CLI
+runs its complete inspection, including metadata reads, in a separately owned
+read-only process with a 45-second deadline. Timeout names the last stage,
+unwinds owned subprocesses and returns no completed capacity verdict; it never
+skips a disk, reduces a reserve or reports partial observations as PASS.
+Successful reports include `inspectionSeconds`. This is not a build or runtime
+qualification. The inspection still reports declared
 cache objects present locally, available from the optional explicit donor, or
 absent from both. Absence from a cache does not mean an explicitly retained kit
 or Factory input is missing. Workspace logical bytes and file-reported blocks

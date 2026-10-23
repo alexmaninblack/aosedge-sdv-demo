@@ -19,6 +19,14 @@ NAMES = {
     'vm-runtime': 'Virtual controller runtime', 'application': 'Lab application',
     'setup': 'Signed Setup application', 'dmg': 'Installer DMG',
 }
+SPACE_PHASES = {
+    'metadata': 'Checking storage metadata', 'cache': 'Checking cache objects',
+    'plan': 'Checking selected build plan', 'docker': 'Checking Docker storage',
+    'capacity-pools': 'Checking free space and reserves',
+    'producer-policy': 'Checking build-owner storage compatibility',
+    **{'inventory-'+name: 'Counting workspace '+name
+       for name in ('sources','cache','inputs','builds','.tmp','tmp')},
+}
 
 
 def label(value):
@@ -139,7 +147,13 @@ class Display:
 
     def event(self, event, detail):
         with self.lock:
-            if event == 'ARTIFACT_SELECTED' and isinstance(detail, dict):
+            if event == 'SPACE_STAGE' and isinstance(detail, str) and detail in SPACE_PHASES:
+                if not self.active:
+                    self.begin('Storage check', SPACE_PHASES[detail])
+                else:
+                    self.phase = SPACE_PHASES[detail]
+                    self.draw(force=True)
+            elif event == 'ARTIFACT_SELECTED' and isinstance(detail, dict):
                 role, name, total = detail.get('role'), detail.get('file'), detail.get('bytes')
                 if role in NAMES and isinstance(name, str) and re.fullmatch(r'[A-Za-z0-9_.+-]{1,160}', name) and type(total) is int and total > 0:
                     self.artifact, self.expected = label(role) + ' — ' + name, total
