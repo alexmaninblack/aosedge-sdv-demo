@@ -9,6 +9,9 @@ owned by the [baseline](../qualification/current-baseline.md), not a plan's date
 
 ## Remaining work
 
+- [Presenter stability and clarity](active/presenter-ui-stability.md): one
+  source/fixture/package/API/UI packet; retained Test and separate review branch.
+
 - [Current roadmap](roadmap.md): all remaining delivery/reproduction gates,
   including independent fresh-host developer reproduction.
 - [Host sleep/wake recovery](active/native-sleep-wake-recovery-2026-09-21.md):

@@ -335,7 +335,7 @@ def run(args, transport, config):
         ownerReader=j.source_pin(),
         nativeBuild=h.digest(args.native_build/'build-receipt.json') if args.native_build else None,
         browser=hashlib.sha256(browser_script.read_bytes()+(HERE/'ui_pilot.mjs').read_bytes()
-            +(HERE/'ui_read_broker.mjs').read_bytes()).hexdigest()),
+            +(HERE/'ui_read_broker.mjs').read_bytes()+(HERE/'ui_geometry.mjs').read_bytes()).hexdigest()),
         sort_keys=True).encode()).hexdigest()
     started, tunnel, mount_owned, bootstrap_attempted = time.monotonic(), None, False, False
     native = None

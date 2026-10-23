@@ -10,6 +10,7 @@ import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { idle, acknowledgement, owners } from './ui_pilot.mjs';
 import { readBroker } from './ui_read_broker.mjs';
+import { watchPresentation } from './ui_geometry.mjs';
 const executeFile=promisify(execFile);
 
 const origin = 'http://127.0.0.1:18080';
@@ -29,6 +30,14 @@ export const continuousSections = ['release-story','installed-views','moving-sot
 // real time. Wait for real motion; never bypass road controls or publish while
 // stationary merely to satisfy a wall-clock deadline.
 export const movingWindowMs = 120000;
+export function visibleCardText(text) {
+  const match=/^(v[123]) · ([0-9]+\.[0-9]+\.[0-9]+)$/.exec(text);
+  return match ? `Capability ${match[1].toUpperCase()} · Cloud release ${match[2]}` : text;
+}
+export function candidateText(profile,release) {
+  assert(/^v[123]$/.test(profile) && version.test(release),'RELEASE_VIEW_INPUT_INVALID');
+  return `Selected candidate · Capability ${profile.toUpperCase()} · Cloud release ${release}`;
+}
 
 export function qualificationCloud(input) {
   const domain=input.cloudDomain??'aws-stage.epmp-aos.projects.epam.com';
@@ -43,13 +52,13 @@ export function releaseViewSpec(team, profile, release) {
     profileButton:`${profile} ${profiles[team][Number(profile[1])-1]}`,
     stages:team==='platform'?['Published','Installed']:['Published','Assigned','Running'],
     card:team==='platform'?'Vehicle Data Platform installed details':team==='brake'?'Brake service details':'Tire service details',
-    cardText:`${profile} · ${release}`,profile,release};
+    cardText:`Capability ${profile.toUpperCase()} · Cloud release ${release}`,profile,release};
 }
 
 export async function selectReleaseView(page, expect, spec) {
   await page.getByRole('button',{name:spec.teamTab,exact:true}).click();
-  // Team navigation suggests the next profile. Select the observed release
-  // explicitly before checking its candidate; selection never publishes it.
+  // Navigation preserves the operator's profile. Select the exact observed
+  // release explicitly; this input never publishes it.
   const profile=page.getByRole('group',{name:'Capability profile',exact:true})
     .getByRole('button',{name:spec.profileButton,exact:true});
   await profile.click();
@@ -255,7 +264,7 @@ export async function main(inputPath) {
   const query = async (name, team, release) => input.visibleM1 ? broker.request('query',{name,team,release}) : background([input.helper,
     '--config', input.config, '--journey', input.journey, '--test', input.test, '--query', name,
     ...(team ? ['--team', team] : []), ...(release ? ['--release', release] : [])]);
-  let browser, page, session, before, windowSession, windowId, workspaceRequired = false,
+  let browser, page, session, before, windowSession, windowId, presentation, presentationEvidence, workspaceRequired = false,
     armed = null, refused = false, failed = false, current = 'open';
   const sent = [], stages = [], cards = { ...input.cards };
   const watchdog = setTimeout(() => { failed = true; record({ stage: current, state: 'SCENARIO_DEADLINE' });broker?.close();
@@ -354,7 +363,7 @@ export async function main(inputPath) {
   async function releaseViews(team,profile,release) {
     const spec=releaseViewSpec(team,profile,release);
     await selectReleaseView(page,expect,spec);
-    await expect(page.getByText(`Selected candidate · ${profile} · ${release}`,{exact:true})).toBeVisible();
+    await expect(page.getByText(candidateText(profile,release),{exact:true})).toBeVisible();
     for(const name of spec.stages) await expect(page.locator('.studio-release-stages')
       .getByText(name,{exact:true}).locator('..')).toHaveClass(/\bcomplete\b/,{timeout:65000});
     if(team==='platform') await expect(page.getByText(`Cloud installed · ${release}`,{exact:true})).toBeVisible({timeout:65000});
@@ -420,6 +429,7 @@ export async function main(inputPath) {
       context=await browser.newContext({viewport:{width:1440,height:1000}});page=await context.newPage();
     }
     page.setDefaultTimeout(30000);
+    presentation=watchPresentation(page,record);
     const readStarts = new WeakMap();
     const isSnapshot = req => req.method() === 'GET' && req.url() === `${origin}/api/presenter/snapshot`;
     const isPlatform = req => req.method() === 'GET' && req.url() === `${origin}/api/presenter/platform`;
@@ -545,7 +555,7 @@ export async function main(inputPath) {
         await button('Platform Team').click();
         const selected = button('v2 Brake analysis');
         await selected.click(); await expect(selected).toHaveAttribute('aria-pressed', 'true');
-        const prepared = await operate({ action: 'prepare', profile: 'v2' }, () => button('Prepare v2').click());
+        const prepared = await operate({ action: 'prepare', profile: 'v2' }, () => page.getByTestId('prepare-release').click());
         assert(version.test(prepared.version), 'PREPARED_VERSION_REQUIRED');
         await expect(selected).toHaveAttribute('aria-pressed', 'true');
         record({ state: 'VDP_V2_PREPARATION_CONFIRMED', version: prepared.version, publication: 'NOT_REQUESTED' });
@@ -569,12 +579,12 @@ export async function main(inputPath) {
           let prepared;
           if (existingVersion) {
             // Require the current UI candidate to agree with the prior completed receipt.
-            await expect(page.getByText(`Selected candidate · ${profile} · ${existingVersion}`,{exact:true})).toBeVisible();
+            await expect(page.getByText(candidateText(profile,existingVersion),{exact:true})).toBeVisible();
             prepared={version:existingVersion};
             record({state:'PREPARED_VERSION_REUSED',profile,version:existingVersion});
-          } else prepared=await operate({action:'prepare',profile},()=>button('Prepare '+profile).click());
+          } else prepared=await operate({action:'prepare',profile},()=>page.getByTestId('prepare-release').click());
           assert(version.test(prepared.version),'PREPARED_VERSION_REQUIRED');
-          await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
+          await expect(page.getByText(candidateText(profile,prepared.version),{exact:true})).toBeVisible();
           await confirmed({action:'publish',version:prepared.version},()=>button('Sign & publish').click(),'Sign & publish VDP');
           await until(async()=>installed((await query('component')),'platform',prepared.version),'VDP_INSTALL_NOT_CONFIRMED',180000);
           await releaseViews('platform',profile,prepared.version);
@@ -586,9 +596,9 @@ export async function main(inputPath) {
           await button(team==='brake'?'Brake Team':'Tire Team').click();
           await page.getByRole('group',{name:'Capability profile',exact:true}).getByRole('button',
             {name:`${profile} ${profiles[team][Number(profile[1])-1]}`,exact:true}).click();
-          const prepared=await operate({action:'service-prepare',team,profile},()=>button('Prepare '+profile).click());
+          const prepared=await operate({action:'service-prepare',team,profile},()=>page.getByTestId('prepare-release').click());
           assert(prepared.releaseHandle && prepared.version,'PREPARED_SERVICE_REQUIRED');
-          await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
+          await expect(page.getByText(candidateText(profile,prepared.version),{exact:true})).toBeVisible();
           const action={action:'service-publish',release:prepared.releaseHandle};
           await confirmed(action,()=>button('Sign & publish').click(),'Sign & publish service');
           await until(async()=>(await query('publication',null,prepared.releaseHandle)).stage==='READY','SERVICE_PUBLICATION_NOT_READY',180000);
@@ -766,7 +776,7 @@ export async function main(inputPath) {
     await stage('installed-details',async () => {
       await button('Vehicle').click();
       for (const [name,text] of Object.entries(cards)) {
-        await expect(button(name)).toContainText(text,{timeout:65000}); await button(name).click();
+        await expect(button(name)).toContainText(visibleCardText(text),{timeout:65000}); await button(name).click();
         await expect(dialog()).toBeVisible(); await close();
       }
       await shot('installed-cards');
@@ -774,7 +784,7 @@ export async function main(inputPath) {
     for (const name of ['Platform Team','Brake Team','Tire Team']) {
       await stage(name.replaceAll(' ','-').toLowerCase(),async () => {
         await button(name).click(); await expect(page.getByRole('group',{name:'Capability profile',exact:true})).toBeVisible();
-        await expect(button('Sign & publish')).toBeVisible(); await expect(button('Prepare v1').or(button('Prepare v2')).or(button('Prepare v3'))).toBeVisible();
+        await expect(button('Sign & publish')).toBeVisible(); await expect(page.getByTestId('prepare-release')).toBeVisible();
         await shot(name.split(' ')[0].toLowerCase()+'-team');
       });
     }
@@ -892,11 +902,11 @@ export async function main(inputPath) {
     record(stages.at(-1)); if(page) await shot('failure').catch(()=>{});
     console.log(`${current}: FAIL · ${stages.at(-1).code}`);
   } finally {
-    clearTimeout(watchdog);broker?.close();if(browser)await browser.close();
+    clearTimeout(watchdog);broker?.close();if(presentation)presentationEvidence=await presentation.close();if(browser)await browser.close();
     fs.writeFileSync(path.join(input.records,'browser-report.json'),JSON.stringify({outcome:failed?'FAIL':'PASS',
       scenario:input.scenario,stages,actions:sent,browserClosed:true,nativeAcceptance:'NOT_RUN',fullE2E:'NOT_COMPLETE',
       browserLocation:input.visibleM1?'M1_VISIBLE':'DEVELOPMENT_MAC_HEADLESS',
-      rawTraceRecorded:false},null,2)+'\n',{mode:0o600});
+      rawTraceRecorded:false,presentationEvidence},null,2)+'\n',{mode:0o600});
   }
   return failed?1:0;
 }

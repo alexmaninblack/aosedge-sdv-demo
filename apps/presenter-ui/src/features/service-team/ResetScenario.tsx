@@ -4,6 +4,7 @@ import { usePresenterControls } from "../../app/state/PresenterControls";
 import type { BackendBinding } from "./backendSelection";
 import { backendSummary, recordObject, readable, type BackendModel, type Team } from "./useBackendObservation";
 import { stamp } from "../../app/StudioReadViews";
+import { useId } from "react";
 
 export function useResetScenario(team: Team, model: BackendModel, binding?: BackendBinding, retiring = false, runId?: string | null, unavailableReason?: string) {
   const controls = usePresenterControls();
@@ -37,10 +38,11 @@ export function useResetScenario(team: Team, model: BackendModel, binding?: Back
     request: () => controls.request({ action: "backend-reset", team }, scope) };
 }
 
-export function ResetScenario({ team, model, binding, retiring, runId, unavailableReason, action = true }: { team: Team; model: BackendModel; binding?: BackendBinding; retiring?: boolean; runId?: string | null; unavailableReason?: string; action?: boolean }) {
+export function ResetScenario({ team, model, binding, retiring, runId, unavailableReason, action = true, compact = false }: { team: Team; model: BackendModel; binding?: BackendBinding; retiring?: boolean; runId?: string | null; unavailableReason?: string; action?: boolean; compact?: boolean }) {
   const reset = useResetScenario(team, model, binding, retiring, runId, unavailableReason);
-  return <div className="studio-reset-scenario">
-    {action && <button aria-label={`Reset Driver Advisory — ${team === "brake" ? "Brake" : "Tire"}`} disabled={reset.disabled} onClick={reset.request}>Reset Driver Advisory</button>}
-    <p role="status">{reset.reason}</p>
+  const reasonId = useId();
+  return <div className={`studio-reset-scenario${compact ? " is-compact" : ""}`}>
+    {action && <button aria-label={`Reset Driver Advisory — ${team === "brake" ? "Brake" : "Tire"}`} aria-describedby={reasonId} title={reset.reason} disabled={reset.disabled} onClick={reset.request}>Reset Driver Advisory</button>}
+    <p id={reasonId} className={compact ? "studio-accessible-note" : undefined} role="status">{reset.reason}</p>
   </div>;
 }

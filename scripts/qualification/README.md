@@ -70,7 +70,14 @@ ignition and Stop/Start matrix without Create, provisioning or credential/
 Subject replacement. Its backend prerequisite is a read-only check of the exact
 stopped image bindings and current package inputs, not another image import or
 backend activation. Record those fresh-first-use gates as outside this profile,
-not inherited passes. A changed Test fails closed. Use the new candidate's own
+not inherited passes. A rebuilt package may contain different immutable image
+IDs for the same source. The retained profile verifies the journal-bound images,
+their architecture/labels and matching candidate source/protocols; it does not
+require those runtime bindings to be replaced by the newly built IDs. Candidate
+image absence alone cannot stand in for a failed retained-runtime observation.
+Fresh backend import and native Setup's candidate-inventory readiness remain
+separate evidence; do not relabel them as passed by this profile. A changed Test
+fails closed. Use the new candidate's own
 media/installation records; never rebind a predecessor's campaign receipt.
 The retained Cloud prerequisite authenticates the already selected pair and
 checks its domain, pinned owners and publication permissions without repeating
@@ -200,6 +207,12 @@ Stopping preserves Unit identity, VM disks, models, history and release ledgers;
 it is not Finish or retirement. Reuse shared Docker Engine without opening its
 Dashboard or restarting it as a routine test step.
 
+When an operator requests a subsequent UI review, preserve the M1 installation,
+Test/data, DMG and campaign materials after shutdown. The visible-browser
+executor also retains its private profile on M1; profiles, cookies and raw traces
+are never exported with evidence. Deleting retained review materials is a
+separate cleanup operation, not part of closing test-owned processes.
+
 Keep current release/campaign receipts and the private configuration needed to
 resume. Remove obsolete fixture packages, screenshots and one-off scripts after
 ownership, dependencies and open handles are checked. Do not restore entire
@@ -208,10 +221,32 @@ runtime data and compact evidence distinct.
 
 ## Offline checks
 
+### Presenter browser fixtures
+
+After the affected web target passes its unit/type/build gates, use
+`presenter_fixture_campaign.py --config PRIVATE_TRANSPORT --tools-root M1_VERIFIED_UI_TOOLS --records NEW_PRIVATE_RECORDS`.
+It transfers only compiled web bytes and browser fixture inputs to a new private
+M1 review directory, verifies their digests and the existing signed Chrome,
+requires the fixture port to be unused, and runs the whole browser fixture suite
+against an isolated static server. No installed payload, Test, Docker or Cloud
+owner is changed. Existing UI tools are reused, not reinstalled. Server/browser
+closure and retained M1 review files are reported separately from assertions.
+This is fixture evidence, not an installed-package or live E2E pass.
+
+The existing visible browser scenario and read-only observer also collect bounded
+`UI_PRESENTATION_SAMPLE` records: geometry, selected perspective, document
+visibility, fixed freshness/reason codes and a known primary-action label. They
+do not capture arbitrary DOM text, private identities or payloads. Sampling owns
+no operation and changes no product state. Navigation, viewport changes and open
+dialogs are distinguished from same-context movement. The browser result reports
+sample/error/limit counts separately; missing samples cannot establish visual
+acceptance. Shutdown awaits the sole in-flight read before closing the browser.
+
 The qualification tooling's unit fixtures do not start the demo:
 
 ```sh
-python3 -B -m unittest discover -s scripts/qualification -p 'test_*.py'
+PYTHONPATH=apps/demo-orchestrator/src:scripts/distribution \
+  python3 -B -m unittest discover -s scripts/qualification -p 'test_*.py'
 ```
 
 The integration source suite is documented in

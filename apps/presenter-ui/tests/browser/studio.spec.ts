@@ -52,9 +52,9 @@ for (const online of ["ONLINE", "OFFLINE"]) test(`partial retirement ${online} n
   if (online === "OFFLINE") await expect(page.getByRole("button", { name: "Continue Test deletion", exact: true })).toBeEnabled();
   else await expect(page.getByRole("button", { name: "Continue Test deletion", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: /Platform Team/ }).click();
-  await expect(page.getByRole("button", { name: /^Prepare v[123]$/, exact: true })).toBeDisabled();
+  await expect(page.getByTestId("prepare-release")).toBeDisabled();
   await page.getByRole("button", { name: /Brake Team/ }).click();
-  await expect(page.getByRole("button", { name: /^Prepare v[123]$/, exact: true })).toBeDisabled();
+  await expect(page.getByTestId("prepare-release")).toBeDisabled();
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
@@ -92,7 +92,7 @@ test(`stopped historical ${action}/${state} offers only confirmed Finish, not re
     await page.keyboard.press("Escape");
   }
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
-  await expect(page.getByRole("button", { name: /^Prepare v[123]$/, exact: true })).toBeDisabled();
+  await expect(page.getByTestId("prepare-release")).toBeDisabled();
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
@@ -204,7 +204,7 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
   await expect(page.getByRole("button", { name: "Continue preparation" })).toBeEnabled();
   await page.getByRole("button", { name: /Platform Team/ }).click();
   await page.getByRole("button", { name: "v1 Braking telemetry" }).click();
-  await expect(page.getByText("Selected candidate · v1 · 19.0.0")).toBeVisible();
+  await expect(page.getByText("Selected candidate · Capability V1 · Cloud release 19.0.0")).toBeVisible();
   await expect(page.locator(".studio-release-stages .complete")).toHaveCount(2);
   await page.getByRole("button", { name: "v2 Brake analysis" }).click();
   await expect(page.locator(".studio-release-stages .complete")).toHaveCount(3);
@@ -216,7 +216,7 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
 test("installed profile never falls back to a matching local prepared candidate", async ({ page }) => {
   const requests = await retainedRun(page, false, "ONLINE", "", "", false, { confirmedProfile: false, registrationComplete: true });
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).toContainText("Release · 20.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).toContainText("Profile not confirmed · Cloud release 20.0.0");
   await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).not.toContainText("v2 · 20.0.0");
   await expect(page.getByText("Installed profile not confirmed", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open Platform v1", exact: true })).toHaveCount(0);
@@ -293,7 +293,7 @@ test("Studio uses protected Test actions, automatic releases and actual receipts
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "Prepare v1" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByText("Selected candidate · v1 · 19.0.0")).toBeVisible();
+  await expect(page.getByText("Selected candidate · Capability V1 · Cloud release 19.0.0")).toBeVisible();
   expect(mutations[0]).toMatchObject({ action: "prepare", profile: "v1", sessionId: "test-native" });
   expect(mutations[0]).not.toHaveProperty("version");
   expect(mutations[0]).not.toHaveProperty("target");

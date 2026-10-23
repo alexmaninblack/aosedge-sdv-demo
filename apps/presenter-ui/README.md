@@ -73,6 +73,21 @@ simulation path is not used by Presenter actions.
 
 ### Observation and native refresh
 
+The workspace keeps navigation, Next Step, a bounded status dock and the footer
+stable during observation and operation changes. Activity holds full operation
+receipts; Window layout opens independent placement details without inspecting
+Cloud credentials. Overview cards summarize software/input/results, with resource
+charts in Cloud monitoring. Reset remains a secondary action with an accessible
+prerequisite and independently correlated CLEAR requirement.
+
+Unit connection and report freshness are separate. Retained connection evidence
+is labelled last confirmed, never a current Online claim. Inventory loading is
+not missing provisioning. Candidate publication, assignment and Cloud installation
+are separate observations; a completed local/API step cannot freshen a Cloud
+report. Capability V1/V2/V3 is distinct from the Cloud release number. Team
+navigation preserves the chosen profile; suggested next profiles require an
+explicit action.
+
 Visible Cloud panels share an in-flight-deduplicated observer. Entry/re-entry
 refreshes; pending state backs off from 2 to 10 seconds, idle reads use 10 seconds.
 Hidden panels stop scheduling reads. Local operation receipts poll independently
@@ -100,9 +115,13 @@ Use the project's pinned Node/npm versions. In this package:
 npm ci
 npm run typecheck
 npm run test:unit
-npm run test:browser
 npm run build
 ```
+
+Run browser fixtures on the dedicated M1 through the
+[qualification entry](../../scripts/qualification/README.md#presenter-browser-fixtures).
+Do not run browser or live checks on the development Mac. Fixture screenshots
+are not installed-package API/UI acceptance.
 
 Then, in the installed `apps/demo-orchestrator` environment:
 

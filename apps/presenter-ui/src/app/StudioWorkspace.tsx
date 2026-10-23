@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { WorkspacePlacement } from "./WorkspacePlacement";
+import { StudioStatus } from "./StudioStatus";
+import { capabilityLabel, cloudPresentation, publicationLabel } from "../domain/studioPresentation";
 import type { Perspective, PresenterSnapshot, ServiceRelease } from "../domain";
 import type { CloudComponent, CloudService } from "../domain/platformObservation";
 import { confirmedInstalledProfile, installedProfileLabel } from "../domain/installedCompatibility";
@@ -14,7 +16,6 @@ import { backendSummary, useBackendObservation } from "../features/service-team/
 import { backendBinding } from "../features/service-team/backendSelection";
 import { BackendSummary, CloudSummary } from "./StudioSummaryCards";
 import { ResetScenario } from "../features/service-team/ResetScenario";
-import { ResourceGraphs } from "./ResourceGraphs";
 import { CloudConnectionPanel } from "./CloudConnectionPanel";
 import { ClientBuildNotice } from "./ClientBuildNotice";
 import { FinishAcknowledgement } from "./FinishAcknowledgement";
@@ -65,7 +66,11 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const [monitorTab, setMonitorTab] = useState("Software");
   const [sessionTab, setSessionTab] = useState("Runtime");
   const [selection, setDetails] = useState<Detail | null>(null), [sessionOpen, setSessionOpen] = useState(false), [traceOpen, setTraceOpen] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const architecture = useRef<HTMLDivElement>(null);
+  const bodyElement = useRef<HTMLDivElement>(null);
+  const viewScroll = useRef<Record<Perspective, number>>({ global: 0, platform: 0, brake: 0, tire: 0 });
+  useLayoutEffect(() => { if (bodyElement.current) bodyElement.current.scrollTop = viewScroll.current[perspective]; }, [perspective]);
   const vehicle = local.vehicles.test;
   // The live read port uses {} when no quick-preparation checkpoint exists.
   // That sentinel is not a recorded recipe and must not hide story power-on.
@@ -119,6 +124,8 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
     if (authoringRun.current === confirmedRun) return;
     authoringRun.current = confirmedRun;
     setProfiles({ platform: "v1", brake: "v1", tire: "v1" });
+    viewScroll.current = { global: 0, platform: 0, brake: 0, tire: 0 };
+    if (bodyElement.current) bodyElement.current.scrollTop = 0;
   }, [local.available, local.runId, noController]);
   const sessionJobs = controls.session?.jobs ?? [];
   // First-create can fail before a journal exists. Keep those receipts only
@@ -169,12 +176,10 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
     ? pending ? "Another component update is pending; inspect its Cloud state before publishing again." : submitted ? "This candidate was already submitted. Observe its existing publication; it will not be sent twice." : !version ? "Prepare this capability profile before signing and publishing." : null
     : servicePending ? "A service update is pending; inspect its Cloud state before publishing again." : serviceSubmitted ? "This candidate was already submitted. Refresh its publication or prepare a higher release." : !service ? "Prepare this service profile before signing and publishing." : null);
   const openView = (next: Perspective, requested?: Profile) => {
-    if (next !== "global") {
-      const observedLevel = Number(installedProfile?.slice(1)) || 0;
-      const suggested = requested ?? (next === "platform" ? `v${Math.min(observedLevel + 1, 3)}`
-        : next === "brake" ? `v${Math.max(1, Math.min(observedLevel, 3))}` : "v1") as Profile;
-      setProfiles(previous => ({ ...previous, [next]: suggested }));
-    }
+    if (bodyElement.current) viewScroll.current[perspective] = bodyElement.current.scrollTop;
+    // Navigation preserves operator input. Only an explicit next-profile action
+    // can select a suggestion; installed software is not an authoring selection.
+    if (next !== "global" && requested) setProfiles(previous => ({ ...previous, [next]: requested }));
     navigate(next); setPopup(null); setDetails(null);
   };
   const openBackend = (next: "brake" | "tire" | "cloud") => { setDetails(null); setPopup(next); };
@@ -214,7 +219,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
       ? { title: hasRegistration ? "Complete Cloud registration" : "Provision your vehicle", body: "Register in Test Vehicles, confirm Cloud Online, then connect the running Gateway in stationary Manual. The simulator and scene stay unchanged.", label: hasRegistration ? "Continue registration" : "Provision to Test", disabled: false, action: () => ask({ action: "provision" }) }
       : { title: "Prepare the platform release", body: "The Platform Team publishes software before the vehicle is provisioned.", label: "Open Platform", disabled: false, action: () => openView("platform") };
   } else if (present && !connected) guide = { title: "Connect the domain controller", body: "Connect the provisioned controller in stationary Manual without restarting the simulator.", label: "Connect in Manual", disabled: !running, action: () => ask({ action: "connect-test" }) };
-  else if (present && !componentCurrent) guide = { title: "Observe the current controller", body: "Cloud state is not current. Previous reports are not live confirmation.", label: "Refresh Cloud state", disabled: cloud.loading, action: cloud.refresh };
+  else if (present && !componentCurrent) guide = { title: cloud.loading ? "Updating controller report" : "Observe the current controller", body: "Waiting for Cloud confirmation. Last reported software is retained below; a local operation completing does not confirm Cloud installation.", label: "Refresh Cloud state", disabled: cloud.loading, action: cloud.refresh };
   else if (present && vdpIssue) guide = { title: "Component update issue", body: `${vdpIssue}. Safe Stop does not resolve this reported error. Inspect the Cloud report before deciding how to proceed.`, label: "Open Platform", disabled: false, action: () => openView("platform") };
   else if (present && pending) guide = { title: "Component update pending", body: `${pendingDescription}. Use native Safe Stop when ready; installation is owned by the vehicle.`, label: "Open Platform", disabled: false, action: () => openView("platform") };
   else if (present && publishedAny && installed === "0.0.0") guide = { title: "First platform update", body: "Drive the vehicle, then use native Safe Stop. Observe the installed release here; no Apply button is needed.", label: "Refresh Cloud state", disabled: cloud.loading, action: cloud.refresh };
@@ -281,27 +286,31 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const cloudState = current ? value?.online ?? "UNKNOWN" : "UNKNOWN";
   const cloudLabel = !localStateKnown ? "Controller state unavailable" : !present && !inventory && !value ? "No controller created" : !local.registrationComplete && !inventory?.unitId && value?.lifecycle !== "provisioned" ? local.registrationStarted ? "Registration incomplete" : "Not provisioned" : current ? cloudState : value ? "Last known Cloud report" : !observation ? "Cloud not yet observed" : "Cloud unavailable";
   const scopedJob = activeJob ?? jobs.at(-1) ?? null;
+  const cloudReport = cloudPresentation(bindingMatches ? observation : null, cloud.loading, cloudLabel);
+  const selectedCandidate = team === "platform" ? version : service?.version;
+  const candidateSubmitted = team === "platform" ? submitted : serviceSubmitted;
+  const candidateStage = team === "platform" ? publication?.stage : service?.publication.stage;
+  const candidateInstalled = team === "platform" ? Boolean(version && componentCurrent && installed === version) : serviceRunning(row, service?.version, Boolean(servicesCurrent));
   const closeSession = () => setSessionOpen(false);
   return <div className="studio-workspace" data-testid="studio-workspace">
-    <div className="studio-main" inert={Boolean(popup || details || sessionOpen || traceOpen)} aria-hidden={popup || details || sessionOpen || traceOpen ? true : undefined}>
+    <div className="studio-main" inert={Boolean(popup || details || sessionOpen || traceOpen || layoutOpen)} aria-hidden={popup || details || sessionOpen || traceOpen || layoutOpen ? true : undefined}>
     <ClientBuildNotice />
     <FinishAcknowledgement jobs={controls.session?.jobs ?? []} noController={noController} />
     <nav className="studio-nav" aria-label="Demo perspectives">{(["global", "platform", "brake", "tire"] as const).map(name => <button key={name} aria-label={name === "global" ? "Vehicle" : `${labels[name]} Team`} aria-pressed={perspective === name} onClick={() => openView(name)}><StudioIcon name={name === "global" ? "vehicle" : name} />{labels[name]}</button>)}</nav>
-    <div className="studio-topline"><h1>{title}</h1><span>Test Vehicle · {cloudLabel}</span></div>
+    <div className="studio-topline"><h1>{title}</h1><span className="studio-connection" data-freshness={cloudReport.lastKnown ? "last-known" : cloudReport.current ? "current" : "unconfirmed"} data-observation-reason={cloudReport.reason}><span>{cloudReport.lastKnown ? "Last confirmed connection" : "Test Vehicle"} · {cloudReport.connection}</span><small>{cloudReport.freshness}</small></span></div>
     {perspective === "global" && !local.runId && <details className="studio-advanced-preparation"><summary>Advanced preparation</summary><label>Preparation <select aria-label="Preparation" value={mode} disabled={controls.blocked || present} onChange={event => setMode(event.target.value)}><option value="story">Full story</option><option value="quick">Quick preparation</option></select></label><p>Full story shows each release step. Quick preparation also publishes VDP V1 and registers the Test; it does not install all future capabilities.</p></details>}
-    <div className="studio-body">
+    <div className="studio-body" ref={bodyElement} onScroll={event => { viewScroll.current[perspective] = event.currentTarget.scrollTop; }}>
       {perspective === "global" && <>
         <div ref={architecture} className="studio-architecture-stage">
           <ArchitectureWires element={architecture} cloudState={cloudState} brake={Boolean(services.brake?.service_versions?.installed_service_version)} tire={Boolean(services.tire?.service_versions?.installed_service_version)} />
           <div className="studio-backends">{(["brake", "tire", "cloud"] as const).map(name => <article className="studio-backend-card" key={name} data-team={name === "cloud" ? "platform" : name} data-anchor={`${name}-backend`}>
             <button className="studio-backend-details" aria-label={name === "cloud" ? "Aos Cloud Unit monitoring" : `${labels[name]} backend Open dashboard`} onClick={() => openBackend(name)}>
             <span className="studio-summary-heading"><StudioIcon name={name} /><strong>{name === "cloud" ? "Aos Cloud" : `${labels[name]} backend`}</strong></span>
-            {name === "cloud" ? <CloudSummary observation={bindingMatches ? observation : null} cloudLabel={cloudLabel} />
+            {name === "cloud" ? <CloudSummary observation={bindingMatches ? observation : null} cloudLabel={cloudLabel} loading={cloud.loading} />
               : <BackendSummary team={name} model={backendModels[name]} noController={noController} version={services[name]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[name]} runId={local.runId} />}
-            {name === "cloud" && <ResourceGraphs compact model={resources} inventory={inventory} />}
-            <span className="studio-summary-link"><span>{name === "cloud" ? "Unit monitoring ↗" : "Backend details ↗"}</span>{name === "cloud" && <small className="studio-platform-brand">AosEdge platform</small>}</span>
+            <span className="studio-summary-link"><span>{name === "cloud" ? "Unit monitoring ›" : "Backend details ›"}</span>{name === "cloud" && <small className="studio-platform-brand">AosEdge platform</small>}</span>
             </button>
-            {name !== "cloud" && <ResetScenario team={name} model={backendModels[name]} binding={backendBindings[name]} retiring={retiring} unavailableReason={lifecycleReason} runId={local.runId} />}
+            {name !== "cloud" && <ResetScenario compact team={name} model={backendModels[name]} binding={backendBindings[name]} retiring={retiring} unavailableReason={lifecycleReason} runId={local.runId} />}
           </article>)}</div>
           <div className="studio-architecture"><aside className="studio-gateway"><StudioIcon name="vehicle" /><strong>Vehicle</strong><small>Sensors & actuators</small><span>↓</span><StudioIcon name="gateway" /><strong>Vehicle Gateway</strong><small>VSS telemetry</small></aside><div className="studio-vss-line" />
             <section className="studio-controller" data-anchor="controller"><h2><StudioIcon name="platform" />Domain Controller</h2>
@@ -310,44 +319,52 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
                 const empty = noController || servicesCurrent && (!inventory?.services.value?.length || Boolean(inventory?.teamServiceIds?.[name] && !item));
                 return <article key={name} data-team={name} data-anchor={`${name}-service`} className={`studio-service-slot${!release ? " empty-slot" : ""}`}>
                   <button aria-label={`${labels[name]} service details`} disabled={!item} onClick={() => item && setDetails({ kind: "service", row: item })}>
-                    <StudioIcon name={name} /><strong>{labels[name]} Health</strong><small>{release ? `${serviceProfile(item, releases) ?? "Service"} · ${release}${servicesCurrent ? "" : " · last known"}` : empty ? "Not installed" : "Service not observed"}</small>
+                    <StudioIcon name={name} /><strong>{labels[name]} Health</strong><small>{release ? `${capabilityLabel(serviceProfile(item, releases))} · Cloud release ${release}` : empty ? "Not installed" : "Service not observed"}<span className="studio-software-freshness">{release ? servicesCurrent ? "Cloud report current" : "last known · awaiting Cloud confirmation" : ""}</span></small>
                   </button><button className="studio-manage-release" onClick={() => openView(name)} aria-label={`Manage ${labels[name]} releases`}>Manage releases</button>
                 </article>;
               })}</div>
-              <div className="studio-vdp-slot"><button className="studio-vdp" aria-label="Vehicle Data Platform installed details" disabled={!vdpRow} onClick={() => vdpRow && setDetails({ kind: "component", row: vdpRow })}><StudioIcon name="component" /><strong>Vehicle Data Platform</strong><small>{installed ? `${installedProfileLabel(value?.installedProfile, installed, vdpRow?.installed_component?.id)} · ${installed}${componentCurrent && profileEvidence?.state !== "STALE" ? "" : " · last known"}` : "Factory slot · no Cloud report"}</small></button><button className="studio-manage-release" onClick={() => openView("platform")}>Manage VDP releases</button></div>
+              <div className="studio-vdp-slot"><button className="studio-vdp" aria-label="Vehicle Data Platform installed details" disabled={!vdpRow} onClick={() => vdpRow && setDetails({ kind: "component", row: vdpRow })}><StudioIcon name="component" /><strong>Vehicle Data Platform</strong><small>{installed ? `${capabilityLabel(installedProfileLabel(value?.installedProfile, installed, vdpRow?.installed_component?.id))} · Cloud release ${installed}` : "Factory slot · no Cloud report"}<span className="studio-software-freshness">{installed ? componentCurrent && profileEvidence?.state !== "STALE" ? "Cloud report current" : "last known · awaiting Cloud confirmation" : ""}</span></small></button><button className="studio-manage-release" onClick={() => openView("platform")}>Manage VDP releases</button></div>
               <footer className="studio-factory" data-team="platform"><div className="studio-core"><StudioIcon name="service" /><div><strong>AosCore</strong><small>In-vehicle runtime</small></div><small className="studio-platform-brand">AosEdge platform</small></div><label>Factory firmware{present || local.images.length <= 1 ? <span>{vehicle.imageVersion ?? local.images[0]?.version ?? "No Factory image available"}</span> : <select aria-label="Factory image" value={image} onChange={event => setSelectedImage(event.target.value)}>{local.images.map(row => <option key={row.selector} value={row.selector}>{row.version}</option>)}</select>}</label></footer>
             </section></div>
         </div>
       </>}
       {perspective !== "global" && <section className="studio-release"><header><StudioIcon name={team === "platform" ? "component" : "service"} /><div><h2>{team === "platform" ? "Vehicle Data Platform" : `${labels[team]} Health Service`}</h2><p>{team === "platform" ? "Platform Team · OEM" : `${labels[team]} Team · Service Provider`}</p></div></header>
         <div className="studio-profile-cards" role="group" aria-label="Capability profile">{profileText[team].map((name, n) => <button key={name} aria-pressed={profile === `v${n + 1}`} onClick={() => setProfiles(previous => ({ ...previous, [team]: `v${n + 1}` as Profile }))}><strong>v{n + 1}</strong><span>{name}</span></button>)}</div>
+        <section className="studio-candidate-status" aria-label="Selected release status" role="status">
+          <strong>{selectedCandidate ? `Selected candidate · ${capabilityLabel(profile)} · Cloud release ${selectedCandidate}` : `${capabilityLabel(profile)} · no candidate prepared`}</strong>
+          <span>{candidateInstalled ? "Installed release confirmed by Cloud" : candidateSubmitted ? publicationLabel(candidateStage) : selectedCandidate ? "Ready to sign and publish" : "Prepare a release to begin"}</span>
+          {candidateSubmitted && candidateStage === "READY" && !candidateInstalled && <span>{team !== "platform" && !row ? "Waiting for assignment to this Test" : "Awaiting installation confirmation from Cloud"}. Last reported installed software remains below.</span>}
+        </section>
         <div className="studio-release-stages">{(team === "platform" ? ["Prepared", "Published", "Installed"] : ["Prepared", "Published", "Assigned", "Running"]).map((stage, index) => {
           const done = team === "platform" ? [Boolean(version), published, Boolean(version && componentCurrent && installed === version)]
             : [Boolean(service), service?.publication.stage === "READY", Boolean(row && servicesCurrent), serviceRunning(row, service?.version, Boolean(servicesCurrent))];
-          return <div key={stage} className={done[index] ? "complete" : ""}><span>{index + 1}</span><strong>{stage}</strong></div>;
+          const retainedAssignment = stage === "Assigned" && Boolean(row) && !servicesCurrent;
+          return <div key={stage} className={done[index] ? "complete" : retainedAssignment ? "last-known" : ""} data-state={done[index] ? "confirmed" : retainedAssignment ? "last-known" : "not-confirmed"}><span>{index + 1}</span><strong>{stage}{retainedAssignment && <small>last known</small>}</strong></div>;
         })}</div>
-        {publicationBlockedReason && <p className="studio-action-reason">{publicationBlockedReason}</p>}
-        {team === "platform" ? <><p>{version ? `Selected candidate · ${profile} · ${version}` : "No candidate prepared for this profile."}</p><div className="studio-buttons">
-          <button disabled={controls.blocked || lifecycleRestricted || !present} onClick={() => ask({ action: "prepare", profile })}>Prepare {profile}</button>
-          <button disabled={controls.blocked || lifecycleRestricted || !version || submitted || pending} onClick={() => ask({ action: "publish", version })}>Sign & publish</button></div>
-          {submitted && !published && <p role={failedState(publication?.stage) ? "alert" : undefined}>Cloud {failedState(publication?.stage) ? "publication failed" : "processing"} · {publication?.stage ?? "Awaiting observation"}{publication?.reason ? ` · ${publication.reason}` : ""}</p>}
-          <p role={vdpIssue ? "alert" : undefined}>{vdpIssue ? `Component update issue · ${vdpIssue}` : pending ? `${pendingDescription} is pending${componentCurrent ? ". Use native Safe Stop when ready." : " · last known report."}` : "Publication can deliver to an eligible Test immediately. No validation-batch approval step."}</p>
-          <div className="studio-observed"><strong>Cloud installed · {known(installed)}{installed && !componentCurrent ? " · last known" : ""}</strong><span>Process state: not reported by Cloud.</span></div></>
-        : <><div className="studio-mock-notice">{service?.demoMockedData ? "Configured data path: synthetic service data · no KUKSA access" : "Configured data path: native KUKSA inputs · connection is verified separately in the backend"}</div><p>{service ? `Selected candidate · ${profile} · ${service.version}` : "No candidate prepared in this run."}</p><div className="studio-buttons">
-          <button disabled={controls.blocked || lifecycleRestricted || !present} onClick={() => ask({ action: "service-prepare", team, profile })}>Prepare {profile}</button>
-          <button disabled={controls.blocked || lifecycleRestricted || !service || serviceSubmitted || servicePending} onClick={() => ask({ action: "service-publish", release: service?.releaseHandle })}>Sign & publish</button>
+        {publicationBlockedReason && (!candidateSubmitted || controls.blockReason || lifecycleRestricted) && <p className="studio-action-reason">{publicationBlockedReason}</p>}
+        {team === "platform" ? <><div className="studio-buttons">
+          <button data-testid="prepare-release" className={!version ? "studio-primary-action" : undefined} disabled={controls.blocked || lifecycleRestricted || !present} onClick={() => ask({ action: "prepare", profile })}>{version ? `Prepare another build (${profile})` : `Prepare ${profile}`}</button>
+          <button className={version && !submitted ? "studio-primary-action" : undefined} disabled={controls.blocked || lifecycleRestricted || !version || submitted || pending} onClick={() => ask({ action: "publish", version })}>Sign & publish</button></div>
+          {submitted && publication?.reason && <p role={failedState(publication?.stage) ? "alert" : undefined}>Cloud publication · {publication.reason}</p>}
+          {(vdpIssue || pending) && <p role={vdpIssue ? "alert" : undefined}>{vdpIssue ? `Component update issue · ${vdpIssue}` : `${pendingDescription} is pending${componentCurrent ? ". Use native Safe Stop when ready." : " · last known report."}`}</p>}
+          <div className="studio-observed"><strong>Cloud installed · {known(installed)}{installed && !componentCurrent ? " · last known" : ""}</strong></div>
+          <details className="studio-publication-details"><summary>Delivery details</summary><p>Publication can deliver to an eligible Test immediately. No validation-batch approval step. Process state is not reported by Cloud; inspect installed component details for update evidence.</p></details></>
+        : <><div className={service?.demoMockedData ? "studio-mock-notice" : "studio-input-path"}>{service?.demoMockedData ? "Configured data path: synthetic service data · no KUKSA access" : "Configured data path: native KUKSA inputs · connection is verified separately in the backend"}</div><div className="studio-buttons">
+          <button data-testid="prepare-release" className={!service ? "studio-primary-action" : undefined} disabled={controls.blocked || lifecycleRestricted || !present} onClick={() => ask({ action: "service-prepare", team, profile })}>{service ? `Prepare another build (${profile})` : `Prepare ${profile}`}</button>
+          <button className={service && !serviceSubmitted ? "studio-primary-action" : undefined} disabled={controls.blocked || lifecycleRestricted || !service || serviceSubmitted || servicePending} onClick={() => ask({ action: "service-publish", release: service?.releaseHandle })}>Sign & publish</button>
           {!row && <button disabled={controls.blocked || lifecycleRestricted || service?.publication.stage !== "READY" || !serviceId || !local.registrationComplete || !servicesCurrent} onClick={() => ask({ action: "service-assign", serviceId })}>Assign to Test</button>}
           {service && <button disabled={controls.readBlocked || !serviceSubmitted} onClick={() => ask({ action: "service-observe", release: service.releaseHandle })}>Refresh publication</button>}
           {service && <button onClick={() => setDetails({ kind: "release", row: service })}>Package details</button>}</div>
-          {serviceSubmitted && <p>Cloud publication · {service?.publication.stage ?? "Awaiting observation"}{service?.publication.reason ? ` · ${service.publication.reason}` : ""}</p>}
+          {serviceSubmitted && <details className="studio-publication-details"><summary>Publication details</summary><p>Cloud publication · {service?.publication.stage ?? "Awaiting observation"}{service?.publication.reason ? ` · ${service.publication.reason}` : ""}</p></details>}
           {!row && service?.publication.stage === "READY" && (!serviceId || !local.registrationComplete || !servicesCurrent) && <p>Assignment requires a Cloud service identity, completed Test registration and a current service inventory.</p>}
-          <p>{row ? "This service is already assigned. Higher releases replace it without another assignment or Safe Stop." : "After publication, assign this service to the current Test. No Safe Stop is required."}</p>
+          <p>{row ? `${servicesCurrent ? "This service is already assigned." : "Assignment was last reported; awaiting Cloud confirmation."} Higher releases use the same assignment; no Safe Stop is required.` : "After publication, assign this service to the current Test. No Safe Stop is required."}</p>
           <ServiceRows current={Boolean(servicesCurrent)} rows={row ? { state: inventory?.services.state ?? "UNKNOWN", value: [row] } : undefined} onSelect={row => setDetails({ kind: "service", row })} />
-          <button className="studio-text-action" onClick={() => openBackend(team)}>Open {labels[team]} backend ↗</button></>}
+          <button className="studio-text-action" onClick={() => openBackend(team)}>Open {labels[team]} backend ›</button></>}
       </section>}
     </div>
     <aside className="studio-guide"><div><small>NEXT STEP</small><strong>{guide.title}</strong><p>{guide.body}</p>{controls.blockReason && <small>{controls.blockReason}</small>}</div>{!actionAlreadyVisible && <button disabled={guide.disabled || (controls.blocked && !/^(Open |Refresh |View progress)/.test(guide.label))} onClick={guide.action}>{guide.label}</button>}</aside>
-    <footer className="studio-footer"><span title={observation?.reason ?? undefined}>{cloud.loading ? "Reading Aos Cloud · " : `${cloudLabel} · `}<ObservationTime value={observation?.observedAt} /></span><button onClick={cloud.refresh} disabled={cloud.loading}>Refresh Cloud state</button><button onClick={() => setTraceOpen(true)}>Activity · {jobs.length}</button><button className="studio-local-session" onClick={() => { setSessionTab("Runtime"); setSessionOpen(true); }}>Demo controls</button></footer>
+    <StudioStatus job={scopedJob} count={jobs.length} vehicleWindowsAbsent={vehicleWindowsAbsent} onActivity={() => setTraceOpen(true)} onLayout={() => setLayoutOpen(true)} />
+    <footer className="studio-footer"><span title={cloudReport.reason}>{cloudReport.freshness} · <ObservationTime value={observation?.observedAt} /></span><button onClick={cloud.refresh} disabled={cloud.loading}>Refresh Cloud state</button><button className="studio-local-session" onClick={() => { setSessionTab("Runtime"); setSessionOpen(true); }}>Demo controls</button></footer>
     </div>
     {popup && <Modal variant="studio" accent={popup === "cloud" ? "platform" : popup} title={popup === "cloud" ? "Cloud monitoring" : (popup === "brake" ? "Brake backend" : "Tire backend")} subtitle={noController ? "No controller created · setup preview" : "Current Test · observed data"} onClose={() => { setPopup(null); setDetails(null); }}>
       {popup === "cloud" ? <>
@@ -362,8 +379,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
       </> : noController ? <p>Create and provision Test, then install {labels[popup]} Health. No vehicle data is expected before setup.</p> : <BackendEvidence key={popup + observationScope} team={popup} retiring={retiring} unavailableReason={lifecycleReason} unitSystemUid={inventory?.systemUid} expectedVersion={services[popup]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[popup]} observation={backendModels[popup]} runId={local.runId} />}
     </Modal>}
     {traceOpen && <Modal variant="studio" title="Current run activity" subtitle="Actual Demo Control receipts · no simulated transitions" onClose={() => setTraceOpen(false)}><OperationProgress job={scopedJob} /><FinishAcknowledgement jobs={controls.session?.jobs ?? []} noController={noController} emptyMessage={!jobs.length && !activeJob ? "No operations recorded for the current run." : undefined} />{jobs.map(job => <article className="studio-trace-row" key={job.id}><strong>{actionLabels[job.action]} · {operationStateLabel(job.state)}</strong><p>{job.results.at(-1)?.message ?? job.reason}</p><small>{stamp(job.finishedAt ?? job.startedAt)}</small></article>)}</Modal>}
-    {!traceOpen && (controls.error || controls.session?.active || scopedJob && !["COMPLETED", "OBSERVED"].includes(scopedJob.state)) && <OperationProgress job={controls.session?.jobs.find(job => job.id === controls.session?.active) ?? scopedJob} />}
-    {!sessionOpen && <WorkspacePlacement vehicleWindowsAbsent={vehicleWindowsAbsent} />}
+    {layoutOpen && <Modal variant="studio" title="Desktop window layout" subtitle="Window arrangement only · the demo is unchanged" onClose={() => setLayoutOpen(false)}><WorkspacePlacement session vehicleWindowsAbsent={vehicleWindowsAbsent} /></Modal>}
     {sessionOpen && <Modal variant="studio" title="Demo controls" subtitle="Current Test only · Production remains unchanged" onClose={closeSession}>
       <div className="studio-pills" role="group" aria-label="Demo control sections">{["Runtime", "Advanced settings"].map(tab => <button key={tab} aria-pressed={sessionTab === tab} onClick={() => setSessionTab(tab)}>{tab}</button>)}</div>
       {sessionTab === "Advanced settings" && <><p>Use AosEdge SDV Lab Setup to connect a complete OEM and Service Provider pair. These are diagnostics and exceptional configuration controls, not preparation steps for every demo.</p><dl className="detail-grid"><dt>OEM certificate</dt><dd>{local.access["oem-delivery"]?.present === true ? "Configured locally" : local.access["oem-delivery"]?.present === false ? "Not configured" : "Not observed"}</dd><dt>Service Provider certificate</dt><dd>{local.access["service-provider"]?.present === true ? "Configured locally" : local.access["service-provider"]?.present === false ? "Not configured" : "Not observed"}</dd></dl><p>Local certificate presence is not authenticated Cloud access. Use Check Cloud setup to check both roles.</p><CloudConnectionPanel /><WorkspacePlacement session vehicleWindowsAbsent={vehicleWindowsAbsent} /></>}

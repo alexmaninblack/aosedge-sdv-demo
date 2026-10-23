@@ -69,7 +69,7 @@ test("stop and restart keep identity/software, without Create, provisioning, pub
   await page.getByRole("dialog").getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start controller", exact: true })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("v3 · 80.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("Capability V3 · Cloud release 80.0.0");
   await page.getByRole("button", { name: "Start controller", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start simulator", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Start simulator", exact: true }).click();
@@ -79,7 +79,7 @@ test("stop and restart keep identity/software, without Create, provisioning, pub
   await expect(page.locator(".studio-guide")).toContainText("Next software profile");
   expect(fixture.mutations.map(row => row.action)).toEqual(["stop-demo", "start-demo", "start-simulation", "connect-test"]);
   expect(fixture.mutations.every(row => row.sessionId === "branch-fixture" && !row.target && !row.force)).toBe(true);
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("v3 · 80.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("Capability V3 · Cloud release 80.0.0");
 });
 
 test("unknown result prevents both stop and deletion while keeping Activity available", async ({ page }) => {

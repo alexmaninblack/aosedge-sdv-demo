@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
-import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,movingWindowMs,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView,qualificationCloud,assertBrowserIdentities } from './ui_journey.mjs';
+import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,movingWindowMs,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView,qualificationCloud,assertBrowserIdentities,visibleCardText } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
 const ref='ref_'+'a'.repeat(32);
 test('traffic-light motion window stays bounded and cannot replace actual fresh motion',()=>{
@@ -30,7 +30,9 @@ test('browser uses only an explicitly allowed qualification Cloud',()=>{
 test('each published release checks its exact team stages, installed card and capability',()=>{
   assert.deepEqual(releaseViewSpec('platform','v2','172.0.0'),{
     teamTab:'Platform Team',profileButton:'v2 Brake analysis',stages:['Published','Installed'],card:'Vehicle Data Platform installed details',
-    cardText:'v2 · 172.0.0',profile:'v2',release:'172.0.0'});
+    cardText:'Capability V2 · Cloud release 172.0.0',profile:'v2',release:'172.0.0'});
+  assert.equal(visibleCardText('v2 · 172.0.0'),'Capability V2 · Cloud release 172.0.0');
+  assert.equal(visibleCardText('Not confirmed'),'Not confirmed');
   assert.deepEqual(releaseViewSpec('brake','v3','155.0.0').stages,['Published','Assigned','Running']);
   assert.equal(releaseViewSpec('tire','v1','76.0.0').card,'Tire service details');
   for(const args of [['unknown','v1','171.0.0'],['platform','v4','171.0.0'],['tire','v2','76.0.0'],['brake','v1','latest']])

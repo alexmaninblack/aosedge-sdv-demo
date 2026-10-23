@@ -56,7 +56,7 @@ test("service UI: one-click prepare, cancel publication, first assignment, highe
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v1 Braking windows", exact: true }).click();
   await page.getByRole("button", { name: "Prepare v1", exact: true }).click();
-  await expect(page.getByText("Selected candidate · v1 · 12.0.0")).toBeVisible();
+  await expect(page.getByText("Selected candidate · Capability V1 · Cloud release 12.0.0")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -73,7 +73,7 @@ test("service UI: one-click prepare, cancel publication, first assignment, highe
   await expect(page.getByText("Installed 12.0.0", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tire Team", exact: true }).click();
   await page.getByRole("button", { name: "Prepare v1", exact: true }).click();
-  await expect(page.getByText("Selected candidate · v1 · 13.0.0")).toBeVisible();
+  await expect(page.getByText("Selected candidate · Capability V1 · Cloud release 13.0.0")).toBeVisible();
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
   await confirm(page, "Sign & publish service");
   await page.getByRole("button", { name: "Assign to Test" }).click();
@@ -82,7 +82,7 @@ test("service UI: one-click prepare, cancel publication, first assignment, highe
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v2 Condition assessment" }).click();
   await page.getByRole("button", { name: "Prepare v2", exact: true }).click();
-  await expect(page.getByText("Selected candidate · v2 · 14.0.0")).toBeVisible();
+  await expect(page.getByText("Selected candidate · Capability V2 · Cloud release 14.0.0")).toBeVisible();
   await page.getByRole("button", { name: "Sign & publish", exact: true }).click();
   await confirm(page, "Sign & publish service");
   await expect(page.getByText("Installed 14.0.0", { exact: true })).toBeVisible();
@@ -93,7 +93,7 @@ test("service UI: one-click prepare, cancel publication, first assignment, highe
   await page.reload();
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v2 Condition assessment" }).click();
-  await expect(page.getByText("Selected candidate · v2 · 14.0.0")).toBeVisible();
+  await expect(page.getByText("Selected candidate · Capability V2 · Cloud release 14.0.0")).toBeVisible();
   await expect(page.locator(".studio-release-stages .complete")).toHaveCount(4);
 });
 
@@ -107,10 +107,14 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1512, height: 982
       const fits = await page.locator(".studio-body").evaluate(node => ({ width: node.scrollWidth <= node.clientWidth + 1, height: node.scrollHeight <= node.clientHeight + 1 }));
       if (!fits.height || !fits.width) await page.screenshot({ path: `test-results/studio-overflow-${viewport.width}.png` });
       expect(fits.width, name).toBe(true);
-      if (name === "Vehicle" && !fits.height) {
+      if (!fits.height && (name === "Vehicle" || viewport.height <= 750)) {
         expect(await page.locator(".studio-body").evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
-        await page.locator(".studio-factory").scrollIntoViewIfNeeded();
-        await expect(page.locator(".studio-factory")).toBeInViewport();
+        if (name === "Vehicle") {
+          await page.locator(".studio-factory").scrollIntoViewIfNeeded();
+          await expect(page.locator(".studio-factory")).toBeInViewport();
+        } else await expect(page.locator(".studio-release > header h2")).toBeInViewport();
+        await expect(page.locator(".studio-nav")).toBeInViewport();
+        await expect(page.locator(".studio-guide")).toBeInViewport();
       } else expect(fits.height, name).toBe(true);
     }
     await page.screenshot({ path: `test-results/studio-${viewport.width}.png` });

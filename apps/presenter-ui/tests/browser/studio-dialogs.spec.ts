@@ -3,6 +3,76 @@
 import { test, expect, type Page } from "@playwright/test";
 import { confirmedReset, binding } from "../unit/backendFixture";
 
+test("stable canonical overview through freshness, operation and layout changes", async ({ page }) => {
+  await page.setViewportSize({ width: 876, height: 908 });
+  const fixture = await scenario(page);
+  let active = false;
+  await page.route("**/api/presenter/operations", route => route.fulfill({ json: {
+    sessionId: "dialog", cloudDomain: "fixture.test", active: active ? "layout-change" : null, uncertain: false,
+    workspace: { state: active ? "INCOMPLETE" : "PLACED_AWAITING_VISUAL_REVIEW" },
+    jobs: active ? [{ id: "layout-change", runId: "dialog-run", action: "workspace-restore", state: "RUNNING", progress: ["Waiting for owned windows"], results: [], startedAt: new Date().toISOString() }] : [],
+  } }));
+  await page.goto("/#native-browser");
+  await expect(page.locator(".studio-vdp")).toContainText("Capability V3");
+  const selectors = [".studio-nav", ".studio-guide", ".studio-footer", ".studio-controller", ".studio-backends"];
+  const boxes = () => Promise.all(selectors.map(selector => page.locator(selector).boundingBox()));
+  const before = await boxes();
+  const body = await page.locator(".studio-body").boundingBox();
+  const factory = await page.locator(".studio-factory").boundingBox();
+  await page.screenshot({ path: "test-results/stability-current.png" });
+  expect(factory!.y + factory!.height, "core architecture must fit the canonical body without inner scrolling").toBeLessThanOrEqual(body!.y + body!.height + 1);
+  const controller = before[3]!;
+  expect(controller.y + controller.height, "controller frame must fit too").toBeLessThanOrEqual(body!.y + body!.height + 1);
+  fixture.state.cloudCurrent = false;
+  await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
+  await expect(page.locator(".studio-connection")).toContainText("Last confirmed connection");
+  const stale = await boxes();
+  active = true;
+  await expect(page.getByRole("button", { name: "View progress", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Desktop window layout", { exact: true })).toBeVisible();
+  const running = await boxes();
+  for (const sample of [stale, running]) for (let i = 0; i < selectors.length; i++) {
+    expect(Math.abs(sample[i]!.y - before[i]!.y), selectors[i] + " must not move").toBeLessThanOrEqual(1);
+    expect(Math.abs(sample[i]!.height - before[i]!.height), selectors[i] + " must not resize").toBeLessThanOrEqual(1);
+  }
+  await test.info().attach("geometry", { body: JSON.stringify({ viewport: { width: 876, height: 908 }, selectors, before, stale, running }), contentType: "application/json" });
+  await page.screenshot({ path: "test-results/stability-refresh-operation.png" });
+  const progressTarget = page.getByRole("button", { name: "View progress", exact: true });
+  const targetBefore = await progressTarget.boundingBox();
+  fixture.state.cloudCurrent = true;
+  await page.locator(".studio-footer").getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
+  await expect(page.locator(".studio-connection")).toHaveAttribute("data-freshness", "current");
+  expect(await progressTarget.boundingBox()).toEqual(targetBefore);
+  await page.getByRole("button", { name: "View progress", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Waiting for owned windows");
+  expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
+});
+
+test("team navigation retains the selected capability and shows neutral native input configuration", async ({ page }) => {
+  await scenario(page); await page.goto("/#native-browser");
+  await page.getByRole("button", { name: "Brake Team", exact: true }).click();
+  const profile = page.getByRole("group", { name: "Capability profile" });
+  await profile.getByRole("button", { name: /v2/ }).click();
+  await expect(page.locator(".studio-input-path")).toContainText("native KUKSA");
+  await page.getByRole("button", { name: "Platform Team", exact: true }).click();
+  await page.getByRole("button", { name: "Brake Team", exact: true }).click();
+  await expect(profile.getByRole("button", { name: /v2/ })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("short viewport restores each team's own scroll, not the previous actor's scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 876, height: 640 });
+  await scenario(page); await page.goto("/#native-browser");
+  await page.getByRole("button", { name: "Brake Team", exact: true }).click();
+  const body = page.locator(".studio-body");
+  const scroll = await body.evaluate(node => { node.scrollTop = 80; node.dispatchEvent(new Event("scroll", { bubbles: true })); return node.scrollTop; });
+  expect(scroll).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Platform Team", exact: true }).click();
+  expect(await body.evaluate(node => node.scrollTop)).toBe(0);
+  await page.getByRole("button", { name: "Brake Team", exact: true }).click();
+  expect(await body.evaluate(node => node.scrollTop)).toBe(scroll);
+  await expect(page.locator(".studio-guide")).toBeInViewport();
+});
+
 for (const width of [1100, 640]) test(`UIA7 disk and traffic units, scope and compact layout (${width})`, async ({ page }) => {
   await page.setViewportSize({ width, height: 850 });
   const fixture = await scenario(page);
@@ -235,7 +305,8 @@ test("audit: old receipt and stale binding have matching qualifiers on card and 
   await expect(card).toContainText(/Backend checked · \d+s ago/);
   fixture.state.cloudCurrent = false;
   await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
-  await expect(card).toContainText("Inspection recommended · last known");
+  await expect(card).toContainText("Inspection recommended");
+  await expect(card).toContainText("Last known / incomplete");
   await card.click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toContainText("Latest product result · last known");
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
@@ -245,7 +316,7 @@ test("audit: partial history preserves fresh input without claiming complete res
   const fixture = await scenario(page); fixture.state.partialEvents = true;
   await page.setViewportSize({ width: 1280, height: 720 }); await page.goto("/");
   const card = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
-  await expect(card).toContainText("RECEIVING"); await expect(card).toContainText("last known");
+  await expect(card).toContainText("RECEIVING"); await expect(card).toContainText(/last known/i);
   await card.click();
   const dialog = page.getByRole("dialog", { name: "Brake backend", exact: true });
   await expect(dialog).toContainText("Partial backend read"); await expect(dialog).toContainText("events");
@@ -494,8 +565,7 @@ test("switching the observed Test drops prior summaries and a resource failure s
   await expect(page.getByRole("dialog").getByRole("figure", { name: "controller Memory · last five minutes" })).toContainText("Last known");
   await page.keyboard.press("Escape");
   await expect(cloud).toContainText("No pending updates");
-  await expect(cloud).toContainText("DMIPS");
-  await expect(cloud).toContainText("Memory");
+  await expect(cloud.locator(".resource-charts")).toHaveCount(0);
   fixture.state.uid = "test-b"; fixture.state.failBrake = true;
   await page.locator(".studio-footer").getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
   await expect(cloud).not.toContainText("0 DMIPS");

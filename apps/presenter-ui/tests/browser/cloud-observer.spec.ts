@@ -33,7 +33,8 @@ test("Cloud entry/reentry and a failed refresh retain visibly last-known invento
   fail = true;
   await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
   await expect(page.getByText("Cloud installed · 18.0.0 · last known", { exact: true })).toBeVisible();
-  await expect(page.getByText("Test Vehicle · Last known Cloud report", { exact: true })).toBeVisible();
+  await expect(page.locator(".studio-connection")).toContainText("Last confirmed connection · Online");
+  await expect(page.locator(".studio-connection")).toContainText("Last known Cloud report");
   await expect.poll(() => cloudReads).toBe(initialReads + 1);
   await page.getByRole("button", { name: /Brake Team/ }).click();
   // Every visible team now participates in the shared Cloud observer.

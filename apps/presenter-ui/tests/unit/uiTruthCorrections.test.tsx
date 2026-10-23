@@ -45,7 +45,7 @@ test.each([true, false])("F1 retained receipt keeps its age and current binding=
   expect(screen.getByText(/Backend checked/).querySelector("[title]")).toHaveAttribute("title", checked);
   expect(screen.queryByText("Observed ·")).not.toBeInTheDocument();
   expect(backendSummary(value, "brake", binding.serviceVersion, { ...binding, current }).proof).toBe(current ? binding.serviceVersion : undefined);
-  if (!current) expect(screen.getByText("Good · last known")).toBeVisible();
+  if (!current) { expect(screen.getByText("Good")).toBeVisible(); expect(screen.getByText("Last known / incomplete")).toBeVisible(); }
 });
 const component = (status: string | null): CloudComponent => ({ type: "demo-vehicle-data-provider", reported_component_id: "vdp", installed_component: { version: "8.0.0" }, pending_component: null, pending_component_status: status, runtimeState: "NOT_REPORTED_BY_CLOUD" });
 test.each(["downloading", "pending", "installing"])("F2 status-only %s remains pending in component details", status => {

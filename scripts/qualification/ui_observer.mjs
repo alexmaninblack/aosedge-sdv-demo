@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {watchPresentation} from './ui_geometry.mjs';
 const input=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const origin='http://127.0.0.1:18080';
 const {chromium}=createRequire(input.modulePath)('@playwright/test');
-let context;
+let context,presentation;
 try {
   context=await chromium.launchPersistentContext(input.profileDirectory,{
     executablePath:input.browserExecutable,headless:false,chromiumSandbox:true,viewport:null,
@@ -27,6 +28,7 @@ try {
   const placed=await cdp.send('Browser.getWindowBounds',{windowId:window.windowId});
   assert(Object.entries(input.windowBounds).every(([k,v])=>Math.abs(placed.bounds[k]-v)<=3),'OBSERVER_PLACEMENT_FAILED');
   await page.bringToFront();
+  presentation=watchPresentation(page,row=>fs.appendFileSync(path.join(input.records,'presentation.jsonl'),JSON.stringify({at:new Date().toISOString(),...row})+'\n',{mode:0o600}));
   process.stdout.write('OBSERVER_READY\n');
   const deadline=Date.now()+1800000;
   while (!fs.existsSync(path.join(input.records,'observer-stop.json'))) {
@@ -37,6 +39,7 @@ try {
 } catch {
   process.exitCode=1;process.stdout.write('OBSERVER_FAILED\n');
 } finally {
+  if(presentation)fs.writeFileSync(path.join(input.records,'presentation-report.json'),JSON.stringify(await presentation.close())+'\n',{mode:0o600});
   if(context)await context.close();
   process.stdout.write('OBSERVER_CLOSED\n');
 }

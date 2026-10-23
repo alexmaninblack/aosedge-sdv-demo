@@ -35,7 +35,7 @@ def source_pin():
     return hashlib.sha256(b''.join((HERE/name).read_bytes() for name in
         ('native_controls_campaign.py','journey.py','journey_plan.py','journey_worker.py',
          'remote_harness.py','campaign.py','ui_pilot.py','ui_m1.py','native_ui_live.py',
-         'ui_native_gate.py','ui_journey.mjs','ui_pilot.mjs','ui_read_broker.mjs','ui_read_transport.py'))).hexdigest()
+         'ui_native_gate.py','ui_journey.mjs','ui_pilot.mjs','ui_read_broker.mjs','ui_geometry.mjs','ui_read_transport.py'))).hexdigest()
 
 
 def code(error):

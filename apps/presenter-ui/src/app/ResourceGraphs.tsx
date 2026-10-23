@@ -59,6 +59,7 @@ function Graph({ model, inventory, scope, metric, now }: { model: CloudResources
   const x = (time: number) => 8 + (time - (now - 300000)) / 300000 * 264;
   const y = (value: number) => 53 - value / divisor / max * 43;
   const label = metric === "cpu" ? "CPU" : "Memory";
+  const hasSamples = points.some(point => point[1] !== null);
   const sampleTime = latest ? new Date(latest[0]).toISOString() : undefined;
   const segments: number[][][] = [];
   let segment: number[][] = [];
@@ -67,12 +68,17 @@ function Graph({ model, inventory, scope, metric, now }: { model: CloudResources
     if (value !== null) segment.push([time, value]);
   }
   if (segment.length) segments.push(segment);
+  if (!hasSamples || selected.ambiguous) return <figure className="resource-graph resource-placeholder" aria-label={`${scope} ${label} · last five minutes`}>
+    <figcaption><span>{label}</span><strong>{selected.ambiguous ? "Scope is ambiguous" : "Not reported"}</strong></figcaption>
+    <p>{selected.ambiguous ? "Select one confirmed instance to interpret measurements." : !inventory?.unitId ? "Waiting for controller inventory…" : selected.loading ? "Loading history…" : "No samples in this interval"}</p>
+    <small>{selected.stale ? "Resource read not current" : "No confirmed value"}{!selected.historyAvailable && !selected.loading ? " · history unavailable" : ""}</small>
+  </figure>;
   return <figure className="resource-graph" aria-label={`${scope} ${label} · last five minutes`}>
     <figcaption><span>{label} · {unit}</span><strong>{selected.ambiguous ? "Multiple instances" : latest ? formatResource(latest[1], selected.unit, metric) : "Not reported"}</strong></figcaption>
     <div className="resource-plot"><svg viewBox="0 0 280 62" role="img" aria-label={`${label} samples; scale zero to ${scale} ${unit}`}>
       <path d="M8 10H272 M8 53H272" className="resource-grid" />
       {segments.map((rows, index) => <g key={index}><polyline points={rows.map(([time, value]) => `${x(time)},${y(value)}`).join(" ")} />{rows.map(([time, value]) => <circle key={time} cx={x(time)} cy={y(value)} r="2"><title>{new Date(time).toLocaleString()} · {formatResource(value, selected.unit, metric)}</title></circle>)}</g>)}
-    </svg>{!points.some(point => point[1] !== null) && <span className="resource-empty">{selected.ambiguous ? "Scope is ambiguous" : !inventory?.unitId ? "Provision Test to observe" : selected.loading ? "Loading history…" : "No samples in this interval"}</span>}</div>
+    </svg></div>
     <div className="resource-axis"><span>{new Date(now - 300000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span><span>0–{scale} {unit}</span><span>{new Date(now).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div>
     <small>{latest ? <>{selected.stale || now - latest[0] > 90000 ? "Last known" : "Sample"} · <ObservationTime compact value={sampleTime} /></> : "No confirmed value"}
       {!selected.historyAvailable && !selected.loading ? " · history unavailable" : selected.partial ? " · partial history" : ""}</small>

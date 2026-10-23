@@ -144,6 +144,32 @@ measured zero and conflicting aliases stay distinct; no guest collector is added
 
 ### State and action contract
 
+The installed workspace reserves its navigation, next-action, operation-status
+and footer regions. Routine observation, progress and window-placement changes
+do not displace these anchors. Backend summaries use bounded content slots;
+resource history and detailed recovery receipts belong in existing dialogs.
+Shorter viewports scroll content without hiding the action shell. Genuine
+operation failures and incomplete placement remain visible with an explicit
+details action; layout recovery does not imply a Cloud or vehicle failure.
+
+Connection evidence, report freshness and operation completion are distinct
+fields. A retained Online/Offline value is explicitly **last confirmed**, never
+current connection authority. Updating a report does not manufacture a new
+disconnect, while a failed or stale read cannot establish Online, absence or
+success. Initial inventory loading does not suggest provisioning an already
+known Test. Guest/API completion is not Cloud installation confirmation: keep
+the pending target and last Cloud-installed release visible until authoritative
+confirmation arrives.
+
+Release views identify the selected capability and candidate separately from
+publication, persistent assignment and installed/runtime reports. Repeated
+preparation is labelled **Prepare another build**, not the default next action
+while a candidate is processing. An observed but stale assignment is labelled
+last known, not silently presented as absent. Navigation retains the operator's
+profile; selecting a suggested next capability is an explicit action. Capability
+levels and Cloud release numbers have distinct labels. Native KUKSA configuration
+is neutral information; synthetic input and actual failures retain warnings.
+
 Release-profile selection is operator input, not an observation of controller
 readiness. A temporary unavailable local read must not reset that selection;
 mutations still require current owner facts. Reset authoring selections only

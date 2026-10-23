@@ -98,7 +98,7 @@ def prepare(transport,workspace,repository,python):
         ' 2>&1; '+shlex.quote(root+'/node')+' --version',timeout=15)
     h.require('CDHash='+cdhash+'\n' in observed and 'TeamIdentifier=EQHXZ8M8AV\n' in observed
               and observed.rstrip().endswith('v'+NODE_VERSION),'COPIED_UI_TOOLS_CHANGED')
-    for name in ('ui_journey.mjs','ui_pilot.mjs','ui_observer.mjs','ui_read_broker.mjs'):
+    for name in ('ui_journey.mjs','ui_pilot.mjs','ui_observer.mjs','ui_read_broker.mjs','ui_geometry.mjs'):
         transfer(transport,str(HERE/name),root+'/'+name)
     print('visible-m1-tools: ready; no Docker or product installation changes',flush=True)
     return root,pin

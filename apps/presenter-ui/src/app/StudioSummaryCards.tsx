@@ -7,6 +7,7 @@ import { ObservationTime } from "./StudioReadViews";
 import type { BackendBinding } from "../features/service-team/backendSelection";
 import { readable } from "../features/service-team/useBackendObservation";
 import { useResetScenario } from "../features/service-team/ResetScenario";
+import { cloudPresentation } from "../domain/studioPresentation";
 
 export function BackendSummary({ team, model, version, binding, noController = false, runId }: { team: Team; model: BackendModel; version?: string; binding?: BackendBinding; noController?: boolean; runId?: string | null }) {
   const summary = backendSummary(model, team, version, binding);
@@ -19,25 +20,25 @@ export function BackendSummary({ team, model, version, binding, noController = f
   if (noController) return <><span className="studio-summary-state">No controller created</span><span className="studio-summary-result">Ready for setup</span><small className="studio-summary-note">Create and provision Test, then install the service to observe its input and results.</small></>;
   return <>
     <span className={`studio-summary-state${summary.lastKnown ? " is-stale" : ""}`}>{summary.status}</span>
-    <span className={`studio-summary-result${warning && !reset.pending ? " is-warning" : ""}`}>{reset.waiting ? "Resetting driver advisory…" : reset.uncertain ? "Reset outcome unconfirmed" : title}{summary.result && summary.lastKnown && !reset.pending ? " · last known" : ""}</span>
+    <span className={`studio-summary-result${warning && !reset.pending ? " is-warning" : ""}`}>{reset.waiting ? "Resetting driver advisory…" : reset.uncertain ? "Reset outcome unconfirmed" : title}</span>
     <span className="studio-summary-pair"><span>Input</span><strong>{sourceKnown ? readable(facts?.input.state) : fn.state === "LAST_KNOWN" ? "Last known" : "Not reported"}</strong></span>
     <span className="studio-summary-pair"><span>Activity</span><strong>{sourceKnown ? readable(facts?.activity.state) : "Not confirmed"}</strong></span>
-    <small className="studio-summary-note">{reset.pending || reset.uncertain ? "Previous results remain in Records; a correlated CLEAR is required." : summary.integrityConflict ? summary.guidance : summary.result ? summary.result.message.messageType === "WINDOW_COMPLETION" ? "Retained source recording · delivery and recording are separate" : "Vehicle signals · demo model estimate" : summary.guidance}</small>
-    {summary.continuityNote && !reset.pending && !reset.uncertain && <small className="studio-summary-note">{summary.continuityNote}</small>}
-    {summary.result && !reset.pending && !reset.uncertain && <small className="studio-summary-time">Latest result received · <ObservationTime compact value={summary.receivedAt} /></small>}
-    <small className="studio-summary-time">{model.busy && !model.data ? "Reading backend… " : "Backend checked · "}<ObservationTime compact value={summary.observedAt} /></small>
-    {!!model.data?.partialResources?.length && <small className="studio-summary-note">Partial read · details in backend</small>}
+    <small className="studio-summary-note">{reset.pending || reset.uncertain ? "Previous results remain in Records; a correlated CLEAR is required." : summary.integrityConflict ? summary.guidance : summary.continuityNote ?? (summary.result ? summary.result.message.messageType === "WINDOW_COMPLETION" ? "Retained source recording · delivery and recording are separate" : "Vehicle signals · demo model estimate" : summary.guidance)}</small>
+    <small className="studio-summary-time">{summary.result && !reset.pending && !reset.uncertain ? <>Latest result received · <ObservationTime compact value={summary.receivedAt} /></> : reset.pending || reset.uncertain ? "Awaiting correlated Gateway CLEAR" : "No confirmed result"}</small>
+    <small className="studio-summary-time" title={summary.continuityNote}>{model.busy && !model.data ? "Reading backend… " : "Backend checked · "}<ObservationTime compact value={summary.observedAt} />{!!model.data?.partialResources?.length && " · partial read"}</small>
   </>;
 }
 
-export function CloudSummary({ observation, cloudLabel }: { observation?: PlatformCloudObservation | null; cloudLabel: string }) {
+export function CloudSummary({ observation, cloudLabel, loading = false }: { observation?: PlatformCloudObservation | null; cloudLabel: string; loading?: boolean }) {
   const summary = cloudSoftwareSummary(observation);
+  const report = cloudPresentation(observation, loading, cloudLabel);
   if (cloudLabel === "No controller created") return <><span className="studio-summary-state">Cloud management</span><span className="studio-summary-result">No Cloud Unit yet</span><small className="studio-summary-note">Create and provision Test to observe software and resources.</small></>;
   return <>
-    <span className="studio-summary-state">Cloud management</span>
-    <span className={`studio-summary-result${cloudLabel === "ONLINE" ? " is-online" : ""}`}>{cloudLabel === cloudLabel.toUpperCase() ? cloudLabel[0] + cloudLabel.slice(1).toLowerCase() : cloudLabel}</span>
+    <span className={`studio-summary-state${report.lastKnown ? " is-stale" : ""}`}>{report.freshness}</span>
+    <span className={`studio-summary-result${report.current && observation?.value?.online === "ONLINE" ? " is-online" : ""}`} aria-label={`${report.lastKnown ? "Last confirmed connection" : "Unit connection"}: ${report.connection}`}>{report.connection}</span>
     <span className="studio-summary-software"><span>Installed{summary.inventoryLastKnown ? " · last known" : ""}</span><strong>{summary.inventoryText}</strong></span>
     <span className={`studio-summary-software${summary.issue ? " is-warning" : ""}`}><span>Updates</span><strong>{summary.updatesText}</strong></span>
+    <small className="studio-summary-note">Cloud management · software reports, not live vehicle telemetry.</small>
     <small className="studio-summary-time">Cloud checked · <ObservationTime compact value={summary.observedAt} /></small>
   </>;
 }
