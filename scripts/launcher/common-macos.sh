@@ -4,7 +4,7 @@
 # Shared host primitives, never a replacement installation/build owner.
 
 # BEGIN VERIFIED DEPENDENCY PINS — maintained by scripts/sync-launcher-pins
-ROUTE_HELPER_SHA256=87cdc828069d898d06afdab8cb030a97ebfbd575b5c1cdb4cead66dd6b367ac1
+ROUTE_HELPER_SHA256=9cadaf6e2e16bb7d2e50eff7fbea48e3006c44198ea26098579f42f39d90880f
 ROUTE_CATALOG_SHA256=8991d11663cd02c73af8df5554b06a045a83cc0d9d348972d3a15ed7bc854e0d
 # END VERIFIED DEPENDENCY PINS
 

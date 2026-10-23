@@ -28,7 +28,9 @@ remain authoritative.
    existing CARLA/Factory and verified caches. Never rebind a completed receipt.
 4. Install through the normal retained-Test update owner, subject to real capacity
    and signing preflight. Preserve the current DMG, Test, data, dependencies and
-   caches; do not delete retained M1 materials or weaken reserve checks.
+   caches. The operator subsequently authorized pruning unused previous M1
+   installations if capacity is insufficient; retain the selected/rollback
+   versions and Test dependencies, and do not weaken reserve checks.
 5. One campaign owns the full API observation and visible UI scenario, including
    Platform publication-card checks, bounded geometry samples, independent effects
    and verified cleanup. No routine agent clicks or step scheduling.
@@ -49,9 +51,10 @@ placement transitions; the same View progress target also retained its bounds.
 Qualification tooling has 87 Python and 44 JavaScript unit checks passing.
 These are not installed-package or live vehicle acceptance results.
 
-Packaging and the successor installed API/UI campaign are not started: the M1
-has less than the mandatory 90 GiB reserve before allocating another package.
-Preservation takes precedence over automatic cleanup. Resolve capacity without
-deleting the retained Test, current media, dependencies/caches or requested review
-materials, then continue the unchanged delivery order above. The build selection,
-main and public option A have not advanced.
+The operator-authorized removal of four unselected, unused previous M1 packages
+recovered 132.3 GiB. The selected package, rollback, Test, Factory backing image,
+current media and caches remain unchanged; free space is approximately 222 GiB.
+The review branch selects `1.2.0-rc.4-presenter.1` with the tested Presenter
+source and unchanged binary dependencies. Packaging and installed API/UI remain
+unqualified until their own campaign completes. Main and public option A have
+not advanced.
