@@ -38,6 +38,11 @@ export function candidateText(profile,release) {
   assert(/^v[123]$/.test(profile) && version.test(release),'RELEASE_VIEW_INPUT_INVALID');
   return `Selected candidate · Capability ${profile.toUpperCase()} · Cloud release ${release}`;
 }
+export function displayedConnection(text) {
+  const label=String(text??'').replace(/^(Test Vehicle|Last confirmed connection) · /,'');
+  return ['Online','Offline','Connected','Unknown','Cloud not yet observed','Controller state unavailable',
+    'Not provisioned','Registration incomplete'].includes(label)?label:'UNRECOGNIZED';
+}
 
 export function qualificationCloud(input) {
   const domain=input.cloudDomain??'aws-stage.epmp-aos.projects.epam.com';
@@ -535,11 +540,11 @@ export async function main(inputPath) {
       while(performance.now()<end) {
         const team=index%2===0?'Vehicle':'Platform Team';await button(team).click();
         await read('platform');
-        const text=await page.locator('.studio-topline > span').innerText();
-        const label=text.replace(/^Test Vehicle · /,'');
+        const text=await page.locator('.studio-connection > span').innerText();
+        const freshness=await page.locator('.studio-connection').getAttribute('data-freshness');
         record({state:'UI_DISPLAYED_STATUS',view:team,
-          label:['ONLINE','OFFLINE','CONNECTED','UNKNOWN','Last known Cloud report','Cloud unavailable','Cloud not yet observed','Controller state unavailable','Not provisioned','Registration incomplete'].includes(label)?label:'UNRECOGNIZED',
-          vdpCard:team==='Vehicle'?/v[123] · [0-9]+\.0\.0/.test(await button('Vehicle Data Platform installed details').innerText()):null});
+          label:displayedConnection(text),freshness:['current','last-known','unconfirmed'].includes(freshness)?freshness:null,
+          vdpCard:team==='Vehicle'?/Capability V[123] · Cloud release [0-9]+\.0\.0/.test(await button('Vehicle Data Platform installed details').innerText()):null});
         await new Promise(resolve=>setTimeout(resolve,2000));index++;
       }
       await button('Vehicle').click();await shot('status-observation');
@@ -665,9 +670,9 @@ export async function main(inputPath) {
           await button(team==='brake'?'Brake Team':'Tire Team').click();
           await page.getByRole('group',{name:'Capability profile',exact:true}).getByRole('button',
             {name:`${profile} ${profiles[team][Number(profile[1])-1]}`,exact:true}).click();
-          const prepared=await operate({action:'service-prepare',team,profile},()=>button('Prepare '+profile).click());
+          const prepared=await operate({action:'service-prepare',team,profile},()=>page.getByTestId('prepare-release').click());
           assert(prepared.releaseHandle && prepared.version, 'PREPARED_SERVICE_REQUIRED');
-          await expect(page.getByText(`Selected candidate · ${profile} · ${prepared.version}`,{exact:true})).toBeVisible();
+          await expect(page.getByText(candidateText(profile,prepared.version),{exact:true})).toBeVisible();
           await until(motion, 'MOVING_PUBLICATION_REQUIRED', movingWindowMs);
           await confirmed({action:'service-publish',release:prepared.releaseHandle},()=>button('Sign & publish').click(),'Sign & publish service');
           await until(async()=> {

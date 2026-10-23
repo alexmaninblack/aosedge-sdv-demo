@@ -3,9 +3,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import {candidateText,displayedConnection} from './ui_journey.mjs';
 import { command, facts, installed, failedWindow, resetPreserved, visibleWorkspace, layoutSettlement, transitionBaseline, autopilot, completedExercise, nativeVersions,continuousSections,movingWindowMs,lifecyclePreserved,lifecycleChecks,continuousActions,restartActions,statusObservation,browserFailure,releaseViewSpec,selectReleaseView,qualificationCloud,assertBrowserIdentities,visibleCardText } from './ui_journey.mjs';
 const id='01234567-89ab-cdef-0123-456789abcdef';
 const ref='ref_'+'a'.repeat(32);
+test('all publication paths use the semantic Prepare target and explicit candidate labels',()=>{
+  const source=fs.readFileSync(new URL('./ui_journey.mjs',import.meta.url),'utf8');
+  assert(!source.includes("button('Prepare '+profile)"));
+  assert(!source.includes('Selected candidate · ${profile}'));
+  for(const profile of ['v1','v2','v3'])
+    assert.equal(candidateText(profile,'172.0.0'),`Selected candidate · Capability ${profile.toUpperCase()} · Cloud release 172.0.0`);
+});
+test('display observation keeps connection distinct from freshness without copying arbitrary text',()=>{
+  assert.equal(displayedConnection('Test Vehicle · Online'),'Online');
+  assert.equal(displayedConnection('Last confirmed connection · Offline'),'Offline');
+  assert.equal(displayedConnection('Test Vehicle · Cloud not yet observed'),'Cloud not yet observed');
+  assert.equal(displayedConnection('private unexpected text'),'UNRECOGNIZED');
+});
 test('traffic-light motion window stays bounded and cannot replace actual fresh motion',()=>{
   assert.equal(movingWindowMs,120000);
   const value={controller:{fresh:true,held:false,mode:'AUTOPILOT',speed:0}};
