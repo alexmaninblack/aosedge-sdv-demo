@@ -134,11 +134,11 @@ class Observer:
         code=self.process.wait(timeout=30)
         output=self.process.stdout.read();self.process.stdout.close()
         closed=code==0 and 'OBSERVER_CLOSED' in output
-        program='import pathlib,shutil,subprocess; '+\
+        # Stop the owned viewer, but retain its private profile on M1 for
+        # operator review. Profiles are never exported with evidence.
+        program='import subprocess; '+\
             'names=subprocess.run(["/bin/ps","-axo","comm="],capture_output=True,text=True,check=True).stdout.splitlines(); '+\
-            'assert not any(n.startswith('+repr(self.root+'/Google Chrome.app/')+') for n in names); '+\
-            'p=pathlib.Path('+repr(self.records+'/browser-profile')+'); '+\
-            'shutil.rmtree(p) if p.is_dir() and not p.is_symlink() else None'
+            'assert not any(n.startswith('+repr(self.root+'/Google Chrome.app/')+') for n in names)'
         h.remote(self.transport,shlex.quote(self.python)+' -I -B -c '+shlex.quote(program),timeout=20)
         return closed
 
@@ -212,10 +212,10 @@ def execute(transport,root,value,records,observe,query,python,native=None):
         subprocess.run(['/usr/bin/rsync','-rpt','--include=*.json','--include=*.jsonl','--include=*.png',
             '--exclude=*','-e',shell,transport['user']+'@'+transport['host']+':'+shlex.quote(remote_records+'/'),
             str(records)+'/'],check=True,capture_output=True,timeout=30)
-        cleanup='import pathlib, shutil, subprocess; '+\
+        # Closing processes is not authorization to delete review materials.
+        # Leave the private browser profile on M1; never copy it to evidence.
+        cleanup='import subprocess; '+\
             'names=subprocess.run(["/bin/ps","-axo","comm="],capture_output=True,text=True,check=True).stdout.splitlines(); '+\
-            'assert not any(n.startswith('+repr(root+'/Google Chrome.app/')+') for n in names),"OWNED_BROWSER_REMAINS"; '+\
-            'p=pathlib.Path('+repr(remote_records+'/browser-profile')+'); '+\
-            'shutil.rmtree(p) if p.is_dir() and not p.is_symlink() else None'
+            'assert not any(n.startswith('+repr(root+'/Google Chrome.app/')+') for n in names),"OWNED_BROWSER_REMAINS"'
         h.remote(transport,shlex.quote(python)+' -I -B -c '+shlex.quote(cleanup),timeout=20)
     return code

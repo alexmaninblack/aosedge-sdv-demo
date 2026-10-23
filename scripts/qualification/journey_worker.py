@@ -170,6 +170,24 @@ def validate_binding(state, expected, domain=DOMAIN):
     require(state.get('selectedCloudDomain') == domain, 'QUALIFICATION_CLOUD_CHANGED')
 
 
+def retained_backend_prerequisites(observed):
+    """Candidate inventory is not activation of a retained runtime binding."""
+    require(observed.get('localInstalled') is True and
+            (observed.get('backendsObserved') is True or
+             observed.get('prerequisite') == 'SETUP_BACKENDS_IMAGES_MISSING'),
+            'RETAINED_BACKEND_PREREQUISITES_REQUIRED')
+
+
+def launcher_prerequisites(observed, retained):
+    require(observed.get('status') == 'SETUP_INSTALLED_OBSERVED'
+            and observed.get('localInstalled') is True and observed.get('launcherObserved') is True,
+            'SETUP_LAUNCHER_NOT_OBSERVED')
+    if retained:
+        retained_backend_prerequisites(observed)
+    else:
+        require(observed.get('backendsObserved') is True, 'SETUP_LAUNCHER_NOT_OBSERVED')
+
+
 def retained_backend_images(state, owner):
     """Observe exact stopped image bindings, never import or activate a candidate."""
     records = state.get('backends', {})
@@ -177,6 +195,11 @@ def retained_backend_images(state, owner):
     for team, row in records.items():
         require(row.get('state') == 'STOPPED' and isinstance(row.get('sourceRevision'), str)
                 and re.fullmatch('[a-f0-9]{40}', row['sourceRevision']), 'RETAINED_BACKEND_NOT_STOPPED')
+        candidate = owner._candidate(team)
+        require(candidate.get('sourceRevision') == row['sourceRevision'] and
+                all(candidate.get(key) == row.get(key) for key in
+                    ('mockCleanupProtocol', 'privateCleanupProtocol')),
+                'RETAINED_BACKEND_INPUTS_INCOMPATIBLE')
         image = owner._image(row.get('imageId'))
         labels = (image.get('Config') or {}).get('Labels') or {}
         require(image.get('Id') == row.get('imageId') and image.get('Architecture') == 'arm64'
@@ -568,13 +591,15 @@ class Worker:
                 value = self.setup_call(action)
                 require(value['status'] == 'SETUP_LAUNCHER_INSTALLED', 'SETUP_LAUNCHER_NOT_CONFIRMED')
             observed = self.setup_call('setup-status')
-            require(observed.get('status') == 'SETUP_INSTALLED_OBSERVED'
-                and all(observed.get(key) is True for key in
-                    ('localInstalled', 'backendsObserved', 'launcherObserved')),
-                'SETUP_LAUNCHER_NOT_OBSERVED')
+            retained = bool(self.config.get('retainedTest'))
+            launcher_prerequisites(observed, retained)
+            if retained:
+                from aosedge_demo_orchestrator.backends import BackendService
+                retained_backend_images(self.binding(), BackendService(self.app.environment_service))
             # Status also contains credential paths. Persist fixed facts only.
             return result(dict(status='SETUP_LAUNCHER_INSTALLED', launcherObserved=True,
-                localInstalled=True, backendsObserved=True,
+                localInstalled=True, backendsObserved=observed.get('backendsObserved') is True,
+                retainedBackendBindingsVerified=retained,
                 reconciliationOnly=self.request['phase'] == 'reconcile'))
         pair = dict(oem=self.config['oemCertificate'], sp=self.config['spCertificate'])
         observed = self.setup_call('cloud-inspect', **pair)
@@ -712,8 +737,7 @@ class Worker:
             require(self.config.get('retainedTest') == state['vehicles']['test']['localVmId'],
                     'RETAINED_TEST_CHANGED')
             observed = self.setup_call('setup-status')
-            require(observed.get('localInstalled') is True and observed.get('backendsObserved') is True,
-                    'RETAINED_BACKEND_PREREQUISITES_REQUIRED')
+            retained_backend_prerequisites(observed)
             from aosedge_demo_orchestrator.backends import BackendService
             return retained_backend_images(state, BackendService(self.app.environment_service))
         if query == 'retained-cloud':

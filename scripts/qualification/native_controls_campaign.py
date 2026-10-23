@@ -166,7 +166,10 @@ try:
    require(not candidate.problems,'DEMO_FACTORY_IMAGE_UNAVAILABLE')
    from aosedge_demo_orchestrator.backends import BackendService
    backends=BackendService(environment)
-   for team in ('brake','tire'):backends._image(backends._candidate(team)['imageId'])
+   if state is not None:
+    retained_backend_images(state,backends)
+   else:
+    for team in ('brake','tire'):backends._image(backends._candidate(team)['imageId'])
    connection=CloudConnection(environment)
    pair=inspect_preflight_pair(connection,worker.config['oemCertificate'],worker.config['spCertificate'],state is not None)
    require(pair['domain']==worker.domain,'QUALIFICATION_CLOUD_CHANGED')

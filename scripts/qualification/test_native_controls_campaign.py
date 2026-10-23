@@ -115,6 +115,8 @@ class CampaignExecution(unittest.TestCase):
             source=program.split("<<'SDV_CAMPAIGN_PREFLIGHT'\n",1)[1].rsplit('\nSDV_CAMPAIGN_PREFLIGHT',1)[0]
             calls=[n for n in ast.walk(ast.parse(source)) if isinstance(n,ast.Call)
                    and isinstance(n.func,ast.Attribute) and n.func.attr=='check'
+                   and isinstance(n.func.value,ast.Call)
+                   and isinstance(n.func.value.func,ast.Name) and n.func.value.func.id=='CloudSetup'
                    and any(k.arg=='first_use' for k in n.keywords)]
             self.assertEqual(len(calls),1)
             expression=next(k.value for k in calls[0].keywords if k.arg=='first_use')

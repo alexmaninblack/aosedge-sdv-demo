@@ -98,7 +98,7 @@ class PilotGuards(unittest.TestCase):
         self.assertEqual(validate(gate,gate['stage'],gate['action'])['state'],'CLICKED_THROUGH_CUA')
         with self.assertRaises(ValueError):
             validate(dict(gate,stage='other'), 'other', 'Autopilot')
-    def test_read_only_viewer_closes_profile_even_after_failed_start(self):
+    def test_read_only_viewer_closes_process_but_preserves_review_profile(self):
         for code,passed in ((0,True),(1,False)):
             viewer=Observer.__new__(Observer)
             viewer.transport={};viewer.root='/fixed/ui-tools';viewer.python='/fixed/python'
@@ -108,8 +108,10 @@ class PilotGuards(unittest.TestCase):
             with patch('ui_m1.h.remote') as remote:
                 self.assertEqual(viewer.close(),passed)
                 self.assertEqual(remote.call_count,1)
-                self.assertIn('browser-profile',remote.call_args.args[1])
-                self.assertIn('/fixed/records/browser-profile',remote.call_args.args[1])
+                self.assertIn('/fixed/ui-tools/Google Chrome.app/',remote.call_args.args[1])
+                self.assertIn('assert not any',remote.call_args.args[1])
+                self.assertNotIn('rmtree',remote.call_args.args[1])
+                self.assertNotIn('unlink',remote.call_args.args[1])
             self.assertTrue(viewer.process.stdout.closed)
 
     def test_continuation_pins_one_completed_unpublished_prepare(self):
