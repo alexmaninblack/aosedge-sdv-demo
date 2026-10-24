@@ -92,6 +92,18 @@ def ssh_args(config):
             config['user']+'@'+config['host']]
 
 
+def interactive_ssh_args(config):
+    """Explicit secure-input TTY, preserving every target/key/network restriction.
+
+    Replace the noninteractive flag; prepending -t would be overridden by -T.
+    Callers hand the session to the operator and never capture credential input.
+    """
+    args = ssh_args(config)
+    require(args.count('-T') == 1, 'SSH_TTY_POLICY_INVALID')
+    args[args.index('-T')] = '-tt'
+    return args
+
+
 def remote(config, script, timeout=60):
     return run(ssh_args(config)+['/bin/sh -s'], data=script, timeout=timeout)
 
