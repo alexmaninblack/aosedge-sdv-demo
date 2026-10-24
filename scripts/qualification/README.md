@@ -20,6 +20,7 @@ and [current baseline](../../docs/qualification/current-baseline.md).
 | --- | --- |
 | `campaign.py` | Deliver the pinned DMG, install/prepare through Setup, run the ordered API journey and close owned runtime resources |
 | `native_controls_campaign.py` | Complete visible M1 browser/native-control campaign with independent effects, timings and cleanup |
+| `continuous_ui_campaign.py` | Retained-Test visible release, installed-view, Reset, moving-SOTA and Stop/Start campaign with one browser/native session and cleanup |
 | `setup_first_use_campaign.py` | Separate signed native Setup first-use profile, including certificate issuance for existing authorized accounts |
 | `ui_pilot.py` | Bounded diagnosis or explicitly selected visible M1 UI scenario on an existing Test; not a substitute for the complete campaign |
 
@@ -161,6 +162,13 @@ reconcile the exact operation rather than replaying input. A terminal failed or
 uncertain mutation does not authorize Finish, another installation, another
 publication or a replacement Test. Use only the existing explicit continuation
 or reconciliation mode after its preconditions have been established.
+
+An independent read failure is not proof that the preceding input failed.
+Reconcile the exact recorded operation before selecting a new scenario. Local
+read diagnostics expose only fixed substage and exception-class codes; guest
+output and arbitrary exception text remain private. The read broker never
+replays an input or silently substitutes a cached observation. A subsequent
+complete campaign has new records and cannot inherit earlier partial UI passes.
 
 A run records its actual scenario definition, correlated effects, timed phases,
 bounded redacted diagnostics, PASS/FAIL/BLOCKED/NOT_RUN gates and cleanup.

@@ -44,17 +44,50 @@ is not qualified or hidden by retained-runtime Presenter checks.
 
 ## Current gate status
 
-Source presentation changes, 379 Presenter unit tests, type/web compilation and
-151 M1 browser fixtures pass. The fixed 876×908 fixture measured zero movement
-and resizing of its unchanged shell/card regions during freshness, operation and
-placement transitions; the same View progress target also retained its bounds.
-Qualification tooling has 87 Python and 44 JavaScript unit checks passing.
-These are not installed-package or live vehicle acceptance results.
+The review candidate is `1.2.0-rc.4-presenter.1`, built from Presenter source
+`d349c9f9b65420f17b05cea71d7f7f41aa4ead29` with unchanged CARLA/Factory inputs.
+Matching-team Apple Development signing and normal retained-Test installation
+passed on M1. This is engineering review media, not a notarized public release.
 
-The operator-authorized removal of four unselected, unused previous M1 packages
-recovered 132.3 GiB. The selected package, rollback, Test, Factory backing image,
-current media and caches remain unchanged; free space is approximately 222 GiB.
-The review branch selects `1.2.0-rc.4-presenter.1` with the tested Presenter
-source and unchanged binary dependencies. Packaging and installed API/UI remain
-unqualified until their own campaign completes. Main and public option A have
-not advanced.
+| Gate | Actual result |
+| --- | --- |
+| Source | 379 Presenter unit tests, type/web compilation; qualification tooling 92 Python and 46 JavaScript tests pass |
+| M1 browser fixtures | 151/151 pass, including unchanged shell/card bounds and the same View progress target |
+| Retained-Test update | PASS, 451.020 seconds; normal signature, installation and selection owners |
+| API with visible read-only observation | 115/115 pass, 1,696.384 seconds; publication, results/advisory, Reset, offline, ignition and Stop/Start |
+| Focused native controls | 15/15 browser stages pass, 442.302 seconds including preparation/cleanup; both Brake/Tire Return to road, no publication |
+| Independent complete visible UI | 42/42 pass, 1,344.584 seconds including preparation/cleanup; Platform publication checks, installed views, independent Reset, moving SOTA and retained Stop/Start |
+| Runtime closure | Confirmed after each campaign; browser/native runner, tunnel, simulator, VMs, demo containers and owned media closed; shared Docker preserved |
+
+At the canonical 876×908 viewport, 3,249 API-observer samples and 2,452 complete
+UI samples recorded no comparable-region movement/resizing above one CSS pixel,
+with zero sampler errors or reached sample limits. API observations retained 380
+original masked screenshots; no new-release/profile mismatches, numeric-only
+VDP labels, initial reprovisioning hints or Offline transitions outside declared
+startup/offline/power/shutdown phases were observed. Sampling does not exclude
+shorter transients or replace the operator's visual review.
+
+The first UI attempt remains explicitly incomplete: Return to road completed,
+but the subsequent independent local read failed while SSH remained healthy.
+Its underlying cause was not established. Fixed substage/exception-class
+diagnostics were added without exposing payloads, replaying input, weakening a
+guard or rebuilding the product. The focused proof and complete new UI campaign
+passed independently; no earlier partial UI passes were inherited.
+
+Private reports bind the exact candidate, Test, media, source, original failure,
+reconciliation, timings and before/after screenshot annotations. Test identity,
+VM disks, history, release ledgers, certificates, dependencies, caches and review
+profiles remain on M1. Four previously unselected, unused packages were removed
+only under the operator's capacity authorization; selected/rollback versions and
+Test dependencies were protected.
+
+Fresh Setup backend import/inventory, native secure credential entry, the
+WKWebView shell and notarized public delivery are not qualified by these retained
+profiles. `VDP-TIMEOUT-01` remains deferred. Main and public option A have not
+advanced; joint UI review is still required before merge/publication.
+
+Visual inspection identified one editorial follow-up for that review: the
+Updating controller report guide says software is retained **below**, although
+the cards are above the bottom guide. This word remains in the tested immutable
+candidate; fold its correction into the next agreed UI source packet rather than
+claiming the current DMG already includes it.
