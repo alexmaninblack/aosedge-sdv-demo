@@ -42,6 +42,21 @@ def fixed_reason(value):
     return fixed_code(value)
 
 
+def read_failure(worker, error):
+    """Fixed read-stage diagnostics, never arbitrary exception text or a retry."""
+    code = fixed_code(str(error))
+    if code:
+        return code, {}
+    stage = getattr(worker, '_observation_stage', None)
+    stages = {'LOCAL_BINDING', 'LOCAL_GUEST_COMMAND', 'LOCAL_GUEST_JSON', 'LOCAL_CONTROLLER'}
+    kinds = {'JSONDecodeError':'JSON', 'UnicodeDecodeError':'ENCODING', 'TimeoutExpired':'TIMEOUT',
+             'KeyError':'KEY', 'TypeError':'TYPE', 'AttributeError':'ATTRIBUTE'}
+    kind = kinds.get(type(error).__name__)
+    if stage in stages and kind and worker.request.get('kind') in ('observe','hold'):
+        return 'WORKER_'+stage+'_'+kind, dict(readStage=stage, errorClass=kind)
+    return 'WORKER_OBSERVATION_UNAVAILABLE', {}
+
+
 @contextlib.contextmanager
 def preparation_writer(environment, *, wait_owner=None):
     """Acquire before any effect; optionally wait for a known Presenter owner.
@@ -709,14 +724,18 @@ class Worker:
     def local(self, require_teams=True):
         from aosedge_demo_orchestrator.vm import access_path
         from aosedge_demo_orchestrator.guest_access import ssh_command
+        self._observation_stage = 'LOCAL_BINDING'
         state = self.binding()
         vehicle = state['vehicles']['test']
+        self._observation_stage = 'LOCAL_GUEST_COMMAND'
         process = subprocess.run(ssh_command(access_path(self.state, 'test'), vehicle['sshPort'], 5),
             input="python3 - <<'SDV_FIXED_READ'\nCOLLECT_TEAMS=" + repr(require_teams) + '\n' + GUEST + '\nSDV_FIXED_READ\n',
             capture_output=True, text=True, timeout=30)
         require(process.returncode == 0 and len(process.stdout) <= 262144, 'LOCAL_PROJECTION_UNAVAILABLE')
+        self._observation_stage = 'LOCAL_GUEST_JSON'
         value = json.loads(process.stdout)
         if require_teams: require(set(value['teams']) == {'brake','tire'}, 'SERVICE_PROJECTION_INCOMPLETE')
+        self._observation_stage = 'LOCAL_CONTROLLER'
         value['controller'] = control_projection(self.app.source_service.driver.ready(state))
         value['identity'] = {key:vehicle.get(key) for key in ('localVmId', 'unitId', 'nodeId', 'systemUid')}
         return value
@@ -1139,7 +1158,7 @@ def main(raw):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             answer = worker.execute()
     except Exception as error:
-        code = str(error) if re.fullmatch('[A-Z][A-Z0-9_]{1,100}', str(error)) else 'WORKER_OBSERVATION_UNAVAILABLE'
+        code, facts = read_failure(worker, error)
         uncertain = worker is not None and (worker.attempted or worker.request['phase'] == 'reconcile')
-        answer = result(outcome='UNCERTAIN' if uncertain else 'BLOCKED', code=code)
+        answer = result(facts, outcome='UNCERTAIN' if uncertain else 'BLOCKED', code=code)
     print(json.dumps(answer), flush=True)
