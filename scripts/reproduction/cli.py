@@ -109,6 +109,7 @@ def main(argv=None):
     parser.add_argument('--docker', type=Path, default=shutil.which('docker'))
     parser.add_argument('--kit-inputs', type=Path)
     parser.add_argument('--factory-inputs', type=Path, help='Explicit source-built Factory result root; must match the independent source checkpoint')
+    parser.add_argument('--factory-checkpoint', help='Explicit committed source-Factory checkpoint; requires --factory-inputs and leaves the ready default unchanged')
     parser.add_argument('--input-checkpoint', help='Committed successor group checkpoint relative to the selected producer')
     parser.add_argument('--release-checkpoint', help='Committed independent Setup pin relative to the selected producer')
     parser.add_argument('--python', type=Path, default=sys.executable)
@@ -117,6 +118,9 @@ def main(argv=None):
     parser.add_argument('--prepare-dependencies', action='store_true')
     args = parser.parse_args(argv)
     try:
+        require(args.factory_checkpoint is None or (args.action == 'build'
+                and args.target in ('all', 'preparation') and args.factory_inputs is not None),
+                'A Factory checkpoint requires a preparation/all build with explicit source-built Factory inputs')
         require(args.drive_binding is None and args.drive_token_fd is None,
                 'Legacy DMG acquisition is retired; use launcher A for operator media or lab inputs for build dependencies')
         if args.action == 'space':
@@ -176,7 +180,7 @@ def main(argv=None):
                                        args.test_tmp_parent, args.resume)
             elif args.target == 'preparation':
                 key = packaging.preparation(storage, state, args.kit_inputs, args.python, progress,
-                                            args.prepare_dependencies, args.factory_inputs)
+                                            args.prepare_dependencies, args.factory_inputs, args.factory_checkpoint)
             elif args.target == 'host-runtime':
                 key = host.assemble(storage, state, args.kit_inputs, args.gateway_sdk, args.python, progress)
             elif args.target in package_chain.MANIFESTS:

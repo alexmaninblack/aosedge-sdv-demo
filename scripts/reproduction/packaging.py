@@ -124,10 +124,11 @@ def stamp(path):
     return [s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns, stat.S_IMODE(s.st_mode)]
 
 
-def source_factory(storage, root):
+def source_factory(storage, root, checkpoint=SOURCE_FACTORY_CHECKPOINT):
     """Select only the independently pinned source build, never adopt a receipt."""
     require(storage_volume(root)['uuid'] == storage.volume['uuid'], 'Factory inputs must be on the bound volume')
-    pin = read_json(ROOT / SOURCE_FACTORY_CHECKPOINT)['rebuilt']
+    value = read_json(ROOT / safe_relative(checkpoint))
+    pin = value['rebuilt'] if 'rebuilt' in value else value
     factory = pin['factory']
     manifest_path = matches(Path(root) / safe_relative(pin['manifest']['path']), pin['manifest'])
     manifest = read_json(manifest_path)
@@ -224,15 +225,19 @@ def reviewed_runtime_pin():
         sys.path[:] = previous
 
 
-def preparation(storage, state, kit, python, progress, prepare_dependencies=False, factory_inputs=None):
+def preparation(storage, state, kit, python, progress, prepare_dependencies=False, factory_inputs=None,
+                factory_checkpoint=None):
     require(storage.profile == 'developer', 'Preparation currently requires developer profile')
     verify_sources(storage, state)
     storage.check(additional=8*GIB, reserve=90*GIB)
-    tooling, revision = producer(storage)
+    require(factory_checkpoint is None or factory_inputs is not None,
+            'A Factory checkpoint requires explicit source-built Factory inputs')
+    selected_checkpoint = str(safe_relative(factory_checkpoint or SOURCE_FACTORY_CHECKPOINT))
+    tooling, revision = producer(storage, checkpoints=(selected_checkpoint,) if factory_checkpoint else ())
     pins = read_json(ROOT / SERVICE_CHECKPOINT)['serviceExports']
     chosen = selected_services(storage, state, pins)
     source, rows, retained_pin, factory = retained_preparation(storage, kit)
-    source_selection = source_factory(storage, factory_inputs) if factory_inputs is not None else None
+    source_selection = source_factory(storage, factory_inputs, selected_checkpoint) if factory_inputs is not None else None
     if source_selection:
         factory = source_selection[0]['factory']
         rows = [row for row in rows if not row['path'].startswith('factory/')]
@@ -279,7 +284,7 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
             worker = ROOT / 'scripts/reproduction/preparation_worker.py'
             result = run_command(['/usr/bin/sandbox-exec', '-f', policy, python, '-I', '-B', worker,
                 ROOT, storage.path('sources/vehicle-platform'), scratch, output,
-                SOURCE_FACTORY_CHECKPOINT + '#rebuilt' if source_selection else FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
+                selected_checkpoint + '#rebuilt' if source_selection else FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
                 env=storage.environment(), cwd=scratch, timeout=300)
             output.parent.joinpath(key + '.log').write_bytes((result.stdout + result.stderr)[-2**20:])
             require(result.returncode == 0, 'Preparation owner failed; inspect retained workspace log')
@@ -293,7 +298,8 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
                          'sha256': sha256(output / PREPARATION_MANIFEST)},
             'stamps': {r['path']: stamp(regular(output / r['path'])) for r in manifest['files']}})
     verify_sources(storage, state)
-    require(producer(storage)[0] == tooling, 'Producer source changed during assembly')
+    require(producer(storage, checkpoints=(selected_checkpoint,) if factory_checkpoint else ())[0] == tooling,
+            'Producer source changed during assembly')
     verify_preparation(output, inputs)
     state['builds'][key] = {'target': 'preparation', 'inputs': inputs}
     storage.save(state)

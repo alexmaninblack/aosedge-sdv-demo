@@ -70,6 +70,15 @@ class PlanTests(unittest.TestCase):
         load.assert_called_once_with('reproduction.packaging')
         owner.preparation.assert_called_once()
 
+    def test_explicit_factory_checkpoint_reaches_only_preparation_owner(self):
+        owner = Mock()
+        options = dict(python='python', kit_inputs='kit', prepare_dependencies=False,
+            factory_inputs='factory', factory_checkpoint='workspace/inputs/controller-review.lock.json')
+        with patch.object(chain_worker.importlib, 'import_module', return_value=owner):
+            chain_worker.dispatch(None, None, 'preparation', None, options, None)
+        self.assertEqual(owner.preparation.call_args.kwargs,
+            dict(factory_inputs='factory',factory_checkpoint=options['factory_checkpoint']))
+
 
 class StorageCompatibilityTests(StorageFixture, unittest.TestCase):
     def test_legacy_producers_remain_external_only(self):
@@ -269,6 +278,17 @@ class PreflightTests(StorageFixture, unittest.TestCase):
             result = chain.preflight(self.storage, args)
         self.assertEqual(result['python'], str(link))
         self.assertEqual(result['signing_identity'], 'A'*40)
+
+    def test_review_checkpoint_requires_explicit_source_input_and_safe_relative_path(self):
+        args = self.options();args.factory_checkpoint='workspace/inputs/controller-review.lock.json'
+        with patch.object(chain, 'storage_volume', return_value=self.volume), patch.object(chain.gateway, 'temporary_parent'):
+            with self.assertRaisesRegex(core.LabError, 'requires explicit'):
+                chain.preflight(self.storage, args)
+            args.factory_inputs=self.base
+            self.assertEqual(chain.preflight(self.storage,args)['factory_checkpoint'],args.factory_checkpoint)
+            args.factory_checkpoint='../outside.json'
+            with self.assertRaises(core.LabError):
+                chain.preflight(self.storage,args)
 
 
 if __name__ == '__main__':

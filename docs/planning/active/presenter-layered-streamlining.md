@@ -367,3 +367,11 @@ receipts as 16/16/2 read-only requests, then repeated idempotently without anoth
 upload read; no Cloud mutation or lifecycle replay occurred. The caller now uses
 that bounded serial composition and saves confirmations only after all chunks
 pass. The worker's scope, identity, response and owner guards are unchanged.
+
+The ready controller lock and its build-definition/cache binding stay unchanged.
+The review image has a separate committed `controller-review.lock.json`, selected
+only by the maintainer build's explicit `--factory-inputs` plus
+`--factory-checkpoint`. The preparation owner includes that file in its committed
+source closure and verifies the same manifest/image/QA/provenance guards. No
+automatic image adoption, receipt rebinding, cache namespace change or public
+default promotion is part of this candidate selection.

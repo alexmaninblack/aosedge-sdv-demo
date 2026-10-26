@@ -239,6 +239,47 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         with self.assertRaisesRegex(core.LabError, 'immutable'):
             packaging.source_factory(self.storage, root)
 
+    def test_explicit_flat_review_checkpoint_preserves_default_and_pin_guards(self):
+        root, manifest, image, pin = self.source_fixture()
+        candidate = 'workspace/inputs/controller-review.lock.json'
+        default = (self.base/packaging.SOURCE_FACTORY_CHECKPOINT).read_bytes()
+        core.atomic_json(self.base/candidate, pin)
+        self.assertEqual(packaging.source_factory(self.storage, root, candidate), (pin, manifest, image))
+        self.assertEqual(default, (self.base/packaging.SOURCE_FACTORY_CHECKPOINT).read_bytes())
+        with self.assertRaises(core.LabError):
+            packaging.source_factory(self.storage, root, '../uncommitted.json')
+        value = core.read_json(manifest)
+        value['build']['packageQa'] = 'FAIL'
+        core.atomic_json(manifest, value)
+        pin['manifest'].update(bytes=manifest.stat().st_size, sha256=sha256(manifest))
+        core.atomic_json(self.base/candidate, pin)
+        with self.assertRaisesRegex(core.LabError, 'evidence differs'):
+            packaging.source_factory(self.storage, root, candidate)
+
+    def test_explicit_review_preparation_includes_committed_checkpoint_and_owner_selection(self):
+        self.fixture()
+        candidate = 'workspace/inputs/controller-review.lock.json'
+        pin = {'factory': self.factory, 'manifest': {'sha256': 'f'*64}}
+        with patch('reproduction.packaging.source_factory', return_value=(pin, self.base/'manifest', self.base/'image')) as select, \
+                patch('reproduction.packaging.stage_source_factory'), \
+                patch('reproduction.packaging.producer', return_value=({'reviewed':'a'*40},'b'*40)) as producer:
+            packaging.preparation(self.storage, self.state, self.base, sys.executable,
+                lambda *args: None, factory_inputs=self.base, factory_checkpoint=candidate)
+        select.assert_called_once_with(self.storage, self.base, candidate)
+        self.assertEqual(producer.call_args_list[0].kwargs['checkpoints'], (candidate,))
+        self.assertEqual(producer.call_args_list[-1].kwargs['checkpoints'], (candidate,))
+        owners = [call.args[0] for call in self.command.call_args_list
+                  if str(call.args[0][0]) == '/usr/bin/sandbox-exec']
+        self.assertEqual(owners[-1][-2], candidate+'#rebuilt')
+
+    def test_review_checkpoint_without_source_inputs_fails_before_producer(self):
+        self.fixture()
+        with patch('reproduction.packaging.producer') as producer:
+            with self.assertRaisesRegex(core.LabError, 'requires explicit'):
+                packaging.preparation(self.storage, self.state, self.base, sys.executable,
+                    lambda *args: None, factory_checkpoint='workspace/inputs/controller-review.lock.json')
+        producer.assert_not_called()
+
     def test_source_factory_modified_manifest_and_wrong_volume(self):
         root, manifest, _, _ = self.source_fixture()
         with patch('reproduction.packaging.storage_volume', return_value={'uuid':'OTHER'}):

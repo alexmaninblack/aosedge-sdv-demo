@@ -69,6 +69,13 @@ turnkey fresh-host bootstrap. Use the existing Factory owner adapter, preserve
 offline/disk guards and obtain independently reviewed packaging pins for a new
 image. Never replace a backing image underneath a provisioned VM.
 
+For a separately authorized image-review candidate, the preparation/all build
+accepts `--factory-inputs` with `--factory-checkpoint`, a committed repository-relative
+Factory descriptor. The preparation producer owns that descriptor and verifies
+the exact image, manifest, source and QA provenance. This explicit review path
+does not change the ready controller lock, public defaults, existing receipts or
+cache namespace. Omission preserves the ordinary pinned Factory selection.
+
 The [specialist guide](../getting-started/full-source-build.md) distinguishes
 fresh Builder requirements, retained-adapter guards and unmeasured cold peaks.
 CARLA/Unreal source/licensing/build closure is a separate gate.

@@ -36,6 +36,8 @@ def dispatch(storage, state, target, profile, options, progress):
                                  options['test_tmp_parent'], False)
     if target == 'preparation':
         optional = {'factory_inputs': options['factory_inputs']} if options.get('factory_inputs') else {}
+        if options.get('factory_checkpoint'):
+            optional['factory_checkpoint'] = options['factory_checkpoint']
         return owner.preparation(storage, state, options['kit_inputs'], python, progress,
                                      options['prepare_dependencies'], **optional)
     if target == 'host-runtime':

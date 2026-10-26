@@ -175,6 +175,10 @@ def preflight(storage, args):
         require(path.is_dir() and storage_volume(path)['uuid'] == storage.volume['uuid'],
                 'Factory inputs must exist on the bound volume')
         config['factory_inputs'] = str(path)
+    if getattr(args, 'factory_checkpoint', None) is not None:
+        from .cloud import relative
+        require('factory_inputs' in config, 'A Factory checkpoint requires explicit source-built Factory inputs')
+        config['factory_checkpoint'] = str(relative(args.factory_checkpoint))
     for name in ('input_checkpoint', 'release_checkpoint'):
         if getattr(args, name, None) is not None:
             from .cloud import relative
@@ -240,7 +244,7 @@ def execute(storage, state, args, progress):
     for rev in dict.fromkeys(plan['producers'].values()):
         paths[rev] = producer(storage, plan, rev, args.prepare_dependencies, progress)
     key = digest({'plan': plan, 'signer': args.signing_identity.upper()})
-    selection = {name: config[name] for name in ('factory_inputs', 'input_checkpoint', 'release_checkpoint') if name in config}
+    selection = {name: config[name] for name in ('factory_inputs', 'factory_checkpoint', 'input_checkpoint', 'release_checkpoint') if name in config}
     if selection:
         key = digest({'plan':plan, 'signer':args.signing_identity.upper(), 'selection':selection})
     record = storage.path('builds/chains/'+key+'.json')
