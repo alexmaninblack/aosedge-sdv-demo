@@ -4,6 +4,7 @@
 import hashlib
 import io
 import inspect
+import runpy
 from pathlib import Path
 import subprocess
 import sys
@@ -19,6 +20,15 @@ from reproduction.core import LabError
 
 
 class FactoryRecipeTests(unittest.TestCase):
+    def test_guest_override_binds_the_platform_checkout_and_exact_version(self):
+        guest = runpy.run_path(str(ROOT / 'scripts/guest/factory41-prepare.py'))
+        for suffix in ('41', '42'):
+            lock = dict(factoryVersion='6.1.1-maninblack.' + suffix, qualification='qualification/factory-' + suffix + '.conf')
+            self.assertEqual(guest['qualification_file'](Path('/build/yocto'), lock),
+                             Path('/build/yocto/aos-vehicle-platform') / lock['qualification'])
+            with self.assertRaisesRegex(ValueError, 'qualification'):
+                guest['qualification_file'](Path('/build/yocto'), dict(lock, qualification='other.conf'))
+
     def test_fresh_builder_input_parent_is_created_only_after_path_and_content_probe(self):
         source = inspect.getsource(factory.prepare)
         self.assertLess(source.index('exists = subprocess.check_output'), source.index("'mkdir -p -m 0700 -- '"))

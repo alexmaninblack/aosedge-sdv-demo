@@ -29,6 +29,13 @@ def clean_source(path, row):
     require(run(['git', '-C', str(path), 'remote', 'get-url', 'origin']).strip() == row['url'], 'Wrong source remote')
 
 
+def qualification_file(source_root, lock):
+    require(lock['factoryVersion'] in ('6.1.1-maninblack.41', '6.1.1-maninblack.42'), 'Wrong recipe version')
+    suffix = lock['factoryVersion'].rsplit('.', 1)[1]
+    require(lock['qualification'] == 'qualification/factory-' + suffix + '.conf', 'Wrong qualification binding')
+    return source_root / 'aos-vehicle-platform' / lock['qualification']
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, required=True)
@@ -97,7 +104,7 @@ def main():
     require(lock['factoryVersion'] in (config / 'moulin.conf').read_text(), 'Wrong generated version')
     require('r61-build/project/' not in (config / 'bblayers.conf').read_text(), 'Warm layer leaked')
     override = args.project / ('factory' + suffix + '.conf')
-    override.write_text('require ' + str(source_root / lock['qualification'])
+    override.write_text('require ' + str(qualification_file(source_root, lock))
                         + '\nBB_NUMBER_THREADS = "2"\nPARALLEL_MAKE = "-j 4"\n')
     record = {'state': 'CONFIGURED_NOT_BUILT', 'sourceCount': len(lock['sources']),
               'inheritedWarmConfiguration': False, 'reusedDownloadsAndSstate': True,
