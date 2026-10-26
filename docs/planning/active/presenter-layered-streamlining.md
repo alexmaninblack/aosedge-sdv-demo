@@ -66,13 +66,13 @@ is reused without routine Engine restarts. No public distribution or merge yet.
 
 | Gate | Work and acceptance | State |
 | --- | --- | --- |
-| 1. Contract/source | Update installed interaction text; implement all accepted review groups together with state/navigation regressions | Complete; successor media remains unqualified |
+| 1. Contract/source | Update installed interaction text; implement all accepted review groups together with state/navigation regressions | Implemented; a captured Cloud inventory clipping correction follows the installed source freeze |
 | 2. Local verification | Unit/type/static/docs/confidentiality gates; no developer-Mac browser or runtime | 390 Presenter unit tests, type/web compilation, 92 Python and 46 JavaScript qualification tests, docs and source gates pass |
-| 3. M1 visual fixtures | One semantic fixture scenario on M1; layered boundaries, icon mapping, child navigation, state/geometry assertions | 152/152 pass, no skips/retries; 41.185 seconds; browser and fixture server closed |
-| 4. Immutable media | Freeze successor source; warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | Canonical chain 17/17 built in 768.850 seconds; matching-M1-team review media blocked on secure keychain input |
-| 5. Retained update | Normal package update and launcher selection on M1; exact signature/capacity and unchanged Test/data bindings | Not run |
-| 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Not run |
-| 7. Review handoff | Before/after screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve Test/data; close owned check runtimes | Not run |
+| 3. M1 visual fixtures | One semantic fixture scenario on M1; layered boundaries, icon mapping, child navigation, state/geometry assertions | 154/154 pass after the captured Cloud row correction, no skips/retries/flaky tests; 39.889 seconds; browser and fixture server closed |
+| 4. Immutable media | Freeze successor source; warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | Canonical chain 17/17 built in 768.850 seconds; matching-M1-team media assembled in 540.183 seconds |
+| 5. Retained update | Normal package update and launcher selection on M1; exact signature/capacity and unchanged Test/data bindings | Pass for the frozen `.2` candidate; Test and data retained |
+| 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Not complete: retained VM dependency/startup failures stop API acceptance; full UI not run |
+| 7. Review handoff | Before/after screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve Test/data; close owned check runtimes | Partial screenshots and failed attempts retained; final owned runtime closure confirmed; no acceptance or promotion |
 
 Use normal scripted entries under [qualification](../../../scripts/qualification/README.md).
 The agent launches the scenario; routine steps do not wait for agent clicks.
@@ -117,11 +117,11 @@ No product polling interval or freshness limit changed. Earlier failed fixture
 attempts remain private, immutable diagnostics; they are not successor acceptance.
 
 The retained-Test, desktop, Cloud and matching signing identity preflight passed
-on M1 before media work. Its SSH login keychain is locked: matching-team signing
-may require secure local input. No private key is exported or password recorded.
-Full installed API/UI gates below remain **not run** until matching-team media exists.
+on M1 before media work. The operator completed the exact M1 keychain helper;
+the continuation independently reconciled its signature without signing again.
+No private key was exported or password recorded.
 
-## Built successor and bounded signing stop
+## Installed successor and qualification boundary
 
 Final Presenter source is `45de82c5241387bf2a5b2a2e587529099f6713bd`;
 the reviewed selection is `c2c463c` in this branch. Candidate version is
@@ -129,7 +129,11 @@ the reviewed selection is `c2c463c` in this branch. Candidate version is
 `bb81fda0338e159477affdae6abcca4bf6aff9f5ffaee12f6962669e42b3e473`.
 The canonical local-development-signed DMG is 14,159,627,471 bytes, SHA-256
 `a33845d34f3eb8e3683f43c59c4e77acd8e30e1ec49f5756b8f98d2a2511a0cd`.
-This is not yet matching-team installed/review acceptance or public distribution.
+That original development-team image is not the matching-team installed media.
+The M1-team review DMG is 14,158,457,969 bytes, SHA-256
+`378863973e01cb65fad2262ea69a61d0515c77795b9e371f325d3779d2fc418d`.
+Its application manifest and runtime bytes are unchanged. Neither image is a
+qualified public release.
 
 Before the successful build, normal content revalidation handled only the
 same SSD's remount device-number change; original receipts and payloads were
@@ -137,11 +141,53 @@ preserved. A subsequent first-source build was interrupted with owned cleanup
 when the background-insertion focus regression was reproduced. Neither attempt
 was delivered or installed, and neither supplies successor runtime acceptance.
 
-The M1 scenario passed retained preflight, exact completed-build binding and
-before-state capture, then delivered Setup only. It stopped with
-`SIGNING_SECURE_INPUT_REQUIRED`; cleanup was confirmed. Installation, API and
-UI have **not** started. The exact candidate-bound interactive helper is ready;
-credentials are entered only into the remote system keychain prompt. A later
-continuation reconciles any completed signing result without signing again,
-keeps the same Test/data, then owns matching-team media, installation and the
-complete visible API/UI campaign. Main and option A remain unchanged.
+The first media continuation found the predecessor `.1` DMG still occupying
+the review mount. No new installation had occurred. Read-only reconciliation
+proved the exact old mount and zero open handles; normal detach and the normal
+new-media owner then completed the retained update. Original failed records
+remain separate. Delivery took 172.637 seconds. The install/selection owner
+took 250.236 seconds, including 128.874 seconds for install and 75.057 seconds
+for selection; media verification accounts for the remaining time.
+
+The installed API attempt passed ten steps before connection failed with
+`SOURCE_GUEST_UNAVAILABLE`; shutdown also remained unresolved initially. The VM
+was SSH-reachable. Its KUKSA databroker could not bind port 55555 because
+`rpc.mountd` owned it, causing VDP/Service Manager startup failures. Bounded
+runtime recovery preserved the NFS exports/configuration, restored mountd and
+started the databroker. The same held initial-Manual operation was reconciled,
+not replaced; fresh authenticated connection and normal shutdown were observed.
+This is a transient environment recovery, **not** a permanent Factory fix.
+
+A separate API attempt after recovery passed eight startup checks, then the
+controller-start operation returned `PARTIAL`. Normal shutdown passed. Its total
+campaign time was 121.226 seconds. Preserve this as another failed attempt,
+not a successful retry or complete API result. No new release publication or
+full UI sequence was reached. The final probe confirmed zero demo processes and
+listeners; observer browsers and display assertions were closed. Shared Docker,
+the retained Test, credentials, VM/data, immutable media and caches are preserved.
+
+The visible API observer captured 497 presentation samples with zero fixed-shell
+movement/error findings. This is limited startup evidence, not full-flow UI
+acceptance. A captured three-component/two-service Cloud summary also exposed a
+22-pixel row containing 30 pixels of text when inventory became last known.
+The regression was reproduced on M1 before correction. The source-only layout
+correction reallocates the same fixed card height; it changes no data or status
+semantics. All 390 unit tests, type/web compilation and 154 M1 browser fixtures
+pass after this correction, with no skips, retries or flaky tests. It is
+**not included** in the frozen `.2` media above.
+
+Before another immutable-media/full campaign, close these bounded items:
+
+1. Own the native VM startup work separately: prevent the NFS/KUKSA port collision
+   without disabling an in-use dependency or weakening policy, and preserve its
+   cold-start/restart proof. No Factory rebuild is authorized by this packet.
+2. Retain the exact reason for partial controller startup, distinguish a running
+   guest from completed whole-demo startup, and qualify normal continuation without
+   replaying an uncertain action. Do not silently increase timeouts or call a warm
+   prestart a cold-start proof.
+3. Freeze/package the verified Cloud row correction only after those native gates
+   close, then complete the new candidate's API and continuous visible UI campaign.
+
+Main and option A remain unchanged. Adjacent native startup work, a fresh Setup
+first use, notarized distribution and the deferred VDP timeout are not qualified
+or silently included by this Presenter packet.

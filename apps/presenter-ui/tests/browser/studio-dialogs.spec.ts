@@ -3,6 +3,28 @@
 import { test, expect, type Page } from "@playwright/test";
 import { confirmedReset, binding } from "../unit/backendFixture";
 
+for (const current of [true, false]) test(`Cloud inventory fits three components and two services, current=${current}`, async ({ page }) => {
+  const fixture = await scenario(page); fixture.state.extraComponents = 2;
+  await page.setViewportSize({ width: 876, height: 908 }); await page.goto("/#native-browser");
+  const card = page.locator('[data-anchor="cloud-backend"]');
+  await expect(card).toContainText("3 components · 2 services");
+  if (!current) {
+    fixture.state.cloudCurrent = false;
+    await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
+    await expect(card).toContainText("Installed · last known");
+  }
+  const dimensions = await card.locator(".studio-summary-software").evaluateAll(rows => rows.map(row => ({
+    text: row.textContent, available: row.clientHeight, content: row.scrollHeight,
+    children: [...row.children].map(child => ({ available: child.clientHeight, content: child.scrollHeight })),
+  })));
+  await page.screenshot({ path: `test-results/cloud-inventory-${current ? "current" : "last-known"}.png` });
+  for (const row of dimensions) {
+    expect(row.content, JSON.stringify(row)).toBeLessThanOrEqual(row.available + 1);
+    for (const child of row.children) expect(child.content, JSON.stringify(row)).toBeLessThanOrEqual(child.available + 1);
+  }
+  expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
+});
+
 test("Layered preserves original object icons, independent services and one detail surface", async ({ page }) => {
   await scenario(page); await page.setViewportSize({ width: 876, height: 908 }); await page.goto("/#native-browser");
   const controller = page.getByRole("region", { name: "ARM64 virtual controller" });
@@ -192,7 +214,7 @@ for (const attempt of [1, 2, 3]) test(`UIA Reset feedback and details stay indep
 
 async function scenario(page: Page) {
   const state = { uid: "test-a", failBrake: false, oldBrake: false, pending: false, reset: false, failResources: false,
-    statusOnlyPending: false, cloudCurrent: true, receiptAge: 0, partialEvents: false, productConflict: false, firstServicePending: false,
+    statusOnlyPending: false, cloudCurrent: true, receiptAge: 0, partialEvents: false, productConflict: false, firstServicePending: false, extraComponents: 0,
     profileState: "CURRENT", vdpProfile: "v3", profileId: "vdp-78", functionAge: 0, functionInput: "RECEIVING", functionActivity: "ACTIVE", functionConflict: false, windowMode: false, windowInterrupted: false, noResult: false, resetVersion: "58.0.0", resetOutcome: "CLEARED", resetConnected: true };
   const calls: { path: string; method: string; action?: string }[] = [];
   const now = new Date().toISOString();
@@ -233,7 +255,7 @@ async function scenario(page: Page) {
         installedProfile: { state: state.profileState, profile: state.vdpProfile, releaseVersion: "78.0.0", cloudVersionId: state.profileId, source: "CLOUD_INSTALLATION_AND_PACKAGE", reason: null },
         releases: [], runtimeState: "NOT_REPORTED_BY_CLOUD", dataReadiness: "NOT_REPORTED_BY_CLOUD", inventory: {
           unitId: state.uid, systemUid: state.uid, nodes: { state: "CURRENT", value: [{ node_id: "controller" }] }, teamServiceIds: { brake: "brake-id", tire: "tire-id" },
-          components: { state: "CURRENT", value: [{ type: "demo-vehicle-data-provider", installed_component: { id: "vdp-78", version: "78.0.0" }, pending_component: null, pending_component_status: state.statusOnlyPending ? "downloading" : null }] },
+          components: { state: "CURRENT", value: [{ type: "demo-vehicle-data-provider", installed_component: { id: "vdp-78", version: "78.0.0" }, pending_component: null, pending_component_status: state.statusOnlyPending ? "downloading" : null }, ...Array.from({ length: state.extraComponents }, (_, i) => ({ type: `system-software-${i}`, installed_component: { id: `system-${i}`, version: "1.0.0" }, pending_component: null, pending_component_status: null }))] },
           services: { state: "CURRENT", value: releases.map(release => ({ subject: `${release.team}-subject`, service: { id: release.serviceId, title: `${release.team === "brake" ? "Brake" : "Tire"} Health` },
             service_versions: { installed_service_version: state.firstServicePending && release.team === "brake" ? null : { version: release.version },
               pending_service_version: state.firstServicePending && release.team === "brake" ? { version: release.version } : null },

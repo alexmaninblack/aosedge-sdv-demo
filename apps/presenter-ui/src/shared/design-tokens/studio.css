@@ -469,11 +469,13 @@
 .studio-summary-pair strong{max-width:68%;overflow:hidden;text-overflow:ellipsis}
 .studio-layered .studio-backends{grid-auto-rows:242px}
 .studio-layered .studio-backend-card .studio-backend-details{height:200px;grid-template-rows:30px 18px 38px 21px 30px 17px 20px;gap:3px}
-.studio-layered .studio-backend-card[data-team=platform] .studio-backend-details{height:220px;grid-template-rows:30px 18px 33px 22px 22px 30px 17px 20px;gap:2px}
+.studio-layered .studio-backend-card[data-team=platform] .studio-backend-details{height:220px;grid-template-rows:30px 18px 25px 26px 26px 30px 17px 20px;gap:2px}
 .studio-layered .studio-backend-card:has(.studio-reset-scenario) .studio-backend-details{height:200px;grid-template-rows:30px 18px 38px 21px 30px 17px 20px;gap:3px}
 .studio-layered .studio-backend-card .studio-summary-heading{grid-row:1}
 .studio-layered .studio-backend-card .studio-summary-state{grid-row:2}
 .studio-layered .studio-backend-card .studio-summary-result{grid-row:3;height:38px;line-height:19px;font-size:16px}
+.studio-layered .studio-backend-card[data-team=platform] .studio-summary-result{height:25px}
+.studio-layered .studio-backend-card[data-team=platform] .studio-summary-software,.studio-layered .studio-backend-card[data-team=platform] .studio-summary-software strong{line-height:13px}
 .studio-assessment-qualifier{display:block;font-size:11px;line-height:14px;color:var(--muted);font-weight:400}
 .studio-layered .studio-backend-card .studio-summary-pair{grid-row:4}
 .studio-layered .studio-backend-card .studio-summary-note{grid-row:5;line-height:14px;font-size:11px!important}
