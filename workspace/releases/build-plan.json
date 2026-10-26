@@ -168,7 +168,7 @@
   "nativeSources": {
     "integration": {
       "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
-      "revision": "7f525d8cb776f7e745ec8f0bf55c0ca66ebcb267"
+      "revision": "45de82c5241387bf2a5b2a2e587529099f6713bd"
     },
     "vehicle-gateway": {
       "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
