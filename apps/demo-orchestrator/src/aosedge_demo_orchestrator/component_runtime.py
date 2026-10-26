@@ -1023,7 +1023,13 @@ def bind_factory_layer(remote, path, source, *, restore=False):
     return (lambda: replace(updated, original)) if restore else None
 
 
-def build_factory(version, metadata_only=False, *, storage_check=None, preserve_layer_binding=False):
+def factory_build_timeouts(cold_build=False):
+    if type(cold_build) is not bool:
+        raise EnvironmentError('FACTORY_BUILD_BUDGET_INVALID')
+    return dict(compile=14400, package=7200, image=7200) if cold_build else dict(compile=1200, package=1200, image=2400)
+
+
+def build_factory(version, metadata_only=False, *, storage_check=None, preserve_layer_binding=False, cold_build=False):
     """The release build is a Demo Control operation, not an operator script.
 
     Export only committed Platform source, reuse the warm offline build tree,
@@ -1032,6 +1038,7 @@ def build_factory(version, metadata_only=False, *, storage_check=None, preserve_
     """
     if version not in FACTORY_RELEASES:
         raise EnvironmentError("FACTORY_BUILD_NOT_AUTHORIZED")
+    budgets = factory_build_timeouts(cold_build)
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=FACTORY_SOURCE):
         raise EnvironmentError("FACTORY_COMMITTED_SOURCE_REQUIRED")
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=FACTORY_SOURCE).decode().strip()
@@ -1114,7 +1121,7 @@ def build_factory(version, metadata_only=False, *, storage_check=None, preserve_
             # in do_compile, before this candidate can construct an image.
             targets += " kuksa-databroker"
         stage("compile the proven manager corrections from committed source (offline)")
-        remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
+        remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=budgets['compile'], capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
@@ -1174,7 +1181,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             for executable in ("kac-tests", "provider-tests", "verifier-prepare-tests"):
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
-        remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
+        remote(prefix + "bitbake" + flags + targets, timeout=budgets['package'], capture=False)
         if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
@@ -1216,7 +1223,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             ) % (mainline_root, source + "/meta-aos-vehicle-platform/recipes-aos/aos-vehicle-data-provider-platform/files")
             print(remote("python3 -c " + shlex.quote(projection_check)), file=sys.stderr, flush=True)
         stage("construct the Factory filesystem from pinned sources")
-        remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
+        remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=budgets['image'], capture=False)
         if suffix == '42':
             stage('verify built rootfs port reservation and finite service ordering')
             data = remote(prefix + 'bitbake' + flags + '-e aos-image-vm', timeout=180)

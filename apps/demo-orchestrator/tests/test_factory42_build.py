@@ -9,6 +9,12 @@ from aosedge_demo_orchestrator import factory_mainline_gates as gates
 
 
 class ReservedPortFactoryTests(unittest.TestCase):
+    def test_cold_build_budgets_do_not_change_default_or_runtime_timeouts(self):
+        self.assertEqual(runtime.factory_build_timeouts(), dict(compile=1200, package=1200, image=2400))
+        self.assertEqual(runtime.factory_build_timeouts(True), dict(compile=14400, package=7200, image=7200))
+        with self.assertRaisesRegex(runtime.EnvironmentError, 'BUDGET_INVALID'):
+            runtime.factory_build_timeouts('yes')
+
     def test_fresh_builder_uses_the_new_normal_owner_host_pin_not_legacy_alias(self):
         command = runtime.builder_ssh(legacy_alias=False)
         self.assertNotIn('HostKeyAlias=[127.0.0.1]:10023', command)

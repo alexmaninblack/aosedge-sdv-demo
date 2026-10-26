@@ -159,7 +159,7 @@ def prepare(storage, builder, source, version='6.1.1-maninblack.41'):
     return result
 
 
-def build_factory(storage, prepared):
+def build_factory(storage, prepared, *, cold_build=False):
     """Call the existing Factory owner in this build-only process, not the UI."""
     import sys
     sys.path.insert(0, str(ROOT / 'apps/demo-orchestrator/src'))
@@ -172,7 +172,7 @@ def build_factory(storage, prepared):
     version = prepared.get('version', '6.1.1-maninblack.41')
     owner.ARTIFACT = storage.path('factory-results/runtime-proofs/factory' + version.rsplit('.', 1)[1])
     storage.path('factory-results/factory-images').mkdir(parents=True, exist_ok=True)
-    result = owner.build_factory(version, preserve_layer_binding=True,
+    result = owner.build_factory(version, preserve_layer_binding=True, cold_build=cold_build,
                                  storage_check=lambda: storage.check(reserve=90*2**30))
     atomic_json(storage.path('factory-results/result.json'), result)
     return {'status': 'FACTORY_BUILT_NOT_QUALIFIED', 'image': result['factoryImage']}
@@ -186,6 +186,7 @@ def main(argv=None):
     parser.add_argument('--builder-root', type=Path)
     parser.add_argument('--platform-source', type=Path)
     parser.add_argument('--version', choices=('6.1.1-maninblack.41', CANDIDATE_VERSION), default='6.1.1-maninblack.41')
+    parser.add_argument('--cold-build', action='store_true', help='Bounded cold-cache build budgets; offline and QA gates are unchanged')
     args = parser.parse_args(argv)
     if args.action == 'plan':
         _, value = recipe(version=args.version)
@@ -199,7 +200,7 @@ def main(argv=None):
         try:
             builder.start(False)
             prepared = prepare(storage, builder, args.platform_source, args.version)
-            value = build_factory(storage, prepared) if args.action == 'build' else prepared
+            value = build_factory(storage, prepared, cold_build=args.cold_build) if args.action == 'build' else prepared
             print(json.dumps(value, sort_keys=True))
         finally:
             builder.stop()

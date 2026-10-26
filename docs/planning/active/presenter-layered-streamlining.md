@@ -284,3 +284,6 @@ checkouts were freshly acquired and verified by exact commit. Downloads/sstate
 are initially empty; dependency acquisition must be explicit and separate from
 offline compilation. Builder disk, caches, sources and image output stay on
 SDV-Dev; there is no internal-storage fallback.
+Explicit `--cold-build` permits bounded 4-hour compile and 2-hour package/image
+budgets for the empty cache; warm defaults remain unchanged. This is not a VM,
+VDP, readiness or security timeout change, nor permission to compile online.
