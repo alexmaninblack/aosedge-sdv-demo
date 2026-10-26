@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "productVersion": "1.2.0-rc.4-presenter.1",
+  "productVersion": "1.2.0-rc.4-presenter.2",
   "baseDefinitionSha256": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
   "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
   "producers": {
@@ -168,7 +168,7 @@
   "nativeSources": {
     "integration": {
       "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
-      "revision": "d349c9f9b65420f17b05cea71d7f7f41aa4ead29"
+      "revision": "7f525d8cb776f7e745ec8f0bf55c0ca66ebcb267"
     },
     "vehicle-gateway": {
       "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
