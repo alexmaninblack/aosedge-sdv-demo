@@ -67,8 +67,8 @@ is reused without routine Engine restarts. No public distribution or merge yet.
 | Gate | Work and acceptance | State |
 | --- | --- | --- |
 | 1. Contract/source | Update installed interaction text; implement all accepted review groups together with state/navigation regressions | Complete; successor media remains unqualified |
-| 2. Local verification | Unit/type/static/docs/confidentiality gates; no developer-Mac browser or runtime | 389 Presenter unit tests, type/web compilation, 92 Python and 46 JavaScript qualification tests, docs and source gates pass |
-| 3. M1 visual fixtures | One semantic fixture scenario on M1; layered boundaries, icon mapping, child navigation, state/geometry assertions | 152/152 pass, no skips/retries; 39.053 seconds; browser and fixture server closed |
+| 2. Local verification | Unit/type/static/docs/confidentiality gates; no developer-Mac browser or runtime | 390 Presenter unit tests, type/web compilation, 92 Python and 46 JavaScript qualification tests, docs and source gates pass |
+| 3. M1 visual fixtures | One semantic fixture scenario on M1; layered boundaries, icon mapping, child navigation, state/geometry assertions | 152/152 pass, no skips/retries; 41.185 seconds; browser and fixture server closed |
 | 4. Immutable media | Freeze successor source; one warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | Not run |
 | 5. Retained update | Normal package update and launcher selection on M1; exact signature/capacity and unchanged Test/data bindings | Not run |
 | 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Not run |
@@ -103,6 +103,12 @@ freshness. A current input report must not hide a conflicting product record or
 remove the last-known qualification from an incomplete assessment. A late receipt
 must not refresh the input source. These are explicit regressions, not changed
 readiness rules.
+
+Back uses the original record's presentation reference, not its old row number,
+when background receipts change history ordering. If that row is no longer in
+the visible page, focus returns to Records rather than another record. The
+background-insertion regression was reproduced before correction and passes
+with the final source; no history or data authority changed.
 
 Short-screen history uses compact pagination; retained rows are not deleted.
 The fixture harness now awaits its asynchronous monitoring read and permits one

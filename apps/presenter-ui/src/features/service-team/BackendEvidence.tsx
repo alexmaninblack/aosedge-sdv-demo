@@ -8,6 +8,10 @@ import { BrakeWindowDetail } from "./BrakeWindowDetail";
 import { ResetScenario, useResetScenario } from "./ResetScenario";
 import { backendLabel } from "./backendLanguage";
 
+// Presentation identity only: a new receipt can shift row numbers while a
+// detail is open. Never return keyboard focus to a different record.
+const recordReference = (row: RecordRow) => JSON.stringify([row.message.messageType, row.message.serviceVersion, row.message.eventId, row.backendReceivedAt]);
+
 export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding, onEvidence, retiring = false, observation, runId, unavailableReason }: { team: Team; unitSystemUid?: string; expectedVersion?: string; binding?: BackendBinding; onEvidence?: (version: string) => void; retiring?: boolean; observation?: BackendModel; runId?: string | null; unavailableReason?: string }) {
   const [detail, setDetail] = useState<RecordRow | null>(null);
   const [tab, setTab] = useState("Overview");
@@ -35,7 +39,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
     if (!detail && returnView.current) {
       const key = returnView.current.key;
       const origin = Array.from(evidenceRoot.current?.querySelectorAll<HTMLButtonElement>("button[data-record-ref]") ?? []).find(button => button.dataset.recordRef === key);
-      origin?.focus({ preventScroll: true }); returnView.current = null;
+      (origin ?? evidenceRoot.current?.querySelector<HTMLButtonElement>('[data-backend-tab="Records"]'))?.focus({ preventScroll: true }); returnView.current = null;
     }
   }, [detail, integrated]);
   const localObservation = useBackendObservation(team, unitSystemUid, !observation || mockMode, mockMode);
@@ -122,7 +126,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
     <h3 className="studio-evidence-title">Receipt history{!available && mock ? " · last known" : ""}</h3><small>{mock ? total : busy ? "Reading" : "No"} retained records in this bounded read</small>
     {!mockMode && <label className="studio-record-filter">Service release <select aria-label="Service release" value={releaseFilter} onChange={event => { setReleaseFilter(event.target.value); setPage(0); }}><option value="current">Current release</option><option value="earlier">Earlier releases</option><option value="all">All releases</option></select></label>}
     {team === "brake" && <label className="studio-record-filter">Record type <select aria-label="Record type" value={recordFilter} onChange={event => { setRecordFilter(event.target.value); setPage(0); }}><option value="all">All records</option><option value="windows">Braking recordings & charts</option></select></label>}
-    <div className="studio-inventory studio-record-list">{records.slice(currentPage * pageSize, currentPage * pageSize + pageSize).map((row, index) => <button key={`${row.backendReceivedAt}-${index}`} data-record-ref={String(index)} onClick={() => inspectRecord(row, String(index))}>
+    <div className="studio-inventory studio-record-list">{records.slice(currentPage * pageSize, currentPage * pageSize + pageSize).map((row, index) => <button key={`${recordReference(row)}-${index}`} data-record-ref={recordReference(row)} onClick={() => inspectRecord(row, recordReference(row))}>
       <strong>{backendLabel(row.message.messageType ?? "Product message")}</strong><span>Release {row.message.serviceVersion ?? "not reported"} · {stamp(row.backendReceivedAt)}</span>
       <small>{mockMode ? "Mock history" : backendLabel(row.deliveryState)}</small></button>)}</div>
     {pages > 1 && <nav className="studio-pagination" aria-label="Backend record pages"><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Previous</button><span>Page {currentPage + 1} of {pages} · {records.length} records</span><button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>Next</button></nav>}

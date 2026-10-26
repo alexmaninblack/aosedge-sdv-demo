@@ -91,3 +91,15 @@ test("Cloud child detail shows one dialog and Back returns to the preserved pare
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(screen.getByRole("dialog")).toHaveAccessibleName("Cloud monitoring");
 });
+
+test("Back restores the same history record after a background insertion, not its former row number", () => {
+  const rows=["2026-10-26T10:42:00.000Z","2026-10-26T10:41:00.000Z"].map(backendReceivedAt=>({backendReceivedAt,deliveryState:"DURABLY_RECEIVED",message:{messageType:"BRAKE_HEALTH_ASSESSMENT",serviceVersion:"7.0.0",content:{currentBand:"GOOD"}}}));
+  const observation: any={busy:false,error:false,refresh:vi.fn(),data:{observedAt:"2026-10-26T10:42:00.000Z",observations:{mockData:{state:"OBSERVED",data:{counts:[{count:2}],records:rows}}}}};
+  const view=render(<BackendEvidence team="brake" expectedVersion="7.0.0" binding={binding} observation={observation} />);
+  fireEvent.click(screen.getByRole("button",{name:"Records"}));
+  fireEvent.click(screen.getAllByRole("button",{name:/Brake condition assessment/})[1]);
+  rows.unshift({...rows[0],backendReceivedAt:"2026-10-26T10:43:00.000Z"});
+  view.rerender(<BackendEvidence team="brake" expectedVersion="7.0.0" binding={binding} observation={observation} />);
+  fireEvent.click(screen.getByRole("button",{name:"← Back to Brake backend"}));
+  expect(screen.getAllByRole("button",{name:/Brake condition assessment/})[2]).toHaveFocus();
+});
