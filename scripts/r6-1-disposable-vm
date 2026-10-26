@@ -43,6 +43,8 @@ FIRMWARE = Path(
     )
 )
 FIRMWARE_SHA256 = "30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
+QEMU_DATA_DIRECTORY = os.environ.get("R61_QUAL_QEMU_DATA_DIRECTORY", "")
+QEMU_VIRTIO_ROM_SHA256 = "26be36901db7f8181c306cc62bd74891d8646528965a78e40cceadba5dd7c8e7"
 QEMU_MACHINE = "virt-11.0"
 QEMU_VERSIONS = {"11.0.3", "11.1.0"}
 MEMORY_MIB = 2048
@@ -225,6 +227,22 @@ def verify_firmware() -> Path:
     return firmware
 
 
+def verify_qemu_data_directory() -> Path | None:
+    """Use the same pinned virtio ROM as the portable installed VM owner."""
+    if not QEMU_DATA_DIRECTORY:
+        return None
+    path = Path(QEMU_DATA_DIRECTORY)
+    if not path.is_absolute() or any(p.is_symlink() for p in (path, *path.parents)):
+        fail("qualification QEMU data directory must be absolute and not symbolic")
+    if not path.is_dir():
+        fail("qualification QEMU data directory is unavailable")
+    rom = path / "efi-virtio.rom"
+    require_regular_file(rom, "qualification virtio ROM")
+    if sha256(rom) != QEMU_VIRTIO_ROM_SHA256:
+        fail("qualification virtio ROM SHA-256 mismatch")
+    return path
+
+
 def resolve_pid(layout: Layout) -> int | None:
     if not layout.pid.exists():
         return None
@@ -280,6 +298,9 @@ def qemu_command(layout: Layout, firmware: Path, qemu: str) -> list[str]:
         "-device",
         "scsi-hd,drive=r61image,bootindex=0",
     ]
+    data_directory = verify_qemu_data_directory()
+    if data_directory is not None:
+        command[1:1] = ["-L", str(data_directory)]
     if layout.data_disk is not None:
         command.extend(
             [
@@ -376,6 +397,7 @@ def host_check(layout: Layout) -> tuple[str, Path]:
     qemu = command_path("qemu-system-aarch64")
     qemu_version(qemu)
     firmware = verify_firmware()
+    verify_qemu_data_directory()
     checked_paths = [layout.overlay, layout.pid, layout.qmp, layout.serial]
     if layout.data_disk is not None:
         checked_paths.append(layout.data_disk)

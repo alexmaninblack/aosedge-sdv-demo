@@ -287,3 +287,25 @@ SDV-Dev; there is no internal-storage fallback.
 Explicit `--cold-build` permits bounded 4-hour compile and 2-hour package/image
 budgets for the empty cache; warm defaults remain unchanged. This is not a VM,
 VDP, readiness or security timeout change, nor permission to compile online.
+
+The cold Factory campaign completed successfully: 926 fetch tasks, all target
+compilation, five placeholder/profile regressions, 466 mainline native checks
+(two existing skips and two existing disabled cases), KAC/Provider/verifier
+tests, package QA, image QA and the built-rootfs port/order gate passed. The
+six-partition raw image is 6,997,147,648 bytes with SHA-256
+`da97c8754cf502feb2513319f494baa59cc75dcb56087be5a552d7eb6cc416c1`.
+Its state remains `BUILT_NOT_LIVE_QUALIFIED`. The campaign took 9,311.062 seconds,
+including 1,499.240 seconds of explicit acquisition and 7,795.023 seconds of
+offline compile/test/package/image work. Builder/DNS and the owned sleep
+assertion exited; the SSD disk, download cache and shared-state cache remain.
+Warnings about systemd's root home and embedded build paths are retained; no
+QA guard was bypassed. This is not a new-image M1 boot or full API/UI result.
+
+The next isolated M1 cold-boot check uses the existing disposable VM owner,
+read-only image and private child overlay, with restricted networking and only
+loopback SSH. The already installed portable QEMU/firmware/virtio ROM are reused;
+the qualification adapter accepts an explicit resource directory only with the
+same pinned ROM as the installed owner. No Homebrew QEMU installation, retained
+Test mutation, Cloud enrollment, replacement backing image or security waiver
+is part of this boot-policy check. Per-Unit functional/security acceptance and
+the complete candidate API/UI campaign remain separate, uncompleted gates.

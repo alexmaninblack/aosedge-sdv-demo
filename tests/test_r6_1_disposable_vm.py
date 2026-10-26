@@ -10,6 +10,7 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -32,6 +33,39 @@ HELPER = load_helper()
 
 
 class R61DisposableVMTests(unittest.TestCase):
+    def test_portable_qemu_data_requires_the_existing_pinned_rom(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            with patch.object(HELPER, "QEMU_DATA_DIRECTORY", str(root)):
+                with self.assertRaisesRegex(HELPER.QualificationError, "virtio ROM"):
+                    HELPER.verify_qemu_data_directory()
+                rom = root / "efi-virtio.rom"
+                rom.write_bytes(b"not-the-qualified-rom")
+                with self.assertRaisesRegex(HELPER.QualificationError, "SHA-256 mismatch"):
+                    HELPER.verify_qemu_data_directory()
+                with patch.object(HELPER, "QEMU_VIRTIO_ROM_SHA256", HELPER.sha256(rom)):
+                    self.assertEqual(root, HELPER.verify_qemu_data_directory())
+                rom.unlink()
+                other = root / "other.rom"
+                other.write_bytes(b"not-the-qualified-rom")
+                rom.symlink_to(other)
+                with self.assertRaisesRegex(HELPER.QualificationError, "non-symbolic-link"):
+                    HELPER.verify_qemu_data_directory()
+
+    def test_portable_qemu_data_rejects_relative_or_symbolic_directory(self) -> None:
+        with patch.object(HELPER, "QEMU_DATA_DIRECTORY", "relative"):
+            with self.assertRaisesRegex(HELPER.QualificationError, "absolute"):
+                HELPER.verify_qemu_data_directory()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            link = root / "link"
+            link.symlink_to(root, target_is_directory=True)
+            with patch.object(HELPER, "QEMU_DATA_DIRECTORY", str(link)):
+                with self.assertRaisesRegex(HELPER.QualificationError, "not symbolic"):
+                    HELPER.verify_qemu_data_directory()
+        with patch.object(HELPER, "QEMU_DATA_DIRECTORY", ""):
+            self.assertIsNone(HELPER.verify_qemu_data_directory())
+
     def test_base_is_read_only_hashed_and_variant_scoped(self) -> None:
         original = HELPER.ARTIFACT_ROOT
         with tempfile.TemporaryDirectory() as directory:
@@ -130,6 +164,11 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertNotIn("8089", rendered)
         self.assertIn("format=qcow2", rendered)
         self.assertIn("-daemonize", command)
+        self.assertNotIn("-L", command)
+        with patch.object(HELPER, "verify_qemu_data_directory", return_value=Path("/qualified/data")):
+            portable = HELPER.qemu_command(layout, Path("/qualified/QEMU_EFI.fd"), "/qualified/qemu")
+        self.assertEqual(["/qualified/qemu", "-L", "/qualified/data"], portable[:3])
+        self.assertIn("restrict=on", " ".join(portable))
 
     def test_store_fixture_has_exact_private_secondary_disk(self) -> None:
         layout = HELPER.Layout(
