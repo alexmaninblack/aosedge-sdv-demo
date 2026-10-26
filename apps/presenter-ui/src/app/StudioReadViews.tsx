@@ -102,7 +102,7 @@ export function Monitoring({ inventory, refreshKey, observation }: { inventory?:
   const pages = Math.max(1, Math.ceil(rows.length / pageSize)), activePage = Math.min(page, pages - 1);
   return <section><div className="studio-panel-title"><h3>Resources</h3><span>Aos Cloud · {busy ? "Reading…" : error ? data ? `Last known · ${stamp(data.readCompletedAt)}` : "Unavailable" : stamp(data?.readCompletedAt)}</span></div>
     {reason && <p role="alert">Latest readings: {reason}{data ? " · Previous latest samples retained." : " · No confirmed latest samples."} History is independent.</p>}
-    {!data && <p>{!inventory?.unitId ? "Create and provision Test to observe Cloud resources." : error ? "Latest Cloud readings unavailable; history is shown independently below." : "Waiting for the first Cloud resource observation…"}</p>}
+    {!data && metricKey === "charts" && <p>{!inventory?.unitId ? "Create and provision Test to observe Cloud resources." : error ? "Latest Cloud readings unavailable; history is shown independently below." : "Waiting for the first Cloud resource observation…"}</p>}
     <div className="studio-profile-cards">{Object.entries(names).map(([key, name]) => <button key={key} aria-pressed={key === metricKey} onClick={() => setMetricKey(key)}>{name}</button>)}</div>
     {metricKey === "charts" ? <ResourceGraphs model={observation ?? ownObservation} inventory={inventory} /> : <>
     {isDisk && <p>Used space in Aos storage partitions, not physical disks or free capacity. Service rows show each instance's usage.</p>}

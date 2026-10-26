@@ -13,10 +13,10 @@ for (const viewport of [{width:1280,height:720},{width:1512,height:982},{width:1
  await page.getByRole('button',{name:'Records',exact:true}).click();
  await page.getByText('Engineering history',{exact:true}).click();
  await page.getByRole('button',{name:'Show mock history'}).click();
- await page.getByRole('button',{name:'Records',exact:true}).click();await expect(page.getByRole('button',{name:/RECORD_0 /})).toBeVisible();
- await expect(page.getByRole('button',{name:/RECORD_19/})).toHaveCount(0);
- for(let n=0;n<(viewport.height <= 800 ? 19 : 9);n++) await page.getByRole('button',{name:'Next',exact:true}).click();
- await expect(page.getByRole('button',{name:/RECORD_19/})).toBeVisible();
+ await page.getByRole('button',{name:'Records',exact:true}).click();await expect(page.getByRole('button',{name:/RECORD 0 /})).toBeVisible();
+ await expect(page.getByRole('button',{name:/RECORD 19/})).toHaveCount(0);
+ for(let n=0;n<(viewport.height <= 800 ? 6 : 2);n++) await page.getByRole('button',{name:'Next',exact:true}).click();
+ await expect(page.getByRole('button',{name:/RECORD 19/})).toBeVisible();
  const layout=await page.locator('.studio-modal-layer > .modal > .modal-body').evaluate(node=>({clientHeight:node.clientHeight,scrollHeight:node.scrollHeight,overflow:getComputedStyle(node).overflowY,lastBottom:node.querySelector('.studio-inventory button:last-child')!.getBoundingClientRect().bottom,bodyBottom:node.getBoundingClientRect().bottom}));
 
  expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight + 1); expect(layout.lastBottom).toBeLessThanOrEqual(layout.bodyBottom + 1);

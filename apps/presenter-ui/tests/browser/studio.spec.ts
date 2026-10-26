@@ -174,7 +174,7 @@ test("external CLI retirement returns the open Studio to Create without reloadin
   await expect(page.getByLabel("Factory image")).toHaveCount(0);
   await expect(page.locator(".studio-factory")).toContainText("Factory .33");
   await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Manage VDP releases" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Platform Team" })).toBeEnabled();
   await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
   expect(snapshotReads).toBeGreaterThan(1);
   expect(requests.every(row => row.method === "GET")).toBe(true);
@@ -188,7 +188,8 @@ test("partial SDK registration can continue without a Cloud binding or ready pub
     reason: "TEST_CLOUD_BINDING_NOT_OBSERVED", publication: { version: "20.0.0", stage: "PROCESSING" },
   } }));
   await page.goto("/");
-  await expect(page.getByText("Test Vehicle · Registration incomplete")).toBeVisible();
+  await expect(page.locator(".studio-guide")).toContainText("Complete Cloud registration");
+  await expect(page.locator(".studio-local-state")).toContainText("Controller running locally");
   await expect(page.getByRole("button", { name: "Continue registration", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Continue registration", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -216,7 +217,7 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
 test("installed profile never falls back to a matching local prepared candidate", async ({ page }) => {
   const requests = await retainedRun(page, false, "ONLINE", "", "", false, { confirmedProfile: false, registrationComplete: true });
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).toContainText("Profile not confirmed · Cloud release 20.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).toContainText("Profile not confirmed · release 20.0.0");
   await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details", exact: true })).not.toContainText("v2 · 20.0.0");
   await expect(page.getByText("Installed profile not confirmed", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open Platform v1", exact: true })).toHaveCount(0);
@@ -239,7 +240,7 @@ test("Team backend is visibly synthetic, drillable and separate from Cloud runti
   await expect(page.getByRole("dialog").last()).toContainText("Mock product record");
   await page.getByText("Record content and technical identifiers").click();
   await expect(page.getByRole("dialog").last()).toContainText('"score": 42');
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "← Back to Brake backend" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await page.getByRole("button", {name:/Tire Team/}).click();
@@ -301,7 +302,7 @@ test("Studio uses protected Test actions, automatic releases and actual receipts
   await expect(page.getByRole("dialog")).toContainText("Eligible vehicles may receive it immediately");
   await expect(page.getByRole("dialog")).toContainText("native Safe Stop");
   await page.getByRole("dialog").getByRole("button", { name: "Sign & publish VDP" }).click();
-  await expect(page.getByRole("button", { name: "Sign & publish", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Sign & publish", exact: true })).toHaveCount(0);
   expect(mutations.map((row) => row.action)).toEqual(["prepare", "publish"]);
   await expect(page.getByRole("button", { name: /Approve|Authorize/ })).toHaveCount(0);
   await page.screenshot({ path: "test-results/studio-platform.png" });

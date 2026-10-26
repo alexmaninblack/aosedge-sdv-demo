@@ -12,8 +12,8 @@ export function StudioStatus({ onActivity, onLayout, vehicleWindowsAbsent, job, 
   const active = Boolean(controls.session?.active);
   const reason = controls.error ?? job?.reason ?? job?.results.at(-1)?.message;
   return <div className="studio-status-dock" aria-label="Operation and workspace status">
-    <button aria-label={`Activity · ${count}`} className={needsAttention ? "needs-attention" : ""} onClick={onActivity} title={controls.error ?? job?.reason ?? undefined}>
-      <span role="status">{controls.error ?? (job && (active || needsAttention) ? <>{actionLabels[job.action]} · {operationStateLabel(job.state)}{needsAttention && reason && <> · <span>{reason}</span></>}</> : "No operation in progress")}</span><span>Activity · {count}</span>
+    <button aria-label={`Operations · ${count}`} className={needsAttention ? "needs-attention" : ""} onClick={onActivity} title={controls.error ?? job?.reason ?? undefined}>
+      <span role="status">{controls.error ?? (job && (active || needsAttention) ? <>{actionLabels[job.action]} · {operationStateLabel(job.state)}{needsAttention && reason && <> · <span>{reason}</span></>}</> : "No operation in progress")}</span><span>Operations · {count}</span>
     </button>
     <button aria-label={layoutProblem ? "Desktop window layout" : "Window layout"} onClick={onLayout} className={layoutProblem ? "needs-attention" : ""}>{layoutProblem ? "Window layout could not be verified" : "Window layout"}</button>
   </div>;

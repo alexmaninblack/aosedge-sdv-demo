@@ -32,7 +32,8 @@ export const continuousSections = ['release-story','installed-views','moving-sot
 export const movingWindowMs = 120000;
 export function visibleCardText(text) {
   const match=/^(v[123]) · ([0-9]+\.[0-9]+\.[0-9]+)$/.exec(text);
-  return match ? `Capability ${match[1].toUpperCase()} · Cloud release ${match[2]}` : text;
+  const installed=/^installed · ([0-9]+\.[0-9]+\.[0-9]+)$/.exec(text);
+  return match ? `Capability ${match[1].toUpperCase()} · release ${match[2]}` : installed ? `release ${installed[1]}` : text;
 }
 export function candidateText(profile,release) {
   assert(/^v[123]$/.test(profile) && version.test(release),'RELEASE_VIEW_INPUT_INVALID');
@@ -57,7 +58,7 @@ export function releaseViewSpec(team, profile, release) {
     profileButton:`${profile} ${profiles[team][Number(profile[1])-1]}`,
     stages:team==='platform'?['Published','Installed']:['Published','Assigned','Running'],
     card:team==='platform'?'Vehicle Data Platform installed details':team==='brake'?'Brake service details':'Tire service details',
-    cardText:`Capability ${profile.toUpperCase()} · Cloud release ${release}`,profile,release};
+    cardText:`Capability ${profile.toUpperCase()} · release ${release}`,profile,release};
 }
 
 export async function selectReleaseView(page, expect, spec) {
@@ -371,8 +372,8 @@ export async function main(inputPath) {
     await expect(page.getByText(candidateText(profile,release),{exact:true})).toBeVisible();
     for(const name of spec.stages) await expect(page.locator('.studio-release-stages')
       .getByText(name,{exact:true}).locator('..')).toHaveClass(/\bcomplete\b/,{timeout:65000});
-    if(team==='platform') await expect(page.getByText(`Cloud installed · ${release}`,{exact:true})).toBeVisible({timeout:65000});
-    else await expect(page.getByText(`Installed ${release}`,{exact:true})).toBeVisible({timeout:65000});
+    await expect(page.getByRole('region',{name:'Installed on this Test',exact:true}))
+      .toContainText(`Capability ${profile.toUpperCase()} · release ${release}`,{timeout:65000});
     await shot(`${team}-${release}-team-confirmed`);
     await button('Vehicle').click();await expect(button(spec.card)).toContainText(spec.cardText,{timeout:65000});
     await button(spec.card).click();await expect(dialog()).toBeVisible();
@@ -497,11 +498,8 @@ export async function main(inputPath) {
       // Use the existing visible UI owner once before requiring its receipt.
       await stage('restore-window-layout', async () => {
         await button('Demo controls').click();
-        // This tab performs one existing read-only certificate inspection on
-        // mount. Arm that exact request before the tab click, not a blanket POST
-        // exception; never persist its certificate/PIN facts in the UI report.
-        await operate({ action: 'cloud-inspect' }, () =>
-          dialog().getByRole('button', { name: 'Advanced settings', exact: true }).click());
+        // Opening read-only access facts must not submit a certificate inspection.
+        await dialog().getByRole('button', { name: 'Advanced settings', exact: true }).click();
         await operate({ action: 'workspace-restore' }, () =>
           dialog().getByRole('button', { name: 'Restore window layout', exact: true }).click());
         await close();
@@ -540,11 +538,12 @@ export async function main(inputPath) {
       while(performance.now()<end) {
         const team=index%2===0?'Vehicle':'Platform Team';await button(team).click();
         await read('platform');
-        const text=await page.locator('.studio-connection > span').innerText();
-        const freshness=await page.locator('.studio-connection').getAttribute('data-freshness');
+        const cloudReport=page.locator('[data-cloud-report]'), displayed=await cloudReport.count()>0;
+        const text=displayed?await page.locator('[data-anchor="cloud-backend"] .studio-summary-result').innerText():null;
+        const freshness=displayed?await cloudReport.getAttribute('data-freshness'):null;
         record({state:'UI_DISPLAYED_STATUS',view:team,
-          label:displayedConnection(text),freshness:['current','last-known','unconfirmed'].includes(freshness)?freshness:null,
-          vdpCard:team==='Vehicle'?/Capability V[123] · Cloud release [0-9]+\.0\.0/.test(await button('Vehicle Data Platform installed details').innerText()):null});
+          label:displayed?displayedConnection(text):null,freshness:['current','last-known','unconfirmed'].includes(freshness)?freshness:null,
+          vdpCard:team==='Vehicle'?/Capability V[123] · release [0-9]+\.0\.0/.test(await button('Vehicle Data Platform installed details').innerText()):null});
         await new Promise(resolve=>setTimeout(resolve,2000));index++;
       }
       await button('Vehicle').click();await shot('status-observation');
@@ -789,7 +788,9 @@ export async function main(inputPath) {
     for (const name of ['Platform Team','Brake Team','Tire Team']) {
       await stage(name.replaceAll(' ','-').toLowerCase(),async () => {
         await button(name).click(); await expect(page.getByRole('group',{name:'Capability profile',exact:true})).toBeVisible();
-        await expect(button('Sign & publish')).toBeVisible(); await expect(page.getByTestId('prepare-release')).toBeVisible();
+        await expect(page.locator('.studio-installed-status')).toBeVisible();
+        await expect(page.getByTestId('prepare-release')).toBeVisible();
+        await expect(page.locator('.studio-candidate-status')).toBeVisible();
         await shot(name.split(' ')[0].toLowerCase()+'-team');
       });
     }
@@ -829,8 +830,8 @@ export async function main(inputPath) {
         const snapshot=await read('snapshot');assert(!snapshot.runId || snapshot.runId===input.browserTest,'TEST_BINDING_CHANGED');
         return snapshot.runId===input.browserTest;
       },'CURRENT_UI_RUN_UNAVAILABLE',30000,1000);
-      await expect(page.getByRole('button',{name:/^Activity · [1-9][0-9]*$/})).toBeVisible();
-      await page.getByRole('button',{name:/^Activity · /}).click(); await expect(dialog()).toContainText('Connect in Manual');
+      await expect(page.getByRole('button',{name:/^Operations · [1-9][0-9]*$/})).toBeVisible();
+      await page.getByRole('button',{name:/^Operations · /}).click(); await expect(dialog()).toContainText('Connect in Manual');
       await shot('activity'); await close();
     });
     await stage('cancel-stop',async () => {
@@ -864,7 +865,7 @@ export async function main(inputPath) {
       });
       await stage('continuous-restart-layout',async()=>{
         await button('Demo controls').click();
-        await operate({action:'cloud-inspect'},()=>dialog().getByRole('button',{name:'Advanced settings',exact:true}).click());
+        await dialog().getByRole('button',{name:'Advanced settings',exact:true}).click();
         await operate({action:'workspace-restore'},()=>dialog().getByRole('button',{name:'Restore window layout',exact:true}).click());
         await close();workspaceRequired=true;await visible();
       });

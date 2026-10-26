@@ -38,7 +38,7 @@ test.each(["STOPPED", "NOT_PREPARED"])("ordinary Stop with %s source does not wa
   expect(screen.getByLabelText("Desktop window layout")).toHaveTextContent("Vehicle windows are not running");
   expect(screen.queryByText(/could not be verified|Window order is not currently verified/)).not.toBeInTheDocument();
   // Advanced settings performs its existing read-only certificate inspection.
-  expect(controls.request).toHaveBeenCalledExactlyOnceWith({ action: "cloud-inspect" });
+  expect(controls.request).not.toHaveBeenCalled();
 });
 test.each(["UNKNOWN", "RUNNING_UNASSIGNED"])("stopped controller with %s source retains its layout warning", sourceState => {
   controls.session.workspace = { state: "INCOMPLETE", zOrder: { state: "UNAVAILABLE" } };
@@ -55,7 +55,7 @@ test("stopped controller with incomplete Create cannot hide its layout warning",
 test("powered-off controller cannot prepare or publish a release", () => {
   view("STOPPED", undefined, "platform");
   expect(screen.getByRole("button", { name: "Prepare v1" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Sign & publish" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Sign & publish" })).toBeNull();
   expect(screen.queryByText(/Finish the interrupted run/)).toBeNull();
 });
 test.each(["park", "resume"])("legacy %s stays separate from ignition and actual Finish", action => {

@@ -84,7 +84,7 @@ test("failed manual refresh retains last-known records; identity change clears t
   fireEvent.click(screen.getByRole("button",{name:"Refresh backend"}));
   expect(await screen.findByText(/Backend unavailable/)).toBeVisible();
   expect(screen.getByText("BRAKE HEALTH ASSESSMENT")).toBeVisible();
-  expect(screen.getByText("Latest product result · last known")).toBeVisible();
+  expect(screen.getByText("Last assessment / recording · last known")).toBeVisible();
   view.rerender(<BackendEvidence team="brake" />);
   await waitFor(()=>expect(screen.queryByText("BRAKE HEALTH ASSESSMENT")).not.toBeInTheDocument());
   expect(screen.getByText("Current Test identity not observed in Cloud")).toBeVisible();
@@ -155,7 +155,7 @@ test("reset waits for CLEAR and keeps late historical warnings out of the curren
   expect(await screen.findByText(/Driver advisory reset · Gateway confirmed CLEAR/)).toBeVisible();
   expect(screen.queryByText("INSPECTION RECOMMENDED")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", {name: "Records"}));
-  expect(screen.getByText("BRAKE_HEALTH_ASSESSMENT")).toBeVisible();
+  expect(screen.getByText("Brake condition assessment")).toBeVisible();
 });
 
 test("a submitted reset does not display the previous command as its completion", async () => {

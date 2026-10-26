@@ -36,9 +36,9 @@ test("empty cards separate installed details from release management", () => {
   const { navigate } = view();
   for (const team of ["Brake", "Tire"]) expect(screen.getByRole("button", { name: `${team} service details` })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Vehicle Data Platform installed details" })).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Manage Brake releases" }));
+  fireEvent.click(screen.getByRole("button", { name: "Brake Team" }));
   expect(navigate).toHaveBeenCalledWith("brake");
-  fireEvent.click(screen.getByRole("button", { name: "Manage VDP releases" }));
+  fireEvent.click(screen.getByRole("button", { name: "Platform Team" }));
   expect(navigate).toHaveBeenCalledWith("platform");
   expect(controls.request).not.toHaveBeenCalled();
 });
@@ -128,6 +128,8 @@ test("certificate presence is shown only under explicit settings, not asserted a
   fireEvent.click(screen.getByRole("button", { name: "Advanced settings" }));
   expect(screen.getByRole("dialog")).toHaveTextContent("OEM certificateConfigured locallyService Provider certificateNot configured");
   expect(screen.getByRole("dialog")).toHaveTextContent("Local certificate presence is not authenticated Cloud access");
-  expect(screen.getByRole("button", { name: "Choose OEM certificate…" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Choose OEM certificate…" })).toBeNull();
+  const recovery = screen.getByText("Recovery & diagnostics").closest("details")!;
+  recovery.open = true; fireEvent(recovery, new Event("toggle"));
   expect(controls.request).not.toHaveBeenCalled();
 });

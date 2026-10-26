@@ -40,9 +40,9 @@ function model(value = incoming(), prior: BackendObservation | null = null): Bac
 test.each([true, false])("F1 retained receipt keeps its age and current binding=%s qualification", current => {
   vi.useFakeTimers(); vi.setSystemTime(new Date(checked));
   const value = model(); render(<BackendSummary team="brake" model={value} version={binding.serviceVersion} binding={{ ...binding, current }} />);
-  const receipt = screen.getByText(/Latest result received/);
+  const receipt = screen.getByText(/Last result received/);
   expect(receipt.querySelector("[title]")).toHaveAttribute("title", old);
-  expect(screen.getByText(/Backend checked/).querySelector("[title]")).toHaveAttribute("title", checked);
+  expect(document.querySelector("[data-backend-observed-at]")).toHaveAttribute("data-backend-observed-at", checked);
   expect(screen.queryByText("Observed ·")).not.toBeInTheDocument();
   expect(backendSummary(value, "brake", binding.serviceVersion, { ...binding, current }).proof).toBe(current ? binding.serviceVersion : undefined);
   if (!current) { expect(screen.getByText("Good")).toBeVisible(); expect(screen.getByText("Last known / incomplete")).toBeVisible(); }
@@ -118,6 +118,7 @@ test("O6 readable result fields include zero scores and explicit recommendation"
   expect(screen.getByText("0")).toBeVisible(); expect(screen.getByText("INSPECTION RECOMMENDED")).toBeVisible(); expect(screen.getByText("WEAR")).toBeVisible();
 });
 test.each(["BRAKE_HEALTH_ASSESSMENT", "WINDOW_COMPLETION"])("U1 %s conflict is explicit across summary, overview and history", messageType => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(checked));
   const value = model();
   const row = value.data!.observations.mockData!.data!.records[0];
   row.deliveryState = "CONFLICT"; row.message.messageType = messageType;
@@ -129,6 +130,7 @@ test.each(["BRAKE_HEALTH_ASSESSMENT", "WINDOW_COMPLETION"])("U1 %s conflict is e
   expect(summary.status).toBe("Result conflict");
   const card = render(<BackendSummary team="brake" model={value} version={binding.serviceVersion} binding={binding} />);
   expect(screen.getByText("Result conflict")).toBeVisible();
+  expect(screen.queryByText("Now · Receiving")).not.toBeInTheDocument();
   expect(screen.queryByText("Good")).not.toBeInTheDocument();
   card.unmount();
   render(<BackendEvidence team="brake" expectedVersion={binding.serviceVersion} binding={binding} observation={value} />);
@@ -136,7 +138,17 @@ test.each(["BRAKE_HEALTH_ASSESSMENT", "WINDOW_COMPLETION"])("U1 %s conflict is e
   expect(screen.queryByRole("meter")).not.toBeInTheDocument();
   expect(screen.getByText(/Conflicting content/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Records" }));
-  expect(screen.getByText("Current Test · CONFLICT")).toBeVisible();
+  expect(screen.getByText("Integrity conflict")).toBeVisible();
+});
+test("fresh input never makes an incomplete retained assessment current", () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date(checked));
+  const initial = model(), value = incoming();
+  Object.assign(value.observations, { events: { state: "UNAVAILABLE" } });
+  value.state = "PARTIAL";
+  render(<BackendSummary team="brake" model={model(value, initial.data)} version={binding.serviceVersion} binding={binding} />);
+  expect(screen.getByText("Now · Receiving")).toBeVisible();
+  expect(screen.getByText("Last known assessment")).toBeVisible();
+  expect(screen.getByText("Good")).toBeVisible();
 });
 test("O3 known empty setup does not masquerade as an observation failure", () => {
   render(<BackendSummary team="brake" model={model()} noController />);

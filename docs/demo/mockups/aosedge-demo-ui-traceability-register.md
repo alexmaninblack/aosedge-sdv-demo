@@ -6,7 +6,7 @@
 - Status: Accepted traceability contract
 - Version: 1.2
 - Owner: Demo Solution Team with visible-surface owners and System Acceptance
-- Interaction contract: [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
+- Interaction contract: [AosEdge Demo Interaction Specification 2.7](aosedge-demo-interaction-specification.md)
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
 
 <a id="current-studio-test-traceability-amendment"></a>

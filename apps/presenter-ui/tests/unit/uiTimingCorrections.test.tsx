@@ -42,7 +42,7 @@ test.each(["create", "prepare-demo"])("terminal %s failure remains visible befor
   controls.session.jobs = [{ id: "failed", action, runId: null, state: "BLOCKED", startedAt: new Date().toISOString(), progress: [], results: [{ operation: "demo.create", state: "BLOCKED", message: "BACKEND_DOCKER_REQUIRED", facts: {} }] }];
   render(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
   expect(screen.getByText("BACKEND_DOCKER_REQUIRED")).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: /Activity · 1/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Operations · 1/ }));
   expect(screen.getByRole("dialog")).toHaveTextContent("BACKEND_DOCKER_REQUIRED");
   expect(screen.getByRole("dialog")).not.toHaveTextContent("No operations recorded");
 });
@@ -55,7 +55,7 @@ test("pre-run failures do not leak across an allocated run or its Finish", () =>
   expect(screen.queryByText("old failure")).not.toBeInTheDocument();
   view.rerender(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
   expect(screen.queryByText("old failure")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /Activity · 0/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Operations · 0/ }));
   expect(screen.getByRole("dialog")).not.toHaveTextContent("old failure");
 });
 
@@ -99,7 +99,7 @@ test("open Trace acknowledges Finish after retirement removes the run ID", () =>
   state.enter.mockReturnValue(leave);
   controls.session.jobs = [{ id: "finish", action: "reset", runId: "retired", state: "COMPLETED", startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), progress: [], results: [{ operation: "demo.retire", state: "COMPLETED", message: "Owned Test removed", facts: {} }] }];
   render(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
-  fireEvent.click(screen.getByRole("button", { name: /Activity/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Operations/ }));
   expect(screen.getByRole("dialog")).toHaveTextContent("Test deleted");
   expect(screen.getByRole("dialog")).not.toHaveTextContent("No operations recorded");
 });

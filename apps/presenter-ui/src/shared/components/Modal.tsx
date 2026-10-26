@@ -11,9 +11,11 @@ export interface ModalProps {
   footer?: ReactNode;
   variant?: "studio";
   accent?: "brake" | "tire" | "platform";
+  suspended?: boolean;
+  onBack?: () => void;
 }
 
-export function Modal({ title, subtitle, onClose, children, footer, variant, accent }: ModalProps) {
+export function Modal({ title, subtitle, onClose, children, footer, variant, accent, suspended = false, onBack }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // Capture before the parent workspace becomes inert, including StrictMode's
   // mount/effect replay. Subsequent observation renders must not replace it.
@@ -62,10 +64,11 @@ export function Modal({ title, subtitle, onClose, children, footer, variant, acc
   }, []);
 
   return (
-    <div className={`modal-layer${variant ? " studio-modal-layer" : ""}`} data-team={accent} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && dialogStack.at(-1) === dialogRef.current) onClose(); }}>
+    <div hidden={suspended} className={`modal-layer${variant ? " studio-modal-layer" : ""}`} data-team={accent} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && dialogStack.at(-1) === dialogRef.current) onClose(); }}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={dialogRef} tabIndex={-1}>
         <header className="modal-head">
           <div>
+            {onBack && <button className="studio-detail-back" type="button" onClick={onBack}>← Back</button>}
             <h2 id={titleId}>{title}</h2>
             <p>{subtitle}</p>
           </div>

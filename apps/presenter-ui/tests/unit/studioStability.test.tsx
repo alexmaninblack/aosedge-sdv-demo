@@ -68,7 +68,7 @@ test("submitted candidate makes repeated preparation secondary and does not clai
   expect(status).not.toHaveTextContent("Installed release confirmed");
   expect(screen.getByTestId("prepare-release")).toHaveTextContent("Prepare another build (v1)");
   expect(screen.getByTestId("prepare-release")).not.toHaveClass("studio-primary-action");
-  expect(screen.getByRole("button", { name: "Sign & publish" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Sign & publish" })).toBeNull();
 });
 test("foreign Cloud observation cannot restore a previous Test's Online heading", () => {
   cloud.observation = observation(); cloud.observation.bindingKey = "previous-test:unit";

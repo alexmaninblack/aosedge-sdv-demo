@@ -31,7 +31,7 @@ describe("local composition preview", () => {
     // The architecture's Cloud card is also a visible subscriber.
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /Platform Team/ }));
-    expect(await screen.findByText("Cloud installed · 15.0.0")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Installed on this Test")).toHaveTextContent("release 15.0.0");
     expect(readPlatform).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("Refresh running Test VDP")).not.toBeInTheDocument();
     expect(screen.queryByText("Read Test VDP logs")).not.toBeInTheDocument();

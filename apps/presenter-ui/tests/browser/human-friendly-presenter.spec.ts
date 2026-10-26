@@ -69,7 +69,7 @@ test("stop and restart keep identity/software, without Create, provisioning, pub
   await page.getByRole("dialog").getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start controller", exact: true })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("Capability V3 · Cloud release 80.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("Capability V3 · release 80.0.0");
   await page.getByRole("button", { name: "Start controller", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start simulator", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Start simulator", exact: true }).click();
@@ -79,17 +79,17 @@ test("stop and restart keep identity/software, without Create, provisioning, pub
   await expect(page.locator(".studio-guide")).toContainText("Next software profile");
   expect(fixture.mutations.map(row => row.action)).toEqual(["stop-demo", "start-demo", "start-simulation", "connect-test"]);
   expect(fixture.mutations.every(row => row.sessionId === "branch-fixture" && !row.target && !row.force)).toBe(true);
-  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("Capability V3 · Cloud release 80.0.0");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform installed details" })).toContainText("Capability V3 · release 80.0.0");
 });
 
-test("unknown result prevents both stop and deletion while keeping Activity available", async ({ page }) => {
+test("unknown result prevents both stop and deletion while keeping Operations available", async ({ page }) => {
   const fixture = await scenario(page); fixture.state.uncertain = true; await page.goto("/#native-browser");
   await page.getByRole("button", { name: "Demo controls", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("button", { name: "Stop demo and keep data", exact: true })).toBeDisabled();
   await page.getByText("Delete this Test", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Delete Test & start over", exact: true })).toBeDisabled();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: /Activity/ })).toBeEnabled(); expect(fixture.mutations).toEqual([]);
+  await expect(page.getByRole("button", { name: /Operations/ })).toBeEnabled(); expect(fixture.mutations).toEqual([]);
 });
 
 test("quick preparation is an explicit pre-Create choice, with a publication confirmation", async ({ page }) => {

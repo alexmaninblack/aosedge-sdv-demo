@@ -9,6 +9,10 @@ main remain unchanged pending review. The [interaction contract](../../demo/mock
 and [scenario policy](../../governance/rapid-development-and-debugging.md#scenario-execution-policy)
 remain authoritative.
 
+The qualified candidate below is preserved. The operator accepted the next
+[Layered streamlining packet](presenter-layered-streamlining.md); it now owns
+successor implementation and fresh qualification, without advancing main or A.
+
 | Review group | Source correction | Acceptance |
 | --- | --- | --- |
 | UI-01 / UI-02 | Reserved shell/status regions and bounded backend slots | At fixed canonical viewport, routine freshness, progress and placement changes move/resize unchanged anchors by at most one CSS pixel; core software remains readable |

@@ -1,15 +1,15 @@
 import { useEffect, useRef } from "react";
 import { usePresenterControls } from "./state/PresenterControls";
 
-export function CloudConnectionPanel({ section = "all" }: { section?: "connection" | "setup" | "all" }) {
+export function CloudConnectionPanel({ section = "all", autoInspect = true }: { section?: "connection" | "setup" | "all"; autoInspect?: boolean }) {
   const controls = usePresenterControls();
   const started = useRef(false);
   useEffect(() => {
-    if (section !== "setup" && !started.current && !controls.readBlocked) {
+    if (autoInspect && section !== "setup" && !started.current && !controls.readBlocked) {
       started.current = true;
       controls.request({ action: "cloud-inspect" });
     }
-  }, [controls, section]);
+  }, [controls, section, autoInspect]);
   const jobs = controls.session?.jobs ?? [];
   const preview = [...jobs].reverse().find(job => ["cloud-inspect", "cloud-choose"].includes(job.action));
   const result = preview?.results.at(-1);

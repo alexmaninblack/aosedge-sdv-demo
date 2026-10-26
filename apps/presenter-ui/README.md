@@ -2,6 +2,12 @@
 
 ## Current Presenter
 
+Vehicle uses a layered ARM64 controller view: independent Brake/Tire services,
+their shared VDP capability, and the AosCore runtime supplied by the Factory
+base. Platform and VDP share a component icon; the hardware icon denotes only
+the controller. Authoring selection is separate from installed software.
+See the [accepted change and qualification packet](../../docs/planning/active/presenter-layered-streamlining.md).
+
 This package implements the SDV Lab operator interface. For installation and
 use, start with the [Setup guide](../../docs/getting-started/installed-preview-cloud-first-use.md)
 and [operator workflow](../../docs/operations/current-demo-workflow.md).

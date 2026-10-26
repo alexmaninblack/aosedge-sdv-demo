@@ -19,7 +19,7 @@ test('DOM sample retains fixed freshness/visibility/reason fields, never arbitra
  const prior={document:globalThis.document,innerWidth:globalThis.innerWidth,innerHeight:globalThis.innerHeight};
  globalThis.innerWidth=876;globalThis.innerHeight=908;
  const raw='01234567-89ab-cdef-0123-456789abcdef';
- globalThis.document={visibilityState:'hidden',querySelector:selector=>selector==='.studio-connection'
+ globalThis.document={visibilityState:'hidden',querySelector:selector=>selector==='[data-cloud-report]'
   ?{getAttribute:name=>name==='data-freshness'?'last-known':raw}
   :selector.includes('aria-pressed')?{getAttribute:()=> 'Vehicle'}
   :{textContent:raw,getBoundingClientRect:()=>({x:1.23,y:2,width:100,height:20})}};

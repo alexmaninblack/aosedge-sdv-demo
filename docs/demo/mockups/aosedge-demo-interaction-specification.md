@@ -4,7 +4,7 @@
 # AosEdge Demo Interaction Specification
 
 - Status: Accepted interaction contract; effective installed/expanded profiles stated below
-- Version: 2.6
+- Version: 2.7
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
 - Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.3](../staged-post-sop-brake-health-demo-scenarios.md)
@@ -55,6 +55,41 @@ dialogs/actions, not a mandatory five-stage release-card layout. Protected
 operator mutations are serialized. Logical producer independence does not
 require multiple simultaneous writers. Native Driving Control includes its
 read-only telemetry; a separate Terminal dashboard is not required.
+
+### Layered Vehicle composition and audience navigation
+
+Vehicle is an architecture view, not a flat software inventory. Inside the
+ARM64 virtual controller, Brake Health and Tire Health are independent peers
+above the shared Vehicle Data Platform capability. Their dependency arrows
+denote use of VDP, not service-to-service coupling. AosCore is the runtime and
+component/service lifecycle foundation; it is not a telemetry-processing hop.
+Factory supplies the Linux/AosCore base image, not another application layer.
+Vehicle/Gateway, both product backends and Aos Cloud are outside the controller.
+
+Keep the B2 miniatures. Platform navigation and the VDP component share the
+component miniature; the hardware miniature means the controller only. Vehicle,
+Platform, Brake and Tire retain their labels. Tabs open authoring contexts;
+installed nodes open installed-instance details without selecting a new package.
+Local power/runtime is not inferred from Cloud connection or image version.
+
+Read-only child details reuse one bounded surface with Back, preserving their
+parent tab/filter/scroll/focus. Do not stack ordinary software/record dialogs.
+Protected mutation confirmation remains separate and keeps its ordinary guards.
+Normal paired Cloud configuration belongs to Setup. Presenter access facts are
+read-only; existing exceptional repair controls require explicit recovery
+disclosure. Opening Session or access facts starts no certificate inspection.
+
+Show Installed on this Test separately from Selected package. Only exact pending
+target/operation evidence supports waiting-for-installation language. An earlier
+published selection is not a downgrade request; a larger release number alone
+does not establish that relation. Keep unconfirmed cases explicit. Backend Now
+and Last assessment retain independent source/receipt facts; neutral scores imply
+no new condition thresholds. History offers current/earlier-release selection
+and an honest bounded-read count without deleting or deduplicating records.
+Completed historical Reset receipts belong in history; current/pending/uncertain
+reset state remains visible. Operations shows an active job once and completed
+receipts newest first. Existing fixed shell, private-ID, CLEAR, expiry, safety
+and no-replay contracts remain unchanged.
 
 ### Observation and resource facts
 
@@ -135,10 +170,10 @@ measured zero and conflicting aliases stay distinct; no guest collector is added
   their association lines and dialog headings. Platform identity stays blue.
   Status remains independently labelled with text/icon/color; B2 miniatures
   remain natural. Empty slots and Cloud connection-state semantics remain.
-- Factory firmware contains an AosCore system-software miniature and
-  `In-vehicle runtime`; its image selector stays unchanged. Aos Cloud carries
-  `Cloud management`. Both show small `AosEdge platform` labels and common
-  blue identity accents. Do not infer Core version or health from an image name.
+- The Factory base contains the AosCore system-software miniature and
+  `In-vehicle runtime & lifecycle`; its image selector stays unchanged. Aos Cloud
+  carries its own management/observation facts and common blue identity accents.
+  Do not infer Core version or health from an image name or VM power.
 - Keep the fixed native-left/Studio-right composition, existing dialogs and
   lifecycle actions. A warning is not guaranteed merely by launching a maneuver.
 

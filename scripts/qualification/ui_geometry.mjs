@@ -11,11 +11,11 @@ export async function presentationSnapshot(page) {
       const element=document.querySelector(selector),r=element?.getBoundingClientRect();
       if(r?.width && r?.height) regions[key]={x:+r.x.toFixed(1),y:+r.y.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)};
     }
-    const connection=document.querySelector('.studio-connection');
+    const connection=document.querySelector('[data-cloud-report]');
     const reason=connection?.getAttribute('data-observation-reason');
     const knownReasons=['OBSERVER_HIDDEN','ACTION_COMPLETED_REFRESH_REQUIRED','CLOUD_READ_SLOW','AOS_CLOUD_STATE_UNAVAILABLE'];
     const text=document.querySelector(selectors.primary)?.textContent?.trim()??'';
-    const primary=/^(View progress|Refresh (Cloud state|state)|Start (controller|simulator)|Connect in Manual|Open (Platform|Brake|Tire)( v[123]| backend|)|Select v[123]|Stop demo and keep data|Create controller|Continue preparation|Provision to Test|Continue registration|Open update details|Delete Test & start over|Continue Test deletion)$/.test(text)?text:null;
+    const primary=/^(View progress|Refresh (Cloud state|state)|Start (controller|simulator)|Connect in Manual|Open (Platform|Brake|Tire)( v[123]| backend|)|Select v[123]|Explore results|Open Cloud details|Stop demo and keep data|Create controller|Continue preparation|Provision to Test|Continue registration|Open update details|Delete Test & start over|Continue Test deletion)$/.test(text)?text:null;
     const view=document.querySelector('.studio-nav button[aria-pressed=true]')?.getAttribute('aria-label');
     const freshness=connection?.getAttribute('data-freshness');
     return {view:['Vehicle','Platform Team','Brake Team','Tire Team'].includes(view)?view:null,

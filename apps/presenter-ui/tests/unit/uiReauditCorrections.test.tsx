@@ -28,7 +28,7 @@ test.each(["brake", "tire"] as const)("U5 first %s installation pending guides o
     source: { state: "CONNECTED", currentVehicle: "test", selectedVehicle: "test" } } as any);
   const { container } = render(<StudioWorkspace snapshot={snapshot} perspective={team} navigate={() => {}} />);
   expect(screen.getByText(/Pending 7.0.0/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Sign & publish" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Sign & publish" })).toBeNull();
   const guide = container.querySelector(".studio-guide");
   expect(guide).toHaveTextContent("Service update pending");
   expect(screen.getAllByRole("button", { name: "Refresh Cloud state" })).toHaveLength(1);

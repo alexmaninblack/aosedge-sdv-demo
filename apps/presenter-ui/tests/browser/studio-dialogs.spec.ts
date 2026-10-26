@@ -3,6 +3,34 @@
 import { test, expect, type Page } from "@playwright/test";
 import { confirmedReset, binding } from "../unit/backendFixture";
 
+test("Layered preserves original object icons, independent services and one detail surface", async ({ page }) => {
+  await scenario(page); await page.setViewportSize({ width: 876, height: 908 }); await page.goto("/#native-browser");
+  const controller = page.getByRole("region", { name: "ARM64 virtual controller" });
+  await expect(controller).toBeVisible();
+  await expect(controller.locator(".studio-service-slots > article")).toHaveCount(2);
+  await expect(controller.getByLabel("Both independent services use Vehicle Data Platform")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Platform Team", exact: true }).locator(".b2-component")).toBeVisible();
+  await expect(controller.locator("h2 .b2-platform")).toBeVisible();
+  await expect(controller).toContainText("Linux + AosCore");
+  await expect(controller).not.toContainText("AosCore running");
+  for (const team of ["brake", "tire"]) {
+    const visible = await page.locator(`[data-anchor="${team}-backend"]`).evaluate(card => {
+      const action = card.querySelector('.studio-reset-scenario button')!.getBoundingClientRect();
+      const bounds = card.getBoundingClientRect();
+      return action.top >= bounds.top && action.bottom <= bounds.bottom && action.left >= bounds.left && action.right <= bounds.right;
+    });
+    expect(visible, `${team} Reset action must not be clipped`).toBe(true);
+  }
+  await page.getByRole("button", { name: "Aos Cloud Unit monitoring", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /Vehicle Data Platform 78.0.0/ }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await page.getByRole("button", { name: "← Back", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Cloud monitoring", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await page.screenshot({ path: "test-results/layered-vehicle-canonical.png" });
+});
+
 test("stable canonical overview through freshness, operation and layout changes", async ({ page }) => {
   await page.setViewportSize({ width: 876, height: 908 });
   const fixture = await scenario(page);
@@ -25,10 +53,13 @@ test("stable canonical overview through freshness, operation and layout changes"
   expect(controller.y + controller.height, "controller frame must fit too").toBeLessThanOrEqual(body!.y + body!.height + 1);
   fixture.state.cloudCurrent = false;
   await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
-  await expect(page.locator(".studio-connection")).toContainText("Last confirmed connection");
+  await expect(page.locator("[data-cloud-report]")).toHaveAttribute("data-freshness", "last-known");
+  await expect(page.locator(".studio-local-state")).toHaveText("Controller running locally");
   const stale = await boxes();
   active = true;
-  await expect(page.getByRole("button", { name: "View progress", exact: true })).toBeVisible();
+  // Observe one normal five-second idle owner poll, not a race against an
+  // assertion with the same deadline. Product cadence is unchanged.
+  await expect(page.getByRole("button", { name: "View progress", exact: true })).toBeVisible({ timeout: 8000 });
   await expect(page.getByLabel("Desktop window layout", { exact: true })).toBeVisible();
   const running = await boxes();
   for (const sample of [stale, running]) for (let i = 0; i < selectors.length; i++) {
@@ -41,7 +72,7 @@ test("stable canonical overview through freshness, operation and layout changes"
   const targetBefore = await progressTarget.boundingBox();
   fixture.state.cloudCurrent = true;
   await page.locator(".studio-footer").getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
-  await expect(page.locator(".studio-connection")).toHaveAttribute("data-freshness", "current");
+  await expect(page.locator("[data-cloud-report]")).toHaveAttribute("data-freshness", "current");
   expect(await progressTarget.boundingBox()).toEqual(targetBefore);
   await page.getByRole("button", { name: "View progress", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("Waiting for owned windows");
@@ -265,7 +296,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 100
   expect(await dialog.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
   await page.screenshot({ path: `test-results/reaudit-conflict-${viewport.height}.png` });
   await dialog.getByRole("button", { name: "Records", exact: true }).click();
-  await expect(dialog.getByText("Current Test · CONFLICT")).toBeVisible();
+  await expect(dialog.getByText("Integrity conflict", { exact: true })).toBeVisible();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
@@ -293,7 +324,7 @@ test("audit: status-only component pending agrees across overview, dialog and Pl
   await page.keyboard.press("Escape"); await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Platform Team", exact: true }).click();
   await expect(page.locator(".studio-guide")).toContainText("version not reported");
-  await expect(page.getByRole("button", { name: "Sign & publish", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Sign & publish", exact: true })).toHaveCount(0);
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
@@ -301,14 +332,14 @@ test("audit: old receipt and stale binding have matching qualifiers on card and 
   const fixture = await scenario(page); fixture.state.receiptAge = 2 * 86400000;
   await page.goto("/#native-browser");
   const card = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
-  await expect(card).toContainText("Latest result received · 2d ago");
-  await expect(card).toContainText(/Backend checked · \d+s ago/);
+  await expect(card).toContainText("Last result received · 2d ago");
+  await expect(card.locator("[data-backend-observed-at]")).toHaveAttribute("data-backend-observed-at", /\d{4}-\d{2}-\d{2}T/);
   fixture.state.cloudCurrent = false;
   await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
   await expect(card).toContainText("Inspection recommended");
   await expect(card).toContainText("Last known / incomplete");
   await card.click();
-  await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toContainText("Latest product result · last known");
+  await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toContainText("Last assessment / recording · last known");
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
@@ -316,7 +347,7 @@ test("audit: partial history preserves fresh input without claiming complete res
   const fixture = await scenario(page); fixture.state.partialEvents = true;
   await page.setViewportSize({ width: 1280, height: 720 }); await page.goto("/");
   const card = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
-  await expect(card).toContainText("RECEIVING"); await expect(card).toContainText(/last known/i);
+  await expect(card).toContainText("Now · Receiving"); await expect(card).toContainText("Last known assessment");
   await card.click();
   const dialog = page.getByRole("dialog", { name: "Brake backend", exact: true });
   await expect(dialog).toContainText("Partial backend read"); await expect(dialog).toContainText("events");
@@ -351,8 +382,9 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1118, height: 112
   fixture.state.windowMode = true; fixture.state.windowInterrupted = true;
   await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
   await page.getByRole("button", { name: "Records", exact: true }).click();
-  await page.getByRole("button", { name: /WINDOW_COMPLETION/ }).click();
-  const detail = page.getByRole("dialog", { name: "Backend product record", exact: true });
+  await page.getByRole("combobox", { name: "Service release", exact: true }).selectOption("all");
+  await page.getByRole("button", { name: /Braking recording/ }).click();
+  const detail = page.getByRole("dialog", { name: "Brake backend", exact: true });
   await expect(detail.getByText("Recording interrupted: source data gap", { exact: true })).toBeVisible();
   await expect(detail.getByText("All retained chunks received (3/3)", { exact: true })).toBeVisible();
   await expect(detail.getByText("INCOMPLETE_SOURCE_GAP", { exact: true })).toBeVisible();
@@ -368,8 +400,10 @@ test("SOTA retains a confirmed earlier Reset as history without hiding the curre
   const brake = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
   await expect(brake).toContainText("Inspection recommended");
   await brake.click();
-  await expect(page.getByRole("dialog").getByText("Reset for release 57.0.0 confirmed · historical, not a reset of the current release.")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("Reset for release 57.0.0 confirmed · historical, not a reset of the current release.")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "INSPECTION RECOMMENDED", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Records", exact: true }).click();
+  await expect(page.getByRole("dialog").getByText("Reset for release 57.0.0 confirmed · historical, not a reset of the current release.")).toBeVisible();
   await expect(page.getByText("Reset outcome unconfirmed", { exact: true })).toHaveCount(0);
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
@@ -380,7 +414,7 @@ test("Vehicle summaries and dialogs share reads; closing restores Vehicle and fo
   const brake = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
   await expect(brake).toContainText("Inspection recommended");
   await expect(page.getByRole("button", { name: "Aos Cloud Unit monitoring" })).toContainText("1 component · 2 services");
-  expect(fixture.reads("/monitoring")).toBe(1);
+  await expect.poll(() => fixture.reads("/monitoring")).toBe(1);
   const reads = fixture.reads("/backend/brake");
   await brake.click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible();
@@ -402,18 +436,18 @@ test("moving input and qualifying activity are independent; late receipts never 
   const fixture = await scenario(page); fixture.state.functionActivity = "WAITING";
   await page.goto("/#native-browser");
   const brake = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
-  await expect(brake).toContainText("RECEIVING"); await expect(brake).toContainText("WAITING");
+  await expect(brake).toContainText("Now · Receiving"); await expect(brake).toContainText("Waiting for a suitable event");
   await brake.click();
-  await expect(page.getByText("NOT QUALIFIED", { exact: true })).toBeVisible();
+  await expect(page.getByText("Waiting for a suitable maneuver", { exact: true })).toBeVisible();
   fixture.state.functionAge = 120000;
   await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
   await expect(page.getByText(/Function report · LAST KNOWN/)).toBeVisible();
   await page.keyboard.press("Escape"); await expect(brake).toContainText("Last known");
-  await expect(brake).not.toContainText("RECEIVING");
+  await expect(brake).not.toContainText("Now · Receiving");
   fixture.state.functionConflict = true; fixture.state.functionAge = 0;
   await brake.click(); await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
   await expect(page.getByText(/Function report · CONFLICT/)).toBeVisible();
-  await expect(page.locator('[aria-label="Service function observation"]')).not.toContainText("RECEIVING");
+  await expect(page.locator('[aria-label="Service function observation"]')).not.toContainText("Receiving");
 });
 
 test("service dialog separates installed compatibility from input and refreshes in place", async ({ page }) => {
@@ -443,7 +477,7 @@ for (const condition of ["STALE", "UNKNOWN", "wrong-artifact"]) test(`profile ${
   await page.goto("/#native-browser");
   await expect(page.locator(".studio-guide")).not.toContainText("Capabilities delivered");
   await expect(page.locator(".studio-guide")).toContainText(condition === "STALE" ? "Refresh installed profile" : "Installed profile not confirmed");
-  if (condition === "STALE") await expect(page.locator(".studio-vdp")).toContainText("last known");
+  if (condition === "STALE") await expect(page.locator(".studio-vdp")).toContainText(/last known/i);
   await page.getByRole("button", { name: "Brake service details", exact: true }).click();
   const compatibility = page.getByRole("region", { name: "Installed software compatibility" });
   await expect(compatibility).toContainText(condition === "STALE" ? "Compatible · VDP V3 · last known" : "Not confirmed");
@@ -463,7 +497,7 @@ test("team dialog retains its authoring profile; details have no reset action an
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
-test("completed software story offers confirmed non-destructive Stop; old-release evidence never completes it", async ({ page }) => {
+test("completed software story offers results and retained-data Stop; old-release evidence never completes it", async ({ page }) => {
   const fixture = await scenario(page);
   fixture.state.oldBrake = true;
   await page.goto("/#native-browser");
@@ -475,8 +509,9 @@ test("completed software story offers confirmed non-destructive Stop; old-releas
   await expect(page.getByText("INSPECTION RECOMMENDED", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator(".studio-guide")).toContainText("Capabilities delivered");
-  await expect(page.locator(".studio-guide")).toContainText("not full qualification");
-  await page.locator(".studio-guide").getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
+  await expect(page.locator(".studio-guide").getByRole("button", { name: "Explore results", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Demo controls", exact: true }).click();
+  await page.getByRole("button", { name: "Stop demo and keep data", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("Keep its Cloud identity, disk, models and history");
   await expect(page.getByRole("dialog")).not.toContainText("There is no undo");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -494,7 +529,8 @@ test("backend failure retains labelled history without affecting peer or Cloud; 
   await expect(page.getByText(/Backend unavailable or incomplete/)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(brake).toContainText("Last known / incomplete");
-  await expect(page.getByRole("button", { name: "Tire backend Open dashboard" })).toContainText("Result received");
+  await expect(page.getByRole("button", { name: "Tire backend Open dashboard" })).toContainText("Now · Receiving");
+  await expect(page.getByRole("button", { name: "Tire backend Open dashboard" })).toContainText("Inspection recommended");
   fixture.state.failBrake = false; fixture.state.reset = true;
   await brake.click(); await page.getByRole("button", { name: "Refresh backend" }).click();
   await expect(page.getByRole("dialog").getByText("Input is arriving and a recording is in progress. Waiting for its outcome.")).toBeVisible();
@@ -526,7 +562,7 @@ for (const outcome of ["PENDING", "EXPIRED", "FAILED", "REJECTED"]) test(`reset 
   await expect(dialog).toContainText("Reset channel contact: recent");
   await expect(dialog.getByRole("heading", { name: title, exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Records", exact: true }).click();
-  await expect(dialog).toContainText("BRAKE_HEALTH_ASSESSMENT");
+  await expect(dialog.getByRole("button", { name: /Brake condition assessment/ })).toBeVisible();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
@@ -544,8 +580,11 @@ test("Demo controls default to runtime without credential inspection; settings a
   await expect(page.getByRole("button", { name: "Delete Test & start over", exact: true })).toBeEnabled();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
   await page.getByRole("button", { name: "Advanced settings", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Check Cloud setup", exact: true })).toHaveCount(0);
+  expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
+  await page.getByText("Recovery & diagnostics", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Check Cloud setup", exact: true })).toBeEnabled();
-  expect(fixture.calls.every(call => call.method === "GET" || call.action === "cloud-inspect")).toBe(true);
+  expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
 test("switching the observed Test drops prior summaries and a resource failure stays labelled", async ({ page }) => {
@@ -553,7 +592,7 @@ test("switching the observed Test drops prior summaries and a resource failure s
   await page.goto("/#native-browser");
   const cloud = page.getByRole("button", { name: "Aos Cloud Unit monitoring", exact: true });
   await expect(cloud).toContainText("No pending updates");
-  expect(fixture.reads("/monitoring")).toBe(1);
+  await expect.poll(() => fixture.reads("/monitoring")).toBe(1);
   await cloud.click();
   await page.getByRole("button", { name: "Resources", exact: true }).click();
   await expect(page.getByRole("dialog").getByText("0 DMIPS", { exact: true })).toBeVisible();
@@ -582,7 +621,7 @@ test("service colors link matching backends while AosCore and Cloud share platfo
   await expect(core.locator(".b2-service")).toBeVisible();
   await expect(core.getByRole("combobox", { name: "Factory image" })).toHaveCount(0);
   await expect(core).toContainText("Factory .35");
-  await expect(page.getByText("AosEdge platform", { exact: true })).toHaveCount(2);
+  await expect(core).toContainText("Linux + AosCore");
   for (const team of ["brake", "tire"]) {
     const card = page.locator(`[data-anchor='${team}-backend']`);
     const service = page.locator(`[data-anchor='${team}-service']`);
@@ -590,12 +629,12 @@ test("service colors link matching backends while AosCore and Cloud share platfo
     await expect(service).toHaveAttribute("data-team", team);
     const color = await card.evaluate(node => getComputedStyle(node).borderTopColor);
     await expect(service).toHaveCSS("border-left-color", color);
-    await expect(page.locator(`.studio-wires path[data-team='${team}']`)).toHaveCSS("stroke", color);
+    await expect(page.getByLabel("Both independent services use Vehicle Data Platform")).toBeVisible();
     await card.click();
     await expect(page.locator(`.studio-modal-layer[data-team='${team}'] .modal-head`)).toHaveCSS("border-top-color", color);
     await page.keyboard.press("Escape");
   }
-  await expect(page.locator(".studio-wires path.online")).toHaveCSS("stroke", "rgb(56, 140, 114)");
+  await expect(page.locator(".studio-wires")).toHaveCount(0);
 });
 
 test("upgraded Brake exposes retained V1 charts without relabelling the V3 result", async ({ page }) => {
@@ -605,13 +644,13 @@ test("upgraded Brake exposes retained V1 charts without relabelling the V3 resul
   await expect(page.getByRole("heading", { name: "INSPECTION RECOMMENDED", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "View braking recordings & charts ↗", exact: true }).click();
   await expect(page.getByLabel("Record type", { exact: true })).toHaveValue("windows");
-  await expect(page.getByRole("button", { name: /WINDOW_COMPLETION/ })).toContainText("56.0.0");
-  await expect(page.getByRole("button", { name: /BRAKE_HEALTH_ASSESSMENT/ })).toHaveCount(0);
-  await page.getByRole("button", { name: /WINDOW_COMPLETION/ }).click();
+  await expect(page.getByRole("button", { name: /Braking recording/ })).toContainText("56.0.0");
+  await expect(page.getByRole("button", { name: /Brake condition assessment/ })).toHaveCount(0);
+  await page.getByRole("button", { name: /Braking recording/ }).click();
   await expect(page.getByRole("img", { name: "Speed: actual retained samples" })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "← Back to Brake backend" }).click();
   await page.getByLabel("Record type", { exact: true }).selectOption("all");
-  await expect(page.getByRole("button", { name: /BRAKE_HEALTH_ASSESSMENT/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Brake condition assessment/ })).toBeVisible();
   await page.getByRole("button", { name: "Overview", exact: true }).click();
   await expect(page.getByRole("heading", { name: "INSPECTION RECOMMENDED", exact: true })).toBeVisible();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
@@ -622,8 +661,9 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1728, height: 111
   await page.setViewportSize(viewport); await page.goto(viewport.width === 1118 ? "/#native-browser" : "/");
   await page.getByRole("button", { name: "Brake backend Open dashboard", exact: true }).click();
   await page.getByRole("button", { name: "Records", exact: true }).click();
-  await page.getByRole("button", { name: /WINDOW_COMPLETION/ }).click();
-  const dialog = page.getByRole("dialog", { name: "Backend product record", exact: true });
+  await page.getByRole("combobox", { name: "Service release", exact: true }).selectOption("all");
+  await page.getByRole("button", { name: /Braking recording/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Brake backend", exact: true });
   await expect(dialog.getByRole("region", { name: "Retained braking window" })).toContainText("150 retained samples");
   await expect(dialog.getByRole("img", { name: "Speed: actual retained samples" })).toBeVisible();
   await expect(dialog.getByRole("img", { name: "Brake pedal: actual retained samples" })).toBeVisible();
@@ -638,7 +678,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1728, height: 111
   expect(dimensions.content[1], JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.available[1] + 1);
   await dialog.getByRole("button", { name: "Next samples" }).click();
   await expect(dialog.getByLabel("Window sample pages")).toContainText(viewport.height <= 800 ? "2 / 50" : "2 / 30");
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "← Back to Brake backend" }).click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible();
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
@@ -670,19 +710,26 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1327, height: 851
   await fit(".studio-body");
   await expect(page.locator('[data-anchor="cloud-backend"] .studio-summary-time')).toBeVisible();
   await expect.poll(() => page.locator(".studio-architecture-stage").evaluate(root => {
-    const bounds = root.getBoundingClientRect();
-    return ["brake", "tire"].flatMap((name, index) => {
-      const path = root.querySelectorAll<SVGPathElement>(".studio-wires path.service")[index];
-      const target = root.querySelector(`[data-anchor='${name}-service']`)?.getBoundingClientRect();
-      const backend = root.querySelector(`[data-anchor='${name}-backend']`)?.getBoundingClientRect();
-      const controller = root.querySelector('[data-anchor="controller"]')?.getBoundingClientRect();
-      if (!path || !target || !backend || !controller) return [{ name, missing: true }];
-      const end = path.getPointAtLength(path.getTotalLength());
-      const elbow = Number(path.getAttribute('d')?.match(/ V ([\d.]+)/)?.[1]);
-      const aligned = Math.abs(end.x - (target.x + target.width / 2 - bounds.x)) < 2 && Math.abs(end.y - (target.top - bounds.top)) < 2
-        && elbow > backend.bottom - bounds.top && elbow < controller.top - bounds.top;
-      return aligned ? [] : [{ name, missing: false, path: path.getAttribute('d'), elbow, backend: backend.bottom - bounds.top, controller: controller.top - bounds.top, end: [end.x, end.y], target: [target.x + target.width / 2 - bounds.x, target.top - bounds.top] }];
-    });
+    const controller = root.querySelector('[data-anchor="controller"]');
+    const base = controller?.getBoundingClientRect();
+    const vdp = controller?.querySelector('.studio-vdp')?.getBoundingClientRect();
+    const factory = controller?.querySelector('.studio-factory')?.getBoundingClientRect();
+    const arrows = controller?.querySelectorAll('.studio-data-dependencies > span');
+    if (!base || !vdp || !factory || arrows?.length !== 2) return ['Layered elements missing'];
+    const inside = (rect: DOMRect) => rect.left >= base.left && rect.right <= base.right && rect.top >= base.top && rect.bottom <= base.bottom;
+    const problems: string[] = [];
+    const peers = ['brake', 'tire'].map(name => controller!.querySelector(`[data-anchor='${name}-service']`)!.getBoundingClientRect());
+    if (Math.abs(peers[0].top - peers[1].top) > 1 || peers[0].right >= peers[1].left) problems.push('services are not independent side-by-side peers');
+    for (const [index, peer] of peers.entries()) {
+      const arrow = arrows[index].getBoundingClientRect();
+      if (!inside(peer) || peer.bottom > arrow.top || arrow.bottom > vdp.top || !inside(vdp)) problems.push('service-to-VDP layering is not contained');
+    }
+    if (!inside(factory) || factory.top < vdp.bottom) problems.push('runtime foundation is not below VDP');
+    for (const name of ['brake', 'tire', 'cloud']) {
+      const backend = root.querySelector(`[data-anchor='${name}-backend']`);
+      if (!backend || controller!.contains(backend) || backend.getBoundingClientRect().bottom >= base.top) problems.push(`${name} backend is not outside the controller`);
+    }
+    return problems;
   })).toEqual([]);
   await page.screenshot({ path: `test-results/vehicle-210-${viewport.width}.png` });
   for (const name of ["Brake backend Open dashboard", "Tire backend Open dashboard", "Aos Cloud Unit monitoring"]) {

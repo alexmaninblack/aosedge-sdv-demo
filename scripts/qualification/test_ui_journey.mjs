@@ -45,8 +45,9 @@ test('browser uses only an explicitly allowed qualification Cloud',()=>{
 test('each published release checks its exact team stages, installed card and capability',()=>{
   assert.deepEqual(releaseViewSpec('platform','v2','172.0.0'),{
     teamTab:'Platform Team',profileButton:'v2 Brake analysis',stages:['Published','Installed'],card:'Vehicle Data Platform installed details',
-    cardText:'Capability V2 · Cloud release 172.0.0',profile:'v2',release:'172.0.0'});
-  assert.equal(visibleCardText('v2 · 172.0.0'),'Capability V2 · Cloud release 172.0.0');
+    cardText:'Capability V2 · release 172.0.0',profile:'v2',release:'172.0.0'});
+  assert.equal(visibleCardText('v2 · 172.0.0'),'Capability V2 · release 172.0.0');
+  assert.equal(visibleCardText('installed · 172.0.0'),'release 172.0.0');
   assert.equal(visibleCardText('Not confirmed'),'Not confirmed');
   assert.deepEqual(releaseViewSpec('brake','v3','155.0.0').stages,['Published','Assigned','Running']);
   assert.equal(releaseViewSpec('tire','v1','76.0.0').card,'Tire service details');
