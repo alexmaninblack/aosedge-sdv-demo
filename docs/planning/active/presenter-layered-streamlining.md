@@ -69,7 +69,7 @@ is reused without routine Engine restarts. No public distribution or merge yet.
 | 1. Contract/source | Update installed interaction text; implement all accepted review groups together with state/navigation regressions | Complete; successor media remains unqualified |
 | 2. Local verification | Unit/type/static/docs/confidentiality gates; no developer-Mac browser or runtime | 390 Presenter unit tests, type/web compilation, 92 Python and 46 JavaScript qualification tests, docs and source gates pass |
 | 3. M1 visual fixtures | One semantic fixture scenario on M1; layered boundaries, icon mapping, child navigation, state/geometry assertions | 152/152 pass, no skips/retries; 41.185 seconds; browser and fixture server closed |
-| 4. Immutable media | Freeze successor source; one warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | Not run |
+| 4. Immutable media | Freeze successor source; warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | Canonical chain 17/17 built in 768.850 seconds; matching-M1-team review media blocked on secure keychain input |
 | 5. Retained update | Normal package update and launcher selection on M1; exact signature/capacity and unchanged Test/data bindings | Not run |
 | 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Not run |
 | 7. Review handoff | Before/after screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve Test/data; close owned check runtimes | Not run |
@@ -119,4 +119,29 @@ attempts remain private, immutable diagnostics; they are not successor acceptanc
 The retained-Test, desktop, Cloud and matching signing identity preflight passed
 on M1 before media work. Its SSH login keychain is locked: matching-team signing
 may require secure local input. No private key is exported or password recorded.
-Full installed API/UI gates below remain **not run** until successor media exists.
+Full installed API/UI gates below remain **not run** until matching-team media exists.
+
+## Built successor and bounded signing stop
+
+Final Presenter source is `45de82c5241387bf2a5b2a2e587529099f6713bd`;
+the reviewed selection is `c2c463c` in this branch. Candidate version is
+`1.2.0-rc.4-presenter.2`, application manifest
+`bb81fda0338e159477affdae6abcca4bf6aff9f5ffaee12f6962669e42b3e473`.
+The canonical local-development-signed DMG is 14,159,627,471 bytes, SHA-256
+`a33845d34f3eb8e3683f43c59c4e77acd8e30e1ec49f5756b8f98d2a2511a0cd`.
+This is not yet matching-team installed/review acceptance or public distribution.
+
+Before the successful build, normal content revalidation handled only the
+same SSD's remount device-number change; original receipts and payloads were
+preserved. A subsequent first-source build was interrupted with owned cleanup
+when the background-insertion focus regression was reproduced. Neither attempt
+was delivered or installed, and neither supplies successor runtime acceptance.
+
+The M1 scenario passed retained preflight, exact completed-build binding and
+before-state capture, then delivered Setup only. It stopped with
+`SIGNING_SECURE_INPUT_REQUIRED`; cleanup was confirmed. Installation, API and
+UI have **not** started. The exact candidate-bound interactive helper is ready;
+credentials are entered only into the remote system keychain prompt. A later
+continuation reconciles any completed signing result without signing again,
+keeps the same Test/data, then owns matching-team media, installation and the
+complete visible API/UI campaign. Main and option A remain unchanged.
