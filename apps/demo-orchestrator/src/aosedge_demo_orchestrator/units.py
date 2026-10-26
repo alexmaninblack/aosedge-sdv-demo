@@ -179,9 +179,14 @@ class UnitService:
                 uploads.append(dict(version=version, deploymentId=record["deploymentId"], batchId=record["batchId"]))
         if uploads:
             self.progress("Confirming recorded component uploads in Cloud; no upload or approval")
-            result = self._cloud("reconcile-uploads", uploads=uploads)
-            if result.get("confirmedUploads") != uploads:
-                raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            # A long-lived Test can own more receipts than the worker's bounded
+            # read scope. Preserve its 16-entry guard; reconcile exact chunks
+            # serially and commit nothing until every chunk is corroborated.
+            for start in range(0, len(uploads), 16):
+                batch = uploads[start:start + 16]
+                result = self._cloud("reconcile-uploads", uploads=batch)
+                if result.get("confirmedUploads") != batch:
+                    raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
             for entry in uploads:
                 state["componentOperations"][entry["version"]]["upload"].update(
                     state="CONFIRMED", confirmedAt=now(), reconciliationScope=(

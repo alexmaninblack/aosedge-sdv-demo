@@ -456,6 +456,54 @@ class UnitSafetyTests(unittest.TestCase):
                 if failure not in ("unavailable", "wrong-proof"):
                     self.service._cloud.assert_not_called()
 
+    def test_retirement_reconciles_long_history_in_bounded_chunks_then_commits_once(self):
+        self.state.update(vehicles={}, cloudBinding={"ownerId": UNIT})
+        self.state["componentOperations"] = {
+            f"{index}.0.0": dict(deploymentId=TEST, publicationPath="VERIFICATION_TEST", ownerId=UNIT,
+                upload=dict(attemptStarted=True, state="RESPONDED",
+                    response=dict(httpStatus=201, deploymentId=TEST)))
+            for index in range(34)}
+        def observe(action, **fields):
+            self.assertEqual(action, "reconcile-uploads")
+            self.assertLessEqual(len(fields["uploads"]), 16)
+            self.assertTrue(all(row["upload"]["state"] == "RESPONDED"
+                for row in self.state["componentOperations"].values()))
+            return dict(confirmedUploads=fields["uploads"])
+        self.service._cloud = Mock(side_effect=observe)
+        self.assertTrue(self.service.confirm_retired(self.state))
+        self.assertEqual([16, 16, 2], [len(call.kwargs["uploads"])
+            for call in self.service._cloud.call_args_list])
+        self.assertTrue(all(row["upload"]["state"] == "CONFIRMED"
+            for row in self.state["componentOperations"].values()))
+        self.service.vm._save.assert_called_once_with(self.state)
+        self.service._cloud.reset_mock()
+        self.assertTrue(self.service.confirm_retired(self.state))
+        self.service._cloud.assert_not_called()
+
+    def test_retirement_late_chunk_failure_does_not_confirm_or_save_any_receipt(self):
+        self.state.update(vehicles={}, cloudBinding={"ownerId": UNIT})
+        self.state["componentOperations"] = {
+            f"{index}.0.0": dict(deploymentId=TEST, publicationPath="VERIFICATION_TEST", ownerId=UNIT,
+                upload=dict(attemptStarted=True, state="RESPONDED",
+                    response=dict(httpStatus=201, deploymentId=TEST)))
+            for index in range(34)}
+        before = copy.deepcopy(self.state)
+        for failure in ("unavailable", "mismatch"):
+            calls = []
+            def observe(action, **fields):
+                calls.append(fields["uploads"])
+                if len(calls) == 3:
+                    if failure == "unavailable":
+                        raise EnvironmentError("CLOUD_UNAVAILABLE")
+                    return dict(confirmedUploads=[])
+                return dict(confirmedUploads=fields["uploads"])
+            self.service._cloud = Mock(side_effect=observe)
+            with self.assertRaises(EnvironmentError):
+                self.service.confirm_retired(self.state)
+            self.assertEqual([16, 16, 2], [len(batch) for batch in calls])
+            self.assertEqual(before, self.state)
+            self.service.vm._save.assert_not_called()
+
     def test_retire_verification_upload_has_no_approval_dependency(self):
         self.state.update(vehicles={}, cloudBinding={"ownerId": UNIT})
         record = dict(deploymentId=TEST, publicationPath="VERIFICATION_TEST", ownerId=UNIT,

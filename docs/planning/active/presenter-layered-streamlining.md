@@ -360,3 +360,10 @@ team and run the fresh API journey followed by the retained continuous UI journe
 on that newly created Test. The campaign owns visible observations, independent
 effects, exact intent/reconciliation, timings and normal final shutdown. No
 main/public promotion or successful qualification is inferred before completion.
+
+Fresh-Test retirement exposed 34 accepted old upload receipts against the Cloud
+read worker's 16-entry bound. A deployed-identity proof reconciled the exact
+receipts as 16/16/2 read-only requests, then repeated idempotently without another
+upload read; no Cloud mutation or lifecycle replay occurred. The caller now uses
+that bounded serial composition and saves confirmations only after all chunks
+pass. The worker's scope, identity, response and owner guards are unchanged.
