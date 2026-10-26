@@ -339,3 +339,24 @@ requires a separately declared fresh Test/Unit policy, leaving that original
 Test intact; do not rebase its overlay or infer migration from package selection.
 No new Setup/DMG, main merge, public input promotion or option-A update was made
 by this Factory build and isolated gate.
+
+## Authorized fresh-Test qualification
+
+The operator subsequently requested a new Test and the complete API/UI campaign,
+then explicitly authorized replacing the previous Test, including its working VM
+and run data. This supersedes retained-Test protection only for that exact old
+Test. The read-only admission check confirmed that its Unit alone occupies the
+selected OEM's Test Vehicles set; a second local directory cannot isolate it.
+Use the normal Delete Test lifecycle, with authoritative identity/data cleanup,
+before fresh manufacture. Do not bypass the occupancy guard or edit membership
+directly. Preserve credentials, release continuity, immutable media, dependencies,
+caches and unrelated/Production-role resources.
+
+The successor packages the latest verified Presenter correction and the already
+built `.42` image through the normal explicit source-Factory input. CARLA and
+Factory are not rebuilt. The ready prebuilt `.41` input and public option A stay
+unchanged. Freeze a new immutable review candidate, install with the matching M1
+team and run the fresh API journey followed by the retained continuous UI journey
+on that newly created Test. The campaign owns visible observations, independent
+effects, exact intent/reconciliation, timings and normal final shutdown. No
+main/public promotion or successful qualification is inferred before completion.

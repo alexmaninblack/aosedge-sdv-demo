@@ -15,20 +15,20 @@
   },
   "rebuilt": {
     "factory": {
-      "version": "6.1.1-maninblack.41",
+      "version": "6.1.1-maninblack.42",
       "image": "main-qemuarm64.img",
       "format": "raw",
       "sizeBytes": 6997147648,
-      "sha256": "e7c9e3b20c08a91f9072014ece0861d8ae34787ef14d4ef9b50693c062439d57",
-      "sourceRevision": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+      "sha256": "da97c8754cf502feb2513319f494baa59cc75dcb56087be5a552d7eb6cc416c1",
+      "sourceRevision": "81d098e5a958710d8c12a6bfdb86c7c493274920",
       "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
-      "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.41/manifest.json"
+      "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.42/manifest.json"
     },
     "manifest": {
-      "path": "factory-images/6.1.1-maninblack.41/manifest.json",
+      "path": "factory-images/6.1.1-maninblack.42/manifest.json",
       "bytes": 10408,
-      "sha256": "952ef0bb94d1a48d85173331b6f73df52a0da549a9799843ff39e4df6c1f777e"
+      "sha256": "a3ec0ad33be0f2f035875f7a2cf518eff501d207c46fb821da3d75adf53176c9"
     },
-    "qualificationToolsRevision": "78f837a85e79f1285e0720d9c3adbda6b3eef718"
+    "qualificationToolsRevision": "9426c94c066940688b91be5df17ad85a0f92c368"
   }
 }

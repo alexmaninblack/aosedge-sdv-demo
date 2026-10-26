@@ -79,7 +79,8 @@ def configuration(path, user):
     h.require('/.local/remote-qualification/' in value['records'], 'RECORD_LOCATION_INVALID')
     h.require(value['image'] in ('6.1.1-maninblack.39/main-qemuarm64',
                                 '6.1.1-maninblack.40/main-qemuarm64',
-                                '6.1.1-maninblack.41/main-qemuarm64'), 'FACTORY_OUTSIDE_ACCEPTED_SCOPE')
+                                '6.1.1-maninblack.41/main-qemuarm64',
+                                '6.1.1-maninblack.42/main-qemuarm64'), 'FACTORY_OUTSIDE_ACCEPTED_SCOPE')
     return value
 
 
