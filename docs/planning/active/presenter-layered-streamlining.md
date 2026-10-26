@@ -309,3 +309,33 @@ same pinned ROM as the installed owner. No Homebrew QEMU installation, retained
 Test mutation, Cloud enrollment, replacement backing image or security waiver
 is part of this boot-policy check. Per-Unit functional/security acceptance and
 the complete candidate API/UI campaign remain separate, uncompleted gates.
+
+The isolated M1 image boot-policy gate subsequently passed two cold boots of a
+fresh private overlay, using the same frozen `.42` image. On each boot sysctl
+reserved 55555 before a normal explicit systemd activation of `nfs-mountd`;
+128 IPv4/IPv6 automatic binds avoided it and explicit binding remained possible.
+SELinux was Enforcing with zero fresh AVCs. The normal guest poweroff path
+closed the two VMs in 5.507 and 4.091 seconds within the unchanged 90-second
+exit budget, with no forced termination. The final complete scenario took
+163.947 seconds; prior diagnostic attempts remain separate immutable evidence,
+not inherited passes. The read-only base image, installed package and retained
+Test journal were unchanged, and no owned listener or sleep assertion remained.
+
+The earlier unprovisioned probe incorrectly expected the full NFS server to be
+active. Read-only diagnosis showed that it stops after missing normal AosCore
+state/storage directories; `mountd` itself had started and then been stopped
+with that server. No artificial directories, exports, identity or credential
+were added. The boot-policy gate activates only the existing `mountd` unit and
+cleans that fixture before normal guest shutdown. A QMP-only test teardown did
+not confirm its first exit within 90 seconds; a separate transient proof of the
+existing product's guest-poweroff method passed in 5.158 seconds. No product
+stop timeout or runtime lifecycle implementation was changed for this test.
+
+This is `UNPROVISIONED_BOOT_POLICY_ONLY`, not a live registered-Unit, KUKSA
+authorization, fresh-controller or API/UI acceptance result. KUKSA correctly
+remains inactive behind its unprovisioned condition. The retained Test still
+uses its original Factory backing image. Full qualification of `.42` therefore
+requires a separately declared fresh Test/Unit policy, leaving that original
+Test intact; do not rebase its overlay or infer migration from package selection.
+No new Setup/DMG, main merge, public input promotion or option-A update was made
+by this Factory build and isolated gate.
