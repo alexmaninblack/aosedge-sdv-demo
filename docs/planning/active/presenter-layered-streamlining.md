@@ -191,3 +191,59 @@ Before another immutable-media/full campaign, close these bounded items:
 Main and option A remain unchanged. Adjacent native startup work, a fresh Setup
 first use, notarized distribution and the deferred VDP timeout are not qualified
 or silently included by this Presenter packet.
+
+## Authorized native-startup investigation and current gate
+
+The operator authorized the bounded native-startup investigation separately.
+It preserves the retained Test, overlay, Unit/Node bindings, credentials, Factory
+and CARLA inputs. It does not authorize a Factory rebuild, a weaker boot/trust
+guard or a change to the VDP timeout.
+
+The `PARTIAL` cause is now confirmed as
+`SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED`, not a slow guest or a short API
+timeout. The API already gives VM start 90 seconds. Earlier recovery called
+the inner source-selection owner and proved TLS connectivity, but did not
+complete the outer authentication operation, including anonymous-client rejection
+and the onboarding commit. Onboarding correctly remained `PENDING`; the strict
+retained-boot guard correctly refused it.
+
+Normal `vehicle.initialize` completed that same onboarding through the full owner
+chain. The anonymous client was rejected, the exact existing Unit/Node/overlay
+binding was retained, and onboarding became `COMPLETE`. The bounded recovery took
+113.877 seconds including simulator preparation and verified normal shutdown.
+A subsequent unchanged cold VM start completed normally. No journal editing,
+certificate replacement, timeout increase or guard bypass was used.
+
+Qualification now checks that retained onboarding is complete before expensive
+preparation. Its bounded job projection also preserves the fixed nested VM reason
+without exposing arbitrary facts, private text or identifiers to the browser.
+These are harness changes, not a new product recovery or trust interface.
+
+The independent NFS/KUKSA collision remains unresolved. A reversible QEMU-only
+proof passed one fixed public `sysctl.extra` setting through SMBIOS, intended to
+reserve port 55555 from automatic allocation before services start. Read-only
+evidence confirmed the setting in the firmware table, but not in systemd's
+imported settings or the effective kernel reservation. Factory's Linux disables
+both `CONFIG_DMI_SYSFS` and `CONFIG_FW_CFG_SYSFS`; systemd 255 therefore cannot
+read either supported firmware transport. The proof was removed by normal VM
+shutdown. It installed no guest configuration file or debug payload and changed
+no immutable image; ordinary guest runtime writes remain in the retained overlay.
+Failed metadata-only proof attempts are not runtime acceptance.
+
+The proposed fixed-public-setting transport is documented by
+[systemd 255](https://www.freedesktop.org/software/systemd/man/255/systemd.html#System%20credentials);
+the [kernel port policy](https://kernel.org/doc/html/v6.1/networking/ip-sysctl.html)
+excludes reserved ports from automatic allocation, not explicit KUKSA binding.
+This does not establish support in the current Factory. Do not include the
+ineffective QEMU arguments, disable NFS, add recurring NFS restarts, overwrite
+other reserved-port settings or change the established KUKSA endpoint.
+
+The remaining change request is owned by Factory: provide an early-boot port
+reservation that preserves any existing reservations and takes effect before
+NFS/KUKSA startup, then prove first boot, repeat, restart, both consumers and
+security under the normal deployed identities. An image rebuild requires separate
+authorization because this packet explicitly preserves the ready Factory bytes.
+Until that gate closes, no successor image is built and full API/UI acceptance
+remains **NOT COMPLETE / NOT RUN**. The installed `.2` candidate and public
+baseline are unchanged. All diagnostic check runtimes are closed; shared Docker,
+Test data and caches are preserved.

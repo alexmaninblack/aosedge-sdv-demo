@@ -162,6 +162,17 @@ class CampaignTests(unittest.TestCase):
             message='SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE:test')]))
         self.assertEqual(value['results'][0]['code'],'SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
 
+    def test_partial_vm_reason_survives_the_safe_public_vehicle_envelope(self):
+        value=w.job_projection(dict(state='PARTIAL',results=[dict(state='PARTIAL',
+            message='VM readiness is incomplete',facts=dict(vehicles=dict(test=dict(
+                state='BLOCKED',reason='SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED',
+                private='PRIVATE_TEXT'))))]))
+        self.assertEqual(value['results'][0]['code'],'SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED')
+        self.assertNotIn('PRIVATE_TEXT',json.dumps(value))
+        value=w.job_projection(dict(state='PARTIAL',results=[dict(state='PARTIAL',
+            facts=dict(vehicles=dict(test=dict(reason='private arbitrary text'))))]))
+        self.assertIsNone(value['results'][0]['code'])
+
     def test_bound_partial_create_can_continue_only_when_explicit(self):
         step=dict(id='controller-create',kind='presenter',args=dict(action='create'))
         calls=[]

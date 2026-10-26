@@ -84,9 +84,14 @@ def preparation_writer(environment, *, wait_owner=None):
 
 def job_projection(job):
     """Bounded product fields only; exclude arbitrary progress/text/logs."""
+    def reason(row):
+        facts = row.get('facts') if isinstance(row.get('facts'), dict) else {}
+        vehicles = facts.get('vehicles') if isinstance(facts.get('vehicles'), dict) else {}
+        test = vehicles.get('test') if isinstance(vehicles.get('test'), dict) else {}
+        return fixed_reason(row.get('message')) or fixed_reason(facts.get('reason')) or fixed_reason(test.get('reason'))
     return dict(productState=fixed_code(job.get('state')), results=[
         dict(state=fixed_code(row.get('state')),
-             code=fixed_reason(row.get('message')) or fixed_reason((row.get('facts') or {}).get('reason')))
+             code=reason(row))
         for row in job.get('results', [])[-12:]])
 
 

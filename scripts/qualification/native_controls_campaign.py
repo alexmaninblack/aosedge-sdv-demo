@@ -112,11 +112,27 @@ def inspect_preflight_pair(connection, oem, sp, retained):
     return dict(domain=first['domain'], rolesChecked=False)
 
 
+def inspect_preflight_onboarding(state):
+    """Mirror the native retained-boot guard without repairing its journal."""
+    if state is None:
+        return dict(state='READY', code=None)
+    vehicle = (state.get('vehicles') or {}).get('test') or {}
+    trust = ((state.get('source') or {}).get('trust') or {})
+    if trust.get('enabled') is not True or not (vehicle.get('unitId') or vehicle.get('nodeId')):
+        return dict(state='READY', code=None)
+    enrollment = trust.get('onboarding') or {}
+    complete = (enrollment.get('state') == 'COMPLETE' and bool(vehicle.get('unitId'))
+        and bool(vehicle.get('nodeId')) and enrollment.get('unitId') == vehicle['unitId']
+        and enrollment.get('nodeId') == vehicle['nodeId'])
+    return dict(state='READY' if complete else 'BLOCKED',
+                code=None if complete else 'SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED')
+
+
 def preflight(transport, config, expected, native_run_id, versions=None):
     """Single bounded M1 read: installed selection, stopped owners, desktop and Cloud."""
     request = dict(config=config, kind='observe', args={}, phase='observe',
                    requestId=str(uuid4()), expectedRun=expected)
-    program = j.WORKER.read_text() + '\n'+inspect.getsource(inspect_preflight_pair)+'\nREQUEST=' + repr(request) + '\nNATIVE_RUN_ID='+repr(native_run_id)+'\nVERSIONS='+repr(versions)+'''
+    program = j.WORKER.read_text() + '\n'+inspect.getsource(inspect_preflight_pair)+'\n'+inspect.getsource(inspect_preflight_onboarding)+'\nREQUEST=' + repr(request) + '\nNATIVE_RUN_ID='+repr(native_run_id)+'\nVERSIONS='+repr(versions)+'''
 answer=None;facts={}
 try:
  with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
@@ -124,6 +140,8 @@ try:
   with worker.imports():
    state=worker.binding(allow_empty=True)
    require((state is not None)==(REQUEST['expectedRun'] is not None),'CAMPAIGN_BASELINE_MODE_CONFLICT')
+   enrollment=inspect_preflight_onboarding(state)
+   require(enrollment['state']=='READY',enrollment['code'])
    require(subprocess.check_output(['/usr/bin/uname','-m'],text=True).strip()=='arm64','M1_ARM64_REQUIRED')
    require(Path('/dev/console').stat().st_uid==os.getuid(),'TARGET_CONSOLE_CHANGED')
    require(not (Path.home()/'SDV-Qualification'/NATIVE_RUN_ID).exists(),'NATIVE_CAMPAIGN_REPLAY_FORBIDDEN')

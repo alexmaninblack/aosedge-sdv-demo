@@ -18,6 +18,23 @@ def answer(outcome='PASS',code='CHECK_PASSED',**facts):
 
 
 class CampaignExecution(unittest.TestCase):
+    def test_retained_preflight_refuses_incomplete_or_foreign_onboarding(self):
+        for enrollment in ({}, dict(state='PENDING',unitId='unit',nodeId='node'),
+                           dict(state='COMPLETE',unitId='other',nodeId='node')):
+            value=dict(vehicles=dict(test=dict(unitId='unit',nodeId='node')),
+                       source=dict(trust=dict(enabled=True,onboarding=enrollment)))
+            self.assertEqual(c.inspect_preflight_onboarding(value),
+                dict(state='BLOCKED',code='SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED'))
+
+    def test_retained_preflight_accepts_matching_complete_and_does_not_write(self):
+        value=dict(vehicles=dict(test=dict(unitId='unit',nodeId='node')),
+                   source=dict(trust=dict(enabled=True,onboarding=dict(state='COMPLETE',unitId='unit',nodeId='node'))))
+        before=json.dumps(value,sort_keys=True)
+        self.assertEqual(c.inspect_preflight_onboarding(value),dict(state='READY',code=None))
+        self.assertEqual(json.dumps(value,sort_keys=True),before)
+        self.assertEqual(c.inspect_preflight_onboarding(None),dict(state='READY',code=None))
+        self.assertEqual(c.inspect_preflight_onboarding(dict(vehicles=dict(test={}),source=dict(trust=dict(enabled=True)))),dict(state='READY',code=None))
+
     def ops(self):
         return SimpleNamespace(config=dict(manifestSha256='a'*64),test=TEST,
             preflight=Mock(return_value=answer()),prepare=Mock(return_value=answer()),
