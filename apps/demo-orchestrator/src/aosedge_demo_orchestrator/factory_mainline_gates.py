@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
-"""Factory .37–.41 Builder-only gates; no live VM, credentials or Cloud access.
+"""Factory .37–.42 Builder-only gates; no live VM, credentials or Cloud access.
 
 Demo Control exports this committed file to the isolated ARM64 Builder. Tests
 use the recipe toolchain/sysroot and synthetic fixtures, not the running Test.
@@ -25,8 +25,8 @@ APP = "9d613a46df3c7f550062e2f19ae3406c57715694"
 LIB = "5560291ba6914e36a5b841ade4d8fc54134a9e91"
 API = "af3552a0a5eb0237eff7f5f183780ca46c339cd3"
 MANAGERS = ("aos-communicationmanager", "aos-servicemanager", "aos-iamanager")
-SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32, "39": 32, "40": 32, "41": 32}
-CM_LAUNCHER_TEST_COUNTS = {"37": 47, "38": 47, "39": 53, "40": 53, "41": 53}
+SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32, "39": 32, "40": 32, "41": 32, "42": 32}
+CM_LAUNCHER_TEST_COUNTS = {"37": 47, "38": 47, "39": 53, "40": 53, "41": 53, "42": 53}
 
 
 def require(condition, message):
@@ -220,7 +220,7 @@ class NativeGates:
                        SM_LAUNCHER_TEST_COUNTS[self.factory_suffix])])
         self.core(iam, [("aos_core_iam_permhandler_test", "iam-permissions", 7),
                         ("aos_core_common_pkcs11_test", "iam-pkcs11", 14)])
-        if self.factory_suffix in ("40", "41"):
+        if self.factory_suffix in ("40", "41", "42"):
             self.test(cm, unique_binary(cm / "build", "aos_cm_networkmanager_test"), "cm-vlan", 31)
         for work, name, label, count, skipped, disabled in (
             (sm, "aos_sm_runtimes_systemdslotcomponent_test", "vdp", 83, 2, 0),
@@ -257,9 +257,30 @@ def package_config(root):
     print("Mainline packaged IAM permission/cache topology: PASS", flush=True)
 
 
+def port_policy(root):
+    """The assembled rootfs must carry the proven fixed boot policy, not a repair."""
+    path = root / 'usr/lib/sysctl.d/99-aos-kuksa-ports.conf'
+    require(path.is_file() and not path.is_symlink() and path.stat().st_mode & 0o777 == 0o644,
+            'Factory port policy missing, linked or wrong mode')
+    lines = [line.strip() for line in path.read_text().splitlines() if line.strip() and not line.startswith('#')]
+    require(len(lines) == 1 and lines[0].startswith('net.ipv4.ip_local_reserved_ports = '),
+            'Factory port policy assignment changed')
+    ranges = lines[0].split(' = ', 1)[1].split(',')
+    require(all(re.fullmatch(r'[0-9]+(?:-[0-9]+)?', part) for part in ranges), 'Invalid reserved port list')
+    pairs = [tuple(map(int, part.split('-'))) for part in ranges]
+    require(all(0 <= pair[0] <= pair[-1] <= 65535 for pair in pairs)
+            and any(pair[0] <= 55555 <= pair[-1] for pair in pairs), 'KUKSA port is not reserved')
+    for unit in ('nfs-mountd.service', 'kuksa-databroker.service'):
+        path = root / 'usr/lib/systemd/system' / (unit + '.d/10-aos-kuksa-ports.conf')
+        require(path.is_file() and not path.is_symlink() and path.stat().st_mode & 0o777 == 0o644
+                and path.read_text() == '[Unit]\nRequires=systemd-sysctl.service\nAfter=systemd-sysctl.service\n',
+                'Factory finite port ordering changed')
+    print('Factory reserved KUKSA port and finite boot ordering: PASS', flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("preflight", "native", "package"))
+    parser.add_argument("phase", choices=("preflight", "native", "package", "ports"))
     parser.add_argument("--conf", type=Path)
     parser.add_argument("--root", type=Path)
     parser.add_argument("--evidence", type=Path)
@@ -272,6 +293,9 @@ def main():
     elif args.phase == "native":
         require(all((args.root, args.evidence, args.lock_source)), "native paths required")
         NativeGates(args.root, args.evidence, args.factory_suffix).run(args.lock_source)
+    elif args.phase == 'ports':
+        require(args.root is not None, '--root required')
+        port_policy(args.root)
     else:
         require(args.root is not None, "--root required")
         package_config(args.root)

@@ -46,6 +46,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.39": "793b1fc035d2b7c123f9a4161788955f389bb81d",
     "6.1.1-maninblack.40": "9adee816b4f942ceafb4d30da4adba318352bf59",
     "6.1.1-maninblack.41": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+    "6.1.1-maninblack.42": "81d098e5a958710d8c12a6bfdb86c7c493274920",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -72,10 +73,10 @@ def factory_component_support(revision):
                 supportedReadPaths=paths, sourceRevision=revision)
 
 
-def builder_ssh():
+def builder_ssh(*, legacy_alias=True):
     root = Path(os.environ.get("R61_BUILDER_ROOT", str(
         Path.home() / "Library/Application Support/CarlaAosEdge/YoctoBuilder")))
-    return ["ssh", "-p", "10024", "-o", "HostKeyAlias=[127.0.0.1]:10023",
+    return ["ssh", "-p", "10024", *(["-o", "HostKeyAlias=[127.0.0.1]:10023"] if legacy_alias else []),
             "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes",
             "-i", str(Path.home() / ".ssh/id_ed25519"), "-o", "StrictHostKeyChecking=yes",
             "-o", 'UserKnownHostsFile="' + str(root / "local/known_hosts") + '"',
@@ -983,7 +984,7 @@ def register_factory_support(destination, version, compatibility):
 
 def stage_mainline_factory_gates(ssh, remote, project, source, suffix="37"):
     """Export committed test tooling separately from the immutable Platform pin."""
-    if suffix not in ("37", "38", "39", "40", "41"):
+    if suffix not in ("37", "38", "39", "40", "41", "42"):
         raise EnvironmentError("FACTORY_MAINLINE_GATE_VERSION_UNSUPPORTED")
     solution = Path(__file__).resolve().parents[4]
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=solution):
@@ -1046,7 +1047,7 @@ def build_factory(version, metadata_only=False, *, storage_check=None, preserve_
         raise EnvironmentError("FACTORY_HOST_FREE_SPACE_BELOW_60_GIB")
     project = str(Path(BUILDER_PROJECT).parent)
     source = BUILDER_PROJECT + "/aos-vehicle-platform-" + revision
-    ssh = builder_ssh()
+    ssh = builder_ssh(legacy_alias=version != '6.1.1-maninblack.42')
     def remote(command, timeout=60, capture=True):
         result = subprocess.run(ssh + ["bash -lc " + shlex.quote(command)], timeout=timeout,
                                 stdout=subprocess.PIPE if capture else sys.stderr, stderr=sys.stderr, check=True)
@@ -1092,23 +1093,23 @@ def build_factory(version, metadata_only=False, *, storage_check=None, preserve_
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
         mainline = None
-        if suffix in ("37", "38", "39", "40", "41"):
+        if suffix in ("37", "38", "39", "40", "41", "42"):
             mainline = stage_mainline_factory_gates(ssh, remote, project, source, suffix)
             flags = " -R " + shlex.quote(mainline["conf"]) + " "
             stage("verify effective mainline pins and offline guards before compilation")
             print(remote(prefix + mainline["command"] + " preflight --conf " +
                          shlex.quote(mainline["conf"]) + " --factory-suffix " + suffix,
                          timeout=900), file=sys.stderr, flush=True)
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41") else "")
-        if suffix in ("34", "35", "36", "37", "38", "39", "40", "41"):
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42") else "")
+        if suffix in ("34", "35", "36", "37", "38", "39", "40", "41", "42"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38", "39", "40", "41") else "")
-        if suffix in ("38", "39", "40", "41"):
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38", "39", "40", "41", "42") else "")
+        if suffix in ("38", "39", "40", "41", "42"):
             # Compile/package the proven policy delta before image construction.
             targets += " refpolicy-aos"
-        if suffix in ("39", "40", "41"):
+        if suffix in ("39", "40", "41", "42"):
             targets += " aos-vehicle-data-provider-platform"
-        if suffix == "41":
+        if suffix in ("41", "42"):
             # Native Rust scope, timestamp and complete library tests execute
             # in do_compile, before this candidate can construct an image.
             targets += " kuksa-databroker"
@@ -1154,7 +1155,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             if "[  PASSED  ] " + str(expected_cm_tests) + " tests." not in cm_log:
                 raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
             test_log += cm_log
-        if suffix in ("34", "35", "36", "37", "38", "39", "40", "41"):
+        if suffix in ("34", "35", "36", "37", "38", "39", "40", "41", "42"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -1174,7 +1175,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41"):
+        if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -1189,7 +1190,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34", "35", "36", "37", "38", "39", "40", "41"):
+        if suffix in ("33", "34", "35", "36", "37", "38", "39", "40", "41", "42"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "
@@ -1199,7 +1200,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
         if mainline:
             print(remote(mainline["command"] + " package --root " + shlex.quote(mainline_root)),
                   file=sys.stderr, flush=True)
-        if suffix in ("39", "40", "41"):
+        if suffix in ("39", "40", "41", "42"):
             projection_check = (
                 "from pathlib import Path; import stat; "
                 "root=Path(%r); src=Path(%r); "
@@ -1216,6 +1217,14 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             print(remote("python3 -c " + shlex.quote(projection_check)), file=sys.stderr, flush=True)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
+        if suffix == '42':
+            stage('verify built rootfs port reservation and finite service ordering')
+            data = remote(prefix + 'bitbake' + flags + '-e aos-image-vm', timeout=180)
+            from .factory_mainline_gates import variable
+            rootfs = variable(data, 'IMAGE_ROOTFS')
+            if not rootfs.startswith(BUILDER_PROJECT + '/build-main/tmp/'):
+                raise EnvironmentError('FACTORY_ROOTFS_PATH_UNEXPECTED')
+            print(remote(mainline['command'] + ' ports --root ' + shlex.quote(rootfs)), file=sys.stderr, flush=True)
         output = "main-qemuarm64-factory-" + suffix + ".img"
         assembly = [output if item == "main-qemuarm64.img" else item for item in assembly[0]]
         assembly[0] = "/home/yocto/.local/bin/rouge"

@@ -55,7 +55,7 @@ class TimestampSuccessorFactoryTests(unittest.TestCase):
                          '9adee816b4f942ceafb4d30da4adba318352bf59')
         self.assertEqual(gates.CM_LAUNCHER_TEST_COUNTS['41'], 53)
         self.assertEqual(gates.SM_LAUNCHER_TEST_COUNTS['41'], 32)
-        self.assertIn('self.factory_suffix in ("40", "41")', inspect.getsource(gates.NativeGates.run))
+        self.assertIn('self.factory_suffix in ("40", "41", "42")', inspect.getsource(gates.NativeGates.run))
 
     def test_committed_gate_tooling_and_kuksa_before_image(self):
         calls = []

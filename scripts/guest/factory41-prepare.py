@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Prepare a new exact-source Factory41 tree; never import warm build outputs."""
+"""Prepare an explicitly declared exact-source Factory tree, not warm outputs."""
 import argparse
 import hashlib
 import json
@@ -35,16 +35,19 @@ def main():
     parser.add_argument('--project', type=Path, required=True)
     parser.add_argument('--source-cache', type=Path, required=True)
     args = parser.parse_args()
-    require(re.fullmatch(r'/home/yocto/r61-build/factory41-[a-z0-9-]+', str(args.project)), 'New Factory41 directory required')
+    require(re.fullmatch(r'/home/yocto/r61-build/factory(?:41|42)-[a-z0-9-]+', str(args.project)), 'New declared Factory directory required')
     for path in (args.input, args.project, args.source_cache):
         require(not any(p.is_symlink() for p in (path, *path.parents)), 'Linked input/workspace')
     require(run(['uname', '-m']).strip() == 'aarch64', 'ARM64 Builder required')
     require(run(['findmnt', '-n', '-o', 'FSTYPE', '-T', '/home/yocto']).strip() == 'ext4', 'Guest workspace must be ext4')
     require(shutil.disk_usage('/home/yocto').free >= 60 * 2**30, 'Guest free space below 60 GiB')
     lock = json.loads((args.input / 'recipe.json').read_text())
-    manifest = args.input / 'factory41.yaml'
+    require(lock['factoryVersion'] in ('6.1.1-maninblack.41', '6.1.1-maninblack.42'), 'Wrong recipe version')
+    suffix = lock['factoryVersion'].rsplit('.', 1)[1]
+    require(args.project.name.startswith('factory' + suffix + '-'), 'Factory project/version mismatch')
+    manifest = args.input / ('factory' + suffix + '.yaml')
     require(hashlib.sha256(manifest.read_bytes()).hexdigest() == lock['renderedManifestSha256'], 'Manifest digest mismatch')
-    require(lock['factoryVersion'] == '6.1.1-maninblack.41' and len(lock['sources']) == 9, 'Wrong recipe')
+    require(len(lock['sources']) == 9, 'Wrong recipe')
     require(run(['git', '-C', '/home/yocto/r61-work/moulin', 'rev-parse', 'HEAD']).strip()
             == 'cbecc1c748a8c5649e9a319b29167bf27dc4fc3a', 'Wrong Moulin revision')
     require(run(['/home/yocto/.local/pipx/venvs/moulin/bin/python', '-c',
@@ -91,10 +94,10 @@ def main():
     for command in configuration:
         run(['bash', '-c', command], cwd=args.project, capture=False)
     require(not (config / 'auto.conf').exists(), 'Warm auto.conf must not be inherited')
-    require('6.1.1-maninblack.41' in (config / 'moulin.conf').read_text(), 'Wrong generated version')
+    require(lock['factoryVersion'] in (config / 'moulin.conf').read_text(), 'Wrong generated version')
     require('r61-build/project/' not in (config / 'bblayers.conf').read_text(), 'Warm layer leaked')
-    override = args.project / 'factory41.conf'
-    override.write_text('require ' + str(source_root / 'aos-vehicle-platform/qualification/factory-41.conf')
+    override = args.project / ('factory' + suffix + '.conf')
+    override.write_text('require ' + str(source_root / lock['qualification'])
                         + '\nBB_NUMBER_THREADS = "2"\nPARALLEL_MAKE = "-j 4"\n')
     record = {'state': 'CONFIGURED_NOT_BUILT', 'sourceCount': len(lock['sources']),
               'inheritedWarmConfiguration': False, 'reusedDownloadsAndSstate': True,

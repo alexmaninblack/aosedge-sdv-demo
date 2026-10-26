@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Explicit Factory .41 recipe; historical .11 inputs remain immutable."""
+"""Explicit source Factory recipes; ready dependency inputs remain immutable."""
 from __future__ import annotations
 import hashlib
 import importlib.machinery
@@ -19,11 +19,16 @@ TEMPLATE = 'manifests/r6-1/aos-vm-project.pinned.yaml'
 TEMPLATE_SHA256 = 'b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e'
 HISTORICAL_PLATFORM = 'a12c0aa7f8a680b35407776b12bcc025970abc73'
 FACTORY_CHECKPOINT = 'workspace/inputs/controller-images.lock.json'
+CANDIDATE_VERSION = '6.1.1-maninblack.42'
+CANDIDATE_SOURCE = '81d098e5a958710d8c12a6bfdb86c7c493274920'
 
 
-def recipe(root=ROOT):
+def recipe(root=ROOT, version='6.1.1-maninblack.41'):
     factory = read_json(root / FACTORY_CHECKPOINT)['prebuilt']['factory']
     require(factory['version'] == '6.1.1-maninblack.41', 'Factory checkpoint version changed')
+    require(version in ('6.1.1-maninblack.41', CANDIDATE_VERSION), 'Factory source version not declared')
+    if version == CANDIDATE_VERSION:
+        factory = dict(factory, version=version, sourceRevision=CANDIDATE_SOURCE)
     template = (root / TEMPLATE).read_bytes()
     require(hashlib.sha256(template).hexdigest() == TEMPLATE_SHA256, 'Historical Factory template changed')
     text = template.decode()
@@ -45,7 +50,7 @@ def recipe(root=ROOT):
                     for url, rev in sorted(unique.items())],
         'parameters': ['--MACHINE=qemuarm64', '--NODE_TYPE=main',
                        '--WITH_MESSAGE_PROXY=no', '--CACHE_LOCATION=outside'],
-        'qualification': 'qualification/factory-41.conf',
+        'qualification': 'qualification/factory-' + version.rsplit('.', 1)[1] + '.conf',
         'historicalImageSha256': factory['sha256'],
         'historicalImageIsBuildInput': False,
     }
@@ -72,14 +77,16 @@ def input_archive(directory, members):
                             stdout=subprocess.PIPE, env=env)
 
 
-def prepare(storage, builder, source):
-    text, lock = recipe()
+def prepare(storage, builder, source, version='6.1.1-maninblack.41'):
+    text, lock = recipe(version=version)
+    suffix = version.rsplit('.', 1)[1]
+    family = 'factory' + suffix
     script = ROOT / 'scripts/guest/factory41-prepare.py'
     lock['guestAdapterSha256'] = hashlib.sha256(script.read_bytes()).hexdigest()
     key = digest(lock)
     output = storage.path('factory/' + key)
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
-    for name, payload in [('factory41.yaml', text.encode()),
+    for name, payload in [(family + '.yaml', text.encode()),
                           ('recipe.json', (json.dumps(lock, sort_keys=True, indent=2) + '\n').encode()),
                           ('factory41-prepare.py', script.read_bytes())]:
         path = output / name
@@ -102,7 +109,7 @@ def prepare(storage, builder, source):
     if not bundle.exists():
         git(checkout, ['bundle', 'create', str(bundle), 'HEAD'], env, timeout=120)
     ssh = builder.ssh_base()
-    ssh[-1:-1] = ['-o', 'HostKeyAlias=[127.0.0.1]:10023', '-o', 'ConnectTimeout=5']
+    ssh[-1:-1] = ([] if version == CANDIDATE_VERSION else ['-o', 'HostKeyAlias=[127.0.0.1]:10023']) + ['-o', 'ConnectTimeout=5']
     deadline = time.monotonic() + 90
     while True:
         try:
@@ -115,9 +122,9 @@ def prepare(storage, builder, source):
                 'Builder trust or authentication failed')
         require(time.monotonic() < deadline, 'Builder SSH boot deadline exceeded')
         time.sleep(1)
-    guest_input = '/home/yocto/r61-input/factory41-' + key[:16]
-    guest_project = '/home/yocto/r61-build/factory41-' + key[:16]
-    members = ['recipe.json', 'factory41.yaml', 'factory41-prepare.py', 'platform.bundle']
+    guest_input = '/home/yocto/r61-input/' + family + '-' + key[:16]
+    guest_project = '/home/yocto/r61-build/' + family + '-' + key[:16]
+    members = ['recipe.json', family + '.yaml', 'factory41-prepare.py', 'platform.bundle']
     hashes = {name: hashlib.sha256((output / name).read_bytes()).hexdigest() for name in members}
     probe = ('import hashlib,json; from pathlib import Path; p=Path(%r); expected=%r; '
              'assert not any(x.is_symlink() for x in (p,*p.parents)); '
@@ -146,6 +153,8 @@ def prepare(storage, builder, source):
     require(result.returncode == 0, 'Factory preparation failed; inspect preserved log: ' + str(log))
     result = {'status': 'FACTORY_CONFIGURED_NOT_BUILT', 'key': key, 'project': guest_project,
               'platform': str(checkout), 'input': guest_input, 'hostOutput': str(output)}
+    if version == CANDIDATE_VERSION:
+        result['version'] = version
     atomic_json(output / 'preparation.json', result)
     return result
 
@@ -160,9 +169,10 @@ def build_factory(storage, prepared):
     storage.check(additional=40*2**30, reserve=90*2**30)
     owner.FACTORY_SOURCE = Path(prepared['platform'])
     owner.BUILDER_PROJECT = prepared['project'] + '/yocto'
-    owner.ARTIFACT = storage.path('factory-results/runtime-proofs/factory41')
+    version = prepared.get('version', '6.1.1-maninblack.41')
+    owner.ARTIFACT = storage.path('factory-results/runtime-proofs/factory' + version.rsplit('.', 1)[1])
     storage.path('factory-results/factory-images').mkdir(parents=True, exist_ok=True)
-    result = owner.build_factory('6.1.1-maninblack.41', preserve_layer_binding=True,
+    result = owner.build_factory(version, preserve_layer_binding=True,
                                  storage_check=lambda: storage.check(reserve=90*2**30))
     atomic_json(storage.path('factory-results/result.json'), result)
     return {'status': 'FACTORY_BUILT_NOT_QUALIFIED', 'image': result['factoryImage']}
@@ -175,9 +185,10 @@ def main(argv=None):
     parser.add_argument('--storage', type=Path)
     parser.add_argument('--builder-root', type=Path)
     parser.add_argument('--platform-source', type=Path)
+    parser.add_argument('--version', choices=('6.1.1-maninblack.41', CANDIDATE_VERSION), default='6.1.1-maninblack.41')
     args = parser.parse_args(argv)
     if args.action == 'plan':
-        _, value = recipe()
+        _, value = recipe(version=args.version)
         value['status'] = 'RECIPE_DECLARED_NOT_BUILT'
         print(json.dumps(value, sort_keys=True))
         return 0
@@ -187,7 +198,7 @@ def main(argv=None):
         builder = builder_module(storage, args.builder_root)
         try:
             builder.start(False)
-            prepared = prepare(storage, builder, args.platform_source)
+            prepared = prepare(storage, builder, args.platform_source, args.version)
             value = build_factory(storage, prepared) if args.action == 'build' else prepared
             print(json.dumps(value, sort_keys=True))
         finally:

@@ -18,6 +18,18 @@ from reproduction.core import LabError
 
 
 class FactoryRecipeTests(unittest.TestCase):
+    def test_candidate_is_explicit_and_preserves_the_ready_default(self):
+        original, baseline = factory.recipe()
+        rendered, candidate = factory.recipe(version=factory.CANDIDATE_VERSION)
+        self.assertEqual(baseline['factoryVersion'], '6.1.1-maninblack.41')
+        self.assertEqual(candidate['factoryVersion'], '6.1.1-maninblack.42')
+        self.assertEqual(candidate['platformRevision'], factory.CANDIDATE_SOURCE)
+        self.assertEqual(candidate['qualification'], 'qualification/factory-42.conf')
+        self.assertEqual(rendered.replace(candidate['factoryVersion'], baseline['factoryVersion'])
+                         .replace(candidate['platformRevision'], baseline['platformRevision']), original)
+        self.assertFalse(candidate['historicalImageIsBuildInput'])
+        with self.assertRaisesRegex(LabError, 'not declared'):
+            factory.recipe(version='6.1.1-maninblack.43')
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS archive metadata regression')
     def test_transfer_excludes_macos_appledouble_sidecars(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -238,12 +238,49 @@ This does not establish support in the current Factory. Do not include the
 ineffective QEMU arguments, disable NFS, add recurring NFS restarts, overwrite
 other reserved-port settings or change the established KUKSA endpoint.
 
-The remaining change request is owned by Factory: provide an early-boot port
+The remaining change is owned by Factory: provide an early-boot port
 reservation that preserves any existing reservations and takes effect before
 NFS/KUKSA startup, then prove first boot, repeat, restart, both consumers and
 security under the normal deployed identities. An image rebuild requires separate
-authorization because this packet explicitly preserves the ready Factory bytes.
-Until that gate closes, no successor image is built and full API/UI acceptance
+authorization because the original packet preserved the ready Factory bytes.
+On 26 October the operator authorized that exact fix and a Factory rebuild,
+using only external SSD storage. The change is limited to normal early-boot
+sysctl configuration reserving KUKSA port 55555, preserving other effective
+reservations and rejecting an ambiguous or overriding configuration at build
+time. Normal finite boot ordering makes both services require the existing
+systemd sysctl pass; no recurring restart or new lifecycle controller is added.
+Do not change the kernel, firmware transport, service authority or timeout policy.
+Reuse available pinned inputs and run static and transient negative/repeat proofs
+before image assembly.
+The new image is separate from the retained Test's existing backing image:
+never rebase or replace that backing image to make the Test appear upgraded.
+Until the new-image gate closes, full API/UI acceptance
 remains **NOT COMPLETE / NOT RUN**. The installed `.2` candidate and public
 baseline are unchanged. All diagnostic check runtimes are closed; shared Docker,
 Test data and caches are preserved.
+
+The transient replacement proof passed in a disposable M1 guest network
+namespace: 128 IPv4/IPv6 automatic allocations avoided the reserved pair,
+explicit port 55555 remained bindable, an existing reservation survived,
+idempotent systemd-sysctl reapplication passed, and no fresh AVC was observed.
+The parent guest's policy remained unchanged and normal shutdown confirmed no
+owned process/listener. This is kernel/configuration evidence, not image boot
+or complete API/UI acceptance.
+
+Factory source candidate `.42` is pinned to Platform
+`81d098e5a958710d8c12a6bfdb86c7c493274920` in the same separate review branch.
+The ready `.41` lock/default and published package remain unchanged. Image
+assembly must verify the resulting sysctl file and exact finite ordering before
+disk assembly. Existing native/package/security gates remain required.
+
+The retained Builder disk was absent from all connected project volumes. The
+operator explicitly authorized a replacement. A new SSD-only Builder passed
+host binding, 220-GiB backing-chain, ARM64/Linux clean-state and pinned tool
+checks in 147.012 seconds. The old Ubuntu URL returned 404; the new Builder pins
+the dated official Ubuntu 22.04 image of 20 October 2026 and its official
+SHA-256, with HTTPS-only redirect policy. This changes the build-host input,
+not the Factory's pinned kernel or target source revisions. Eight upstream layer
+checkouts were freshly acquired and verified by exact commit. Downloads/sstate
+are initially empty; dependency acquisition must be explicit and separate from
+offline compilation. Builder disk, caches, sources and image output stay on
+SDV-Dev; there is no internal-storage fallback.

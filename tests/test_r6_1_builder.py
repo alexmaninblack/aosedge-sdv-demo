@@ -60,6 +60,13 @@ class R61BuilderTests(unittest.TestCase):
                 "http://cloud-images.ubuntu.com/insecure.img"
             )
 
+    def test_fresh_builder_uses_one_dated_official_image_not_a_moving_release(self):
+        self.assertEqual(BUILDER.IMAGE_URL,
+            'https://cloud-images.ubuntu.com/releases/jammy/release-20261020/ubuntu-22.04-server-cloudimg-arm64.img')
+        self.assertEqual(BUILDER.IMAGE_SHA256,
+            'e720ae083f93baae47ac9b76a096243fe1027f60998cf1127a47a74c880f64ed')
+        self.assertIn('"--proto-redir",\n            "=https"', SCRIPT.read_text())
+
     def test_cloud_init_has_no_password_or_private_key(self) -> None:
         public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITest r61-test"
         files = BUILDER.cloud_init_files(public_key)
