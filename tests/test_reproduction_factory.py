@@ -3,6 +3,7 @@
 """Factory recipe generation does not inherit warm configuration or outputs."""
 import hashlib
 import io
+import inspect
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,12 @@ from reproduction.core import LabError
 
 
 class FactoryRecipeTests(unittest.TestCase):
+    def test_fresh_builder_input_parent_is_created_only_after_path_and_content_probe(self):
+        source = inspect.getsource(factory.prepare)
+        self.assertLess(source.index('exists = subprocess.check_output'), source.index("'mkdir -p -m 0700 -- '"))
+        self.assertIn('not any(x.is_symlink()', source)
+        self.assertIn('tar --keep-old-files', source)
+
     def test_candidate_is_explicit_and_preserves_the_ready_default(self):
         original, baseline = factory.recipe()
         rendered, candidate = factory.recipe(version=factory.CANDIDATE_VERSION)

@@ -136,7 +136,7 @@ def prepare(storage, builder, source, version='6.1.1-maninblack.41'):
     exists = subprocess.check_output(ssh + ['python3 -c ' + shlex.quote(probe)], text=True, timeout=60).strip() == '1'
     # Source-only input transfer; no previous image, tmp, config or sstate output.
     if not exists:
-        subprocess.run(ssh + ['mkdir ' + shlex.quote(guest_input)], check=True, timeout=30)
+        subprocess.run(ssh + ['mkdir -p -m 0700 -- ' + shlex.quote(guest_input)], check=True, timeout=30)
         archive = input_archive(output, members)
         try:
             subprocess.run(ssh + ['tar --keep-old-files -xf - -C ' + shlex.quote(guest_input)], stdin=archive.stdout, check=True, timeout=120)
