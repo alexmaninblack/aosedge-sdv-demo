@@ -48,8 +48,11 @@ def read_failure(worker, error):
     if code:
         return code, {}
     stage = getattr(worker, '_observation_stage', None)
-    stages = {'LOCAL_BINDING', 'LOCAL_GUEST_COMMAND', 'LOCAL_GUEST_JSON', 'LOCAL_CONTROLLER'}
+    stages = {'LOCAL_BINDING', 'LOCAL_GUEST_COMMAND', 'LOCAL_GUEST_JSON', 'LOCAL_CONTROLLER',
+              'BACKEND_HTTP', 'BACKEND_NATIVE', 'BACKEND_PROJECTION'}
     kinds = {'JSONDecodeError':'JSON', 'UnicodeDecodeError':'ENCODING', 'TimeoutExpired':'TIMEOUT',
+             'TimeoutError':'TIMEOUT', 'URLError':'NETWORK', 'HTTPError':'HTTP',
+             'RemoteDisconnected':'DISCONNECTED', 'IncompleteRead':'INCOMPLETE',
              'KeyError':'KEY', 'TypeError':'TYPE', 'AttributeError':'ATTRIBUTE'}
     kind = kinds.get(type(error).__name__)
     if stage in stages and kind and worker.request.get('kind') in ('observe','hold'):
@@ -526,6 +529,13 @@ class Worker:
         finally:
             reader.pool.shutdown(wait=True)
 
+    def projected_backend(self, team):
+        self._observation_stage = ('BACKEND_HTTP' if self.args.get('browserProjection')
+                                   else 'BACKEND_NATIVE')
+        value = self.backend(team)
+        self._observation_stage = 'BACKEND_PROJECTION'
+        return backend_projection(value)
+
     def service_reference(self, identity):
         from aosedge_demo_orchestrator.service_packages import ServicePackages
         native = [r for r in ServicePackages(self.app.environment_service).receipts()['releases']
@@ -807,11 +817,11 @@ class Worker:
             return {k:value.get(k) for k in ('stage','source','version','serviceId','deploymentId','versionId')}
         if query == 'local': return self.local(require_teams=False)
         if query == 'combined':
-            return dict(local=self.local(), brake=backend_projection(self.backend('brake')),
-                        tire=backend_projection(self.backend('tire')))
+            return dict(local=self.local(), brake=self.projected_backend('brake'),
+                        tire=self.projected_backend('tire'))
         if query == 'backend':
             require(self.args['team'] in ('brake','tire'), 'TEAM_INVALID')
-            return backend_projection(self.backend(self.args['team']))
+            return self.projected_backend(self.args['team'])
         if query == 'service':
             require(self.args['team'] in ('brake','tire'), 'TEAM_INVALID')
             return service_projection(exchange('platform'), self.args['team'])

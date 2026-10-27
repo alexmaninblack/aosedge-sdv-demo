@@ -727,10 +727,10 @@ class ProjectionTests(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         path=Path(tmp.name).resolve()/'config.json'
-        for suffix in ('39', '40', '41', '42', '../40'):
+        for suffix in ('39', '40', '41', '42', '43', '../40'):
             value['image']='6.1.1-maninblack.'+suffix+'/main-qemuarm64'
             path.write_text(json.dumps(value)); path.chmod(0o600)
-            if suffix in ('39','40','41'):
+            if suffix in ('39','40','41','42'):
                 self.assertEqual(j.configuration(path,'tester')['image'],value['image'])
             else:
                 with self.assertRaisesRegex(h.Error,'FACTORY_OUTSIDE_ACCEPTED_SCOPE'):
@@ -972,6 +972,38 @@ class DockerPolicyTests(unittest.TestCase):
              patch.object(w,'wait_for_exit',return_value=dict(ownedDemoListeners=0,ownedDemoProcesses=0)):
             self.assertEqual(worker.shutdown()['outcome'],'PASS')
         self.assertEqual(calls,[('simulation','stop'),('vm','stop'),('workspace','close')])
+
+
+class BoundedBackendReadDiagnosticsTests(unittest.TestCase):
+    def test_read_errors_keep_only_fixed_stage_and_class(self):
+        from types import SimpleNamespace
+        from urllib.error import HTTPError, URLError
+        cases = [('BACKEND_HTTP', TimeoutError('SECRET URL'), 'TIMEOUT'),
+                 ('BACKEND_HTTP', URLError('SECRET token'), 'NETWORK'),
+                 ('BACKEND_HTTP', HTTPError('SECRET',503,'SECRET',{},None), 'HTTP'),
+                 ('BACKEND_PROJECTION', TypeError('SECRET payload'), 'TYPE'),
+                 ('BACKEND_NATIVE', KeyError('SECRET field'), 'KEY')]
+        for stage, error, kind in cases:
+            worker=SimpleNamespace(_observation_stage=stage,request={'kind':'observe'})
+            code,facts=w.read_failure(worker,error)
+            self.assertEqual(code,'WORKER_'+stage+'_'+kind)
+            self.assertEqual(facts,dict(readStage=stage,errorClass=kind))
+            self.assertNotIn('SECRET',json.dumps([code,facts]))
+        self.assertEqual(w.read_failure(worker,ValueError('BACKEND_NOT_OBSERVED')),
+                         ('BACKEND_NOT_OBSERVED',{}))
+
+    def test_backend_read_and_projection_are_not_retried_or_replaced(self):
+        worker=object.__new__(w.Worker);worker.args={'browserProjection':True}
+        with patch.object(worker,'backend',side_effect=TimeoutError('SECRET')) as read:
+            with self.assertRaises(TimeoutError):worker.projected_backend('tire')
+            read.assert_called_once_with('tire')
+            self.assertEqual(worker._observation_stage,'BACKEND_HTTP')
+        value={'state':'OBSERVED','observations':{}}
+        with patch.object(worker,'backend',return_value=value) as read, \
+             patch.object(w,'backend_projection',side_effect=TypeError('SECRET')) as projection:
+            with self.assertRaises(TypeError):worker.projected_backend('tire')
+            read.assert_called_once_with('tire');projection.assert_called_once_with(value)
+            self.assertEqual(worker._observation_stage,'BACKEND_PROJECTION')
 
 
 if __name__=='__main__':unittest.main()
