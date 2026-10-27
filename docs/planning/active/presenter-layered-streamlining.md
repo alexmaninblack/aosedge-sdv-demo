@@ -3,7 +3,8 @@
 
 # Layered Presenter implementation and qualification packet
 
-Status: operator accepted, 26 October 2026; implementation in the separate
+Status: operator accepted, 26 October 2026; latest M1 review 27 October 2026;
+implementation in the separate
 `codex/presenter-ui-stability` branch. Main and public option A do not advance
 until the successor's review. This packet supersedes the previous visual
 proposal, not its qualified immutable media or retained evidence.
@@ -66,13 +67,13 @@ is reused without routine Engine restarts. No public distribution or merge yet.
 
 | Gate | Work and acceptance | State |
 | --- | --- | --- |
-| 1. Contract/source | Update installed interaction text; implement all accepted review groups together with state/navigation regressions | Implemented; a captured Cloud inventory clipping correction follows the installed source freeze |
+| 1. Contract/source | Update installed interaction text; implement all accepted review groups together with state/navigation regressions | Implemented in the `.3` candidate, including the Cloud inventory clipping correction; remaining visual findings are listed below |
 | 2. Local verification | Unit/type/static/docs/confidentiality gates; no developer-Mac browser or runtime | 390 Presenter unit tests, type/web compilation, 92 Python and 46 JavaScript qualification tests, docs and source gates pass |
 | 3. M1 visual fixtures | One semantic fixture scenario on M1; layered boundaries, icon mapping, child navigation, state/geometry assertions | 154/154 pass after the captured Cloud row correction, no skips/retries/flaky tests; 39.889 seconds; browser and fixture server closed |
-| 4. Immutable media | Freeze successor source; warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | Canonical chain 17/17 built in 768.850 seconds; matching-M1-team media assembled in 540.183 seconds |
-| 5. Retained update | Normal package update and launcher selection on M1; exact signature/capacity and unchanged Test/data bindings | Pass for the frozen `.2` candidate; Test and data retained |
-| 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Not complete: retained VM dependency/startup failures stop API acceptance; full UI not run |
-| 7. Review handoff | Before/after screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve Test/data; close owned check runtimes | Partial screenshots and failed attempts retained; final owned runtime closure confirmed; no acceptance or promotion |
+| 4. Immutable media | Freeze successor source; warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | `.3`: canonical 17/17 in 675.396 seconds; matching-M1-team media in 510.170 seconds; no CARLA/Factory rebuild in packaging |
+| 5. Installation/Test policy | Normal signed installation/selection with exact signature/capacity and declared Test policy | `.3` install/selection passed in 413.157 seconds; the operator-authorized old Test was retired normally and a new Factory `.42` Test was created |
+| 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Fresh API 118/118 PASS in 1,795.166 seconds; final continuous visible UI 42/42 PASS in 1,244.203 seconds; separate native-controls 15/15 PASS |
+| 7. Review handoff | Screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve current Test/data; close owned check runtimes | Evidence and failed attempts preserved; final zero owned processes/listeners and detached media confirmed; four visual follow-ups and a native Reset-display coverage gap remain; no main/public promotion |
 
 Use normal scripted entries under [qualification](../../../scripts/qualification/README.md).
 The agent launches the scenario; routine steps do not wait for agent clicks.
@@ -375,3 +376,82 @@ only by the maintainer build's explicit `--factory-inputs` plus
 source closure and verifies the same manifest/image/QA/provenance guards. No
 automatic image adoption, receipt rebinding, cache namespace change or public
 default promotion is part of this candidate selection.
+
+## Latest `.3` M1 result — 27 October 2026
+
+This is the current gate summary. The `.2` attempts and native investigation
+above are preserved diagnostic provenance, not the latest qualification state.
+
+The immutable product source is `ba43e23f4e2bc27ce8f388050fb530272f5f5cca`,
+version `1.2.0-rc.4-presenter.3`, application manifest
+`b52101995a45044d74e246c42ddd3cac18f13ba3a52e1e0ed6a29f1e449c9b8e`.
+The M1-team signed DMG is 14,161,585,913 bytes, SHA-256
+`79bee97b2eaced6a6403087b68452279b6b82caee3495a854952048c60fb6f9d`.
+The already-built Factory `.42` and CARLA were reused. The original signature
+was reconciled after secure input; no key was exported or signing replayed.
+
+The fresh API matrix passed all 118 steps: normal Setup prerequisites, Create,
+registration, VDP V1–V3, Brake V1–V3, Tire V1, products/advisories, independent
+Reset, five-minute offline work/delivery, ignition, ordinary Stop/Start and
+post-restart products. The final visible continuous UI matrix passed all 42
+stages, including Platform publication views, installed details, backend Records,
+Reset, cancelled Stop, moving SOTA, native manoeuvres and retained Stop/Start.
+A separate 15-stage native-controls scenario also passed without publication.
+No earlier failed attempt supplies a passing stage to these complete scenarios.
+
+The first fresh API preparation correctly rejected a terminal historical Setup
+receipt whose backend archive differed from the selected package. Exact schema,
+same engine, completed receipt, no Test, no owners and no open handles were
+proved before the authorized old-experiment cleanup moved only that receipt to
+private recovery evidence. No unresolved import, guard or product code was removed.
+Fresh normal image preparation then passed; the original failure remains recorded.
+
+The first visible UI attempt passed VDP/Brake V1–V3 but failed a backend read
+after the Tire mouse input. SSH had no failed read requests. The native exercise
+was subsequently observed completed; independent reads and normal scoped shutdown
+then passed, preserving Test/data. This is not a retroactive passing UI result.
+The harness-only `20c6b1a` change adds fixed backend HTTP/native/projection error
+stages/classes, with no payload, retry, timeout or postcondition change. Its 109
+local qualification checks, confidentiality and documentation gates pass.
+The focused native and final complete UI campaigns did not reproduce the original
+read failure. Its root cause is **unresolved**, not silently labelled fixed.
+
+### Visual review and Reset coverage
+
+The API observer captured 340 screenshots and 3,344 presentation samples with
+zero observation errors. Final continuous UI recorded 2,250 samples with zero
+fixed-shell movements/errors; native controls recorded 635 with the same result.
+Original icons, Layered peer/shared/base boundaries and VDP/tab icon mapping
+are retained. Cloud-only Offline does not become a locally stopped controller.
+Known releases show capability plus release; the unupdated image is explicitly
+Factory baseline, not invented V1 metadata.
+
+Four visible follow-ups remain, despite functional scenario passes:
+
+1. First Create removes Advanced preparation and shifts architecture content
+   upward by 26.2 pixels. Navigation, guide and footer stay fixed. This is a
+   one-time lifecycle transition, not a routine-refresh flicker.
+2. Contextual primary-label changes alter button width (32 observed changes,
+   maximum 56.8 pixels). The shell gate intentionally excludes changed labels;
+   its zero-movement result must not imply constant button width.
+3. Records' bounded-read count touches the Service release filter label.
+4. Operations' completed status touches its timestamp. Chronological order and
+   receipts pass, but text separation needs a visual correction.
+
+API and real UI Reset independently require the matching `CLEARED` command,
+unchanged peer model and preserved histories. Captured Presenter states show
+pending/disabled input followed by No new result after reset, not a healthy
+vehicle claim. Brake reset retains the Tire assessment; Tire reset clears only
+its own current summary. Live UI Reset passed in 18.236/12.187 seconds.
+Intermediate text/button states are captured but not all individually asserted;
+the native Driving Control advisory's visual disappearance is not independently
+asserted by this matrix. Do not infer that full native display chain from a
+Gateway acknowledgement alone.
+
+All owned demo processes/listeners, browser/native runners and display assertions
+closed; owned media detached. Shared Docker remains running with no demo
+containers. The new Test, VM/data, credentials, release continuity, media,
+dependencies and caches are preserved. No main merge, public catalog/option-A
+promotion or Dropbox upload occurred. Native Setup credential first-use, broader
+native-shell/R4 acceptance, notarization and the deferred VDP timeout remain
+outside these scenario claims; generic `fullE2E` remains `NOT_COMPLETE` for them.
