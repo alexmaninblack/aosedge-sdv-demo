@@ -4,10 +4,35 @@
 # Layered Presenter implementation and qualification packet
 
 Status: operator accepted, 26 October 2026; latest M1 review 27 October 2026;
-implementation in the separate
-`codex/presenter-ui-stability` branch. Main and public option A do not advance
-until the successor's review. This packet supersedes the previous visual
-proposal, not its qualified immutable media or retained evidence.
+source integration into `main` authorized on 28 October 2026. The separate
+`codex/presenter-ui-stability` branch remains a review-history reference.
+This packet supersedes the previous visual proposal, not its qualified
+immutable media or retained evidence.
+
+## Accepted source version
+
+The accepted integration and Platform source baseline is tagged
+`sdv-lab-v1.2.0-rc.4-presenter.3` in both repositories. Platform is pinned to
+`81d098e5a958710d8c12a6bfdb86c7c493274920`, the already-built Factory `.42`
+source. Integration includes the 25 reviewed commits through `7de17e8` plus
+this acceptance record; the 13 local promotion-capture commits are excluded.
+History is preserved by fast-forward integration, without rewriting commits.
+
+The version names the existing `.3` engineering candidate described below;
+this is source acceptance, not a new DMG build, public distribution or full
+release qualification. Option A remains on its published `1.2.0-rc.4` descriptor.
+Frozen B producer/input locks, ready Factory `.41`, explicit review Factory `.42`,
+binary manifests and caches are not rebound by the merge or tag. A future
+build/delivery promotion requires its own explicit selection and acceptance.
+
+Integration-time local gates passed: 390 Presenter unit tests and TypeScript
+checking; 96 qualification Python and 46 qualification JavaScript tests;
+94 integration qualification, 278 reproduction, 32 Factory-adapter and 42 Unit
+owner tests; 11 Platform Factory tests and Platform contract/layer validation.
+Workspace documentation checked 205 Markdown documents; confidentiality,
+release-definition, launcher-pin and whitespace gates also passed. No new
+build, installed runtime, M1/E2E campaign or public delivery was started for
+this source integration.
 
 ## Accepted product contract
 
@@ -61,7 +86,8 @@ Adjacent Setup/native findings remain separately owned, not silently fixed here.
 Preserve current/rollback DMG, retained Test and working disk, all data/history,
 certificates, release ledgers, ready CARLA/Factory inputs and verified caches.
 Build/packaging/scratch remain on SDV-Dev. M1 uses its internal storage. Docker
-is reused without routine Engine restarts. No public distribution or merge yet.
+is reused without routine Engine restarts. The 28 October authorization permits
+source integration and tagging only; public delivery remains separate.
 
 ## Ordered gates
 
@@ -73,7 +99,7 @@ is reused without routine Engine restarts. No public distribution or merge yet.
 | 4. Immutable media | Freeze successor source; warm Setup/DMG assembly with existing CARLA/Factory and authorized signature | `.3`: canonical 17/17 in 675.396 seconds; matching-M1-team media in 510.170 seconds; no CARLA/Factory rebuild in packaging |
 | 5. Installation/Test policy | Normal signed installation/selection with exact signature/capacity and declared Test policy | `.3` install/selection passed in 413.157 seconds; the operator-authorized old Test was retired normally and a new Factory `.42` Test was created |
 | 6. Complete API/UI | One scenario owns ordered API observations then complete visible UI, real independent effects, source-specific statuses, Platform publication checks, Reset/offline/moving-SOTA/Stop-Start and cleanup | Fresh API 118/118 PASS in 1,795.166 seconds; final continuous visible UI 42/42 PASS in 1,244.203 seconds; separate native-controls 15/15 PASS |
-| 7. Review handoff | Screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve current Test/data; close owned check runtimes | Evidence and failed attempts preserved; final zero owned processes/listeners and detached media confirmed; four visual follow-ups and a native Reset-display coverage gap remain; no main/public promotion |
+| 7. Review handoff | Screenshots, timings and explicit PASS/FAIL/NOT_RUN map; preserve current Test/data; close owned check runtimes | Evidence and failed attempts preserved; final zero owned processes/listeners and detached media confirmed; four visual follow-ups remain; native Reset received the separate visual proof below; source integration authorized, public promotion separate |
 
 Use normal scripted entries under [qualification](../../../scripts/qualification/README.md).
 The agent launches the scenario; routine steps do not wait for agent clicks.
@@ -448,10 +474,32 @@ the native Driving Control advisory's visual disappearance is not independently
 asserted by this matrix. Do not infer that full native display chain from a
 Gateway acknowledgement alone.
 
+A separate focused follow-up on 27 October closed that visual-evidence gap
+using actual M1 Driving Control pixels through existing Screen Sharing. Both
+teams initially showed Inspection recommended. Normal installed Presenter API
+Reset changed Brake to Monitoring while Tire's warning remained; Tire Reset
+then changed Tire to Monitoring. LIVE remained visible, and a later sample
+still showed both Monitoring, not Unavailable. The DRIVER ADVISORY section and
+its rows stay present; the warning text and orange colour disappear. Presenter
+can still show Reset pending after the native display has cleared, before the
+correlated confirmation changes its summary to No new result after reset.
+
+Matching Gateway CLEARED command IDs, unchanged peer model and preservation of
+both historical product-ID sets passed independently. This is sampled visual
+witness evidence, not an unattended pixel assertion, continuous video, new
+browser-click acceptance or another complete E2E campaign. First captured clear
+frames were within 10.058/13.238 seconds of the corresponding scenario step
+starting; these are sampling upper bounds, not exact UI latency. Normal closure
+again confirmed zero owned processes/listeners, with Test/data and shared Docker
+preserved. The private fixture's initial Tire severity assumption was corrected
+explicitly to warning presence/peer preservation; Replacement severity was not
+observed or claimed.
+
 All owned demo processes/listeners, browser/native runners and display assertions
 closed; owned media detached. Shared Docker remains running with no demo
 containers. The new Test, VM/data, credentials, release continuity, media,
-dependencies and caches are preserved. No main merge, public catalog/option-A
-promotion or Dropbox upload occurred. Native Setup credential first-use, broader
-native-shell/R4 acceptance, notarization and the deferred VDP timeout remain
+dependencies and caches are preserved. The 27 October qualification did not
+merge main, promote the public catalog/option A or upload to Dropbox; the later
+source-only acceptance above does not change those delivery facts. Native Setup
+credential first-use, broader native-shell/R4 acceptance, notarization and the deferred VDP timeout remain
 outside these scenario claims; generic `fullE2E` remains `NOT_COMPLETE` for them.
