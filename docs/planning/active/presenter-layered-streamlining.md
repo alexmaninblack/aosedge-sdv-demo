@@ -4,8 +4,9 @@
 # Layered Presenter implementation and qualification packet
 
 Status: operator accepted, 26 October 2026; latest M1 review 27 October 2026;
-source integration into `main` authorized on 28 October 2026. The separate
-`codex/presenter-ui-stability` branch remains a review-history reference.
+source integration into `main` authorized on 28 October 2026. The merged
+review branch was removed after integration; its commits remain reachable
+through `main` and the accepted source tag below.
 This packet supersedes the previous visual proposal, not its qualified
 immutable media or retained evidence.
 
