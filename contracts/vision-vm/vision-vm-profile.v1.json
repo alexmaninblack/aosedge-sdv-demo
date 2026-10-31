@@ -1,0 +1,18 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-vm-engineering-profile",
+  "profile": "aos-vision-main-qemuarm64-v1",
+  "cpus": 4,
+  "memoryMiB": 4096,
+  "testSshPort": 12022,
+  "testOnly": true,
+  "accelerator": "hvf",
+  "cpu": "host",
+  "graphicsPassthrough": false,
+  "initialFactory": "6.1.1-maninblack.42/main-qemuarm64",
+  "mainProfileUnchanged": "aos-main-qemuarm64-v1",
+  "selection": "Explicit environment construction before fresh manufacture; journal vmProfile binding, no retained re-profile",
+  "authority": "ADR-0019 v0.4; isolated local M4 VM and compute pilot only",
+  "acceptance": "Engineering profile; not an installed Vision release, Cloud provisioning, native SOTA or full E2E acceptance"
+}

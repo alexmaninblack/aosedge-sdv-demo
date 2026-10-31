@@ -23,8 +23,9 @@ from uuid import UUID
 from .environment import EnvironmentError, EnvironmentService, JOURNAL, OVERLAYS, atomic_json, digest, factory_for
 from .guest_access import enroll_serial, read_guest
 from .status import now, object_id, project_root, read_json
+from .vm_profiles import MAIN, binding as profile_binding
 
-PROFILE = "aos-main-qemuarm64-v1"
+PROFILE = MAIN.name
 FIRMWARE = ".cache/aosvm/v6.1.0/qemuarm64/QEMU_EFI.fd"
 FIRMWARE_SHA = "30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
 
@@ -93,6 +94,10 @@ class VMService:
         return selected(self.environment)
 
     def _command(self, state, role):
+        try:
+            profile = profile_binding(state, self.environment.vm_profile)
+        except ValueError as error:
+            raise EnvironmentError(str(error)) from None
         item = state["vehicles"][role]
         monitor, serial = self._paths(role)
         if len(os.fsencode(serial)) >= 104 or any(
@@ -107,7 +112,7 @@ class VMService:
             raise EnvironmentError("VM_PATH_NOT_SUPPORTED_BY_QEMU")
         return [executable, *(["-L", str(portable.data_directory())] if portable else []),
                 "-name", "democtl-" + role + "-" + item["localVmId"],
-                "-machine", "virt-11.0,accel=hvf", "-cpu", "host", "-smp", "2", "-m", "2048",
+                "-machine", "virt-11.0,accel=hvf", "-cpu", "host", "-smp", str(profile.cpus), "-m", str(profile.memory_mib),
                 "-nodefaults", "-bios", firmware, "-uuid", item["localVmId"],
                 "-drive", "file=" + str(self.root / item["overlay"]) + ",if=none,id=aos-image,format=qcow2,cache=writeback",
                 "-device", "virtio-scsi-pci,id=scsi", "-device", "scsi-hd,drive=aos-image,bootindex=0",
@@ -174,6 +179,10 @@ class VMService:
         atomic_json(self.root / JOURNAL, state)
 
     def _validate(self, state, action, roles):
+        try:
+            profile = profile_binding(state, self.environment.vm_profile)
+        except ValueError as error:
+            raise EnvironmentError(str(error)) from None
         if self.environment.factory31_comparison is True and (set(state.get("vehicles", {})) != {"test"}
                 or set(roles) != {"test"} or state.get("factory", {}).get("sha256") !=
                 "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
@@ -213,9 +222,9 @@ class VMService:
             if action == "start" and item.get("cloud", {}).get("lifecycle") in ("DEPROVISIONED", "DELETED"):
                 raise EnvironmentError("RETIRED_VM_REQUIRES_FRESH_FACTORY_OVERLAY")
             self.environment._owned_file(self.root / item["overlay"])
-            item.setdefault("runtime", {"profile": PROFILE, "state": "STOPPED", "everStarted": False,
+            item.setdefault("runtime", {"profile": profile.name, "state": "STOPPED", "everStarted": False,
                                         "accessCreated": False, "stopProof": None})
-            if item["runtime"].get("profile") != PROFILE:
+            if item["runtime"].get("profile") != profile.name:
                 raise EnvironmentError("VM_RUNTIME_PROFILE_UNSUPPORTED")
             self._command(state, role)
 

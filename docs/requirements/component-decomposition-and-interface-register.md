@@ -20,6 +20,16 @@
 
 ## Installed workstation allocation
 
+On the Vision feature branch, `CMP-ORCH` also owns the fixed engineering VM
+resource profile and its existing journal binding under
+[SYS-VIS-001](system-requirements-and-traceability.md#sys-vis-001),
+[SYS-VIS-002](system-requirements-and-traceability.md#sys-vis-002),
+[SYS-VIS-003](system-requirements-and-traceability.md#sys-vis-003)
+and [D4-029](d4-decision-register.md#d4-029-vision-vm-pilot).
+No new lifecycle manager, public interface or arbitrary resource editor is
+introduced. Guest AosCore remains the native container/resource authority;
+the pilot cannot stand in for later Perception/Assessment deployment evidence.
+
 The existing [Demo Orchestrator](#cmp-orch) owns the local installation and
 instance-path selection adapter for [separate installed data authority](system-requirements-and-traceability.md#sys-dist-001).
 It reuses the existing lifecycle and presentation interfaces; it does not
@@ -456,6 +466,13 @@ implementation:
 | <a id="cr-event-cloud"></a>`CR-EVENT-CLOUD` | `CR-TIRE-CLOUD` |
 
 ## Detailed Package Traceability
+
+The Vision-only VM pilot adds [SYS-VIS-001](system-requirements-and-traceability.md#sys-vis-001),
+[SYS-VIS-002](system-requirements-and-traceability.md#sys-vis-002) and
+[SYS-VIS-003](system-requirements-and-traceability.md#sys-vis-003) to the existing
+`CMP-ORCH` lifecycle/qualification ownership. The executable resource contract
+and fixed source tests are allocated by D4-029; native container authority stays
+with AosCore. Downstream camera/service integration is not covered by this slice.
 
 Installed workstation allocation: [separate installed data authority (`SYS-DIST-001`)](system-requirements-and-traceability.md#sys-dist-001)
 is owned by [Demo Orchestrator](#cmp-orch), through the existing

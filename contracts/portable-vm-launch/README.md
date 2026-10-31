@@ -44,6 +44,13 @@ The existing DNS helper uses the fixed private Python entry with `-I -B`, so
 its command no longer depends on which interpreter invoked Demo Control.
 Resolver behavior, owner UUID, port 18053, log and lifecycle are unchanged.
 
+The separate Vision feature branch's
+[fixed VM engineering profile](../vision-vm/vision-vm-profile.v1.json) is an
+explicit resource selection, not a change to Main or the portable dependency
+closure. ADR 0019/D4-029 bind its 4-vCPU/4096-MiB Test-only profile before fresh
+manufacture. The same hardware, firmware, command ownership and integrity
+checks apply; arbitrary resources and retained re-profiling remain forbidden.
+
 Live closure proof additionally requires QEMU 11.0.3's `efi-virtio.rom`
 (160,768 bytes, SHA-256
 `26be36901db7f8181c306cc62bd74891d8646528965a78e40cceadba5dd7c8e7`).

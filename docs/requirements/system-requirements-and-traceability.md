@@ -122,6 +122,7 @@ acceptance even if wording is clarified.
 | `SYS-OBS` | Dashboards, logs, correlation and evidence |
 | `SYS-TIM` | On-board/Cloud chronology; quantitative performance deferred |
 | `SYS-RET` | End-of-run retirement and next-run reset |
+| `SYS-VIS` | Isolated Vision-branch VM and compute pilot |
 
 | Method | Meaning |
 | --- | --- |
@@ -368,6 +369,17 @@ in-Unit performance benchmarking is tracked separately in the roadmap.
 | <a id="sys-ret-004"></a>`SYS-RET-004` | No rollback or fleet claim | The normal demo reset shall not be presented as a G4-to-G0 OTA rollback or as a production-fleet vehicle deletion policy. | `I,D` | `GAP-AF-03` |
 | <a id="sys-ret-005"></a>`SYS-RET-005` | Preserve immutable factory artifact | R0 shall not modify or replace the accepted OEM Demo Factory Image; after provisioned overlays are retired and discarded, the system shall verify and retain the same immutable factory-image digest as the source for the next M0 deployments. | `T,I` | `GAP-AF-01`, `GAP-AF-19` |
 | <a id="sys-ret-006"></a>`SYS-RET-006` | Reconcile Unit Sets for the next run | Installed Setup may prepare only the absent model/empty Test verification set through its accepted Cloud owner; reuse requires exact authenticated selection, not title-based adoption. Finish shall preserve permanent topology, reconcile only current-Test membership/recipients and preserve unrelated/Production objects. In the expanded profile, OEM administration shall create and pin once `AosEdge SDV Demo Fleet` and its dedicated Test/Production role sets; Demo Orchestrator shall never create, rename, reconfigure, move or delete those definitions. Expanded R0 shall prove both role memberships empty; the next expanded M1 shall verify pinned UUIDs/titles/validation flags and place fresh distinct Unit/Node identities into the correct disjoint sets. Neither profile shall reuse retired batch, validation, Campaign or target assumptions after membership changes or implicitly create/provision the next run. | `T,I,A` | `GAP-AF-03`, `GAP-AF-06`, `GAP-AF-19` |
+
+### Vision-branch VM pilot extension
+
+These additional requirements apply only to the authorized ADR 0019 pilot;
+they neither rewrite Main's requirements nor claim downstream AI acceptance.
+
+| ID | Short name | System requirement | Verification | Allocation |
+| --- | --- | --- | --- | --- |
+| <a id="sys-vis-001"></a>`SYS-VIS-001` | Fixed isolated VM resources | A fresh Vision Test VM shall use the fixed 4-vCPU/4096-MiB HVF profile and loopback SSH 12022. Existing Main defaults remain 2-vCPU/2048-MiB. A retained journal shall reject another resource profile before start or manufacture. | `T,I` | `CMP-ORCH`; `test_vm_profiles`, VM lifecycle scenario; D4-029 |
+| <a id="sys-vis-002"></a>`SYS-VIS-002` | Preserve the retained Main | The pilot shall preserve Main's instance/Test, overlay, data and identities, reuse a clean immutable Factory with new VM/access identity, and run only after conflicting Main owners are normally stopped. No provisioned overlay or private key is cloned. | `T,I` | `CMP-ORCH`; scoped remote preflight, normal shutdown, fresh manufacture and post-read identity comparison |
+| <a id="sys-vis-003"></a>`SYS-VIS-003` | Bounded truthful VM proof | Boot and resource/container prerequisites, normal stop/restart and verified owned cleanup shall be tested through one bounded scenario. A VM/replay result shall not be reported as native Aos deployment, model fit, live camera delivery or API/UI E2E. | `T,I` | `CMP-ORCH`; scenario JSON with independent guest observations and explicit NOT_RUN gates |
 
 ## Gap Coverage Matrix
 

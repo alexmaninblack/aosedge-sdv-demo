@@ -96,8 +96,13 @@ def atomic_json(path, document):
 
 
 class EnvironmentService:
-    def __init__(self, root=None, catalog=None, qemu_img=None):
+    def __init__(self, root=None, catalog=None, qemu_img=None, *, vm_profile="aos-main-qemuarm64-v1"):
         from .runtime_paths import installed
+        from .vm_profiles import resolve
+        try:
+            self._vm_profile = resolve(vm_profile)
+        except ValueError as error:
+            raise EnvironmentError(str(error)) from None
         self.root = (Path(root) if root else project_root()).resolve()
         packaged = installed(self.root)
         self.catalog = catalog or ImageCatalog()
@@ -108,7 +113,15 @@ class EnvironmentService:
     def factory31_comparison(self):
         return self.root == project_root().parent / "aosedge-sdv-demo-qual-31"
 
+    @property
+    def vm_profile(self):
+        return self._vm_profile.name
+
     def ssh_port(self, role):
+        if self._vm_profile.test_only:
+            if role != "test":
+                raise EnvironmentError("VISION_VM_REQUIRES_TEST_ONLY")
+            return self._vm_profile.test_ssh_port
         return 11022 if self.factory31_comparison and role == "test" else (10022 if role == "test" else 10023)
 
     def _directory(self, relative):
@@ -242,6 +255,8 @@ class EnvironmentService:
     def create(self, target, selector=None, image_path=None):
         if target not in ("test", "production", "all"):
             raise EnvironmentError("INVALID_TARGET")
+        if self._vm_profile.test_only and target != "test":
+            raise EnvironmentError("VISION_VM_REQUIRES_TEST_ONLY")
         from .vm_runtime import selected
         portable = selected(self)
         if portable:
@@ -259,6 +274,12 @@ class EnvironmentService:
             raise EnvironmentError("FACTORY_COPY_REQUIRES_60_GIB_FREE")
         roles = tuple(OVERLAYS) if target == "all" else (target,)
         with self._writer():
+            if (self.root / JOURNAL).exists():
+                from .vm_profiles import binding
+                try:
+                    binding(read_json(self.root / JOURNAL), self.vm_profile)
+                except ValueError as error:
+                    raise EnvironmentError(str(error)) from None
             if (self.root / JOURNAL).exists() and target == "test":
                 from .test_environment import add_test
                 return add_test(self, image)
@@ -279,6 +300,8 @@ class EnvironmentService:
             journal = {"schemaVersion": 1, "kind": "democtl.current-run", "startedAt": now(),
                        "stage": "CREATING", "scope": "DUAL_ROLE" if target == "all" else "SINGLE_ROLE_ENGINEERING",
                        "factory": None, "currentVehicle": None, "vehicles": {}, "operations": [operation]}
+            if self._vm_profile.test_only:
+                journal["vmProfile"] = self.vm_profile
             from .cloud_connection import CONFIG, domain_name
             configuration = self.root / CONFIG
             if configuration.is_file():

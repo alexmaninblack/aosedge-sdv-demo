@@ -42,5 +42,13 @@ for delivery and remaining proof.
   — accepted staged installation/onboarding direction; implemented separate
   installation, Cloud/backend and Presenter actions retain their own authority.
 
+## Vision feature track
+
+- [ADR 0019: A Separate Single Node Vision Lab](0019-vision-pilot-single-node-lab.md)
+  — independent Vision branch/Unit and two AI services; preserves Brake/Tire,
+  defers multi-node, checks the ROS-free Factory and measures the camera early.
+  The isolated M4 VM/compute pilot is accepted for implementation; downstream
+  service, calibration, transport and delivery gates remain separately open.
+
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

@@ -3,6 +3,31 @@
 
 # M1 qualification scenarios
 
+The Vision feature track uses the dedicated M4 as explicitly selected in
+[ADR 0019](../../docs/architecture/decisions/0019-vision-pilot-single-node-lab.md).
+Existing M1 campaign names/proofs below remain candidate-bound; do not rewrite
+their target or adopt them as M4 evidence. `vision_vm_campaign.py` checks the
+fresh isolated fixed-resource VM; `vision_compute_campaign.py` runs a bounded
+guest-only engineering tensor-timing replay while CARLA/camera are active.
+Their private contexts bind the M4, retained Main and new Vision identities.
+Neither entry provisions a Unit, proves native Aos SOTA or substitutes for
+calibrated live Vision/API/UI acceptance. Source/build/cache assembly stays
+on the selected development SSD; execution and VM storage stay on M4.
+
+The VM entry receives authorized console input only over standard input; its
+private selection stores no password. It preserves the retained Main instance,
+uses normal lifecycle owners, proves native isolation and stops its VM. The
+compute entry requires that successful proof plus hash-pinned engineering
+inputs from `prepare_vision_model_inputs.py`. It preserves actual frame times
+and labels uncalibrated tensor cost separately from functional camera-pair,
+BEV, accuracy and native deployment acceptance. Model/library bytes and private
+runtime evidence are not source-Git inputs. Reconciliation flags accept only
+the exact recorded failure and verified cleanup, never an unknown replay.
+`vision_compute_collect.py` handles only the known completed-cost/observer-close
+reporting fault: it preserves the original failed result, derives a separate
+limited characterization receipt and checks cleanup. It never reruns inference,
+fabricates missing subwindow metrics or turns that record into full acceptance.
+
 Run a complete scenario, not a conversation-driven sequence of commands.
 The development Mac orchestrates; installation, browser/native UI, simulator
 and live runtime checks execute on the dedicated M1 using its internal storage.

@@ -19,6 +19,14 @@ owned by the [baseline](../qualification/current-baseline.md), not a plan's date
 - [Formal stimulus calibration](../qualification/d4-003-stimulus-calibration-plan.md):
   outstanding verification, not a passed result.
 
+## Feature delivery
+
+- [Single Node Vision Lab](active/vision-pilot-single-node.md): isolated feature
+  branch, early live-camera cost measurement before two Aos AI services,
+  JPEG/MJPEG and native Vision UI. M4 camera characterization is complete;
+  the isolated M4 VM/compute pilot is authorized and in implementation,
+  preserving Brake/Tire data. Model fit and downstream delivery remain unqualified.
+
 ## Implemented behavior and execution
 
 - [Setup contract](../../contracts/distribution-installation/native-setup.md):

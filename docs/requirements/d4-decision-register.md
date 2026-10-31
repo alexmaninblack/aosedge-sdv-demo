@@ -3589,6 +3589,29 @@ the owning specification; no review narrative is a second normative copy.
 - [UI-INT-003 Fixed Vehicle-Evidence Workspace](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-003)
 - [UI-INT-051 Fixed Audience Vocabulary](../demo/mockups/aosedge-demo-interaction-specification.md#ui-int-051)
 
+## Vision-branch engineering extension
+
+<a id="d4-029-vision-vm-pilot"></a>
+### D4-029 — Isolated Vision VM resource profile
+
+- State: `DECIDED` for the authorized local VM/compute pilot only; downstream
+  Vision IPC, calibration, service and installer contracts remain open in V2.
+- Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
+- Authority: [ADR 0019 v0.4](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+  operator-approved implementation plan on 2026-10-31.
+- Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
+- Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
+- Main stays at 2 vCPU/2048 MiB. Explicit fresh Vision construction selects
+  4 vCPU/4096 MiB, Test role only and loopback SSH 12022. Bind `vmProfile` in
+  the existing journal; missing legacy value means Main. Wrong or unsupported
+  profile, extra Production role, foreign retained journal and conflicting
+  owners fail closed; there is no automatic migration or VM force kill.
+- Verify executable-contract parity, unchanged Main command, wrong-profile
+  rejection before side effects, fresh-create binding, real M4 boot/resources,
+  normal restart, independent process/listener exit and retained Main state.
+- Proof state: source unit gates pass; live VM and real-model gates remain
+  separately recorded, never inferred from this decision.
+
 ## Explicitly Deferred or Out-of-Scope Items
 
 These entries remain visible so that they cannot reappear as accidental local
