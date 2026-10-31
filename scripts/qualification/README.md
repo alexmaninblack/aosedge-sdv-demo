@@ -239,6 +239,27 @@ new evidence bindings. Ordinary secure input and native consent remain separate.
 
 ## Cleanup and retained evidence
 
+### Vision engineering camera preview
+
+`vision_live_campaign.py --config PRIVATE_CONFIG --vm-proof RETAINED_VM_PROOF --moving`
+runs the bounded M4 CPU-VM camera scenario after the stationary proof. Its v2
+wire format preserves the original image timestamp and associates actual world
+time by exact frame ID, using a bounded observer, not a new tick owner. Missing
+associations and genuine pair gaps are rejected, not synthesized. Results from
+all three models are displayed only on their matching processed image beside
+the newer live camera image. This is not pixel/capture-time or model-accuracy
+qualification.
+
+This engineering scenario has one explicit native-operator boundary: select
+Autopilot in the existing Driving Control when `WAIT_FOR_NATIVE_AUTOPILOT` is
+reported. The scenario independently checks mode, speed and travelled distance;
+it never releases a hold or directly commands the actor. Consequently this
+profile is not claimed as unattended UI automation. A reconciled native-input
+timeout can be resumed once with `--moving --resume-native-input`; the old
+attempt is retained and an unresolved/unclean attempt cannot be replayed.
+The scenario closes its preview, sensor, guest worker, simulator and VM through
+their normal owners, retaining both Tests and their persistent data.
+
 Close only scenario-owned browser/native clients, helpers, simulator, VMs and
 demo containers through their normal owners. Verify process/listener exit.
 Stopping preserves Unit identity, VM disks, models, history and release ledgers;

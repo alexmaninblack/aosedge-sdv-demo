@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.5](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.6](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3611,6 +3611,12 @@ the owning specification; no review narrative is a second normative copy.
   normal restart, independent process/listener exit and retained Main state.
 - Proof state: source unit gates pass; live VM and real-model gates remain
   separately recorded, never inferred from this decision.
+- ADR 0019 v0.6 authorizes the moving engineering preview and
+  [v2 frame/time contract](../../contracts/vision-vm/live-camera-preview.v2.json).
+  Real world-frame time is associated by exact frame ID; original sensor time
+  remains separate. Missing history/gaps are rejected, never interpolated.
+  Native Driving Control alone selects Autopilot; observe actual movement and
+  respect holds. This changes no tick, Cloud, Test, guest or motion authority.
 - ADR 0019 v0.5 additionally authorizes the stationary engineering live preview
   under [SYS-VIS-004](system-requirements-and-traceability.md#sys-vis-004) and
   [preview v1](../../contracts/vision-vm/live-camera-preview.v1.json). Existing

@@ -21,9 +21,12 @@ def main():
     p.add_argument('--resume-calibration',action='store_true')
     p.add_argument('--diagnose-replay',action='store_true')
     p.add_argument('--resume-input',action='store_true')
+    p.add_argument('--moving',action='store_true')
+    p.add_argument('--resume-native-input',action='store_true',help='Resume only the reconciled native-input timeout, retaining its evidence')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     h.require(60<=a.seconds<=180,'LIVE_DURATION_INVALID')
-    h.require(sum((a.resume_calibration,a.diagnose_replay,a.resume_input))<=1,'LIVE_MODE_INVALID')
+    h.require(sum((a.resume_calibration,a.diagnose_replay,a.resume_input,a.moving))<=1,'LIVE_MODE_INVALID')
+    h.require(not a.resume_native_input or a.moving,'NATIVE_RESUME_REQUIRES_MOVING')
     proof=json.loads(a.vm_proof.read_bytes())
     h.require(a.vm_proof.is_relative_to(Path(c['records'])) and proof['outcome']=='PASS_VM_ONLY'
               and proof['mainIdentityPreserved'] and proof['ownRuntimeStopped'] and proof['visionRoot']==c['visionRoot'],'VM_PROOF_REQUIRED')
@@ -36,13 +39,20 @@ def main():
     if a.resume_input:
         prior=json.loads((Path(c['records'])/'live-diagnostic-01/live-result.json').read_bytes())
         h.require(prior['outcome']=='PASS_REPLAY_DIAGNOSTIC' and all(prior['cleanup'].values()),'LIVE_REPLAY_PROOF_REQUIRED')
-    name='live-camera-03' if a.resume_input else 'live-diagnostic-01' if a.diagnose_replay else 'live-camera-02' if a.resume_calibration else 'live-camera-01'
+    if a.moving:
+        prior=json.loads((Path(c['records'])/'live-camera-03/live-result.json').read_bytes())
+        h.require(prior['outcome']=='PASS_LIVE_ENGINEERING_PREVIEW' and all(prior['cleanup'].values()),'STATIONARY_PROOF_REQUIRED')
+    if a.resume_native_input:
+        prior=json.loads((Path(c['records'])/'moving-camera-01/live-result.json').read_bytes())
+        h.require(prior.get('code')=='NATIVE_AUTOPILOT_NOT_OBSERVED' and all(prior['cleanup'].values()),'NATIVE_INPUT_ATTEMPT_NOT_RECONCILED')
+    h.require(not a.diagnose_replay,'LEGACY_REPLAY_REQUIRES_FROZEN_V1_SOURCE')
+    name='moving-camera-02' if a.resume_native_input else 'moving-camera-01' if a.moving else 'live-camera-03' if a.resume_input else 'live-diagnostic-01' if a.diagnose_replay else 'live-camera-02' if a.resume_calibration else 'live-camera-01'
     records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
     records.mkdir(mode=0o700,parents=True,exist_ok=True)
     files=[HERE/name for name in ('vision_live_worker.py','vision_live_guest.py','vision_live_contract.py','vision_model_probe.py','vision_camera.py')]
     delta=[SOURCE/name for name in ('environment.py','vm.py','vm_profiles.py')]
     context=dict(c['main'],retainedRoot=c['main']['instanceRoot'],retainedTest=c['retainedTest'],
-        visionRoot=c['visionRoot'],visionTest=vm_id,liveSeconds=a.seconds,
+        visionRoot=c['visionRoot'],visionTest=vm_id,liveSeconds=a.seconds,moving=a.moving,
         cameraWheels='/Users/'+t['user']+'/SDV-Qualification/m4-camera-baseline-20261030/wheels',
         proofFiles={**{f.name:h.digest(f) for f in files},**{'delta/'+f.name:h.digest(f) for f in delta}})
     identity=hashlib.sha256(json.dumps(context,sort_keys=True).encode()).hexdigest()
@@ -71,7 +81,7 @@ def main():
             value=json.loads(raw);h.atomic(records/'live-result.json',value);result.update(value)
             outcome='PASS' if code==0 and value['outcome'] in ('PASS_LIVE_ENGINEERING_PREVIEW','PASS_REPLAY_DIAGNOSTIC') else 'UNCERTAIN'
             journal.finish(attempt,outcome,'LIVE_PREVIEW_COMPLETE' if outcome=='PASS' else value.get('code','LIVE_PREVIEW_NOT_COMPLETE'),dict(facts=value))
-            names=['result.json','calibration.json','frame-metrics.json','diagnostic-response.json',*value.get('screenshots',[])]
+            names=['result.json','calibration.json','frame-metrics.json','motion-observations.json','diagnostic-response.json',*value.get('screenshots',[])]
             safe=[name for name in names if Path(name).name==name]
             for name in safe:
                 try:h.run(['/usr/bin/scp',*options,t['user']+'@'+t['host']+':'+str(remote/name),str(records/name)],timeout=10)

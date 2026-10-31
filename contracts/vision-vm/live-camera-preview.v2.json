@@ -1,0 +1,18 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 2,
+  "kind": "vision-engineering-live-preview",
+  "authority": "ADR 0019 v0.6; operator authorized moving M4 preview on 2026-10-31",
+  "transport": "Existing authenticated SSH, bounded framed JPEG pairs and typed JSON results; no new listener or credential",
+  "clock": "CARLA_WORLD_SNAPSHOT_FRAME_MATCH",
+  "frameFields": ["frame", "simulationTime", "sensorSimulationTime", "clock"],
+  "simulationTime": "Actual WorldSnapshot elapsed_seconds with exactly the same frame ID; never arrival time, FPS extrapolation or rounded sensor time",
+  "sensorSimulationTime": "Original image.timestamp retained unchanged; reject disagreement over 75 ms and missing world-frame association",
+  "pairing": "Latest actual 80–120 ms capture pair; genuine gaps are counted and skipped, never interpolated. Every admitted output contains all three models on the same current image",
+  "bounds": {"headerBytes": 4096, "jpegBytes": 4194304, "resultBytes": 65536, "worldFrameHistory": 128, "inFlightPairs": 1, "pendingLatestPairs": 1, "detections": 128, "pathPoints": 64, "seconds": 180, "screenshots": 4},
+  "motion": "Native Driving Control Autopilot input only; independently verify mode/speed/distance. Respect native holds and mode rejection. No direct actor control, hold release, Cloud provisioning or fake currentVehicle",
+  "inferenceMotionAuthority": false,
+  "display": "Separate live/processed images with matched overlays, actual mode/speed, three raw model outputs and host arrival age",
+  "preservation": "Main and Vision Test identities, VM disks, data, models and caches retained; normal Safe Stop/source/VM/helper cleanup",
+  "limitations": ["Engineering frame-to-world association is not a CARLA source fix or pixel/capture-time accuracy qualification", "Fixed local planar calibration remains approximate while moving", "No Assessment, native Aos deployment or full API/UI E2E claim", "No CARLA or Factory rebuild"]
+}

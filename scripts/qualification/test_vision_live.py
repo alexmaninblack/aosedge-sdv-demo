@@ -6,7 +6,7 @@ import io
 import math
 import struct
 import unittest
-from vision_live_contract import calibration,encode_packet,inverse,model_to_raw,project,read_packet,jpeg_dimensions,usable_capture_pair,write_all,validate_result
+from vision_live_contract import calibration,encode_packet,inverse,model_to_raw,project,read_packet,jpeg_dimensions,usable_capture_pair,write_all,validate_result,FrameClock,FRAME_CLOCK,WIRE_SCHEMA
 from vision_live_worker import response
 
 
@@ -33,7 +33,7 @@ class PacketTests(unittest.TestCase):
         value=dict(meta,state='RESULT',motionAuthority=False,autosteer=dict(path=[[512,300]]),
             autospeed=dict(detections=[]),autodrive=dict(valid=True,probability=.02,distanceEstimateMetres=None),guestPipelineMs=200.)
         self.assertEqual(value,validate_result(value,meta))
-        for key,wrong in (('session','foreign'),('frames',[]),('motionAuthority',True),('schemaVersion',2),('guestPipelineMs',float('nan'))):
+        for key,wrong in (('session','foreign'),('frames',[]),('motionAuthority',True),('schemaVersion',1),('guestPipelineMs',float('nan'))):
             bad=copy.deepcopy(value);bad[key]=wrong
             with self.assertRaises(ValueError):validate_result(bad,meta)
         bad=copy.deepcopy(value);bad['autosteer']['path']=[[float('nan'),0]]
@@ -58,8 +58,9 @@ class PacketTests(unittest.TestCase):
             with self.assertRaises(ValueError):jpeg_dimensions(bad)
 
     def packet(self):
-        return dict(schemaVersion=1,session='session',source='source',calibration='cal',frames=[
-            dict(frame=10,simulationTime=1),dict(frame=12,simulationTime=1.1)])
+        return dict(schemaVersion=WIRE_SCHEMA,session='session',source='source',calibration='cal',frames=[
+            dict(frame=10,simulationTime=1,sensorSimulationTime=1,clock=FRAME_CLOCK),
+            dict(frame=12,simulationTime=1.1,sensorSimulationTime=1.1,clock=FRAME_CLOCK)])
 
     def read(self,value,last=-1):return read_packet(io.BytesIO(value),'session','source','cal',last)
 
@@ -74,8 +75,16 @@ class PacketTests(unittest.TestCase):
             v=self.packet();v[key]='foreign'
             with self.assertRaisesRegex(ValueError,'SCOPE'):self.read(encode_packet(v,[b'a',b'b']))
 
+    def test_unidentified_or_mismatched_clock_is_rejected(self):
+        for field,value in (('clock','ARRIVAL_TIME'),('sensorSimulationTime',2.)):
+            v=self.packet();v['frames'][0][field]=value
+            with self.assertRaisesRegex(ValueError,'CLOCK'):self.read(encode_packet(v,[b'a',b'b']))
+        v=self.packet();del v['frames'][0]['sensorSimulationTime']
+        with self.assertRaisesRegex(ValueError,'CLOCK'):self.read(encode_packet(v,[b'a',b'b']))
+
     def test_irregular_pair_is_explicit_not_retimed(self):
         v=self.packet();v['frames'][1]['simulationTime']=1.15
+        v['frames'][1]['sensorSimulationTime']=1.15
         meta,_,valid=self.read(encode_packet(v,[b'a',b'b']))
         self.assertFalse(valid);self.assertEqual(1.15,meta['frames'][1]['simulationTime'])
 
@@ -96,6 +105,40 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(dict(state='A'),value)
         value,pending=response(None,pending,.1)
         self.assertEqual((dict(state='B'),b''),(value,pending))
+
+
+class FrameClockTests(unittest.TestCase):
+    def test_exact_frame_world_time_not_resampled_sensor_time(self):
+        clock=FrameClock();clock.note(10,1.);clock.note(12,1.1)
+        a=clock.bind(dict(frame=10,simulationTime=1.05));b=clock.bind(dict(frame=12,simulationTime=1.1))
+        self.assertAlmostEqual(.1,b['simulationTime']-a['simulationTime'])
+        self.assertEqual(1.05,a['sensorSimulationTime']);self.assertEqual(FRAME_CLOCK,a['clock'])
+        self.assertEqual({'50.0':1,'0.0':1},clock.facts()['sensorMinusWorldMs'])
+
+    def test_no_timestamp_is_invented_when_snapshot_is_absent(self):
+        clock=FrameClock();clock.note(10,1.)
+        self.assertIsNone(clock.bind(dict(frame=12,simulationTime=1.1)))
+        self.assertEqual(1,clock.facts()['missingFrames'])
+
+    def test_conflicting_epoch_and_large_disagreement_fail_closed(self):
+        clock=FrameClock();clock.note(10,1.)
+        with self.assertRaisesRegex(ValueError,'MISMATCH'):clock.bind(dict(frame=10,simulationTime=1.2))
+        clock.note(10,1.1)
+        with self.assertRaisesRegex(ValueError,'CHANGED'):clock.bind(dict(frame=10,simulationTime=1.))
+
+    def test_snapshot_history_is_bounded(self):
+        clock=FrameClock(8)
+        for frame in range(100):clock.note(frame,frame*.05)
+        self.assertEqual(8,clock.facts()['retainedFrames'])
+        self.assertIsNone(clock.bind(dict(frame=1,simulationTime=.05)))
+
+    def test_genuine_gap_and_world_epoch_are_not_hidden(self):
+        clock=FrameClock();clock.note(10,1.);clock.note(14,1.2)
+        a=clock.bind(dict(frame=10,simulationTime=1.));b=clock.bind(dict(frame=14,simulationTime=1.2))
+        self.assertAlmostEqual(.2,b['simulationTime']-a['simulationTime'])
+        self.assertFalse(.08<=b['simulationTime']-a['simulationTime']<=.12)
+        clock.note(1,.05)
+        with self.assertRaisesRegex(ValueError,'EPOCH'):clock.bind(dict(frame=14,simulationTime=1.2))
 
 
 if __name__=='__main__':unittest.main()

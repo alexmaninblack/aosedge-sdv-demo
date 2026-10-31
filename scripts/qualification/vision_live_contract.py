@@ -8,8 +8,12 @@ import hashlib
 import json
 import math
 import struct
+import threading
+from collections import OrderedDict
 
 PROFILE='carla-forward-720p-fov50-v1'
+WIRE_SCHEMA=2
+FRAME_CLOCK='CARLA_WORLD_SNAPSHOT_FRAME_MATCH'
 MODEL_V=((.00209514907,-.000941721466,-9.24906396),
          (.00662758637,-.000352940531,-3.33396502),
          (.000120077371,-.00411343505,1.))
@@ -108,11 +112,13 @@ def read_packet(stream,session,source,calibration_id,last_frame):
     if not prefix:return None
     require(len(prefix)==4,'TRUNCATED_STREAM');size=struct.unpack('!I',prefix)[0]
     require(0<size<=4096,'FRAME_HEADER_LIMIT');meta=json.loads(exact(stream,size))
-    require(meta.get('schemaVersion')==1 and meta.get('session')==session and meta.get('source')==source
+    require(meta.get('schemaVersion')==WIRE_SCHEMA and meta.get('session')==session and meta.get('source')==source
             and meta.get('calibration')==calibration_id,'FRAME_SCOPE_INVALID')
     refs=meta.get('frames');require(isinstance(refs,list) and len(refs)==2,'FRAME_PAIR_INVALID')
     require(all(type(v.get('frame')) is int and v['frame']>=0 and type(v.get('simulationTime')) in (int,float)
                 and math.isfinite(v['simulationTime']) and v['simulationTime']>=0 for v in refs),'FRAME_METADATA_INVALID')
+    require(all(v.get('clock')==FRAME_CLOCK and type(v.get('sensorSimulationTime')) in (int,float)
+                and math.isfinite(v['sensorSimulationTime']) and abs(v['sensorSimulationTime']-v['simulationTime'])<=.075 for v in refs),'FRAME_CLOCK_INVALID')
     dt=refs[1]['simulationTime']-refs[0]['simulationTime']
     require(last_frame<refs[1]['frame'] and refs[0]['frame']<refs[1]['frame'] and 0<dt<=.5,'FRAME_ORDER_INVALID')
     descriptors=meta.get('images');require(isinstance(descriptors,list) and len(descriptors)==2,'FRAME_BYTES_INVALID')
@@ -143,7 +149,7 @@ def write_all(stream,data):
 
 
 def validate_result(value,meta):
-    require(value.get('state')=='RESULT' and value.get('schemaVersion')==1 and value.get('motionAuthority') is False
+    require(value.get('state')=='RESULT' and value.get('schemaVersion')==WIRE_SCHEMA and value.get('motionAuthority') is False
             and all(value.get(k)==meta[k] for k in ('session','source','calibration','frames')),'RESULT_BINDING_INVALID')
     points=value['autosteer']['path'];detections=value['autospeed']['detections'];lead=value['autodrive']
     require(isinstance(points,list) and len(points)<=64 and all(len(p)==2 and all(type(v) in (int,float) and math.isfinite(v) for v in p)
@@ -160,3 +166,45 @@ def validate_result(value,meta):
     require(distance is None or type(distance) in (int,float) and math.isfinite(distance) and 0<=distance<=150,'RESULT_DISTANCE_INVALID')
     require(type(value['guestPipelineMs']) in (int,float) and math.isfinite(value['guestPipelineMs']) and value['guestPipelineMs']>=0,'RESULT_TIMING_INVALID')
     return value
+
+
+class FrameClock:
+    """Bounded read-only association, never an inferred or synthetic clock.
+
+    The known binary sometimes reports image.timestamp one physics tick ahead
+    of the WorldSnapshot carrying the same frame. Retain that raw value while
+    explicitly identifying the authoritative world-frame clock used for pairs.
+    Missing snapshots are dropped; timestamps are never reconstructed from FPS.
+    """
+    def __init__(self,capacity=128):
+        require(8<=capacity<=128,'FRAME_CLOCK_CAPACITY_INVALID')
+        self.capacity=capacity;self.values=OrderedDict();self.lock=threading.Lock()
+        self.missing=0;self.offsets={};self.error=None
+
+    def note(self,frame,stamp):
+        with self.lock:
+            if type(frame) is not int or type(stamp) not in (int,float) or not math.isfinite(stamp) or stamp<0:
+                self.error='WORLD_FRAME_INVALID';return
+            if frame in self.values and abs(self.values[frame]-stamp)>1e-6:
+                self.error='WORLD_FRAME_TIME_CHANGED';return
+            if self.values and frame<next(reversed(self.values)) and frame not in self.values:
+                self.error='WORLD_FRAME_EPOCH_CHANGED';return
+            self.values[frame]=stamp
+            while len(self.values)>self.capacity:self.values.popitem(last=False)
+
+    def bind(self,row):
+        with self.lock:
+            require(not self.error,self.error or 'WORLD_FRAME_INVALID')
+            if row['frame'] not in self.values:self.missing+=1;return None
+            stamp=self.values[row['frame']];raw=row['simulationTime'];offset=raw-stamp
+            require(math.isfinite(raw) and abs(offset)<=.075,'SENSOR_WORLD_TIME_MISMATCH')
+            key=str(round(offset*1000,3));self.offsets[key]=self.offsets.get(key,0)+1
+            return dict(row,simulationTime=stamp,sensorSimulationTime=raw,clock=FRAME_CLOCK)
+
+    def facts(self):
+        with self.lock:return dict(retainedFrames=len(self.values),capacity=self.capacity,
+            missingFrames=self.missing,sensorMinusWorldMs=dict(self.offsets),error=self.error)
+
+
+def frame_reference(row):
+    return {k:row[k] for k in ('frame','simulationTime','sensorSimulationTime','clock')}

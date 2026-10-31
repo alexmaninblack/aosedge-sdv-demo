@@ -15,7 +15,7 @@ import sys
 import time
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from vision_live_contract import read_packet,require,jpeg_dimensions
+from vision_live_contract import read_packet,require,jpeg_dimensions,WIRE_SCHEMA
 from vision_model_probe import valid_input_shapes
 STAGE='preflight'
 FACTS={}
@@ -111,7 +111,7 @@ def main():
                     distanceEstimateMetres=150*(1-distance) if probability>=.4 and 0<=distance<=1 else None,curvatureRaw=curve)
             last=meta['frames'][1]['frame'];count+=1;require(count<=1800,'LIVE_RESULT_COUNT_LIMIT')
             STAGE='result-encode'
-            emit(dict(state='RESULT',schemaVersion=1,session=a.session,source=a.source,calibration=cal['id'],
+            emit(dict(state='RESULT',schemaVersion=WIRE_SCHEMA,session=a.session,source=a.source,calibration=cal['id'],
                 frames=meta['frames'],autodrive=lead,autosteer=dict(path=waypoints),autospeed=dict(detections=boxes),
                 inferenceMs={n:v[1] for n,v in values.items()},guestPipelineMs=(time.perf_counter()-started)*1000,
                 accuracy='NOT_QUALIFIED',assessment='NOT_RUN',motionAuthority=False))

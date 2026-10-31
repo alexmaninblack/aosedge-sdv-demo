@@ -4,7 +4,7 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, compute and live-camera preview
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab integration
@@ -228,7 +228,17 @@ build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 
 ## Current live-preview packet
 
-On 2026-10-31 the operator requested connecting CARLA to the existing Vision VM
+The current moving packet uses `vision_live_campaign.py --moving` and preview
+v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,
+select only real 80–120 ms pairs and run all three models on each admitted pair.
+Observe bounded frame-clock history and missed associations; do not alter CARLA
+physics or rebuild its binary. Enable native Driving Control Autopilot through
+the normal UI, then independently prove actual speed and travelled distance.
+The native control session remains the only motion owner; no Cloud provisioning,
+hold bypass, inference actuation or Test/data replacement is authorized here.
+Record the visible moving results and verify normal end-of-check cleanup.
+
+For the preceding stationary v1 proof, the operator requested connecting CARLA to the existing Vision VM
 to inspect real model outputs. ADR 0019 v0.5 and the
 [engineering preview contract](../../../contracts/vision-vm/live-camera-preview.v1.json)
 freeze this bounded step before runtime work. Run `vision_live_campaign.py`
@@ -265,8 +275,45 @@ AutoSteer returned up to 33 ego-path points and AutoSpeed 2–3 path-relative
 boxes in this stationary scene. AutoDrive's low lead probability left distance
 absent rather than manufacturing an object. Four matched UI snapshots and the
 original result are retained privately under `vision-vm-m4/live-camera-03`.
-Next close temporal pair selection and validate the calibrated models on an
-authorized moving scene before drawing accuracy or full-pipeline fit conclusions.
+
+### Moving preview result
+
+The v2 moving preview completed on M4 on 2026-10-31. Over 120.07 measured
+seconds, native Autopilot covered 390.50 metres with 81 moving speed samples
+and no stale controller samples. The live camera and all three raw model
+outputs were visibly observed through Screen Sharing on M4; four matched
+preview snapshots were retained. Model inference remained read-only.
+
+All 528 measured responses contained valid AutoDrive, AutoSteer and AutoSpeed
+results: **4.40 complete results/s**. Each admitted pair had two frame steps and
+100 ms between actual world snapshots. The unmodified sensor timestamps for
+those same pairs still contained 37 intervals of 50 ms and 59 of 150 ms
+(432 were 100 ms). Exact frame association removes that metadata ambiguity
+from engineering temporal input without hiding its original values or claiming
+pixel/capture-time accuracy. Across the full capture, including native-input
+waiting, no world-frame association was missing; the raw sensor/world offset
+was either 0 or +50 ms. Four invalid startup pairs were skipped. The single
+latest-pair buffer replaced 810 pending pairs across that full capture instead
+of accumulating delayed work.
+
+Guest pipeline time was 225.3 ms median/232.4 ms p95; host image-arrival-to-result
+age was 279.2/342.2 ms. Neither includes the full sensor-capture-to-display path.
+AutoSteer returned up to 37 path points and AutoSpeed up to eight boxes; these
+are model predictions, not validated lane/object labels. The complete 5-Hz
+goal is **not met**, and no model-accuracy, Assessment, native Aos or full E2E
+acceptance is claimed. Local planar calibration remains an approximation during
+motion.
+
+Private receipt: `vision-vm-m4/moving-camera-02/live-result.json`, frame metrics,
+motion observations and `live-01.png` through `live-04.png`. The first moving
+attempt expired because the native Autopilot input was not supplied in time;
+its failure and verified cleanup remain intact. Only after reconciliation was
+the separate second attempt launched and Autopilot selected through the normal
+native UI. This engineering scenario therefore has a native-input boundary,
+not unattended UI acceptance. The successful scenario also verified sensor,
+observer, guest worker, helper, source, VM and listener shutdown and preserved
+Main identity and both Tests/data. No Cloud mutation, Factory/CARLA rebuild,
+DMG change, Main merge or public publication occurred.
 
 ## V0 Isolate the Vision track
 

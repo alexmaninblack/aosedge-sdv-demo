@@ -477,6 +477,10 @@ The bounded engineering preview additionally allocates
 [SYS-VIS-004](system-requirements-and-traceability.md#sys-vis-004) to `CMP-ORCH`
 qualification adapters and `test_vision_live`. It uses the existing authenticated
 guest diagnostic channel, not a new product camera/container authority.
+Preview v2 additionally binds each image to its exact observed world frame while
+retaining the original sensor time. Its moving profile observes native Driving
+Control Autopilot; neither the guest nor the camera adapter gains motion or
+hold-release authority. Native Safe Stop and owned shutdown remain unchanged.
 
 Installed workstation allocation: [separate installed data authority (`SYS-DIST-001`)](system-requirements-and-traceability.md#sys-dist-001)
 is owned by [Demo Orchestrator](#cmp-orch), through the existing

@@ -15,7 +15,8 @@ Frozen historical schemas are not silently rewritten to match newer handlers.
 - [Vision VM engineering profile](vision-vm/vision-vm-profile.v1.json)
   — feature-branch-only fixed M4 VM resources and journal binding; preserves
   the Main profile and does not claim AI, native SOTA or E2E acceptance.
-- [Vision live-camera engineering preview](vision-vm/live-camera-preview.v1.json)
+- [Vision live-camera engineering preview](vision-vm/live-camera-preview.v2.json)
+  (the [v1 contract](vision-vm/live-camera-preview.v1.json) remains frozen for existing stationary receipts)
   — bounded authenticated frame/result diagnostics, camera geometry and matched
   visual output; no native deployment, motion authority or accuracy claim.
 - [Native Service Runtime Inputs](service-runtime-inputs/README.md)

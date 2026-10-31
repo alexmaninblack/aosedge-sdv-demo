@@ -20,7 +20,7 @@ from uuid import uuid4
 import zipfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from vision_live_contract import calibration,encode_packet,model_to_raw,require,usable_capture_pair,write_all,validate_result
+from vision_live_contract import calibration,encode_packet,model_to_raw,require,usable_capture_pair,write_all,validate_result,FrameClock,frame_reference,WIRE_SCHEMA
 
 
 def atomic(path,value):
@@ -57,8 +57,15 @@ def cross(a,b):return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[
 def main():
     p=argparse.ArgumentParser();p.add_argument('--context',type=Path,required=True);a=p.parse_args()
     root=a.context.parent;c=json.loads(a.context.read_bytes());vision=Path(c['visionRoot']);package=Path(c['packageRoot'])
-    diagnostic=root.name=='live-diagnostic-01'
-    require(root.name in ('live-camera-01','live-camera-02','live-camera-03','live-diagnostic-01') and vision==Path.home()/'SDV-Vision-Lab-Data','LIVE_SCOPE_INVALID')
+    diagnostic=root.name=='live-diagnostic-01';moving=c.get('moving') is True
+    require(root.name in ('live-camera-01','live-camera-02','live-camera-03','live-diagnostic-01','moving-camera-01','moving-camera-02') and vision==Path.home()/'SDV-Vision-Lab-Data','LIVE_SCOPE_INVALID')
+    require(moving==root.name.startswith('moving-camera-'),'MOTION_SCOPE_INVALID')
+    if moving:
+        prior=json.loads((root.parent/'live-camera-03/result.json').read_bytes())
+        require(prior['outcome']=='PASS_LIVE_ENGINEERING_PREVIEW' and all(prior['cleanup'].values()),'STATIONARY_PROOF_REQUIRED')
+    if root.name=='moving-camera-02':
+        prior=json.loads((root.parent/'moving-camera-01/result.json').read_bytes())
+        require(prior.get('code')=='NATIVE_AUTOPILOT_NOT_OBSERVED' and all(prior['cleanup'].values()),'NATIVE_INPUT_ATTEMPT_NOT_RECONCILED')
     if root.name=='live-camera-02':
         prior=json.loads((root.parent/'live-camera-01/result.json').read_bytes())
         require(prior.get('code')=='CALIBRATION_SINGULAR' and all(prior['cleanup'][v] for v in
@@ -93,8 +100,10 @@ def main():
     require(before['vmProfile']==VISION.name and before['vehicles']['test']['localVmId']==c['visionTest'],'VISION_CHANGED')
     result=dict(scenario='VISION_LIVE_CPU_PREVIEW',outcome='NOT_COMPLETE',phases=[],accuracy='NOT_QUALIFIED',
         assessment='NOT_RUN',nativeAosDeployment='NOT_RUN',fullE2E='NOT_RUN',cloudMutation=False,
-        motionAuthority=False,drivingMode='SAFE_STOP',carlaOrFactoryRebuilt=False)
+        motionAuthority=False,drivingMode='NATIVE_AUTOPILOT' if moving else 'SAFE_STOP',carlaOrFactoryRebuilt=False,
+        frameClock='CARLA_WORLD_SNAPSHOT_FRAME_MATCH',wireSchema=WIRE_SCHEMA)
     started=time.monotonic();stop=threading.Event();model_error=[];model=None;thread=None;probe=None;awake=None;source_started=False
+    tick_subscription=None;frame_clock=FrameClock();measurement_active=[not moving]
     counters=dict(results=0,autodriveResults=0,invalidPairs=0,droppedPairs=0,skippedInvalidPairs=0);metrics=[];samples=[]
     def emit(value):print(json.dumps(value),flush=True)
     def step(name,action):
@@ -157,8 +166,9 @@ def main():
             assets=driver.assets();sys.path.append(str(assets['python-api-root']));import carla
             def control():
                 value=driver.rpc(source,'status',str(uuid4()));frame=value.get('frame') or {}
-                require(frame.get('runId')==source['runId'] and frame.get('activeMode')=='SAFE_STOP','SOURCE_MODE_CHANGED')
-                return dict(egoActorId=frame['egoActorId'],fresh=value.get('fresh') is True,speedKmh=frame['speedKmh'])
+                require(frame.get('runId')==source['runId'] and frame.get('activeMode') in (('SAFE_STOP','AUTOPILOT') if moving else ('SAFE_STOP',)),'SOURCE_MODE_CHANGED')
+                require(not value.get('held'),'NATIVE_SOURCE_HELD_NO_MOTION_OVERRIDE')
+                return dict(egoActorId=frame['egoActorId'],fresh=value.get('fresh') is True,speedKmh=frame['speedKmh'],mode=frame['activeMode'])
             first=control();client=carla.Client('127.0.0.1',2000);client.set_timeout(8.)
             world=client.get_world();ego=world.get_actor(first['egoActorId']);require(ego and ego.is_alive,'EGO_UNAVAILABLE')
             class CapturedPoseProbe(Probe):
@@ -167,7 +177,12 @@ def main():
                         self.capture_pose=dict(frame=image.frame,simulationTime=image.timestamp,
                                                inverse=image.transform.get_inverse_matrix())
                     super().callback(image,configuration)
-            initial_snapshot(world,ego);probe=CapturedPoseProbe(world,ego,carla,root,control);probe.jpeg=True
+            snapshot=initial_snapshot(world,ego)
+            settings=world.get_settings()
+            require(settings.synchronous_mode and abs(settings.fixed_delta_seconds-.05)<1e-8,'EXPECTED_SOURCE_TIMEBASE_REQUIRED')
+            frame_clock.note(snapshot.frame,snapshot.timestamp.elapsed_seconds)
+            tick_subscription=world.on_tick(lambda snap:frame_clock.note(snap.frame,snap.timestamp.elapsed_seconds))
+            probe=CapturedPoseProbe(world,ego,carla,root,control);probe.jpeg=True
             probe.camera(True)
             deadline=time.monotonic()+8
             while not hasattr(probe,'capture_pose'):
@@ -207,9 +222,12 @@ def main():
             class LiveFrames(Latest):
                 def offer(self,row):
                     require(row.get('jpeg') and len(row['jpeg'])<=4*1024**2,'CAMERA_JPEG_INVALID')
+                    row=frame_clock.bind(row)
+                    if row is None:return
                     older=previous[0];previous[0]=row;latest.offer(row)
                     if older:
-                        if usable_capture_pair(older,row):pairs.offer((older,row))
+                        interval=row['simulationTime']-older['simulationTime']
+                        if usable_capture_pair(older,row) and .08<=interval<=.12:pairs.offer((older,row))
                         else:counters['skippedInvalidPairs']+=1
                     super().offer(row)
             probe.display=LiveFrames();probe.thread=threading.Thread(target=probe.worker,daemon=True);probe.thread.start()
@@ -220,8 +238,8 @@ def main():
                         pair=pairs.take()
                         if pair is None:stop.wait(.01);continue
                         require(time.monotonic()-pair[1]['received']<1,'STALE_CAMERA_PAIR')
-                        refs=[dict(frame=v['frame'],simulationTime=v['simulationTime']) for v in pair]
-                        meta=dict(schemaVersion=1,session=session,source=source['runId'],calibration=cal['id'],frames=refs)
+                        refs=[frame_reference(v) for v in pair]
+                        meta=dict(schemaVersion=WIRE_SCHEMA,session=session,source=source['runId'],calibration=cal['id'],frames=refs)
                         begin=time.monotonic();write_all(model.stdin,encode_packet(meta,[v['jpeg'] for v in pair]))
                         value,pending=response(model,pending,15)
                         if value.get('state')=='FAILED':
@@ -229,11 +247,14 @@ def main():
                             atomic(root/'failure-frame-metadata.json',refs)
                             require(False,value.get('code','GUEST_INFERENCE_FAILED'))
                         validate_result(value,meta)
-                        counters['results']+=1;counters['autodriveResults']+=value['autodrive']['valid'];counters['invalidPairs']+=not value['autodrive']['valid']
                         age=(time.monotonic()-pair[1]['received'])*1000
-                        metrics.append(dict(frame=refs[1]['frame'],guestPipelineMs=value['guestPipelineMs'],arrivalToResultMs=age,
-                            transportRoundtripMs=(time.monotonic()-begin)*1000,pathPoints=len(value['autosteer']['path']),
-                            detections=len(value['autospeed']['detections']),autodriveValid=value['autodrive']['valid']))
+                        if measurement_active[0]:
+                            counters['results']+=1;counters['autodriveResults']+=value['autodrive']['valid'];counters['invalidPairs']+=not value['autodrive']['valid']
+                            metrics.append(dict(frame=refs[1]['frame'],frames=refs,guestPipelineMs=value['guestPipelineMs'],arrivalToResultMs=age,
+                                pairSeconds=refs[1]['simulationTime']-refs[0]['simulationTime'],
+                                sensorPairSeconds=refs[1]['sensorSimulationTime']-refs[0]['sensorSimulationTime'],
+                                transportRoundtripMs=(time.monotonic()-begin)*1000,pathPoints=len(value['autosteer']['path']),
+                                detections=len(value['autospeed']['detections']),autodriveValid=value['autodrive']['valid']))
                         require(len(metrics)<=1800,'METRIC_RETENTION_LIMIT');predicted.offer(dict(row=pair[1],result=value,age=age))
                 except Exception as error:
                     if 'pair' in locals() and pair:
@@ -261,9 +282,11 @@ def main():
                             draw.rectangle((x1,y1,x2,y2),outline=(255,195,60),width=4)
                             draw.text((x1+3,y1+3),f"L{d['level']} {d['score']:.0%}",fill=(255,230,160),stroke_width=2,stroke_fill=(0,0,0))
                 picture=picture.resize((480,270));return pg.image.fromstring(picture.tobytes(),picture.size,'RGB')
-            begin=time.monotonic();last_ui=None;last_result=None;live_surface=None;result_surface=None;next_status=begin;next_sample=begin+10
-            emit(dict(stage='LIVE_VISIBLE',seconds=c['liveSeconds'],mode='SAFE_STOP',provider='CPUExecutionProvider'))
-            while not stop.is_set() and time.monotonic()-begin<c['liveSeconds']:
+            begin=time.monotonic();waiting=moving;motion_deadline=begin+90;next_control=begin
+            last_position=None;distance_metres=0.;moving_samples=0;mode_observation=dict(mode='SAFE_STOP',speedKmh=0.)
+            last_ui=None;last_result=None;live_surface=None;result_surface=None;next_status=begin;next_sample=begin+10
+            emit(dict(stage='WAIT_FOR_NATIVE_AUTOPILOT' if moving else 'LIVE_VISIBLE',seconds=c['liveSeconds'],mode='SAFE_STOP',provider='CPUExecutionProvider'))
+            while not stop.is_set() and (waiting or time.monotonic()-begin<c['liveSeconds']):
                 require(not probe.error,probe.error or 'CAMERA_FAILED')
                 for event in pg.event.get():
                     if event.type==pg.QUIT or event.type==pg.KEYDOWN and event.key==pg.K_ESCAPE:stop.set()
@@ -271,10 +294,25 @@ def main():
                 if row:last_ui=row;live_surface=image(row)
                 computed=predicted.take()
                 if computed:last_result=computed;result_surface=image(computed['row'],computed['result'])
-                now=time.monotonic();screen.fill((16,23,34))
+                now=time.monotonic()
+                if now>=next_control:
+                    mode_observation=control();require(mode_observation['egoActorId']==ego.id,'SOURCE_CHANGED');next_control=now+1
+                    if waiting:
+                        require(now<motion_deadline,'NATIVE_AUTOPILOT_NOT_OBSERVED')
+                        if mode_observation['mode']=='AUTOPILOT' and mode_observation['speedKmh']>.5:
+                            waiting=False;measurement_active[0]=True;begin=now;next_status=now;next_sample=now+10
+                            emit(dict(stage='MOVING_CONFIRMED',mode='AUTOPILOT',speedKmh=mode_observation['speedKmh']))
+                    if measurement_active[0]:
+                        if moving:require(mode_observation['mode']=='AUTOPILOT','NATIVE_AUTOPILOT_INTERRUPTED')
+                        location=ego.get_location();position=[location.x,location.y,location.z]
+                        if last_position:distance_metres+=math.dist(position,last_position)
+                        last_position=position;moving_samples+=mode_observation['speedKmh']>.5
+                        samples.append(mode_observation)
+                screen.fill((16,23,34))
                 def text(value,pos,color=(220,229,240),tiny=False):screen.blit((small if tiny else font).render(str(value),True,color),pos)
                 text('Vision Pilot | Linux ARM64 VM / 4 CPU / FP32 | ANALYSIS ONLY',(16,16))
-                text('Engineering preview — not native Aos deployment; no model can control the vehicle',(16,44),(255,199,100),True)
+                text(('Select Autopilot in native Driving Control — no hold or Cloud bypass' if waiting else
+                      f"Native {mode_observation['mode']} | {mode_observation['speedKmh']:.1f} km/h | Vision is read-only"),(16,44),(255,199,100),True)
                 text('Live camera — no model overlay',(16,82));text('Processed frame — matching model predictions',(510,82))
                 if live_surface:screen.blit(live_surface,(16,112))
                 stale=not last_result or now-last_result['row']['received']>1
@@ -291,13 +329,12 @@ def main():
                     text('AutoSpeed',(690,440));text(f"{len(v['autospeed']['detections'])} boxes / path-relative L0–L3",(690,470),tiny=True)
                     text(f"Guest pipeline: {v['guestPipelineMs']:.0f} ms | Image arrival age: {(now-last_result['row']['received'])*1000:.0f} ms",(16,514),tiny=True)
                 text('Green = predicted ego path, not lane markings. Amber = model detections, not simulator labels.',(16,551),tiny=True)
-                text('Local planar calibration; model accuracy NOT QUALIFIED. Safe Stop. Esc closes this scenario.',(16,578),(255,199,100),True)
+                text('World-frame time + original sensor time retained. Accuracy NOT QUALIFIED. Esc stops scenario.',(16,578),(255,199,100),True)
                 pg.display.flip()
                 if now>=next_status:
-                    observation=control();require(observation['egoActorId']==ego.id and observation['speedKmh']<=.5,'SOURCE_CHANGED')
                     counters['droppedPairs']=pairs.counters()['replaced']
-                    samples.append(observation);emit(dict(stage='LIVE_PROGRESS',seconds=round(now-begin),**counters));next_status=now+15
-                if now>=next_sample and last_result and not stale and len(result.get('screenshots',[]))<4:
+                    emit(dict(stage='WAITING_NATIVE_INPUT' if waiting else 'LIVE_PROGRESS',seconds=round(now-begin),mode=mode_observation['mode'],speedKmh=mode_observation['speedKmh'],**counters));next_status=now+15
+                if not waiting and now>=next_sample and last_result and not stale and len(result.get('screenshots',[]))<4:
                     name=f"live-{len(result.get('screenshots',[]))+1:02d}.png";pg.image.save(screen,root/name)
                     require((root/name).stat().st_size<=4*1024**2,'SCREENSHOT_LIMIT');result.setdefault('screenshots',[]).append(name);next_sample=now+30
                 time.sleep(.025)
@@ -305,19 +342,26 @@ def main():
             require(not thread.is_alive(),'INFERENCE_THREAD_EXIT_UNCONFIRMED')
             require(not model_error,model_error[0] if model_error else 'MODEL_FAILED')
             require(counters['results']>=30 and counters['autodriveResults']>=10,'LIVE_MODEL_RESULTS_INSUFFICIENT')
+            require(counters['results']==counters['autodriveResults'],'NOT_ALL_THREE_MODELS_VALID')
+            if moving:require(moving_samples>=10 and distance_metres>5,'ACTUAL_MOTION_NOT_PROVEN')
             from vision_camera import distribution
             counters['droppedPairs']=pairs.counters()['replaced']
             result.update(outcome='PASS_LIVE_ENGINEERING_PREVIEW',counters=dict(counters),liveSeconds=time.monotonic()-begin,
                 guestPipelineMs=distribution([v['guestPipelineMs'] for v in metrics]),
                 arrivalToResultMs=distribution([v['arrivalToResultMs'] for v in metrics]),
                 maximumPathPoints=max(v['pathPoints'] for v in metrics),maximumDetections=max(v['detections'] for v in metrics),
-                staleControllerSamples=sum(not v['fresh'] for v in samples),recording='Four bounded UI snapshots; no raw video history')
+                staleControllerSamples=sum(not v['fresh'] for v in samples),movingSamples=moving_samples,distanceMetres=distance_metres,
+                clock=frame_clock.facts(),recording='Four bounded UI snapshots; no raw video history')
             atomic(root/'frame-metrics.json',metrics)
+            atomic(root/'motion-observations.json',samples)
         except Exception as error:
             message=str(error);result['code']=message if message.isupper() and message.replace('_','').isalnum() else type(error).__name__
             emit(dict(stage='FAILED',code=result['code']))
         finally:
             stop.set();clean={}
+            if tick_subscription is not None:
+                try:world.remove_on_tick(tick_subscription);clean['worldTickObserverRemoved']=True
+                except Exception:clean['worldTickObserverRemoved']=False
             if probe:
                 probe.stop.set()
                 try:

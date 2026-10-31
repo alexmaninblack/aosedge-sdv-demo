@@ -3,14 +3,14 @@
 
 # ADR 0019: A Separate Single Node Vision Lab
 
-- Status: Accepted for the isolated M4 VM, compute and stationary live preview; downstream interfaces remain subject to V2 closure
-- Version: 0.5
+- Status: Accepted for the isolated M4 VM, compute and engineering live previews; downstream interfaces remain subject to V2 closure
+- Version: 0.6
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab System Architecture
 - Change class: C; bounded VM pilot accepted, downstream Vision contract closure remains required
 - Direction selected: independent Brake/Tire and Vision single-node tracks
-- Scope: isolated VM, bounded compute and stationary live-camera engineering preview authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
+- Scope: isolated VM, bounded compute and stationary/moving live-camera engineering previews authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Implementation plan: [Vision Lab delivery plan](../../planning/active/vision-pilot-single-node.md)
 
@@ -195,14 +195,14 @@ probe; it preserves the V3–V8 obligations rather than claiming them from a spi
 
 ### Authorized live-camera engineering preview
 
-The next bounded packet connects the real CARLA camera to CPU models in the
-existing Vision VM and displays raw model predictions on M4. Its
-[executable preview contract](../../../contracts/vision-vm/live-camera-preview.v1.json)
+The bounded preview connects the real CARLA camera to CPU models in the
+existing Vision VM and displays raw model predictions on M4. The stationary
+[v1 preview contract](../../../contracts/vision-vm/live-camera-preview.v1.json)
 defines the engineering-only framed input/result channel over the existing
 authenticated SSH connection. It introduces no listener, new credential,
 container IPC grant, Cloud Unit or alternative production interface.
 
-Keep the unprovisioned source in native Safe Stop. Infer no permission to
+The stationary profile keeps the unprovisioned source in native Safe Stop. Infer no permission to
 release its hold or bypass first connection. Only the host adapter sees CARLA;
 the guest worker receives bounded JPEGs and cannot issue motion commands.
 Use actual camera/road-plane geometry to derive H and the unchanged upstream
@@ -212,9 +212,25 @@ projection checks do not qualify learned estimates on simulated imagery.
 Preserve pair capture times and mark AutoDrive unavailable on irregular pairs;
 the other models can still process the current image. Show live and processed
 images separately, never paint old predictions over a newer live frame. Native
-Aos deployment, Assessment, moving acceptance and the installed Driving Control
+Aos deployment, Assessment, product-level moving acceptance and the installed Driving Control
 Vision page remain downstream V2–V8 work. This preview is not a replacement
 for the planned MJPEG/native-resource production interface.
+
+The operator additionally authorized a moving M4 preview on 2026-10-31.
+[Preview v2](../../../contracts/vision-vm/live-camera-preview.v2.json) retains
+the original sensor timestamp while associating the image with the actual
+WorldSnapshot timestamp by exact frame ID. No timestamp is extrapolated or
+rounded to pass a pair gate; missing associations and genuine gaps are rejected.
+Keep v1 receipts frozen. In retained evidence all 899 camera steps were two
+world ticks, while 104 matched image timestamps were 50 ms ahead of the world
+snapshot. The frame association is an engineering workaround, not proof of
+pixel/capture-time accuracy or a CARLA source repair.
+
+Motion comes only from the native Driving Control Autopilot action, with
+independent mode/speed/distance observations. Respect holds and native rejection;
+never release a foreign operation, directly drive the CARLA actor, provision a
+Cloud Unit or fabricate a selected Test to make it move. Inference remains
+read-only. Preserve Test/data and use the normal physical Safe Stop at shutdown.
 
 ## Image and result semantics
 
