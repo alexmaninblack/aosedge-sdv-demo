@@ -17,6 +17,8 @@ Frozen historical schemas are not silently rewritten to match newer handlers.
   the Main profile and does not claim AI, native SOTA or E2E acceptance.
 - [Vision live-camera engineering preview](vision-vm/live-camera-preview.v2.json)
   (the [v1 contract](vision-vm/live-camera-preview.v1.json) remains frozen for existing stationary receipts)
+- [Camera Access source selection](vision-vm/camera-access-source.v1.json) — exact
+  independent platform foundation, local source proof only; no installed release change.
   — bounded authenticated frame/result diagnostics, camera geometry and matched
   visual output; no native deployment, motion authority or accuracy claim.
 - [Native Service Runtime Inputs](service-runtime-inputs/README.md)

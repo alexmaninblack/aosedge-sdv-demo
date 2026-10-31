@@ -1,19 +1,19 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.4
+# Demo Scenario Architecture Flows 2.5
 
 - Status: Accepted
-- Version: 2.4
-- Updated: 2026-10-18
+- Version: 2.5
+- Updated: 2026-10-31
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Architecture input: [High-Level Architecture 1.9](high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 2.4](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 2.3](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 2.5](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 2.4](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -23,7 +23,39 @@
 
 ## Purpose and flow profiles
 
-This document connects HLA 1.8, Scenario 2.3 and the component requirements.
+<a id="af-vis-cam"></a>
+### AF-VIS-CAM — Independent Vision Camera Access
+
+Scope: the [Vision branch](decisions/0019-vision-pilot-single-node-lab.md), not
+the installed Brake/Tire lifecycle. Camera Access is a distinct OEM component
+in its own VM; no VDP payload, VDP slot, Brake/Tire service, credential or old
+VM state is adopted.
+
+1. The OEM-selected Gateway capture adapter supplies authenticated camera
+   identity/epoch/calibration and JPEGs. Source metadata alone is not authority.
+2. Camera Access validates exact profile/identity, bounds, JPEG dimensions,
+   digest, increasing frame/world time and preserved raw sensor time.
+3. Retain at most two immutable frames. Deliver the latest eligible real
+   80–120 ms world-frame pair to Perception; never interpolate gaps or grow a
+   FIFO while inference is slow. Inference has no camera-configuration access.
+4. Local receiver age expiry makes delivery stale. Disconnect clears pixels
+   but preserves that epoch's replay high-water marks. Reconnect cannot replay
+   old frames; explicit new source/epoch/calibration selection flushes images.
+   A new process must establish fresh authenticated upstream session/epoch.
+5. Perception produces matching model outputs. Assessment uses independently
+   approved dynamics; typed results return through the OEM result adapter and
+   Gateway for read-only display. This is not an actuation path.
+6. Native resource/IPC authorization, distinct OEM activation, SELinux and
+   restart are required before deployment acceptance. The source foundation
+   implements admission/buffering only and starts no transport or runtime.
+
+Allocate [Vision composition](../requirements/system-requirements-and-traceability.md#sys-vis-005),
+[Camera Access data](../requirements/system-requirements-and-traceability.md#sys-vis-006),
+[loss/age](../requirements/system-requirements-and-traceability.md#sys-vis-007)
+and [native authority](../requirements/system-requirements-and-traceability.md#sys-vis-008)
+to the [Camera Access package](../requirements/components/camera-access.md).
+
+This document connects HLA 1.9, Scenario 2.4 and the component requirements.
 It specifies software/data/decision/evidence movement, not a second lifecycle
 authority. The current installed profile is one Test, one OEM and one associated
 SP; the detailed VU/PU promotion and two-SP flows are the expanded accepted
@@ -102,9 +134,9 @@ legacy schema differences are explicitly tracked in the
 
 When the inputs differ, use this order:
 
-1. High-Level Architecture 1.8 owns component boundaries, interfaces,
+1. High-Level Architecture 1.9 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 2.3 owns stage order, component presence, audience-visible
+2. Demo Scenario 2.4 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -1837,7 +1869,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 2.3 claim | Architecture flow coverage |
+| Demo Scenario 2.4 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -1935,7 +1967,7 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Downstream Component Requirement Gate
 
-System Requirements and Traceability 2.4 and Component Register 2.3
+System Requirements and Traceability 2.5 and Component Register 2.4
 allocate these flows and their authorization,
 Release Authority, Safe Stop and workspace obligations to the canonical
 component packages. The accepted component sequence remains:

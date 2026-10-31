@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 2.4
+# System Requirements and Traceability 2.5
 
 - Status: Accepted
-- Version: 2.4
-- Updated: 2026-10-22
+- Version: 2.5
+- Updated: 2026-10-31
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.4](../architecture/demo-scenario-architecture-flows.md)
+- Architecture input: [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -93,9 +93,9 @@ passes its acceptance criteria, and the evidence is retained.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.8 owns boundaries, authority and invariants.
-2. Demo Scenario 2.3 owns the audience-visible stage progression.
-3. Architecture Flows 2.4 owns detailed lifecycle, runtime, observability and
+1. High-Level Architecture 1.9 owns boundaries, authority and invariants.
+2. Demo Scenario 2.4 owns the audience-visible stage progression.
+3. Architecture Flows 2.5 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -122,7 +122,7 @@ acceptance even if wording is clarified.
 | `SYS-OBS` | Dashboards, logs, correlation and evidence |
 | `SYS-TIM` | On-board/Cloud chronology; quantitative performance deferred |
 | `SYS-RET` | End-of-run retirement and next-run reset |
-| `SYS-VIS` | Isolated Vision-branch VM and compute pilot |
+| `SYS-VIS` | Isolated Vision VM, engineering preview and Camera Access foundation |
 
 | Method | Meaning |
 | --- | --- |
@@ -382,6 +382,19 @@ they neither rewrite Main's requirements nor claim downstream AI acceptance.
 | <a id="sys-vis-003"></a>`SYS-VIS-003` | Bounded truthful VM proof | Boot and resource/container prerequisites, normal stop/restart and verified owned cleanup shall be tested through one bounded scenario. A VM/replay result shall not be reported as native Aos deployment, model fit, live camera delivery or API/UI E2E. | `T,I` | `CMP-ORCH`; scenario JSON with independent guest observations and explicit NOT_RUN gates |
 | <a id="sys-vis-004"></a>`SYS-VIS-004` | Bound engineering live predictions | The engineering preview shall bind authenticated JPEG pairs/results to source, session, calibration and original frame/time identity, check image dimensions before decode, derive camera-specific geometry and display predictions only on their matched frame. Preview v2 shall associate actual WorldSnapshot time by exact frame ID while preserving the raw sensor time; missing associations and genuine cadence gaps shall be rejected, never interpolated or rounded. Native Safe Stop remains the default and mandatory shutdown action; the explicitly moving profile may use only native Driving Control Autopilot with independent mode/speed/distance proof and no hold override. Inference has no motion authority; the preview shall not claim native Aos deployment or qualified model accuracy. | `T,I` | `CMP-ORCH`; `test_vision_live`, live scenario and preview v2 contract; frozen v1 receipts retain their original scope |
 
+### Independent Vision Camera Access extension
+
+These additional obligations belong only to the separate Vision composition.
+They do not change the installed Brake/Tire contract or claim a deployed
+Camera Access component from source tests.
+
+| ID | Short name | System requirement | Verification | Allocation |
+| --- | --- | --- | --- | --- |
+| <a id="sys-vis-005"></a>`SYS-VIS-005` | Independent Vision platform | Vision shall use its own VM and distinct OEM Camera Access payload/target, without installing VDP, Brake or Tire or adopting their slot, credentials or mutable state. Common clean Factory reuse shall not imply VDP-slot compatibility. The existing VM/data remain unchanged. | `I,T` | `CMP-CAM`, `CMP-ORCH`; composition review, later installed/native scenario |
+| <a id="sys-vis-006"></a>`SYS-VIS-006` | Bounded camera data | Camera Access shall admit only the selected source/epoch/calibration and fixed camera profile, validate bounded JPEG metadata/dimensions/digest before decode, preserve raw sensor and exact world-frame time distinctly, reject frame/time replay, and retain at most two immutable 4-MiB frames. Only latest actual 80–120 ms pairs may be delivered; no timestamp interpolation or growing FIFO. | `T,I` | `CMP-CAM`, `IF-CAM-001`, `IF-CAM-002`; core unit/contract tests and later live ingress |
+| <a id="sys-vis-007"></a>`SYS-VIS-007` | Honest delivery and reset | Both pair members shall meet the one-second receiver-monotonic retention bound; rejected packets shall not renew age. Disconnect shall clear images while retaining current-epoch replay high-water marks, and explicit source/epoch/calibration changes shall flush them. Restart requires a fresh authenticated session/epoch. Local age shall not be claimed as capture freshness or cross-clock capture latency. | `T,I` | `CMP-CAM`; deterministic clock/reset/reconnect tests; native restart remains gated |
+| <a id="sys-vis-008"></a>`SYS-VIS-008` | Native camera authority | Only the trusted OEM adapter may establish the source binding. Metadata validation shall not be presented as authentication. Container access shall use reviewed native Aos resources/local IPC with actual peer identity, SELinux and revocation proof, no credential database or VDP/KUKSA permission shortcut. Camera Access and inference shall grant no motion authority. | `T,I,A` | `CMP-CAM`, `IF-CAM-001`, `IF-CAM-002`; core exclusions and later native security/activation proof |
+
 ## Gap Coverage Matrix
 
 | Gap | Governing system requirements |
@@ -419,7 +432,7 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 2.3](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 2.4](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.

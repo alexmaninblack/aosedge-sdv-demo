@@ -9,10 +9,10 @@
 - Accepted: 2026-08-28
 - Owner: Platform Team
 - Package: [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac)
-- Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
-- System requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
+- Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.5](../../architecture/demo-scenario-architecture-flows.md)
+- System requirements input: [System Requirements 2.5](../system-requirements-and-traceability.md)
 - Accepted authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 

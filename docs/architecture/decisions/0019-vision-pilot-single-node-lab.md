@@ -3,15 +3,15 @@
 
 # ADR 0019: A Separate Single Node Vision Lab
 
-- Status: Accepted for the isolated M4 VM, compute and engineering live previews; downstream interfaces remain subject to V2 closure
-- Version: 0.6
+- Status: Accepted for the isolated M4 VM, engineering previews and independent Camera Access foundation; native interfaces remain subject to V2 closure
+- Version: 0.7
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab System Architecture
-- Change class: C; bounded VM pilot accepted, downstream Vision contract closure remains required
+- Change class: C; isolated VM and Camera Access foundation accepted, downstream native Vision contract closure remains required
 - Direction selected: independent Brake/Tire and Vision single-node tracks
-- Scope: isolated VM, bounded compute and stationary/moving live-camera engineering previews authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
-- Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
+- Scope: isolated VM, bounded compute, stationary/moving engineering previews and Camera Access source foundation authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
+- Architecture input: [High-Level Architecture 1.9](../high-level-architecture.md)
 - Implementation plan: [Vision Lab delivery plan](../../planning/active/vision-pilot-single-node.md)
 
 ## Decision to implement
@@ -27,6 +27,13 @@ Vision Perception and Vision Assessment. Feed a forward-facing CARLA camera
 to them using JPEG frames or MJPEG, and display interpreted results in native
 Driving Control. All computation is shadow analysis: no vehicle actuation.
 
+The operator accepted the Camera Access composition on 2026-10-31. Vision
+has its own OEM Camera Access platform package, not a camera extension of VDP.
+Do not install VDP, Brake Health or Tire Health in this VM. Preserve the other
+VM and its installed packages, Test, disks and data without migration. Sharing
+an immutable Linux/AosCore base does not authorize sharing their mutable state
+or adopting the existing VDP component slot.
+
 The first version runs the two Lab variants sequentially. It does not require
 a universal profile selector, simultaneous source attachment, multi-node
 management, distributed scheduling or inter-node credentials.
@@ -39,32 +46,54 @@ main                                     codex/vision-pilot-single-node
 existing installation and private state   separate installation and private state
 existing single-node Unit                new single-node Unit
 existing Main VM                         larger Main VM: CM + IAM + SM
-VDP + KUKSA/KAC + Brake + Tire             platform image/data adapter + local KUKSA
+VDP + KUKSA/KAC + Brake + Tire             OEM Camera Access (no VDP/Brake/Tire)
                                          Vision Perception + Vision Assessment
 
 Vision data flow
-CARLA RGB camera -> Vehicle Gateway -> OEM platform adapter
+CARLA RGB camera -> Vehicle Gateway -> OEM Camera Access
                                           |
                                           v
                                Vision Perception
                                           |
-                          vehicle speed -> Vision Assessment
+                    approved dynamics -> Vision Assessment
                                           |
-Driving Control <- Vehicle Gateway <- OEM platform adapter
+Driving Control <- Vehicle Gateway <- OEM result adapter
 ```
 
-The platform adapter owns selected-source access and typed result validation.
-Images do not pass through scalar VSS/KUKSA values. Vehicle speed continues
-to use the authorized platform/KUKSA path. Services receive no CARLA control
+Camera Access owns selected-source image admission, metadata and bounded
+delivery. The OEM result adapter owns typed result validation. Images do not
+pass through scalar VSS/KUKSA values. Assessment's future vehicle-dynamics
+input must close as a separate approved Vision contract; it is not a reason
+to install the Brake/Tire VDP or silently copy its credentials. Services receive no CARLA control
 endpoint, VDP private key, Cloud producer credential or arbitrary VISS writer.
 The existing [QM containment boundary](0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 remains authoritative.
 
-Prefer extending the existing VDP application with an isolated, bounded image
-and result worker, delivered through its OEM lifecycle, over introducing a
-second platform lifecycle manager. Freeze the actual service-facing native
-resource/authentication mechanism before implementation. A camera permission
-is not implied by a service's ordinary KUKSA read permission.
+Camera Access belongs to `aos-vehicle-platform`, with its own payload identity
+and explicit Vision-only platform selection. Reuse the native OEM/Aos lifecycle
+mechanism only after proving that its target/profile supports this component;
+never rename a Camera Access payload to VDP or reuse a VDP-specific slot. No
+new lifecycle manager is introduced. Consumer access must use reviewed native
+Aos resources and isolated local IPC, not another credential database. A
+camera permission is not implied by ordinary KUKSA read permission.
+
+### Camera Access foundation packet
+
+The first source packet implements the transport-independent Camera Access
+core: strict JPEG/metadata admission, immutable frame identity, two-frame
+bounded retention, latest eligible pair delivery, stale delivery, source loss
+and explicit source/epoch/calibration reset. It consumes a trusted source
+binding supplied by the future OEM adapter; validating metadata is not source
+authentication. No socket listener, host transport, IAM shortcut, runtime
+resource grant, systemd unit or deployment is implemented by this core.
+
+The first camera profile is fixed to front RGB 1280x720 JPEG/FOV 50. Preserve
+world-frame and original sensor times separately under the engineering clock
+association already qualified in preview v2; no synthetic capture timestamp or
+pixel-time accuracy claim. Local delivery-age bounds use the receiver clock,
+not subtraction of guest and host clocks. Read and delivery do not configure
+the camera or grant motion authority. Core source tests precede the native
+resource/IPC, Gateway ingress and distinct OEM packaging gates.
 
 ## Service responsibilities
 
@@ -111,6 +140,9 @@ merge of the experimental Vision branch into Main is planned.
 ## Controller image and compute
 
 Start from the retained clean Main Factory, not a provisioned VM or its keys.
+The retained Factory contains no installed VDP or functional services. It may
+support the isolated core proof without an image rebuild; its VDP-specific
+empty-slot runtime is not a qualified Camera Access deployment mechanism.
 Use a proposed initial Vision profile of 4 vCPUs and 4 GiB RAM. Preserve the
 existing controller's 2-vCPU/2-GiB profile. Additional vCPUs expose capacity to
 the guest but do not reserve physical performance cores or provide Apple GPU/
@@ -301,7 +333,7 @@ defines ordered deliverables, interface decisions, metrics, failure cases and
 candidate-bound API/UI acceptance. Camera characterization is complete;
 isolated VM/compute implementation is authorized, not yet accepted as complete.
 
-Before downstream Vision product implementation, close the selected-source camera permission,
+Before downstream Vision deployment, close the selected-source camera permission,
 native IPC/resource placement, service compatibility and standalone installer
 contracts. Apply the affected HLA, Scenario, Flows, requirements, component and
 D4/interface updates on the Vision branch, preserving IDs and unrelated

@@ -7,7 +7,7 @@
 - Version: 1.3
 - Updated: 2026-10-18
 - Prepared: 2026-08-22
-- Reading baseline: HLA 1.8, Scenario 2.3, Flows/System 2.4, Register 2.3 and
+- Reading baseline: HLA 1.9, Scenario 2.4, Flows/System 2.4, Register 2.3 and
   current component packages; installed and expanded profiles are distinguished
 - Editorial consolidation: 2026-10-18; accepted behavior and stable IDs preserved
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.6](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.7](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3625,10 +3625,41 @@ the owning specification; no review narrative is a second normative copy.
   Wrong cadence explicitly disables AutoDrive. Native deployment, Assessment,
   moving and installed UI acceptance are not supplied by this diagnostic.
 
-## Explicitly Deferred or Out-of-Scope Items
+<a id="d4-030-camera-access"></a>
+### D4-030 — Independent Camera Access foundation
+
+- State: `DECIDED` for the source foundation authorized on 2026-10-31.
+- Authority: [ADR 0019 v0.7](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
+- Owner: [OEM Camera Access](component-decomposition-and-interface-register.md#cmp-cam),
+  source and fixed machine profile in `aos-vehicle-platform`'s Vision worktree.
+- Composition: separate Vision VM and OEM camera payload/target, no VDP,
+  Brake/Tire, old credentials/state or VDP-slot adoption. Clean common Factory
+  reuse is not native Camera Access deployment acceptance.
+- Allocate [composition](system-requirements-and-traceability.md#sys-vis-005),
+  [camera data](system-requirements-and-traceability.md#sys-vis-006),
+  [loss/age](system-requirements-and-traceability.md#sys-vis-007) and
+  [authority](system-requirements-and-traceability.md#sys-vis-008) through the
+  [component package](components/camera-access.md).
+- Freeze strict front 1280x720 JPEG metadata, exact trusted binding, two-frame
+  retention/8-MiB JPEG bytes, real 80–120 ms world-frame pair, raw sensor time,
+  replay high-water marks and one-second local receiver retention age. This is
+  not capture freshness or pixel-time qualification.
+- The core opens no socket/device/file and starts no runtime. Binding
+  validation is not source authentication. Native Aos resource/IPC identity,
+  SELinux/revocation, authenticated Gateway ingress, restart epoch and distinct
+  OEM target activation remain required, unimplemented gates. No credential
+  database, broad permissions, VDP slot or alternative lifecycle manager.
+- Verification: platform `test_camera_access.py` and fixed profile parity,
+  integration documentation/requirement checks; native/live/installed proofs
+  are not inferred from source-only checks.
+- Exact [Camera Access source selection](../../contracts/vision-vm/camera-access-source.v1.json)
+  binds the local platform commit and canonical profile digest. It is not a
+  published dependency or a modification to the current Main build selection.
 
 These entries remain visible so that they cannot reappear as accidental local
 implementation work. They do not block the current D4 sequence.
+
+## Explicitly Deferred or Out-of-Scope Items
 
 | Tracker | Boundary | Re-entry condition | State |
 | --- | --- | --- | --- |

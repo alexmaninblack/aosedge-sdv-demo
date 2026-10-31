@@ -10,11 +10,11 @@
 - Prepared: 2026-08-19
 - Accepted: 2026-08-28
 - Owner: Function Team 1 / Service Provider 1 functional Cloud product
-- Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.4](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.4](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.3](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.5](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.5](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.4](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)

@@ -89,11 +89,11 @@ build side effect. M1 installation uses its internal storage.
 
 ## Canonical design chain
 
-[HLA 1.8](../architecture/high-level-architecture.md) →
-[Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md) →
-[Flows 2.4](../architecture/demo-scenario-architecture-flows.md) →
-[System Requirements 2.4](../requirements/system-requirements-and-traceability.md) →
-[Component Register 2.3](../requirements/component-decomposition-and-interface-register.md) →
+[HLA 1.9](../architecture/high-level-architecture.md) →
+[Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md) →
+[Flows 2.5](../architecture/demo-scenario-architecture-flows.md) →
+[System Requirements 2.5](../requirements/system-requirements-and-traceability.md) →
+[Component Register 2.4](../requirements/component-decomposition-and-interface-register.md) →
 [component packages](../requirements/components/README.md).
 
 These accepted designs include expanded obligations beyond the implemented

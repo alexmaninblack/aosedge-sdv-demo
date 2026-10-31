@@ -80,7 +80,7 @@ does not change those immutable selections.
 ## Read deeper when needed
 
 - [Implemented architecture](current-implementation.md)
-- [High-Level Architecture 1.8](high-level-architecture.md)
+- [High-Level Architecture 1.9](high-level-architecture.md)
 - [Interface contracts](../../contracts/README.md)
 - [Developer build](../getting-started/reproduce-demo.md)
 - [Contributing](../../CONTRIBUTING.md)

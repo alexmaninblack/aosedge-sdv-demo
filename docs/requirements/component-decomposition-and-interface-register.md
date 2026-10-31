@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 2.3
+# Component Decomposition and Interface Register 2.4
 
 - Status: Accepted
-- Version: 2.3
+- Version: 2.4
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.4](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 2.4](system-requirements-and-traceability.md)
+- Architecture input: [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 2.5](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -90,12 +90,12 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.8 owns system boundaries, authorities and
+1. High-Level Architecture 1.9 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 2.3 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 2.4 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 2.4 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 2.5 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 2.4 owns normative `SYS-*` obligations and gap
+4. System Requirements 2.5 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -440,6 +440,7 @@ not a claim of implemented or qualified behavior.
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability and defense-in-depth outbound QM advisory path as an OEM-trusted FOTA component without issuing Service JWTs. | KUKSA contract/configuration and Vehicle Data Platform Component | Compatibility, data quality, outbound validation, trusted Provider integration, FOTA and recovery |
 | <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows; apply the closed twelve-path/fixed-point v2 synthetic assessment with atomic derived admission and crash-safe state; operate offline; and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, exact model input/arithmetic/identity/time, model/data-product evolution, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Deliver one mature Tire Health v1.0 product on accepted VDP v3: estimate condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Exact VDP v3 prerequisite, model, persistence, bounded reporting, advisory and multi-tenant isolation |
+| <a id="cr-cam"></a>`CR-CAM` | Supply the separate Vision VM's bounded OEM camera-data boundary, not a VDP extension or model service. | [Camera Access](components/camera-access.md), platform repository | Selected-source frame validation, bounded delivery, honest loss/age and native authorization/target isolation gates |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, pre-Apply revert, SOTA removal, forward repair, native logging and retirement |
 | <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; with its backend in a Mac-local ARM64 container and live views in host Presenter, without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, exact-current-Unit persistence and complete R0 deletion |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Present one prepared Tire v1.0 candidate, delegate protected publication and ingest/present real bounded Tire Health results as an independent Mac-local Function Team product without owning OEM lifecycle state. | Tire Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, idempotency, delivery/freshness, product isolation, local hosting, current-run persistence and complete R0 deletion |
@@ -466,6 +467,32 @@ implementation:
 | <a id="cr-event-cloud"></a>`CR-EVENT-CLOUD` | `CR-TIRE-CLOUD` |
 
 ## Detailed Package Traceability
+
+### Independent Vision Camera Access
+
+| ID | Component / interface | Owner and boundary |
+| --- | --- | --- |
+| <a id="cmp-cam"></a>`CMP-CAM` | OEM Camera Access | `aos-vehicle-platform`; distinct Vision-only OEM payload, admission/metadata/two-frame delivery, no VDP slot, model, motion or lifecycle-manager ownership |
+
+| ID | Producer | Consumer | Data | Contract | State |
+| --- | --- | --- | --- | --- | --- |
+| <a id="if-cam-001"></a>`IF-CAM-001` | OEM-selected Gateway adapter | `CMP-CAM` | Trusted binding and bounded JPEG/metadata admission | Fixed Camera Access profile | Source foundation; native authenticated ingress gated |
+| <a id="if-cam-002"></a>`IF-CAM-002` | `CMP-CAM` | Vision Perception | Latest eligible immutable pair and explicit unavailable/stale delivery | Fixed Camera Access profile | Source foundation; native resource/IPC gated |
+
+| System obligation | Component allocation | Derived requirements |
+| --- | --- | --- |
+| [Independent platform (`SYS-VIS-005`)](system-requirements-and-traceability.md#sys-vis-005) | `CMP-CAM`, `CMP-ORCH` | `REQ-CAM-001`, `REQ-CAM-006` |
+| [Bounded data (`SYS-VIS-006`)](system-requirements-and-traceability.md#sys-vis-006) | `CMP-CAM` | `REQ-CAM-002`, `REQ-CAM-003` |
+| [Loss and age (`SYS-VIS-007`)](system-requirements-and-traceability.md#sys-vis-007) | `CMP-CAM` | `REQ-CAM-004`, `REQ-CAM-006` |
+| [Native authority (`SYS-VIS-008`)](system-requirements-and-traceability.md#sys-vis-008) | `CMP-CAM` | `REQ-CAM-001`, `REQ-CAM-005`, `REQ-CAM-006` |
+
+[Vision platform composition](system-requirements-and-traceability.md#sys-vis-005),
+[bounded data](system-requirements-and-traceability.md#sys-vis-006),
+[loss/age](system-requirements-and-traceability.md#sys-vis-007) and
+[native authority](system-requirements-and-traceability.md#sys-vis-008)
+derive the [Camera Access requirements](components/camera-access.md).
+VDP and retained Brake/Tire packages remain unchanged. Assessment dynamics and
+result return are not authorized by a camera-read grant.
 
 The Vision-only VM pilot adds [SYS-VIS-001](system-requirements-and-traceability.md#sys-vis-001),
 [SYS-VIS-002](system-requirements-and-traceability.md#sys-vis-002) and

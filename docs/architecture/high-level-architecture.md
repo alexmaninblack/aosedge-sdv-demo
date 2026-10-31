@@ -1,10 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.8
+# High-Level Architecture 1.9
 
 - Status: Accepted
-- Version: 1.8
+- Version: 1.9
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27, with the linked accepted lifecycle/interaction amendments
 - Owner: System Architecture
@@ -157,9 +157,26 @@ on a dedicated M4. This does not change Main's 2-vCPU/2-GiB controller or its
 installed product. Its separate Test-only resource profile, fresh overlay and
 sequential ownership are allocated to
 [D4-029](../requirements/d4-decision-register.md#d4-029-vision-vm-pilot).
-Its stationary live-camera engineering preview uses existing authenticated
-guest diagnostics and matched raw predictions; it is not the later native
-camera/service/UI product integration or accuracy acceptance.
+Its stationary/moving engineering previews use existing authenticated guest
+diagnostics and matched raw predictions; they are not native camera/service/UI
+product integration or accuracy acceptance.
+
+The accepted Vision composition is a separate VM with its own OEM **Camera
+Access** platform package and independently deployed Perception/Assessment
+services. It contains no installed VDP, Brake Health or Tire Health and does
+not adopt their credentials, mutable state or component slot. Camera Access
+is not an extension/profile of the existing VDP. The existing VM and its
+installed products remain unchanged. A clean immutable Linux/AosCore base may
+be shared; sharing a base is not sharing platform payloads or deployment slots.
+
+The Gateway owns simulation capture; Camera Access owns selected-source image
+admission, bounded frame delivery and metadata; Perception owns model execution.
+Images bypass the scalar KUKSA path. Assessment dynamics need their own approved
+Vision input, not installation of the Brake/Tire VDP. Native AosCore remains
+the deployment/resource authority. The transport-independent foundation grants
+no camera configuration, motion, Cloud or container access. Native ingress,
+resource/IPC and distinct OEM-target integration remain explicit delivery gates
+under [ADR 0019](decisions/0019-vision-pilot-single-node-lab.md).
 
 [ADR 0018](decisions/0018-installable-demo-and-first-use.md) allocates installation
 and first-use facilitation to existing Demo Control engines. The DMG supplies

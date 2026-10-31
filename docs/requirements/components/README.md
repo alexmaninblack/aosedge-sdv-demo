@@ -3,6 +3,10 @@
 
 # Component Requirement Packages
 
+The Vision feature branch additionally defines the independent
+[OEM Camera Access package](camera-access.md). It does not extend or replace
+the retained Brake/Tire VDP package.
+
 - Status: Accepted requirement packages; implementation inventory reviewed 2026-10-15
 - Prepared: 2026-08-18
 - Owner: System Architecture

@@ -4,8 +4,8 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted
-- Version: 2.3
-- Updated: 2026-10-20
+- Version: 2.4
+- Updated: 2026-10-31
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: Demo Architecture
@@ -13,8 +13,8 @@
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.8, with detailed interaction mapping in Demo Scenario Architecture Flows
-  2.4
+  1.9, with detailed interaction mapping in Demo Scenario Architecture Flows
+  2.5
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -24,9 +24,25 @@
 
 ## Purpose and installed sequence
 
+### Separate Vision branch
+
+[ADR 0019](../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+defines a separate Vision VM, not an upgrade of the retained Brake/Tire VM.
+The Vision platform is OEM Camera Access; VDP, Brake and Tire are not installed
+there. The audience journey is select/create the Vision controller, activate
+its distinct Camera Access package, deploy Perception and Assessment, then
+inspect frame-matched shadow results while driving through native controls.
+This journey is a target, not claimed from the engineering preview or source
+foundation. Core checks start no VM and preserve the existing VM/data exactly.
+Loss, stale delivery or incompatible calibration must show explicit unavailable
+results, never synthetic detections or a motion command. See the
+[Camera Access flow](../architecture/demo-scenario-architecture-flows.md#af-vis-cam).
+
+### Retained Brake/Tire sequence
+
 This scenario explains what happens and what the audience sees as a complete,
 platform-integrated vehicle gains capabilities after SOP. It projects
-[HLA 1.8](../architecture/high-level-architecture.md), not an unfinished vehicle
+[HLA 1.9](../architecture/high-level-architecture.md), not an unfinished vehicle
 being made safe by later updates. Exact schemas and ownership belong to the
 [flows](../architecture/demo-scenario-architecture-flows.md) and requirements.
 
@@ -138,9 +154,9 @@ The demonstration does not claim that no software ever changes after SOP. Its
 claim is that post-SOP functionality is added through the extension and
 lifecycle mechanisms intentionally built into the SOP platform.
 
-## Alignment With High-Level Architecture 1.8
+## Alignment With High-Level Architecture 1.9
 
-High-Level Architecture 1.8 shows every capability that the target logical
+High-Level Architecture 1.9 shows every capability that the target logical
 vehicle architecture can host. This scenario defines when those deployable
 capabilities are absent or present during `M0`, `M1`, `G0–G4`, `T1`, and `R0`.
 
@@ -386,7 +402,7 @@ time-critical local advisory path.
 
 ### Tire Health Function Dashboard — Independent SOTA 2 Product
 
-High-Level Architecture 1.8 assigns a separate backend and dashboard to
+High-Level Architecture 1.9 assigns a separate backend and dashboard to
 Function Team 2 / Service Provider 2. They become audience-visible at `T1`,
 after the `G0–G4` Brake Health progression. The dashboard presents the one
 prepared Tire Health Service v1.0 candidate and shows its estimated condition
@@ -1505,7 +1521,7 @@ destructive experiment.
     regeneration or full qualification run is permitted.
 11. Unit identities remain stable throughout `G0–T1`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
-12. High-Level Architecture 1.8 is a capability superset; `G0–G4` exercise
+12. High-Level Architecture 1.9 is a capability superset; `G0–G4` exercise
     Function Team 1 and `T1` adds Function Team 2 through its independent Tire
     Health SOTA 2 lifecycle.
 13. Function Teams retain independent service/product lifecycles. Installed
@@ -1641,7 +1657,7 @@ proof above remain part of the demo and are not a performance benchmark.
 Cloud provisioning, authentication, signing, approval and operator-interaction
 duration are not vehicle-performance KPIs for this demo.
 
-Architecture Flows 2.4 owns detailed interaction mapping. These verification
+Architecture Flows 2.5 owns detailed interaction mapping. These verification
 obligations constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
@@ -1649,10 +1665,10 @@ the independence of the two SOTA lifecycles.
 
 ## Reference Basis
 
-- [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
+- [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 2.4](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

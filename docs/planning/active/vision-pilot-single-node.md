@@ -3,14 +3,14 @@
 
 # Single Node Vision Lab Implementation Plan
 
-- Status: Authorized implementation — isolated M4 VM, compute and live-camera preview
-- Version: 0.6
+- Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
+- Version: 0.7
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: M4 camera characterization and isolated 4-vCPU/4-GiB VM proof complete;
-  initial real-model cost characterization complete, no full-pipeline fit or E2E acceptance
+- Execution status: M4 VM/engineering preview and Camera Access source foundation complete;
+  native Camera Access deployment, full-pipeline fit and E2E acceptance remain open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -41,6 +41,8 @@ entry is part of that journey.
 - JPEG/MJPEG only; no H.264/H.265/WebRTC. ROS2 is not a required dependency.
 - Live camera/rendering/encoding characterization precedes AI implementation.
 - Native Vision page with frame-matched overlays; no AI vehicle actuation.
+- Vision-only OEM Camera Access package; no VDP, Brake Health or Tire Health
+  installation or VDP-slot reuse in this VM. The existing VM is untouched.
 - No new analytics Cloud backend, raw-video history or recording by default.
 - Sequential Lab operation on the dedicated M4. A conflicting live owner blocks startup;
   stopping it preserves its Test/data and uses its normal owner, never a PID kill.
@@ -80,7 +82,7 @@ form the integration lock.
 | --- | --- | --- |
 | `aosedge-sdv-demo` | Vision source/producer locks, VM profile, fresh-Test scope, service preparation/publication/assignment, Setup, Presenter, qualification and this design chain | Current `main`, option A, release descriptors and Brake/Tire data |
 | `carla-ego-runtime` | Owned RGB sensor, bounded host image/result interface, native Vision page and semantic UI identities | Existing tick/control owner, Safe Stop and advisory contracts |
-| `aos-vehicle-platform` | Platform camera/result adapter, native resource/security integration and compatibility metadata; image delta only if proven necessary | No service algorithms or copied credentials; existing Main Factory retained |
+| `aos-vehicle-platform` | Independent OEM Camera Access core/payload, result adapter, native resource/security integration and compatibility metadata; image delta only if proven necessary | No VDP extension or VDP-slot reuse, service algorithms or copied credentials; existing Main Factory retained |
 | Proposed `vision-pilot-services` | Headless Perception and Assessment, shared DTOs, upstream pin, model/dependency manifests, two Aos packages and tests | Independent service releases; no CARLA/VISS control or Cloud producer keys |
 | Brake/Tire service/backend repositories | No implementation changes | Their release lines, source and state remain intact |
 | CARLA/Unreal repositories | No planned source or content rebuild | Retained standalone simulator and dependencies |
@@ -237,6 +239,46 @@ the normal UI, then independently prove actual speed and travelled distance.
 The native control session remains the only motion owner; no Cloud provisioning,
 hold bypass, inference actuation or Test/data replacement is authorized here.
 Record the visible moving results and verify normal end-of-check cleanup.
+
+## Current implementation packet: independent Camera Access
+
+The operator accepted this composition and implementation on 2026-10-31.
+Update the class-C architecture cascade first. Keep the retained Brake/Tire
+VM stopped/unchanged; this packet runs no VM or live mutation.
+
+1. Implement Camera Access as a separate source package in the platform
+   repository's Vision worktree. Its core must not import VDP, CARLA, KUKSA,
+   models, Cloud, provisioning or runtime control.
+2. Freeze a machine-readable front-camera profile and exact frame/binding
+   metadata. Validate JPEG dimensions before any decode and reject foreign
+   source/epoch/calibration, replay, malformed/oversized input and time regressions.
+3. Retain at most two immutable JPEG frames, deliver only the latest actual
+   80–120 ms pair, count replacements/rejections and expose explicit warming,
+   unavailable and locally stale delivery. Preserve raw sensor timestamps.
+4. Prove first selection, identical-selection reuse, explicit source reset,
+   disconnect/reconnect, stale delivery, valid functional read, malformed input
+   and no disk/network/runtime side effects through offline unit tests.
+5. Commit the platform source, then fan its exact commit/digest into integration
+   provenance. Keep public Main catalogs, release descriptors, DMG and caches
+   unchanged. Report source-only status, not an installed Camera Access pass.
+6. Continue with native Aos resource/IPC authorization, authenticated Gateway
+   ingress, the distinct OEM component target and Vision-only activation.
+   Prove native identity, SELinux, restart and physical slot isolation before
+   Camera Access deployment. The existing VDP-specific runtime is not assumed
+   generic. Assessment dynamics/result contracts remain their own V2 work.
+
+This source packet neither rebuilds CARLA/Factory nor installs the core into
+the old VM. The successful engineering preview and its frozen receipts remain
+unchanged; its SSH model worker is not repurposed as the product camera service.
+
+The foundation source packet is complete at the exact
+[Camera Access source selection](../../../contracts/vision-vm/camera-access-source.v1.json).
+Its single offline scenario passed 22 unit/contract cases, repository policy,
+retained telemetry-contract and Factory-layer validators in approximately
+0.3 seconds. The platform worktree is separate and Main remains unchanged.
+No VM, container, listener, signing, Cloud mutation or image build was started.
+Next implement and prove the native resource/IPC and distinct OEM-target gates;
+do not report source completion as installed Camera Access or full V2 closure.
 
 For the preceding stationary v1 proof, the operator requested connecting CARLA to the existing Vision VM
 to inspect real model outputs. ADR 0019 v0.5 and the
@@ -584,7 +626,7 @@ Define versioned schemas and golden/negative fixtures for these boundaries:
 | --- | --- | --- |
 | Camera frame | Gateway/platform adapter to Perception | Selected source/epoch, camera and CARLA frame, simulation time, encoding, dimensions and calibration profile |
 | Perception result | Perception to Assessment | Same frame, AutoDrive pair references, model/preprocessing versions, raw typed outputs, validity and timings |
-| Vehicle dynamics | Authorized local KUKSA input to Assessment | Original sample time, speed units, source generation and freshness; no cached-value re-timestamping |
+| Vehicle dynamics | Approved Vision platform input to Assessment | Independently closed source/permission contract, original sample time, speed units and freshness; no Brake/Tire VDP or credential reuse, no cached-value re-timestamping |
 | Assessment result | Assessment through platform adapter to Gateway | Matched source/frame, interpreted path/lead estimates, validity, producer epoch and compatible service versions |
 | Native/browser observation | Gateway/server to Driving Control/Presenter | Matching display frame, actual age, honest state and opaque browser references |
 
@@ -741,9 +783,10 @@ preprocessing maps. Verify the actual rigid mount, image orientation, FOV,
 crop, aspect and projection against that profile. Never retain another camera's
 `H.yaml` just because the overlay looks plausible.
 
-Extend the OEM VDP application with isolated bounded image/result workers using
-the V2 contracts. Relay images without unnecessary pixel decoding in VDP.
-Keep scalar KUKSA publication and existing source timestamps independent.
+Integrate the independent OEM Camera Access component and separate typed
+result adapter using the V2 contracts. Relay images without unnecessary pixel
+decoding in Camera Access. Do not install or extend the Brake/Tire VDP. Close
+Assessment's approved dynamics input separately; preserve original source times.
 Validate returned results at the host Gateway for selected source, epoch,
 frame, schema, calibration, size, finite values, rate and age. Refuse old,
 cross-source, incompatible or unauthorized messages.
