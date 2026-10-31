@@ -3,12 +3,12 @@
 
 # ADR 0019: A Separate Single Node Vision Lab
 
-- Status: Accepted for the isolated M4 VM, engineering previews and independent Camera Access foundation; native interfaces remain subject to V2 closure
-- Version: 0.7
+- Status: Accepted for the isolated M4 VM, engineering previews and Camera Access native-boundary implementation; live activation remains unqualified
+- Version: 0.8
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab System Architecture
-- Change class: C; isolated VM and Camera Access foundation accepted, downstream native Vision contract closure remains required
+- Change class: C; Camera Access resource/IPC/OEM target allocated; downstream Gateway ingress and service contracts remain required
 - Direction selected: independent Brake/Tire and Vision single-node tracks
 - Scope: isolated VM, bounded compute, stationary/moving engineering previews and Camera Access source foundation authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
 - Architecture input: [High-Level Architecture 1.9](../high-level-architecture.md)
@@ -94,6 +94,42 @@ pixel-time accuracy claim. Local delivery-age bounds use the receiver clock,
 not subtraction of guest and host clocks. Read and delivery do not configure
 the camera or grant motion authority. Core source tests precede the native
 resource/IPC, Gateway ingress and distinct OEM packaging gates.
+
+### Native Camera Access packet
+
+The operator authorized native consumer access and independent OEM activation
+on 2026-10-31. Allocate `vision-camera-read` through native Aos ResourceManager:
+one instance, supplementary `aos-camera-read` GID and a read-only bind from
+`/run/aos-camera-access/read` to `/run/aosedge/platform/camera`. The local
+protocol accepts only `status` and `pair`. Read-only mounting alone does not
+authorize Unix socket operations; kernel DAC, actual peer identity, the closed
+protocol and observed SELinux policy enforce their respective boundaries.
+
+The dedicated `aos-camera-access` process has no capabilities or Internet
+listener. Its separate OEM socket is never projected into a service; it accepts
+only the trusted OEM identity/root after SO_PEERCRED observation. A nonsecret
+component generation binds requests to the current process. Source metadata
+and this local generation are not host-to-guest authentication. Authenticated
+Gateway ingress and its fresh source-epoch establishment remain a separate gate.
+
+Reuse the existing OEM systemd-slot engine only with the explicit
+`camera-access-v1` profile, Camera Access payload identity, own unit, health
+adapter and `/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access` A/B store.
+Preserve VDP defaults and physical Safe Stop/update/recovery rules. No VDP slot,
+credential adoption, alternate installer or lifecycle manager is introduced.
+
+The observed Factory has neither the Camera account/resource nor this target.
+An explicitly selected Vision bootstrap/image delta supplies them; do not
+overwrite the retained Factory, rebase the current overlay or rebuild CARLA.
+Keep existing engineering Vision disks/models as retained state until a native
+successor is qualified. Distinct source directories are not Cloud isolation:
+normal provisioning must assign Vision its own Test-role Unit and keys.
+
+Qualify source, targeted ARM64 compile, transient Unix/SELinux proof, bootstrap
+package/image, normal OEM activation and actual native Aos container delivery
+as separate gates. A root probe, manual crun or mocked runtime never counts as
+native service authorization. Revocation stops/reinstantiates the native
+consumer; editing resources.cfg alone is not active-instance revocation.
 
 ## Service responsibilities
 

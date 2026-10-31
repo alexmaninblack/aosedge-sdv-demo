@@ -4,12 +4,12 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.7
+- Version: 0.8
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: M4 VM/engineering preview and Camera Access source foundation complete;
+- Execution status: M4 VM/engineering preview and Camera Access native-source/targeted-compile gates complete;
   native Camera Access deployment, full-pipeline fit and E2E acceptance remain open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
@@ -228,6 +228,57 @@ completion or an actual scope/security/credential/fit boundary. Reuse successful
 immutable outputs; fix the failing owner and rerun its gate, not the entire
 build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 
+## Current native Camera Access packet
+
+The operator authorized native Aos-container access and separate OEM activation.
+Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.8 allocates the fixed
+resource, local IPC, own OEM target and Vision-only bootstrap. The platform
+repository owns the executable native profile; the foundation receipt remains
+frozen and is not relabelled as native acceptance.
+
+1. Inventory the stopped Vision VM and actual resource/runtime/account/policy
+   support, retaining exact old-Main journal bytes before/after. Missing Camera
+   bootstrap is an observed Factory limitation, not a reason to reuse VDP.
+2. Implement closed read/OEM IPC, peer checks, distinct payload/profile and
+   disabled native unit. Preserve physical Safe Stop and the existing A/B
+   transaction/recovery engine. Run offline gates and targeted ARM64 runtime
+   tests before any package/image construction.
+3. Compile only the fixed launcher and narrow policy module using preserved
+   recipe toolchains. Prove Unix/identity/policy behavior transiently on Vision,
+   with Enforcing, an armed stock-policy rollback and verified cleanup. This
+   platform probe is not native SM allocation or FOTA acceptance.
+4. Build one bounded Vision bootstrap/image successor, not CARLA or the Main
+   Factory. Preserve the engineering overlay/models. Provision its own Test-role
+   Unit through normal owners, without sharing Unit keys or changing a shared
+   Cloud model in place. Keep the selected Production Cloud and OEM/SP accounts.
+5. Activate Camera Access through native SM and prove first-create, idempotent
+   repeat, restart/recovery, independent target/store, health versus source
+   availability and malformed/wrong-identity denial.
+6. Deploy the native read-resource consumer; independently observe UID/GID,
+   read-only mount, matching frame pair, producer/control denial, stop/revocation,
+   bounded retention, process stability and fresh scoped AVCs. Editing resource
+   JSON alone is not revocation. Verify old Main remains unchanged and close all
+   owned processes/listeners. Keep source, image and live receipts distinct.
+
+Authenticated Gateway ingress and full Perception/Assessment product deployment
+remain their own V2–V5 gates. Neither an OEM-local fixture nor a manual crun probe
+closes them. No Main merge, signing/publication or current DMG change is implied.
+
+The [native source receipt](../../../contracts/vision-vm/camera-access-native-source.v1.json)
+binds the platform commit, 32 camera cases, 274 Python cases (three skips),
+83 completed ARM64 unit cases and the separately compiled launcher/policy. Two
+opt-in live VDP qualifications were skipped, not passed. None of these is
+native deployment acceptance. Inventory proves the current engineering image
+has no Camera bootstrap and Vision has no provisioned Unit. The temporary
+account probe returned exit 1; it was cleaned up and is not a functional pass.
+No policy was loaded. Preserve that result rather than substituting root.
+
+The installed input catalog currently accepts only package-owned immutable
+images; it has no selected Vision bootstrap input. Close the normal Vision
+bootstrap/catalog delivery binding before image installation and provisioning.
+Do not invent an arbitrary image override, overwrite the installed Main input,
+reuse a VDP target or rebase an engineering overlay to cross this gate.
+
 ## Current live-preview packet
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
@@ -240,7 +291,7 @@ The native control session remains the only motion owner; no Cloud provisioning,
 hold bypass, inference actuation or Test/data replacement is authorized here.
 Record the visible moving results and verify normal end-of-check cleanup.
 
-## Current implementation packet: independent Camera Access
+## Completed source foundation: independent Camera Access
 
 The operator accepted this composition and implementation on 2026-10-31.
 Update the class-C architecture cascade first. Keep the retained Brake/Tire

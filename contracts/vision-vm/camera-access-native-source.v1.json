@@ -1,0 +1,60 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "status": "NATIVE_SOURCE_AND_TARGETED_COMPILE_ONLY",
+  "publication": "LOCAL_FEATURE_COMMIT_NOT_PUBLISHED",
+  "platform": {
+    "repository": "aos-vehicle-platform",
+    "branch": "codex/vision-pilot-single-node",
+    "revision": "bfc3d04fb019b9251c0c25a2091e7efcdbd9e31a",
+    "nativeProfile": "contracts/camera-access/native-profile.json",
+    "nativeProfileSha256": "a6e76863fb8d6a42d5d1eb7480a71ae115ccb63890eb8a770b88058b301a1295"
+  },
+  "sourceChecks": {
+    "cameraCases": 32,
+    "pythonSuiteCases": 274,
+    "pythonSuiteSkipped": 3,
+    "repositoryPolicy": "PASS",
+    "retainedTelemetryFactoryMainlineAndKac": "PASS"
+  },
+  "arm64Runtime": {
+    "outcome": "PASS_UNIT_SUBSET_LIVE_VDP_NOT_RUN",
+    "casesDiscovered": 85,
+    "casesCompleted": 83,
+    "casesSkipped": 2,
+    "notRun": ["RealProviderFirstInstallThroughProductionProfile", "RealProviderUpdateAndRollbackThroughProductionProfile"],
+    "compiledSourceRevision": "ccb9e92cd95c5f50cf9f16303578a5c42141b9c8",
+    "sourceArchiveSha256": "6be5e6168037a41341e56d455f38deb88dd4fff4db7b581c118a0fc5a94f31af",
+    "executableSha256": "6717aeb9f7cdb4471a94b419a3f2847e44c123f7d4a203b1e32ad191f3787058",
+    "seconds": 16.92,
+    "scope": "83 completed unit fixtures, including both new Camera/VDP-profile checks. Two opt-in live VDP qualifications were skipped, not passed. No deployed native SM instance."
+  },
+  "primitives": {
+    "outcome": "PASS_TARGETED_PRIMITIVE_COMPILE",
+    "sourceArchiveSha256": "a7e04bb69136e67389c2074c00e3a24c0a4dedf6a0b089dce4dba7cc701b7e10",
+    "launcherSha256": "3bceb2efc4493bc085807f59597afa96dfa1c3719bedf27c891ca52b240f769d",
+    "policyModuleSha256": "96f21d2af041277565af90356dfbdb57f1dfd22506ce1bff70b68f8a67238f6b",
+    "m4PolicyLoaded": false
+  },
+  "m4Prerequisites": {
+    "retainedMainJournalUnchanged": true,
+    "visionVmStoppedAfterProbe": true,
+    "ownedListenersReleased": true,
+    "cameraBootstrapAccountAndResourcePresent": false,
+    "engineeringVisionProvisioned": false,
+    "temporaryAccountProbeExit": 1,
+    "temporaryAccountProbeQualified": false,
+    "stockPolicyModified": false
+  },
+  "notRun": [
+    "Transient Camera daemon and SELinux functional/rollback proof",
+    "Vision bootstrap package/image qualification and normal catalog delivery",
+    "Distinct Vision Test-role Unit provisioning",
+    "Native OEM first activation/repeat/restart/recovery",
+    "Actual Aos SM resource consumer and revocation",
+    "Authenticated Gateway camera ingress",
+    "Vision Perception/Assessment deployment and installed API/UI acceptance"
+  ],
+  "preserved": ["Main source and selectors", "Brake/Tire VM and data", "Engineering Vision disk and models", "Current DMG", "Factory and CARLA inputs", "Builder and caches"],
+  "scopeExclusions": ["Main merge", "Public upload", "Cloud mutation", "CARLA rebuild", "Rootfs remount", "Overlay rebase", "VDP-slot adoption"]
+}

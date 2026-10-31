@@ -4,10 +4,10 @@
 # D4 Interface and Qualification Decision Register
 
 - Status: Decision register; each record's decision and proof state governs
-- Version: 1.3
-- Updated: 2026-10-18
+- Version: 1.4
+- Updated: 2026-10-31
 - Prepared: 2026-08-22
-- Reading baseline: HLA 1.9, Scenario 2.4, Flows/System 2.4, Register 2.3 and
+- Reading baseline: HLA 1.9, Scenario 2.4, Flows/System 2.5, Register 2.4 and
   current component packages; installed and expanded profiles are distinguished
 - Editorial consolidation: 2026-10-18; accepted behavior and stable IDs preserved
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.7](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.8](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3629,7 +3629,7 @@ the owning specification; no review narrative is a second normative copy.
 ### D4-030 — Independent Camera Access foundation
 
 - State: `DECIDED` for the source foundation authorized on 2026-10-31.
-- Authority: [ADR 0019 v0.7](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
+- Authority: [ADR 0019 v0.8](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
 - Owner: [OEM Camera Access](component-decomposition-and-interface-register.md#cmp-cam),
   source and fixed machine profile in `aos-vehicle-platform`'s Vision worktree.
 - Composition: separate Vision VM and OEM camera payload/target, no VDP,
@@ -3647,7 +3647,7 @@ the owning specification; no review narrative is a second normative copy.
 - The core opens no socket/device/file and starts no runtime. Binding
   validation is not source authentication. Native Aos resource/IPC identity,
   SELinux/revocation, authenticated Gateway ingress, restart epoch and distinct
-  OEM target activation remain required, unimplemented gates. No credential
+  OEM target activation remain required live gates. No credential
   database, broad permissions, VDP slot or alternative lifecycle manager.
 - Verification: platform `test_camera_access.py` and fixed profile parity,
   integration documentation/requirement checks; native/live/installed proofs
@@ -3655,6 +3655,16 @@ the owning specification; no review narrative is a second normative copy.
 - Exact [Camera Access source selection](../../contracts/vision-vm/camera-access-source.v1.json)
   binds the local platform commit and canonical profile digest. It is not a
   published dependency or a modification to the current Main build selection.
+- Native packet: `vision-camera-read`, one native allocation, `aos-camera-read`
+  GID and only the read socket directory mounted at `/run/aosedge/platform/camera`.
+  Closed status/pair protocol; actual SO_PEERCRED, DAC/mount and observed SELinux
+  proof. OEM producer endpoint is not projected and is not Gateway authentication.
+- Independent `camera-access-v1` profile selects own unit, health adapter, payload
+  identity and A/B store. The explicitly selected Vision bootstrap supplies the
+  missing account/resource/target. Retained VDP defaults, Safe Stop, Unit/keys
+  and data are not adopted. Stop/reinstantiate native consumers for revocation.
+- Source and targeted compile are separate from transient security, image,
+  provisioning, native activation and actual SM consumer-delivery acceptance.
 
 These entries remain visible so that they cannot reappear as accidental local
 implementation work. They do not block the current D4 sequence.

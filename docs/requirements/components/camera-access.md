@@ -3,13 +3,13 @@
 
 # OEM Camera Access Requirements
 
-- Status: Accepted for the Vision-only source foundation; native deployment remains gated
-- Version: 0.1
+- Status: Accepted source and native-boundary contract; live deployment remains gated
+- Version: 0.2
 - Prepared: 2026-10-31
 - Owner: OEM Vehicle Platform
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Flow input: [Camera Access flow](../../architecture/demo-scenario-architecture-flows.md#af-vis-cam)
-- Decision: [ADR 0019 v0.7](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+- Decision: [ADR 0019 v0.8](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 
 ## Boundary
 
@@ -46,7 +46,23 @@ unchanged original sensor time. It does not qualify image/capture-time accuracy.
 | <a id="ut-cam-003"></a>`UT-CAM-003` | Bounded retention, latest pair, slow reader, immutable frames and counted replacement | `REQ-CAM-003` |
 | <a id="ut-cam-004"></a>`UT-CAM-004` | Injected receiver clock, stale members, no age renewal, disconnect/reconnect and epoch/calibration flush | `REQ-CAM-004` |
 | <a id="ut-cam-005"></a>`UT-CAM-005` | No runtime/Cloud/VDP/model dependency or public source/pixel disclosure | `REQ-CAM-005` |
-| <a id="ut-cam-006"></a>`UT-CAM-006` | Distinct payload/target mapping and restart binding; target integration remains unimplemented until native closure | `REQ-CAM-006` |
+| <a id="ut-cam-006"></a>`UT-CAM-006` | Distinct payload/target mapping and restart binding; native activation requires its separate live proof | `REQ-CAM-006` |
+
+## Native allocation
+
+`vision-camera-read` is a native Aos resource, allocated to at most one
+Perception instance. It assigns `aos-camera-read` and mounts only the read
+socket directory, never the OEM socket or component store. The protocol accepts
+only status/pair, with a 4096-byte header and absolute two-second connection
+deadline. Observe real UID/GID/mount/SELinux effects; read-only bind alone is
+not socket authorization. Stop/reinstantiate consumers for resource revocation.
+
+The `camera-access-v1` native OEM profile selects its own identity, unit,
+health adapter and A/B store. Keep VDP defaults, physical Safe Stop and durable
+recovery unchanged. The Vision-only bootstrap provides the missing dedicated
+account/resource/target; no overlay rebase or Main image replacement is allowed.
+An OEM-local producer is not authenticated Gateway ingress. Do not claim a
+normal native service/activation pass from source, root or manual-crun probes.
 
 The platform's `test_camera_access.py` isolates clocks and inputs without any
 VM/network/simulator. Synthetic JPEG headers prove admission, not pixel decode.
