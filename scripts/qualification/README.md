@@ -13,6 +13,11 @@ Their private contexts bind the M4, retained Main and new Vision identities.
 Neither entry provisions a Unit, proves native Aos SOTA or substitutes for
 calibrated live Vision/API/UI acceptance. Source/build/cache assembly stays
 on the selected development SSD; execution and VM storage stay on M4.
+`vision_live_campaign.py` connects real camera pairs to the retained guest CPU
+models and opens a fixed side-by-side live/processed preview on M4. It derives
+camera-specific geometry, preserves frame/time identity, keeps Safe Stop and
+closes its own resources. It does not provision Cloud, install a Vision product,
+run Assessment or claim learned-model accuracy/native Aos acceptance.
 
 The VM entry receives authorized console input only over standard input; its
 private selection stores no password. It preserves the retained Main instance,

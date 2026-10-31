@@ -3,14 +3,14 @@
 
 # ADR 0019: A Separate Single Node Vision Lab
 
-- Status: Accepted for the isolated M4 VM and compute pilot; downstream interfaces remain subject to V2 closure
-- Version: 0.4
+- Status: Accepted for the isolated M4 VM, compute and stationary live preview; downstream interfaces remain subject to V2 closure
+- Version: 0.5
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab System Architecture
 - Change class: C; bounded VM pilot accepted, downstream Vision contract closure remains required
 - Direction selected: independent Brake/Tire and Vision single-node tracks
-- Scope: isolated VM implementation and bounded compute characterization authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
+- Scope: isolated VM, bounded compute and stationary live-camera engineering preview authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
 - Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
 - Implementation plan: [Vision Lab delivery plan](../../planning/active/vision-pilot-single-node.md)
 
@@ -192,6 +192,29 @@ DMG, a completed two-service Aos deployment or a full E2E claim.
 
 Plan version 0.4 allocates this boundary to V0/V2 and an early compute
 probe; it preserves the V3–V8 obligations rather than claiming them from a spike.
+
+### Authorized live-camera engineering preview
+
+The next bounded packet connects the real CARLA camera to CPU models in the
+existing Vision VM and displays raw model predictions on M4. Its
+[executable preview contract](../../../contracts/vision-vm/live-camera-preview.v1.json)
+defines the engineering-only framed input/result channel over the existing
+authenticated SSH connection. It introduces no listener, new credential,
+container IPC grant, Cloud Unit or alternative production interface.
+
+Keep the unprovisioned source in native Safe Stop. Infer no permission to
+release its hold or bypass first connection. Only the host adapter sees CARLA;
+the guest worker receives bounded JPEGs and cannot issue motion commands.
+Use actual camera/road-plane geometry to derive H and the unchanged upstream
+model-view V to derive C. Do not borrow another camera's H.yaml. Geometric
+projection checks do not qualify learned estimates on simulated imagery.
+
+Preserve pair capture times and mark AutoDrive unavailable on irregular pairs;
+the other models can still process the current image. Show live and processed
+images separately, never paint old predictions over a newer live frame. Native
+Aos deployment, Assessment, moving acceptance and the installed Driving Control
+Vision page remain downstream V2–V8 work. This preview is not a replacement
+for the planned MJPEG/native-resource production interface.
 
 ## Image and result semantics
 

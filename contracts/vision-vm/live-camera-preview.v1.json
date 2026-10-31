@@ -1,0 +1,18 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-engineering-live-preview",
+  "authority": "ADR 0019 v0.5; operator requested live camera on 2026-10-31",
+  "target": "Dedicated M4, fixed four-vCPU Linux Vision VM; existing authenticated SSH only",
+  "motion": "Stationary Safe Stop; inference has no CARLA client, actuator or control method",
+  "transport": "Four-byte big-endian JSON-header length, bounded JSON metadata, two length-bound JPEG payloads over existing SSH stdin; bounded typed JSON results on stdout",
+  "camera": {"profile": "carla-forward-720p-fov50-v1", "width": 1280, "height": 720, "fov": 50, "simulationTickSeconds": 0.1},
+  "binding": ["session", "source", "calibration", "previous/current frame", "original simulation times", "payload lengths and SHA-256"],
+  "bounds": {"headerBytes": 4096, "jpegBytes": 4194304, "resultBytes": 65536, "inFlightPairs": 1, "pendingLatestPairs": 1, "detections": 128, "pathPoints": 64, "seconds": 180, "screenshots": 4},
+  "pairSemantics": "Only 80–120 ms capture pairs enable AutoDrive. Other ordered bounded pairs run AutoSteer/AutoSpeed and explicitly invalidate AutoDrive; no timestamp resampling",
+  "calibration": "Actual CARLA camera transform/intrinsics and local road plane determine H; raw-to-model C = inverse(upstream V) * H. Preserve upstream V. Geometric checks are not model accuracy validation",
+  "preprocessing": "AutoDrive uses warped pair and ImageNet normalization; AutoSteer/AutoSpeed use top-crop 2:1, resize 1024x512, RGB CHW [0,1]",
+  "display": "Separate live and processed images; overlays only on exact matched result frame. AutoSteer is predicted ego path, not lane markings; AutoSpeed uses path-relative L0–L3; nullable AutoDrive distance is a model estimate",
+  "latency": "Host camera-callback arrival to result/display age only; not full capture-to-display latency",
+  "exclusions": ["Native Aos deployment/quotas", "Assessment/fusion", "Interpreted driving advice", "Model accuracy qualification", "Moving workload", "Factory/CARLA rebuild", "Cloud mutation", "Product DMG or full API/UI E2E"]
+}

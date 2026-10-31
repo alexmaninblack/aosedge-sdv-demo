@@ -157,7 +157,9 @@ on a dedicated M4. This does not change Main's 2-vCPU/2-GiB controller or its
 installed product. Its separate Test-only resource profile, fresh overlay and
 sequential ownership are allocated to
 [D4-029](../requirements/d4-decision-register.md#d4-029-vision-vm-pilot).
-The later camera/service/UI architecture is not implemented by this VM slice.
+Its stationary live-camera engineering preview uses existing authenticated
+guest diagnostics and matched raw predictions; it is not the later native
+camera/service/UI product integration or accuracy acceptance.
 
 [ADR 0018](decisions/0018-installable-demo-and-first-use.md) allocates installation
 and first-use facilitation to existing Demo Control engines. The DMG supplies

@@ -13,6 +13,6 @@
   "initialFactory": "6.1.1-maninblack.42/main-qemuarm64",
   "mainProfileUnchanged": "aos-main-qemuarm64-v1",
   "selection": "Explicit environment construction before fresh manufacture; journal vmProfile binding, no retained re-profile",
-  "authority": "ADR-0019 v0.4; isolated local M4 VM and compute pilot only",
+  "authority": "ADR-0019 v0.5; isolated local M4 VM and engineering pilot only",
   "acceptance": "Engineering profile; not an installed Vision release, Cloud provisioning, native SOTA or full E2E acceptance"
 }

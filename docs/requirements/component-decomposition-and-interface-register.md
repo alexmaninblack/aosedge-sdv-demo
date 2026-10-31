@@ -473,6 +473,10 @@ The Vision-only VM pilot adds [SYS-VIS-001](system-requirements-and-traceability
 `CMP-ORCH` lifecycle/qualification ownership. The executable resource contract
 and fixed source tests are allocated by D4-029; native container authority stays
 with AosCore. Downstream camera/service integration is not covered by this slice.
+The bounded engineering preview additionally allocates
+[SYS-VIS-004](system-requirements-and-traceability.md#sys-vis-004) to `CMP-ORCH`
+qualification adapters and `test_vision_live`. It uses the existing authenticated
+guest diagnostic channel, not a new product camera/container authority.
 
 Installed workstation allocation: [separate installed data authority (`SYS-DIST-001`)](system-requirements-and-traceability.md#sys-dist-001)
 is owned by [Demo Orchestrator](#cmp-orch), through the existing

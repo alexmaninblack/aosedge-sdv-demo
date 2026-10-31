@@ -3,8 +3,8 @@
 
 # Single Node Vision Lab Implementation Plan
 
-- Status: Authorized implementation — isolated M4 VM and compute pilot
-- Version: 0.4
+- Status: Authorized implementation — isolated M4 VM, compute and live-camera preview
+- Version: 0.5
 - Prepared: 2026-10-28
 - Updated: 2026-10-31
 - Owner: SDV Lab integration
@@ -225,6 +225,48 @@ after each routine step. Once implementation is authorized, proceed until
 completion or an actual scope/security/credential/fit boundary. Reuse successful
 immutable outputs; fix the failing owner and rerun its gate, not the entire
 build. Do not claim later gates from replay, fixtures or another DMG's evidence.
+
+## Current live-preview packet
+
+On 2026-10-31 the operator requested connecting CARLA to the existing Vision VM
+to inspect real model outputs. ADR 0019 v0.5 and the
+[engineering preview contract](../../../contracts/vision-vm/live-camera-preview.v1.json)
+freeze this bounded step before runtime work. Run `vision_live_campaign.py`
+once with the pinned private M4 context and successful VM proof. Reuse the
+verified Linux ARM64 FP32 payload; rebuild neither Factory nor CARLA.
+
+The scenario checks target/desktop/owners, starts the existing Vision VM and
+CARLA through normal owners, derives camera-specific planar geometry and runs
+a 60–180-second visible preview. Existing authenticated SSH carries bounded
+JPEG pairs and matched typed results. Show raw live video beside its processed
+frame, predicted ego path, path-relative boxes and nullable AutoDrive estimates.
+Wrong pair cadence invalidates AutoDrive instead of fabricating nominal time.
+Keep native Safe Stop, no Cloud mutation, no model motion authority and no
+ground-truth detections in the model path.
+
+Save at most four UI snapshots and bounded timing/counter evidence; verify
+sensor, guest process, source, VM, helper and listener exit while preserving
+Main/Test/data/models. Raw model behavior and geometric consistency are the
+outcome, not qualified accuracy, native Aos deployment, Assessment, moving
+acceptance or full product API/UI acceptance. Production transport/resources
+and the native Vision page still close at their existing V2–V8 gates.
+
+The stationary live preview completed on M4 with verified cleanup. Over the
+120-second view, 594 responses completed (one drained at shutdown; 593 timing
+records), including 442 AutoDrive-valid responses. The other 152 responses
+explicitly withheld AutoDrive for non-nominal capture-pair intervals. One
+invalid startup pair was rejected, not retimed. The latest-pair buffer replaced
+613 pending pairs rather than accumulating a queue. Measured guest processing
+was 213 ms median/223 ms p95; host image-arrival-to-result was 255/311 ms.
+These are not full sensor-capture-to-display latency or a complete 5-Hz
+three-model acceptance. No stale controller samples were observed.
+
+AutoSteer returned up to 33 ego-path points and AutoSpeed 2–3 path-relative
+boxes in this stationary scene. AutoDrive's low lead probability left distance
+absent rather than manufacturing an object. Four matched UI snapshots and the
+original result are retained privately under `vision-vm-m4/live-camera-03`.
+Next close temporal pair selection and validate the calibrated models on an
+authorized moving scene before drawing accuracy or full-pipeline fit conclusions.
 
 ## V0 Isolate the Vision track
 
