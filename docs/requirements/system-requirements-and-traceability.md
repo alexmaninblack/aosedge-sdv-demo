@@ -11,7 +11,7 @@
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md)
+- Flow input: [Demo Scenario Architecture Flows 2.6](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -95,7 +95,7 @@ passes its acceptance criteria, and the evidence is retained.
 
 1. High-Level Architecture 1.9 owns boundaries, authority and invariants.
 2. Demo Scenario 2.4 owns the audience-visible stage progression.
-3. Architecture Flows 2.5 owns detailed lifecycle, runtime, observability and
+3. Architecture Flows 2.6 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.

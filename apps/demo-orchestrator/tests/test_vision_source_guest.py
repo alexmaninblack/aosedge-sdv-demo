@@ -79,6 +79,27 @@ class VisionProjectionTests(unittest.TestCase):
         self.assertEqual(dict(ok=False,reason='VISION_SOURCE_PROFILE_REQUIRED'),json.loads(completed.stdout))
         self.assertNotIn('DO_NOT_PRINT',completed.stdout+completed.stderr)
 
+    def test_ingress_stop_does_not_require_a_new_image_or_material(self):
+        trust=Mock();trust.call.return_value='LoadState=not-found\nActiveState=inactive\nMainPID=0\n'
+        value=v.camera(dict(REQUEST,action='camera-stop'),trust,REQUEST['vehicle'])
+        self.assertEqual(value,dict(stopped=True,noOp=True));trust.write.assert_not_called()
+
+    def test_ingress_start_rejects_missing_native_unit_before_credential_read(self):
+        trust=Mock();trust.call.return_value='LoadState=not-found\n'
+        with patch.object(v,'read') as read,patch.object(v,'native_store') as native:
+            with self.assertRaisesRegex(ValueError,'INGRESS_NOT_INSTALLED'):
+                v.camera(dict(REQUEST,action='camera-start'),trust,REQUEST['vehicle'])
+            read.assert_not_called();native.assert_not_called();trust.write.assert_not_called()
+
+    def test_ingress_checks_selected_unit_node_generation_before_projection(self):
+        item=dict(unitId=LOCAL,nodeId=LOCAL)
+        trust=Mock();trust.call.side_effect=['LoadState=loaded\nActiveState=inactive\n','active\n']
+        selected=dict(unitId=LOCAL,nodeId=LOCAL,role='SELECTED_PLATFORM_UNIT',assignmentGeneration=3)
+        with patch.object(v,'read',return_value=json.dumps(dict(selectedSource=selected))),patch.object(v,'native_store'):
+            with self.assertRaisesRegex(ValueError,'CAMERA_SELECTION_MISMATCH'):
+                v.camera(dict(REQUEST,action='camera-start',generation=4,sourceId=LOCAL),trust,item)
+        trust.write.assert_not_called()
+
     def test_native_runtime_requires_its_own_verified_camera_mount(self):
         info=SimpleNamespace(st_mode=stat.S_IFDIR|0o755,st_uid=0,st_dev=4)
         parent=SimpleNamespace(st_dev=3)

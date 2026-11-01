@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.11](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.12](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3629,7 +3629,7 @@ the owning specification; no review narrative is a second normative copy.
 ### D4-030 — Independent Camera Access foundation
 
 - State: `DECIDED` for the source foundation authorized on 2026-10-31.
-- Authority: [ADR 0019 v0.11](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
+- Authority: [ADR 0019 v0.12](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
 - Owner: [OEM Camera Access](component-decomposition-and-interface-register.md#cmp-cam),
   source and fixed machine profile in `aos-vehicle-platform`'s Vision worktree.
 - Composition: separate Vision VM and OEM camera payload/target, no VDP,
@@ -3682,6 +3682,15 @@ the owning specification; no review narrative is a second normative copy.
 
 These entries remain visible so that they cannot reappear as accidental local
 implementation work. They do not block the current D4 sequence.
+
+The operator accepted [camera ingress v1](../../contracts/vision-vm/camera-ingress.v1.json)
+on 2026-11-01 within `D4-030`: one Vision-only GET/MJPEG route on the enrolled
+Gateway TLS listener, explicit selected-Unit media scope and one separate media
+slot participating in Source detach. The internal nonroot OEM ingress adapter
+uses existing Source/systemd credential ownership and unchanged Camera IPC;
+no camera/app key, new CA/store, broad policy or new VM. Source/compile/reversible
+live proof is authorized. Permanent image delivery and AI/full-E2E acceptance
+remain separate, not inferred from contract or transient proof.
 
 ## Explicitly Deferred or Out-of-Scope Items
 

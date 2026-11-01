@@ -14,7 +14,7 @@
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.9, with detailed interaction mapping in Demo Scenario Architecture Flows
-  2.5
+  2.6
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -1657,7 +1657,7 @@ proof above remain part of the demo and are not a performance benchmark.
 Cloud provisioning, authentication, signing, approval and operator-interaction
 duration are not vehicle-performance KPIs for this demo.
 
-Architecture Flows 2.5 owns detailed interaction mapping. These verification
+Architecture Flows 2.6 owns detailed interaction mapping. These verification
 obligations constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
@@ -1668,7 +1668,7 @@ the independence of the two SOTA lifecycles.
 - [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 2.6](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

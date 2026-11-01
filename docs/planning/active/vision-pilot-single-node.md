@@ -4,7 +4,7 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.11
+- Version: 0.12
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
@@ -231,7 +231,7 @@ build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 ## Current signed-bootstrap and native Camera Access packet
 
 The operator authorized the early signed bootstrap on 2026-11-01. Apply
-[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.11.
+[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.12.
 Build/sign only on SDV-Dev; install/test only on M4 internal storage. Reuse the
 warm Builder/cache and compatible Linux inputs. Preserve the current DMG and
 all retained VM roots. No Main merge or public publication is requested.
@@ -266,7 +266,7 @@ retain the exact single-node type and IAM-proven hardware/Cloud-node binding
 rather than treating that optional display field as the native Main-Node proof.
 
 The operator authorized native Aos-container access and separate OEM activation.
-Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.11 allocates the fixed
+Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.12 allocates the fixed
 resource, local IPC, own OEM target and Vision-only bootstrap. The platform
 repository owns the executable native profile; the foundation receipt remains
 frozen and is not relabelled as native acceptance.
@@ -455,7 +455,7 @@ authenticated Gateway camera binding/delivery on this existing Vision VM.
 
 ## Current live-preview packet
 
-### Next boundary: authenticated Gateway camera ingress
+### Current packet: authenticated Gateway camera ingress
 
 The native Camera image/resource gate is complete, but it consumes an OEM-local
 recorded JPEG fixture. Neither that root-authorized producer nor the engineering
@@ -468,8 +468,9 @@ and native producer identity must therefore close before implementing live
 ingress. The accepted V2 gate explicitly leaves endpoint/port and transport
 outputs to this design step.
 
-The [camera-ingress proposal](../../../contracts/vision-vm/camera-ingress.proposal.v1.json)
-is deliberately `PROPOSED` and runtime-disabled. Recommend one read-only MJPEG
+The operator accepted the complete [camera-ingress contract](../../../contracts/vision-vm/camera-ingress.v1.json)
+on 2026-11-01 for implementation and reversible live proof; installed runtime
+acceptance is still separate. Implement one read-only MJPEG
 route on the existing Gateway TLS listener, only in the Vision profile, with an
 explicit camera-read grant for the currently selected Vision Unit/node. Reuse
 that instance's existing Source-owned selected-platform identity through its
@@ -485,16 +486,27 @@ credential isolation, lifecycle and outgoing-only connection before deployment.
 Source/capture epochs, real world/sensor times, calibrated profile and current
 pair/age/queue bounds remain explicit. No source/clock/quality fallback is added.
 
-This is an interface/trust-scope decision, not routine execution approval.
-After acceptance, cascade the owning contracts and run the one source/targeted
+The interface/trust-scope decision is accepted. Cascade the owning contracts
+and run the one source/targeted
 compile/reversible-live scenario on the **current** Vision VM, preserving its
 Unit/Subject and data. No CARLA/Main Factory rebuild, new VM, key rotation or
 permanent image change is part of the proposed transient packet. If a permanent
 policy/image delta is necessary, do not repeat the previous successor-VM
 workaround: qualify a separately accepted delivery route that preserves the VM.
-Until the interface decision is accepted, no Gateway/guest runtime code,
-credential projection, network permission or live source is changed by this
-proposal. Perception/Assessment remain the subsequent service packet.
+The contract does not claim installed or live-qualified Gateway/guest code.
+Perception/Assessment remain the subsequent service packet.
+
+Current source gate: the Gateway media/capture implementation and internal OEM
+multipart/credential entry pass their offline tests and targeted compilation.
+The retained Vision VM's native prerequisites are observed under Enforcing,
+then stopped with all four non-target journals unchanged. Neither a transient
+ingress installation nor live Gateway-to-Aos reader acceptance is recorded.
+The existing diagnostic service is at resource-revoked `0.1.1`. Restoring its
+native read lease requires a separately journalled diagnostic service release
+(`0.1.2` read, then `0.1.3` revoke), but the accepted ingress contract explicitly
+excludes Cloud mutation. Resolve that authority boundary before those releases;
+do not substitute root/manual container reads or call the source gate live
+acceptance. The OEM component, Unit, Subject and retained VM stay unchanged.
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,

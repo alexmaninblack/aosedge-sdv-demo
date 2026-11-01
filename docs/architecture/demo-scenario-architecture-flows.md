@@ -1,11 +1,11 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.5
+# Demo Scenario Architecture Flows 2.6
 
 - Status: Accepted
-- Version: 2.5
-- Updated: 2026-10-31
+- Version: 2.6
+- Updated: 2026-11-01
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
@@ -31,8 +31,14 @@ the installed Brake/Tire lifecycle. Camera Access is a distinct OEM component
 in its own VM; no VDP payload, VDP slot, Brake/Tire service, credential or old
 VM state is adopted.
 
-1. The OEM-selected Gateway capture adapter supplies authenticated camera
-   identity/epoch/calibration and JPEGs. Source metadata alone is not authority.
+1. The Vision Source owner grants camera-read on the existing Gateway mTLS
+   listener to the selected Vision Unit/node's existing identity. The fixed
+   read-only route, distinct one-session media quota, bounded framing and
+   detach drain follow the accepted [ingress contract](../../contracts/vision-vm/camera-ingress.v1.json).
+   A separate nonroot Camera Access ingress process receives only the existing
+   Source-projected systemd credentials, authenticates the Source generation
+   and sends identity/epoch/calibration and JPEGs through existing OEM IPC.
+   Camera core/apps receive no key; metadata alone is not authority.
 2. Camera Access validates exact profile/identity, bounds, JPEG dimensions,
    digest, increasing frame/world time and preserved raw sensor time.
 3. Retain at most two immutable frames. Deliver the latest eligible real
@@ -45,9 +51,10 @@ VM state is adopted.
 5. Perception produces matching model outputs. Assessment uses independently
    approved dynamics; typed results return through the OEM result adapter and
    Gateway for read-only display. This is not an actuation path.
-6. Native resource/IPC authorization, distinct OEM activation, SELinux and
-   restart are required before deployment acceptance. The source foundation
-   implements admission/buffering only and starts no transport or runtime.
+6. Native resource/IPC authorization, distinct OEM activation, ingress peer and
+   credential isolation, SELinux and restart are required before deployment
+   acceptance. Accepted source and reversible proof on the current Vision VM
+   do not claim permanent image delivery or Perception/Assessment acceptance.
 
 Allocate [Vision composition](../requirements/system-requirements-and-traceability.md#sys-vis-005),
 [Camera Access data](../requirements/system-requirements-and-traceability.md#sys-vis-006),

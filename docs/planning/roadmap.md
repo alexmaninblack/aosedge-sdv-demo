@@ -91,7 +91,7 @@ build side effect. M1 installation uses its internal storage.
 
 [HLA 1.9](../architecture/high-level-architecture.md) →
 [Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md) →
-[Flows 2.5](../architecture/demo-scenario-architecture-flows.md) →
+[Flows 2.6](../architecture/demo-scenario-architecture-flows.md) →
 [System Requirements 2.5](../requirements/system-requirements-and-traceability.md) →
 [Component Register 2.4](../requirements/component-decomposition-and-interface-register.md) →
 [component packages](../requirements/components/README.md).

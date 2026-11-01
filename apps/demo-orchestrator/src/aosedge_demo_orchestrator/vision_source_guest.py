@@ -20,6 +20,9 @@ RUNTIME = Path('/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access')
 INPUTS = RUNTIME/'demo-inputs'
 STORE = Path('/var/aos/iam/vehicle-state')
 DROPIN = Path('/run/systemd/system/aos-sm.service.d/85-democtl-viss-mtls.conf')
+CAMERA_UNIT='aos-camera-ingress.service'
+CAMERA_SELECTION=Path('/run/democtl-source/camera-selection.json')
+CAMERA_DROPIN=Path('/run/systemd/system/aos-camera-ingress.service.d/85-democtl-camera-mtls.conf')
 
 
 def require(ok, code):
@@ -76,6 +79,56 @@ def status(trust):
         'systemctl', 'show', 'aos-sm.service', '--property=ActiveState,Result,NRestarts']).splitlines() if '=' in line)
     return dict(mutualTlsConfigured=DROPIN.is_file() and (INPUTS/'viss-update-binding').is_file(),
                 platform='camera-access', updateRuntime=values, vdpInstalled=False)
+
+
+def camera(request,trust,item):
+    """The existing Source owner projects selection, never invents credentials.
+
+    Stop is idempotent even on the retained pre-ingress image. Start requires
+    the new internal OEM unit (a reversible /run unit in the accepted proof).
+    """
+    action=request['action']
+    values=dict(line.split('=',1) for line in trust.call(['systemctl','show',CAMERA_UNIT,
+        '--property=LoadState,ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in line)
+    if action=='camera-stop':
+        if values.get('LoadState')=='not-found':return dict(stopped=True,noOp=True)
+        trust.call(['systemctl','stop',CAMERA_UNIT])
+        after=dict(line.split('=',1) for line in trust.call(['systemctl','show',CAMERA_UNIT,
+            '--property=ActiveState,MainPID']).splitlines() if '=' in line)
+        require(after.get('ActiveState')=='inactive' and after.get('MainPID')=='0','CAMERA_STOP_UNCONFIRMED')
+        return dict(stopped=True,noOp=values.get('ActiveState')=='inactive')
+    require(action=='camera-start','CAMERA_ACTION_INVALID')
+    require(values.get('LoadState')=='loaded','CAMERA_INGRESS_NOT_INSTALLED')
+    native_store(trust)
+    active=trust.call(['systemctl','is-active','aos-camera-access.service']).strip()
+    require(active=='active','CAMERA_COMPONENT_NOT_ACTIVE')
+    selected=json.loads(read(INPUTS/'selected.json',0o644))['selectedSource']
+    generation=request.get('generation');source_id=request.get('sourceId')
+    require(type(generation) is int and 0<generation<2**63 and selected['assignmentGeneration']==generation
+        and selected['role']=='SELECTED_PLATFORM_UNIT' and selected['unitId']==item['unitId']
+        and selected['nodeId']==item['nodeId'],'CAMERA_SELECTION_MISMATCH')
+    require(type(source_id) is str and str(UUID(source_id))==source_id,'CAMERA_SOURCE_INVALID')
+    # Require both original enrolled files, without logging or replacing them.
+    for name in ('client.pem','client-key.pem'):read(STORE/'selected-platform-unit'/name,0o600)
+    read(INPUTS/'viss-update-ca',0o644)
+    binding=dict(schemaVersion=1,sourceId=source_id,assignmentGeneration=generation,
+        unitId=item['unitId'],nodeId=item['nodeId'],scope='VISION_CAMERA_READ')
+    text='[Service]\n'+''.join('LoadCredential='+name+':'+str(path)+'\n' for name,path in (
+        ('camera-selection',CAMERA_SELECTION),('camera-ca',INPUTS/'viss-update-ca'),
+        ('camera-certificate',STORE/'selected-platform-unit/client.pem'),
+        ('camera-private-key',STORE/'selected-platform-unit/client-key.pem')))
+    expected={CAMERA_SELECTION:(json.dumps(binding,sort_keys=True),0o600),CAMERA_DROPIN:(text,0o644)}
+    same=all(path.is_file() and read(path,mode)==value for path,(value,mode) in expected.items())
+    require(values.get('ActiveState')=='inactive' or same,'CAMERA_ACTIVE_BINDING_CHANGED')
+    changed=False
+    for path,(value,mode) in expected.items():changed=trust.write(path,value,mode) or changed
+    if changed:trust.call(['systemctl','daemon-reload'])
+    trust.call(['systemctl','start',CAMERA_UNIT])
+    after=dict(line.split('=',1) for line in trust.call(['systemctl','show',CAMERA_UNIT,
+        '--property=ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in line)
+    require(after.get('ActiveState')=='active' and after.get('Result')=='success'
+        and after.get('NRestarts')=='0' and int(after.get('MainPID','0'))>0,'CAMERA_INGRESS_START_UNCONFIRMED')
+    return dict(started=True,noOp=same and values.get('ActiveState')=='active',credentials='SOURCE_OWNED_SYSTEMD_PROJECTION')
 
 
 def first_install_state():
@@ -171,6 +224,8 @@ def execute(request, trust, source=None):
                             mutual_tls=action == 'trust-probe', vision=True)
     if action == 'trust-status':
         return status(trust)
+    if action in ('camera-start','camera-stop'):
+        return camera(request,trust,item)
     require(action in ('trust-configure', 'trust-restore'), 'ACTION_UNSUPPORTED')
     native_store(trust)
     files = {'ca': INPUTS/'viss-update-ca'}

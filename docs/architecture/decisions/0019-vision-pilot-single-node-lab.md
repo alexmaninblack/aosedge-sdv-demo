@@ -4,7 +4,7 @@
 # ADR 0019: A Separate Single Node Vision Lab
 
 - Status: Accepted for the isolated M4 VM, engineering previews and Camera Access native-boundary implementation; live activation remains unqualified
-- Version: 0.11
+- Version: 0.12
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab System Architecture
@@ -193,6 +193,34 @@ never modify a shared Main model. The diagnostic read-resource service is not
 the final Perception/Assessment implementation or evidence of full Vision E2E.
 
 ## Service responsibilities
+
+### Accepted Gateway camera ingress
+
+On 2026-11-01 the operator accepted [camera ingress v1](../../../contracts/vision-vm/camera-ingress.v1.json)
+in full for source, targeted compile and reversible live proof on the current
+Vision VM. Add only the Vision-profile read-only MJPEG route on the existing
+Gateway TLS listener. Require the selected Vision Unit/node's Source-owned
+identity, exact certificate binding and an explicit camera-read grant; ordinary
+VISS telemetry permission is insufficient. Preserve existing VISS quotas while
+tracking one separate media slot in Source quiescence/detach.
+
+The Camera Access OEM package has an internal nonroot ingress process with
+its own narrow SELinux domain. Source's existing credential owner and systemd
+LoadCredential supply its current per-instance identity; no new leaf, CA,
+store, Main key or application credential is introduced. Keep the core's
+domain/key isolation and existing local OEM/read IPC unchanged. Start only
+after valid Source enrollment and active Camera component; stop/drain on
+Source replacement and component restart. No third VM or Cloud application.
+
+Keep the fixed 720p/FOV-50/JPEG-85 profile, real frame/world/sensor timestamps,
+strict metadata/size/age/pair bounds and bounded latest-only queues. Reject
+foreign roles/identity/generation, redirects, replay and invalid framing;
+fresh authenticated source epochs replace stale sessions after reconnect.
+Gateway alone owns capture, never inference or camera consumers. Qualify
+transient code/policy removal, actual Aos live pair hashes, negative cases and
+unchanged retained state in one M4 scenario. No CARLA/Main Factory rebuild,
+new VM, rootfs rewrite or implicit permanent image update is authorized.
+Permanent policy/image delivery remains a separate preservation-bound gate.
 
 | Service | Owns | Does not own |
 | --- | --- | --- |

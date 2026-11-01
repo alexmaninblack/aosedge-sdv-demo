@@ -12,7 +12,7 @@
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.5](../../architecture/demo-scenario-architecture-flows.md)
+- Flow input: [Architecture Flows 2.6](../../architecture/demo-scenario-architecture-flows.md)
 - System-requirements input: [System Requirements 2.5](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.4](../component-decomposition-and-interface-register.md)
 - Accepted D4 VISS trust decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)

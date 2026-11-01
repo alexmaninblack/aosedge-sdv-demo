@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Proposal consistency only; no runtime permission or live acceptance."""
+"""Accepted ingress contract consistency; not an installed/live acceptance."""
 import json
 from pathlib import Path
 import unittest
@@ -8,12 +8,13 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 
 
-class IngressProposalTests(unittest.TestCase):
+class IngressContractTests(unittest.TestCase):
     def setUp(self):
-        self.value=json.loads((ROOT/'contracts/vision-vm/camera-ingress.proposal.v1.json').read_bytes())
+        self.value=json.loads((ROOT/'contracts/vision-vm/camera-ingress.v1.json').read_bytes())
 
-    def test_proposal_cannot_be_mistaken_for_runtime_authorization(self):
-        self.assertEqual(self.value['status'],'PROPOSED_REQUIRES_INTERFACE_AND_TRUST_SCOPE_ACCEPTANCE')
+    def test_implementation_authorized_does_not_claim_installed_runtime(self):
+        self.assertEqual(self.value['status'],'ACCEPTED_FOR_SOURCE_AND_REVERSIBLE_LIVE_PROOF')
+        self.assertTrue(self.value['implementationAuthorized'])
         self.assertIs(self.value['runtimeEnabled'],False)
 
     def test_same_vision_instance_and_two_product_vms(self):

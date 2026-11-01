@@ -1,8 +1,10 @@
 {
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
-  "kind": "vision-camera-ingress-contract-proposal",
-  "status": "PROPOSED_REQUIRES_INTERFACE_AND_TRUST_SCOPE_ACCEPTANCE",
+  "kind": "vision-camera-ingress-contract",
+  "status": "ACCEPTED_FOR_SOURCE_AND_REVERSIBLE_LIVE_PROOF",
+  "acceptedByOperator": "2026-11-01: accepted the complete contract",
+  "implementationAuthorized": true,
   "runtimeEnabled": false,
   "parents": ["ADR-0019", "REQ-CAM-001", "REQ-CAM-002", "REQ-CAM-003", "REQ-CAM-004", "REQ-CAM-005", "REQ-CAM-006"],
   "productTopology": {

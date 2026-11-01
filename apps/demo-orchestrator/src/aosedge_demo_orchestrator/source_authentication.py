@@ -88,6 +88,8 @@ def detach(driver, state):
     if current["state"] == "SELECTED":
         if current.get("selectedSource") != selection(state):
             raise EnvironmentError("SOURCE_TRUST_ASSIGNMENT_OWNER_CONFLICT")
+        if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1':
+            driver.guest(state,'test','camera-stop')
         identity = {key: current["selectedSource"][key] for key in ("unitId", "nodeId")}
         # Journal the exact intent before the single CAS mutation.
         state["source"]["trust"]["pending"] = dict(action="detach", generation=current["assignmentGeneration"])
@@ -103,6 +105,8 @@ def detach(driver, state):
         state["source"]["assignmentGeneration"] = current["assignmentGeneration"]
         state["source"]["trust"].pop("pending", None)
         driver.vm._save(state)
+    elif current['state']=='DETACHED' and state.get('vmProfile')=='aos-vision-main-qemuarm64-v1':
+        driver.guest(state,'test','camera-stop')
 
 
 def attach(driver, state, role):

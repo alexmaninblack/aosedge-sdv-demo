@@ -10,7 +10,7 @@
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md)
+- Flow input: [Demo Scenario Architecture Flows 2.6](../architecture/demo-scenario-architecture-flows.md)
 - Requirements input: [System Requirements and Traceability 2.5](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
@@ -93,7 +93,7 @@ surfaces. Those concepts are related, but they are not interchangeable.
 1. High-Level Architecture 1.9 owns system boundaries, authorities and
    invariants.
 2. Demo Scenario 2.4 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 2.5 owns detailed runtime, lifecycle, observability and
+3. Architecture Flows 2.6 owns detailed runtime, lifecycle, observability and
    failure flows.
 4. System Requirements 2.5 owns normative `SYS-*` obligations and gap
    traceability.

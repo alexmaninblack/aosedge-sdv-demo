@@ -15,7 +15,7 @@ Presenter, CARLA and native Driving Control run as separate applications.
 ## Design references for contributors
 
 - [Staged Scenarios 2.4](staged-post-sop-brake-health-demo-scenarios.md).
-- [Architecture Flows 2.5](../architecture/demo-scenario-architecture-flows.md).
+- [Architecture Flows 2.6](../architecture/demo-scenario-architecture-flows.md).
 - [Interaction Specification 2.7](mockups/aosedge-demo-interaction-specification.md),
   including the [installed Test interaction profile](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 - [UI traceability](mockups/aosedge-demo-ui-traceability-register.md).

@@ -112,7 +112,7 @@ class SourceDriver:
         vehicle = dict(state["vehicles"][role], sourceProbeSelected=state.get("currentVehicle") == role)
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
         if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1' and action in (
-                'factory-role', 'configure', 'probe', 'trust-probe', 'trust-configure', 'trust-status'):
+                'factory-role', 'configure', 'probe', 'trust-probe', 'trust-configure', 'trust-status', 'camera-start', 'camera-stop'):
             from . import vision_source_guest, source_trust_guest
             code = vision_source_guest.script(dict(request, vmProfile=state['vmProfile']),
                 source_code=Path(source_guest.__file__).read_text(),
@@ -361,6 +361,10 @@ function run(args) {
         config["controller"]["autopilot"]["traffic_manager_port"] = TRAFFIC_MANAGER_PORT
         config["simulation"]["fixed_delta_seconds"] = .05
         config["runtime"].update(viss_port=16443, chase_camera_update_hz=20)
+        if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1':
+            # Existing Source run identity; only this closed profile grants
+            # media. Main keeps its original runtime configuration/arguments.
+            config['runtime']['vision_camera_source_id'] = identity
         if packaged is not None:
             config["route"]["start_spawn_point"] = 88  # Qualified equivalent of Editor index 40.
         atomic_json(run / "input.json", config)
@@ -582,6 +586,11 @@ class SourceService:
                 # A crashed Gateway has no assignment endpoint. Prove the
                 # listener is absent; never treat a timeout as detachment.
                 self.driver.vm._free_port(16443)
+                if state.get('vmProfile')=='aos-vision-main-qemuarm64-v1':
+                    item=state['vehicles']['test']
+                    command=self.driver.vm._command(state,'test')
+                    if self.driver.vm._owned_pid(command,'democtl-test-'+item['localVmId']):
+                        self.driver.guest(state,'test','camera-stop')
                 if state["source"]["trust"].get("pending"):
                     raise EnvironmentError("SOURCE_TRUST_PENDING_ASSIGNMENT_CONFLICT")
                 state["source"]["trust"]["lastDetachEvidence"] = "GATEWAY_ABSENT"
@@ -607,6 +616,31 @@ class SourceService:
         from .source_cache import prepare
         with self.environment._writer():
             return prepare(self)
+
+    def camera_ingress(self, action):
+        """Internal Vision OEM lifecycle, under the same Source writer/lease.
+
+        This is neither a URL override nor camera authority for applications.
+        The native component must already be active before the explicit start.
+        """
+        from . import source_authentication as authentication
+        with self.environment._writer(), self.driver.operation():
+            state=read_json(self.root/JOURNAL)
+            if (state.get('vmProfile')!='aos-vision-main-qemuarm64-v1'
+                    or action not in ('start','stop')):
+                raise EnvironmentError('SOURCE_CAMERA_PROFILE_REQUIRED')
+            source=state.get('source') or {}
+            if action=='start':
+                if (state.get('currentVehicle')!='test' or source.get('state')!='RUNNING'
+                        or source.get('operation') or not authentication.enabled(state)):
+                    raise EnvironmentError('SOURCE_CAMERA_SELECTION_REQUIRED')
+                current=authentication.observe(self.driver)
+                if (current.get('state')!='SELECTED' or current.get('selectedSource')!=authentication.selection(state)
+                        or current.get('assignmentGeneration')!=source['assignmentGeneration']):
+                    raise EnvironmentError('SOURCE_CAMERA_ASSIGNMENT_CHANGED')
+                return self.driver.guest(state,'test','camera-start',sourceId=source['runId'],
+                    generation=source['assignmentGeneration'])
+            return self.driver.guest(state,'test','camera-stop')
 
     def simulation(self, action, target=None, *, retiring=False):
         with self.environment._writer(), self.driver.operation():

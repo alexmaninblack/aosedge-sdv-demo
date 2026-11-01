@@ -4,12 +4,12 @@
 # OEM Camera Access Requirements
 
 - Status: Accepted source and native-boundary contract; live deployment remains gated
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-10-31
 - Owner: OEM Vehicle Platform
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Flow input: [Camera Access flow](../../architecture/demo-scenario-architecture-flows.md#af-vis-cam)
-- Decision: [ADR 0019 v0.11](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+- Decision: [ADR 0019 v0.12](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 
 ## Boundary
 
@@ -88,3 +88,18 @@ VM/network/simulator. Synthetic JPEG headers prove admission, not pixel decode.
 Native first-create/repeat/restart, real consumer delivery, ingress security,
 revocation, SELinux, OEM slot/update isolation and old-VM preservation require
 one later scenario on M4. No source test substitutes for those gates.
+
+## Accepted live ingress allocation
+
+The [ingress v1 contract](../../../contracts/vision-vm/camera-ingress.v1.json)
+allocates `REQ-CAM-001`–`REQ-CAM-006` to Gateway capture/authentication and an
+internal Camera Access OEM adapter. Camera-read is an explicit Vision-only
+scope over the existing Source trust identity, not ordinary VISS permission.
+Use the existing TLS listener and fixed read-only MJPEG route. Preserve strict
+VISS role limits; count the separate one-session media slot in Source detach.
+Systemd credentials are consumed only by the separate nonroot ingress process,
+with narrow SELinux and existing OEM peer checks; core/apps receive no keys.
+The accepted packet authorizes source and reversible live proof, not permanent
+image mutation. Qualification must correlate actual Gateway JPEGs with the native
+Aos reader, and cover wrong identity/generation, bounded parsing, disconnect,
+restart, stale clearing, revoked resource and owned cleanup on the same VM.

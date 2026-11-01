@@ -10,7 +10,7 @@
 - Owner: Vehicle Gateway Tooling
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.5](../../architecture/demo-scenario-architecture-flows.md)
+- Flow input: [Architecture Flows 2.6](../../architecture/demo-scenario-architecture-flows.md)
 - System-requirements input: [System Requirements 2.5](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.4](../component-decomposition-and-interface-register.md)
 - Accepted architecture decision: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
