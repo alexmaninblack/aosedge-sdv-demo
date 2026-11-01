@@ -137,6 +137,15 @@ restart, retained cold boot, detach, revocation, AVC and shutdown gates. Preserv
 the current VM, Unit, data, Main, CARLA, dependencies and caches. No Main merge,
 push, public distribution or Perception/Assessment acceptance is included.
 
+Continuation `vision-fresh-accept-09` published fixed reader `0.1.6` once and
+passed actual native JPEG-pair/hash/epoch/capability/resource checks. The two
+negative fixtures then returned `2` before emitting a denial result; this is not
+a security pass or a reason to change policy. Source/VM stopped and all retained
+journals match. Only those small diagnostic fixture targets were recompiled on
+the SSD with fixed prerequisite-stage/errno output and an identity-only mode.
+That preflight performs no socket/credential operation and does not replace
+the real full denial gates. Reconcile/reuse `0.1.6`; do not upload it again.
+
 The reversible Gateway → Camera Access → native Aos reader proof passed.
 Permanent ingress still needs the labelled launcher, systemd unit, narrow
 SELinux policy, updated Camera payload and signed host Gateway/Source tooling.

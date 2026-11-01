@@ -145,6 +145,10 @@ def main():
                 return value
             observation=(records/'vision_ingress_observation.py').read_text().replace("'2200'","'500'").replace("if __name__=='__main__':print(json.dumps(observe()))",'print(json.dumps(observe()))')
             def observe():return guest(observation)
+            def negative_probe(identity_only):
+                files={key:base64.b64encode((records/name).read_bytes()).decode() for key,name in (('boundary','vision-ingress-boundary'),('core-deny','vision-camera-credential-deny'))}
+                code='FILES='+repr(files)+'\nIDENTITY_ONLY='+repr(identity_only)+'\n'+(records/'vision_negative_probe.py').read_text()
+                return guest(code,55)
             def current_pairs(observed):
                 source_id=read_json(native/JOURNAL)['source']['runId']
                 return [p for p in pairs(observed) if p['frames'][0]['sourceId']==source_id]
@@ -160,6 +164,9 @@ def main():
                 with env._writer():return units._wait(read_json(native/JOURNAL),'test',lambda u:u and u['online_status']=='Online','CLOUD_ONLINE',timeout=60)
             phase('fresh-unit-online',online)
             phase('reader-process-before-source',observe)
+            if c.get('negativeIdentityPreflight'):
+                probe=phase('negative-fixture-identity-prerequisites',lambda:negative_probe(True))
+                require(all(row['exit']==0 and any(m.get('fixtureIdentityVerified') for m in row['messages']) for row in probe['probes'].values()),'NEGATIVE_FIXTURE_IDENTITY_PREREQUISITE_FAILED')
             root=phase('fifth-rootfs-cloud-status',lambda:component('status','aos-vision-vm-1.0.0-main-qemuarm64-rootfs'))
             require(any((r.get('installed_component') or {}).get('version')=='6.1.1-vision-camera.5' and not r.get('pending_component') for r in root['unit']['components'] or []),'FIFTH_ROOTFS_NOT_CONFIRMED')
             base_scope={k:value for k,value in scope.items() if k in ('setupProfile','version','vehicles','ownerId','cloudDomain')}
@@ -257,7 +264,8 @@ def main():
             phase('live-media-role-and-quota-denial',deny_roles)
             phase('diagnostic-cloud-preflight',lambda:fixture('preflight'))
             catalog=phase('diagnostic-catalog',lambda:fixture('catalog'));service=catalog['serviceId']
-            require({v['version'] for v in catalog['versions']}==({'0.1.0','0.1.1','0.1.2','0.1.3','0.1.4'} if resume else {'0.1.0','0.1.1','0.1.2','0.1.3'}),'DIAGNOSTIC_CATALOG_COLLISION')
+            expected_versions={'0.1.0','0.1.1','0.1.2','0.1.3'}|({'0.1.4'} if resume else set())|({read_version} if c.get('readPublicationFrom') else set())
+            require({v['version'] for v in catalog['versions']}==expected_versions,'DIAGNOSTIC_CATALOG_COLLISION')
             subject=json.loads((Path(c['previousNative'])/'probe-subject-create-response.json').read_bytes())['subject']
             bound=phase('diagnostic-subject-before',lambda:fixture('subject-status',serviceId=service,subject=subject))
             if successors:require(bound['unitBound'] and bound['serviceBound'],'SUCCESSOR_SUBJECT_MEMBERSHIP_CHANGED')
@@ -282,7 +290,17 @@ def main():
                     if value['stage']=='READY':return value
                     require(value['stage']=='PROCESSING','PROBE_PUBLICATION_FAILED');time.sleep(2)
                 raise ValueError('PROBE_PUBLICATION_TIMEOUT_RECONCILE')
-            if resume and not successors:
+            if c.get('readPublicationFrom'):
+                previous_read=Path(c['readPublicationFrom'])
+                require(previous_read.parent==records.parent and previous_read.name=='vision-fresh-accept-09','READ_PUBLICATION_RESUME_SCOPE_INVALID')
+                prior_read=json.loads((previous_read/'result.json').read_bytes());prior_context=json.loads((previous_read/'context.json').read_bytes())
+                require(prior_read['code']=='NATIVE_NEGATIVE_FIXTURE_FAILED' and all(prior_read['cleanup'].values())
+                    and prior_context.get('diagnosticSuccessors')==successors and prior_context['files']['vision-camera-probe']==c['files']['vision-camera-probe'],'READ_PUBLICATION_RESUME_NOT_RECONCILED')
+                uploaded=json.loads((previous_read/('probe-upload-'+read_version+'.json')).read_bytes())['facts']
+                reconciled=phase('fixed-read-publication-reconciled',lambda:fixture('publication',probeVersion=read_version,deploymentId=uploaded['deploymentId']))
+                require(reconciled['stage']=='READY','FIXED_READER_PUBLICATION_NOT_READY')
+                record('retained-reader-publication.json',dict(noUpload=True,version=read_version,versionId=reconciled['versionId']))
+            elif resume and not successors:
                 previous_upload=json.loads((resume/'probe-upload-0.1.4.json').read_bytes())['facts']
                 reconciled=phase('read-publication-reconciled',lambda:fixture('publication',probeVersion='0.1.4',deploymentId=previous_upload['deploymentId']))
                 require(reconciled['stage']=='READY','EXISTING_READER_NOT_READY')
@@ -323,7 +341,9 @@ for name in ('boundary','core-deny'):
  results[name]=dict(exit=done.returncode,messages=messages)
 print(json.dumps(results))
 '''.replace('FILES',repr({key:base64.b64encode((records/name).read_bytes()).decode() for key,name in (('boundary','vision-ingress-boundary'),('core-deny','vision-camera-credential-deny'))}))
-            denied=phase('native-network-and-credential-denials',lambda:guest(negative,55))
+            if c.get('negativeIdentityPreflight'):
+                negative_result=phase('native-network-and-credential-denials',lambda:negative_probe(False));denied=negative_result['probes']
+            else:denied=phase('native-network-and-credential-denials',lambda:guest(negative,55))
             require(all(row['exit']==0 for row in denied.values()),'NATIVE_NEGATIVE_FIXTURE_FAILED')
             require(any(m.get('coreCredentialDenied') and m.get('errno') in (1,13) for m in denied['core-deny']['messages']),'CREDENTIAL_DOMAIN_DENIAL_NOT_OBSERVED')
             require(observe()['egressDropPackets']>live['egressDropPackets'],'NATIVE_NETWORK_DROP_NOT_OBSERVED')
@@ -408,7 +428,7 @@ print(json.dumps(results))
                     try:
                         if source_started:app.source_service.simulation('stop',target='test');WorkspaceService(env,app.source_service.driver).execute('close')
                         try:
-                            removed=guest("import json,pathlib,shutil,subprocess;p=pathlib.Path('/run/vision-permanent-acceptance');\nfor u in ('vision-permanent-boundary','vision-permanent-core-deny'):\n subprocess.run(['systemctl','stop',u],capture_output=True);subprocess.run(['systemctl','reset-failed',u],capture_output=True)\nif p.exists():shutil.rmtree(p)\nprint(json.dumps(dict(temporaryFixturesRemoved=not p.exists())))")
+                            removed=guest("import json,pathlib,shutil,subprocess;p=pathlib.Path('/run/vision-permanent-acceptance');\nfor u in ('vision-permanent-boundary','vision-permanent-core-deny','vision-permanent-identity-boundary','vision-permanent-identity-core-deny'):\n subprocess.run(['systemctl','stop',u],capture_output=True);subprocess.run(['systemctl','reset-failed',u],capture_output=True)\nif p.exists():shutil.rmtree(p)\nprint(json.dumps(dict(temporaryFixturesRemoved=not p.exists())))")
                             result['cleanup'].update(removed)
                         except Exception:result['cleanup']['temporaryFixturesRemoved']=False
                         stopped=vm.execute('stop','test',timeout=150);result['cleanup']['ownedRuntimesStopped']=stopped['vehicles']['test']['state']=='COMPLETED'

@@ -15,6 +15,14 @@ from vision_camera_fixture_cloud import configuration,terminal_retry,title_corre
 
 
 class NativeFixtureIsolationTests(unittest.TestCase):
+    def test_negative_prerequisites_never_open_credential_or_network(self):
+        root=Path(__file__).resolve().parents[2]/'tests/fixtures'
+        for name,operation in (('vision-ingress-boundary.c','int fd=socket('),('vision-camera-credential-deny.c','int fd=open(')):
+            source=(root/name).read_text()
+            self.assertIn('CONTEXT_OPEN',source);self.assertIn('CONTEXT_DOMAIN',source)
+            self.assertLess(source.index('if(identity_only){'),source.index(operation))
+        ast.parse(Path(__file__).with_name('vision_negative_probe.py').read_text())
+
     def test_hash_fixture_ignores_system_openssl_configuration_and_checks_result(self):
         source=(Path(__file__).resolve().parents[2]/'tests/fixtures/vision-camera-probe.c').read_text()
         self.assertLess(source.index('OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG,NULL)'),source.index('SHA256(body,sizes[i],hash)'))
