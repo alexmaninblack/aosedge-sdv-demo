@@ -3,8 +3,8 @@
 
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
-- Status: Accepted on 2026-11-01; native .4 trial reverted, .5 successor authorized
-- Version: 0.6
+- Status: Accepted on 2026-11-01; disposable Vision reset and fresh .5 delivery
+- Version: 0.7
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -13,6 +13,31 @@
   `REQ-CAM-001`–`REQ-CAM-006` and `D4-030`
 
 ## Purpose and current boundary
+
+The operator accepted a **fresh development environment** after rejection of
+`.4` failed to clear its assignment. This explicitly supersedes the earlier
+preserve-current-Vision-VM restriction below, but only for current Unit
+`4374bcb2-0613-419c-8ac9-e8458358c91c`, node
+`d22dca91-5746-4218-ac1a-cc9bd489023c` and
+`SDV-Vision-Camera-Image-Lab-Data` on M4. Retire that Unit through normal owners,
+confirm its absence, remove its owned disks/checkpoints and disposable instance
+state, and create a new Unit/VM from a corrected `.5` manufacturing image.
+Preserve the four other instance roots, Main/VDP/Brake/Tire, selected shared
+OEM/SP credentials, source, current DMG, Builder and caches. Keep compact failure
+evidence. No unproven restore of the old disk or manual pending-state edit.
+
+The fresh route is: exact retirement and empty-recipient preflight → source/unit
+gates → warm `.5` Vision image plus matching rootfs artifact on SSD → signed
+bootstrap and `.5` OEM publication while verification sets are empty → normal
+fresh manufacture/provision → Source enrollment and initial Camera activation
+→ Camera `0.1.1` upgrade → native read/revoke `0.1.4`/`0.1.5` and permanent ingress
+acceptance. Existing owned model/set/service definitions may be reused after
+proving no old Unit binding; they are not stale VM state. Do not publish a new
+candidate until account-level recipient isolation is proven. CARLA, Main
+Factory, Core/kernel revisions and unrelated services are not rebuilt.
+
+The historical preservation-bound route below records the failed attempt and
+its evidence; it is not authority to reuse or recover the disposable old VM.
 
 The reversible Gateway → Camera Access → native Aos reader proof passed.
 Permanent ingress still needs the labelled launcher, systemd unit, narrow
@@ -241,6 +266,14 @@ stopped, their journal and all retained journals were unchanged. No Unit,
 Subject, member, payload or version was deleted. The fresh account/guest gate
 must still pass before the `.5` build and upload; rejection alone is not proof
 that native and Cloud pending state have converged.
+
+Subsequent `ingress-cloud-02` could not finish startup. Read-only
+`ingress-startup-02` proved another `.4` squashfs trial with only
+`do_update`/`updated`, no final apply, and inactive networkd. Rejecting the batch
+did not clear the Unit assignment. The ordinary owner stopped the VM, retained
+journals are unchanged, and no owned QEMU process/open overlay handle remains.
+No `.5` build/publication had started at the reset decision. The accepted fresh
+route above replaces further attempts to preserve this looping environment.
 
 Camera `0.1.1`, probe `0.1.4`/`0.1.5`, permanent Source ingress and the final
 security/restart acceptance remain **NOT_RUN**. The existing signed bootstrap

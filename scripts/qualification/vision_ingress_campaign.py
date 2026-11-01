@@ -25,12 +25,13 @@ def main():
     mode.add_argument('--retire-old-verification',action='store_true',help='Authorized flag-only change of the two exact old Vision sets, then recipient gate')
     mode.add_argument('--recover-unconfirmed-trial',action='store_true',help='Normal native revert of the exact unconfirmed rootfs.4 trial; no disk restore')
     mode.add_argument('--reject-failed-rootfs',action='store_true',help='Accepted rejection of the exact failed .4 batch; VM remains stopped')
+    mode.add_argument('--startup-diagnostics',action='store_true',help='One short owned boot with independent read-only SSH/serial evidence')
     p.add_argument('--candidate',type=Path)
     p.add_argument('--reconcile-verification-04',action='store_true',help='Read-reconcile the exact first flag intent from attempt 04; never replay it')
     p.add_argument('--resume-read-from',help='Reconcile an existing 0.1.2 publication; never upload it again')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     live_mode=a.live or a.native_source_proof
-    prefix='ingress-reject-' if a.reject_failed_rootfs else 'ingress-native-revert-' if a.recover_unconfirmed_trial else 'ingress-verification-' if a.retire_old_verification else 'ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
+    prefix='ingress-startup-' if a.startup_diagnostics else 'ingress-reject-' if a.reject_failed_rootfs else 'ingress-native-revert-' if a.recover_unconfirmed_trial else 'ingress-verification-' if a.retire_old_verification else 'ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
     h.require(a.name.startswith(prefix) and a.name.removeprefix(prefix).isdecimal(),'CAMPAIGN_NAME_INVALID')
     records=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
     h.require(not records.exists(),'ATTEMPT_EXISTS_RECONCILE');records.mkdir(mode=0o700)
@@ -41,6 +42,9 @@ def main():
     if a.network:context['networkSource']=(Path(__file__).resolve().parents[2]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator/vision_source_guest.py').read_text()
     worker=Path(__file__).with_name('vision_failed_rootfs_worker.py' if a.reject_failed_rootfs else 'vision_trial_recovery_worker.py' if a.recover_unconfirmed_trial else 'vision_ingress_live_worker.py' if live_mode else 'vision_recovery_worker.py' if a.recovery else 'vision_ingress_preflight_worker.py')
     files=[worker]
+    if a.startup_diagnostics:
+        files.append(Path(__file__).with_name('vision_trial_recovery_worker.py'))
+        context.update(startupDiagnostics=True,files={p.name:h.digest(p) for p in files})
     if a.reject_failed_rootfs:
         from vision_permanent_cloud import FAILED_BATCH,VERSIONS,ROOTFS
         files.append(Path(__file__).with_name('vision_permanent_cloud.py'))
@@ -110,8 +114,8 @@ def main():
     if live_mode:h.run(['/usr/bin/scp',*options,'-r',str(a.candidate),t['user']+'@'+t['host']+':'+str(remote/'candidate')],timeout=90)
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
     command=q(python)+' -I -B '+q(str(remote/worker.name))+(' --context ' if live_mode else ' ')+q(str(remote/'context.json'))
-    process=subprocess.Popen(h.ssh_args(t)+[command],stdin=subprocess.PIPE if a.recover_unconfirmed_trial else None,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-    if a.recover_unconfirmed_trial:
+    process=subprocess.Popen(h.ssh_args(t)+[command],stdin=subprocess.PIPE if a.recover_unconfirmed_trial or a.startup_diagnostics else None,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    if a.recover_unconfirmed_trial or a.startup_diagnostics:
         # User-authorized non-secret Factory console default, never a Mac keychain password.
         process.stdin.write(json.dumps(dict(password='Password1')));process.stdin.close()
     with (records/'progress.jsonl').open('x') as log:

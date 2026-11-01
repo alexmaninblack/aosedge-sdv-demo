@@ -304,7 +304,7 @@ def execute(request):
         return {"unit": cloud.unit(identity, nodes=request.get("nodes", True))}
     if action == "absence":
         cloud.require("units_list", "units_nodes_read")
-        inventory = cloud.inventory()
+        inventory = cloud.inventory(request.get("setIds"))
         unit = cloud.unit(identity)
         node = cloud.call("units/" + identity + "/nodes/" + object_id(request["nodeId"]) + "/", absent=True)
         result = {"absent": unit is None and node is None and all(item["id"] != identity for item in inventory["units"]),

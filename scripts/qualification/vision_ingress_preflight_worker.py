@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import threading
 import time
 
 PROJECTION=r'''import gzip,grp,json,os,pathlib,pwd,subprocess
@@ -118,6 +119,9 @@ def validate_delivery_inventory(facts):
     return 'DECLARATIONS_ONLY_NOT_UPGRADE_OR_ROLLBACK_ACCEPTANCE'
 
 
+class StartupObserved(Exception):pass
+
+
 def main():
     context=json.loads(Path(sys.argv[1]).read_bytes());records=Path(sys.argv[1]).parent
     package=Path(context['main']['packageRoot']);bundle=Path(context['bundle'])
@@ -149,7 +153,51 @@ def main():
         vm=VMService(env,progress=lambda message:print(json.dumps(dict(stage='native-owner',message=str(message)[:100])),flush=True))
         try:
             print(json.dumps(dict(stage='native-preflight-start')),flush=True)
-            value=vm.execute('start','test',timeout=150);assert value['vehicles']['test']['state']=='COMPLETED'
+            startup_console={};console_thread=None
+            if context.get('startupDiagnostics'):
+                import runpy
+                console=runpy.run_path(str(records/'vision_trial_recovery_worker.py'))['console']
+                password=json.loads(sys.stdin.read(8193))['password']
+                def early_console():
+                    end=time.monotonic()+15;serial=native/'.run/demo-current/test.serial'
+                    while not serial.exists() and time.monotonic()<end:time.sleep(.1)
+                    code="import json,pathlib;w=pathlib.Path('/var/aos/workdirs/sm/runtimes/rootfs');print('VISION_RECOVERY_FACTS='+json.dumps(dict(rootfsVersion=pathlib.Path('/etc/aos/version').read_text().strip(),uptimeSeconds=float(pathlib.Path('/proc/uptime').read_text().split()[0]),flags=[n for n in ('do_update','updated','do_apply','failed') if (w/n).exists()],pending=(w/'pending_instance.json').exists())),flush=True)"
+                    try:startup_console.update(console(serial,password,code))
+                    except Exception as e:startup_console['code']=type(e).__name__
+                console_thread=threading.Thread(target=early_console,daemon=True);console_thread.start()
+            value=vm.execute('start','test',timeout=45 if context.get('startupDiagnostics') else 150)
+            if context.get('startupDiagnostics'):
+                probe=r'''import json,pathlib,subprocess
+def show(name):
+ p=subprocess.run(['systemctl','show',name,'-p','ActiveState','-p','Result','-p','ExecMainStatus','-p','NRestarts'],capture_output=True,text=True,timeout=5)
+ return dict(v.split('=',1) for v in p.stdout.splitlines() if '=' in v)
+work=pathlib.Path('/var/aos/workdirs/sm/runtimes/rootfs')
+dns=subprocess.run(['timeout','3','busybox','nslookup','aoscloud.io'],capture_output=True,timeout=5)
+facts=dict(rootfsVersion=pathlib.Path('/etc/aos/version').read_text().strip(),rootMount=next(line.split()[:4] for line in pathlib.Path('/proc/mounts').read_text().splitlines() if line.split()[1]=='/'),
+ services={name:show(name) for name in ('systemd-networkd','sshd.socket','aos-cm','aos-iam','aos-sm')},dnsExit=dns.returncode,
+ flags=[n for n in ('do_update','updated','do_apply','failed') if (work/n).exists()],pending=(work/'pending_instance.json').exists())
+print(json.dumps(facts))
+'''
+                done=subprocess.run(ssh_command(access_path(native,'test'),item['sshPort'],4),
+                    input="python3 - <<'START_OBSERVE'\n"+probe+"\nSTART_OBSERVE\n",text=True,capture_output=True,timeout=35)
+                selected=value['vehicles']['test']
+                result['facts']=dict(startup={k:selected[k] for k in
+                    ('state','processState','guestReady','guestDnsReady','reason','sshPort') if k in selected},directSsh=done.returncode==0)
+                if console_thread is not None:console_thread.join(timeout=5)
+                result['facts']['earlyConsole']=startup_console
+                errors=done.stderr.lower()
+                result['facts']['sshFailure']=next((label for token,label in (
+                    ('host key verification failed','HOST_PIN_DENIED'),('permission denied','SSH_AUTH_DENIED'),
+                    ('connection refused','CONNECTION_REFUSED'),('connection timed out','CONNECTION_TIMEOUT'),
+                    ('connection reset','CONNECTION_RESET'),('connection closed','CONNECTION_CLOSED')) if token in errors),'UNCLASSIFIED' if done.returncode else None)
+                if done.returncode==0:result['facts']['guest']=json.loads(done.stdout)
+                else:
+                    console_probe=probe.replace('print(json.dumps(facts))',"print('VISION_RECOVERY_FACTS='+json.dumps(facts),flush=True)")
+                    result['facts']['console']=console(native/'.run/demo-current/test.serial',password,console_probe)
+                    password=''
+                result['acceptance']='READ_ONLY_STARTUP_DIAGNOSIS_NOT_DELIVERY_ACCEPTANCE'
+                raise StartupObserved()
+            assert value['vehicles']['test']['state']=='COMPLETED'
             current=json.loads((native/JOURNAL).read_bytes());assert current['vehicles']['test']['unitId']==item['unitId']
             command=ssh_command(access_path(native,'test'),item['sshPort'],5)
             script=r'''import grp,json,os,pathlib,pwd,subprocess,time
@@ -226,6 +274,8 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
                 result['acceptance']='FLAG_ONLY_VERIFICATION_RECONCILIATION' if context.get('retireVerification') else 'READ_ONLY_ACCOUNT_PREFLIGHT_NOT_UPDATE_ACCEPTANCE'
                 assert value['data']['ready'],'PERMANENT_CLOUD_SCOPE_BLOCKED'
             result['outcome']='PASS_NATIVE_PREREQUISITES'
+        except StartupObserved:
+            result['outcome']='OBSERVED_NATIVE_STARTUP'
         except Exception as error:
             import traceback
             value=str(error)
@@ -242,7 +292,7 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
             if not all(result['cleanup'].values()):result['outcome']='NOT_COMPLETE'
             (records/'result.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({k:val for k,val in result.items() if k!='facts'}),flush=True)
-    return 0 if result['outcome']=='PASS_NATIVE_PREREQUISITES' else 1
+    return 0 if result['outcome'] in ('PASS_NATIVE_PREREQUISITES','OBSERVED_NATIVE_STARTUP') else 1
 
 
 if __name__=='__main__':

@@ -106,6 +106,6 @@
     "Verify the actual Aos reader receives matching live JPEG pairs; preserve existing Cloud Unit, Subject, data and all retained instances",
     "Restore all transient code/policy and stop owned runtimes; record live versus source-only/image acceptance separately"
   ],
-  "deliveryBoundary": "No rootfs rewrite, overlay rebase or replacement VM. A required permanent image/policy delta needs a separately accepted delivery route preserving the current VM; transient proof is not permanent image acceptance.",
+  "deliveryBoundary": "Ingress itself has no VM/provisioning authority. Permanent delivery follows the separately accepted docs/planning/active/vision-ingress-permanent-delivery.md packet; its 2026-11-01 fresh-reset exception replaces only the named disposable Vision environment. No rootfs remount or overlay rebase; transient proof is not permanent image acceptance.",
   "excluded": ["SSH replay relabelled as product ingress", "new credential database", "VDP/Brake/Tire changes", "unconfined or root ingress fallback", "Perception/Assessment implementation", "model or end-to-end performance acceptance", "public release or Main promotion"]
 }

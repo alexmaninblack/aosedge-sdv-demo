@@ -52,6 +52,10 @@ class UnitService:
     def _cloud(self, action, **values):
         config = load_configuration(self.root)
         profile = config["cloudProfiles"].get("oem-delivery")
+        if action == "absence":
+            # Retirement of an explicitly selected Vision set must corroborate
+            # that same set, not silently fall back to Main's title lookup.
+            values.setdefault("setIds", cloud_binding(read_json(self.root / JOURNAL)).get("sets"))
         return self._cloud_profile(action, profile, config, **values)
 
     def _cloud_profile(self, action, profile, config, **values):
