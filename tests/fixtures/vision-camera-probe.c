@@ -55,9 +55,15 @@ static int query(int fd,const char *operation,char header[4097]) {
 static int verified_pair(int fd,const char *header) {
     /* The peer is the signed Camera daemon's closed serializer. This fixture
        extracts only its two length/hash fields; no general JSON API is implied. */
-    size_t sizes[2];char expected[2][65];
-    const char *cursor=header;
+    size_t sizes[2];char expected[2][65];unsigned long long frames[2],times[2];
+    const char *cursor=strstr(header,"\"frames\":[");
+    if(!cursor)return 0;
     for(int i=0;i<2;i++) {
+        cursor=strstr(cursor,"\"frame\":");if(!cursor)return 0;
+        cursor+=8;char *number_end=NULL;
+        frames[i]=strtoull(cursor,&number_end,10);if(number_end==cursor)return 0;
+        cursor=strstr(number_end,"\"simulationTimeNs\":");if(!cursor)return 0;
+        cursor+=19;times[i]=strtoull(cursor,&number_end,10);if(number_end==cursor)return 0;
         cursor=strstr(cursor,"\"payloadBytes\":");if(!cursor)return 0;
         cursor+=15;char *end=NULL;
         unsigned long size=strtoul(cursor,&end,10);
@@ -70,6 +76,7 @@ static int verified_pair(int fd,const char *header) {
         memcpy(expected[i],cursor,64);expected[i][64]=0;cursor+=65;
     }
     if(strstr(cursor,"\"payloadBytes\":"))return 0;
+    if(frames[1]<=frames[0] || times[1]<times[0] || times[1]-times[0]<80000000 || times[1]-times[0]>120000000)return 0;
     for(int i=0;i<2;i++) {
         unsigned char *body=malloc(sizes[i]),hash[SHA256_DIGEST_LENGTH];char actual[65];
         if(!body)return 0;
@@ -78,6 +85,8 @@ static int verified_pair(int fd,const char *header) {
         for(int k=0;k<SHA256_DIGEST_LENGTH;k++)sprintf(actual+k*2,"%02x",hash[k]);
         if(strcmp(actual,expected[i]))return 0;
     }
+    printf("{\"probe\":\"LIVE_PAIR\",\"frames\":[%llu,%llu],\"sha256\":[\"%s\",\"%s\"],\"bytesVerified\":true}\n",
+        frames[0],frames[1],expected[0],expected[1]);
     return 1;
 }
 

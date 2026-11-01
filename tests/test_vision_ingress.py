@@ -48,5 +48,12 @@ class IngressContractTests(unittest.TestCase):
         self.assertEqual(bounds['pairIntervalNs'],[80000000,120000000])
         self.assertEqual(bounds['localDeliveryAgeSeconds'],1)
 
+    def test_diagnostic_exception_is_exact_and_not_adapter_cloud_authority(self):
+        scope=self.value['diagnosticAosReadCycle']
+        self.assertEqual(scope['codename'],'vision-camera-image-probe')
+        self.assertEqual((scope['readVersion'],scope['revokeVersion']),('0.1.2','0.1.3'))
+        self.assertFalse(self.value['productTopology']['cloudMutationForIngress'])
+        self.assertIn('Subject membership',scope['preserve'])
+
 
 if __name__=='__main__':unittest.main()

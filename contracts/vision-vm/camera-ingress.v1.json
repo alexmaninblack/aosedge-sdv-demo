@@ -21,6 +21,16 @@
     "aosedge-sdv-demo": "Existing Source owner supplies verified selection/credentials, starts/stops ingress and owns the named M4 campaign",
     "nativeAos": "Unchanged application resource allocation and Camera Access component lifecycle"
   },
+  "diagnosticAosReadCycle": {
+    "authorizedByOperator": "2026-11-01: explicit approval after the ingress source checkpoint",
+    "codename": "vision-camera-image-probe",
+    "readVersion": "0.1.2",
+    "revokeVersion": "0.1.3",
+    "target": "Existing current Vision Unit and its existing diagnostic Subject only",
+    "allowed": "Sign and publish those two diagnostic versions serially, verify native read then resource revocation",
+    "preserve": ["VM", "Unit", "Subject membership", "Camera OEM component", "all other Subjects", "VDP/Brake/Tire", "data and credentials"],
+    "scope": "Narrow diagnostic exception, not Cloud mutation by the ingress adapter or a permanent image update"
+  },
   "hostEndpoint": {
     "method": "GET",
     "path": "/vision/v1/camera/front.mjpeg",
@@ -56,6 +66,7 @@
     "peerIdentityGate": "Prove the exact nonroot producer UID allowed by the existing OEM socket and isolate its credential/network permissions; no broad UID-0 or unconfined fallback",
     "lifecycle": "Normal Source and native/systemd owners only. Start after valid Source enrollment and active Camera component; stop/drain for Source detach and Camera replacement.",
     "network": "Outgoing connection to the enrolled Gateway media endpoint only; no guest network listener",
+    "networkEnforcement": "Existing Source-owned native packet filter permits the Camera UID only to 10.0.0.1:6443 before Source DNAT; drop other destinations/ports without altering other UIDs, existing gates or the kernel image. Prove a denied socket attempt with the independently observed native drop counter, not timeout alone.",
     "parser": "Bounded streaming multipart parser; reject duplicate/unknown required framing, oversized metadata/body, inconsistent length and invalid JPEG metadata before local IPC",
     "restart": "Fresh authenticated Gateway/source binding after either process restarts; no recorded-frame fallback"
   },

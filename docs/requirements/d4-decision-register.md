@@ -3692,6 +3692,11 @@ no camera/app key, new CA/store, broad policy or new VM. Source/compile/reversib
 live proof is authorized. Permanent image delivery and AI/full-E2E acceptance
 remain separate, not inferred from contract or transient proof.
 
+The operator additionally authorized only the existing Vision diagnostic
+service's `0.1.2` read-resource / `0.1.3` revoke cycle on 2026-11-01. Preserve
+the current Unit, Subject memberships, VM and OEM component. This exception
+permits native consumer evidence; it grants no Cloud authority to ingress.
+
 ## Explicitly Deferred or Out-of-Scope Items
 
 | Tracker | Boundary | Re-entry condition | State |

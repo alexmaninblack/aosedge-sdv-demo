@@ -103,6 +103,8 @@ def execute(r):
         recipients=[unit_view(row) for row in reads.pages('services/'+service_id+'/units/')]
         current=r['vehicles']['test']
         require(all(row['id']==current['unitId'] and row['system_uid']==current['systemUid'] for row in recipients),'FOREIGN_RECIPIENT')
+    if action=='catalog':
+        return dict(serviceId=service_id,versions=[dict(version=v['version'],versionId=v['id'],state=v['container_state']) for v in versions])
     if action=='upload':
         require(not selected,'VERSION_EXISTS_RECONCILE')
         if service_id is None:provider.require('services_create')

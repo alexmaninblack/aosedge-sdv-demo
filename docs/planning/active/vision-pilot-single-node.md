@@ -4,13 +4,14 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.12
+- Version: 0.13
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: signed Source first enrollment and native Camera activation passed on the retained M4 VM;
-  permanent .3 image passed native read/revocation/cold-boot security with recorded JPEGs; authenticated Gateway ingress and full Vision E2E remain open
+- Execution status: signed Source enrollment and native Camera activation passed on the retained M4 VM;
+  permanent .3 image passed recorded-input/native security gates; authenticated Gateway-to-native-Aos
+  live ingress/read/revoke passed as a reversible proof. Permanent ingress delivery and AI/full Vision E2E remain open.
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -493,20 +494,50 @@ Unit/Subject and data. No CARLA/Main Factory rebuild, new VM, key rotation or
 permanent image change is part of the proposed transient packet. If a permanent
 policy/image delta is necessary, do not repeat the previous successor-VM
 workaround: qualify a separately accepted delivery route that preserves the VM.
-The contract does not claim installed or live-qualified Gateway/guest code.
+Contract acceptance alone does not establish permanent Gateway/guest installation.
 Perception/Assessment remain the subsequent service packet.
 
-Current source gate: the Gateway media/capture implementation and internal OEM
-multipart/credential entry pass their offline tests and targeted compilation.
-The retained Vision VM's native prerequisites are observed under Enforcing,
-then stopped with all four non-target journals unchanged. Neither a transient
-ingress installation nor live Gateway-to-Aos reader acceptance is recorded.
-The existing diagnostic service is at resource-revoked `0.1.1`. Restoring its
-native read lease requires a separately journalled diagnostic service release
-(`0.1.2` read, then `0.1.3` revoke), but the accepted ingress contract explicitly
-excludes Cloud mutation. Resolve that authority boundary before those releases;
-do not substitute root/manual container reads or call the source gate live
-acceptance. The OEM component, Unit, Subject and retained VM stay unchanged.
+Current gate: `ingress-live-10` completed
+`PASS_REVERSIBLE_NATIVE_LIVE_INGRESS_READ_REVOKE` on 2026-11-01 in 159.07 seconds.
+The current Vision VM consumed real Gateway MJPEG through the separate nonroot
+OEM ingress. The native Aos reader (UID 5000, `container_engine_t`, allocated
+read-only mount/GID) independently hashed both JPEG bodies and matched the
+Gateway frame IDs/digests. It has zero effective/permitted/inheritable/ambient
+capabilities and NNP; its pre-existing native OCI bounding set is unchanged.
+The ingress itself has **all** capability sets empty, including bounding.
+
+The exact diagnostic exception published `0.1.2` read in `ingress-live-09`.
+After a harness-only capability expectation failed, the continuation reconciled
+that deployment's authoritative READY state and reused its receipt/binary;
+it did not repeat the upload. It then published `0.1.3` revoke and observed a
+new native process without the read mount or resource GID. The existing Vision
+Unit, Subject memberships, OEM payload and all four retained journals are
+unchanged. Ingress has no Cloud mutation authority.
+
+First start/repeat, wrong generation/roles, missing client identity, media-slot
+quota, outside-peer/listener denial, actual same-UID/core-domain credential
+open denial, disconnect pixel clearing, new source/component epochs on
+reconnect/restart, native fresh pair delivery and Source detach drain passed.
+Systemd 255's root-owned credential ACL is validated in full on a read-only
+mount. A propagated credential mount can be visible from core, but core has no
+credential assignment and its exact domain receives EACCES when opening the
+key. Applications have neither credentials nor OEM authority. This is not
+isolation by UID alone.
+
+This image's systemd lacks BPF filtering support. Source's existing native nft
+owner therefore permits only Camera UID → `10.0.0.1:6443` before DNAT and drops
+other traffic; the denied socket probe is confirmed by its native drop counter.
+No kernel module, image change or other-UID rule is introduced. Enforcing was
+retained; the only later scoped AVCs were the two deliberate no-listener bind
+denials after reconnect/restart. Canonical stores and original OEM bytes were
+unchanged, stock policy restored, transient unit/mount removed, and owned
+Source/CARLA/Vision VM stopped. Compact private evidence is retained under the
+named campaign's ignored qualification records; no credentials enter Git.
+
+This closes reversible live ingress/native consumer acceptance, **not**
+permanent image delivery, Perception/Assessment, model performance or full
+Vision E2E. Preserve the current VM/Unit and qualify an explicitly accepted
+permanent delivery route next; do not infer a Main merge or public release.
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,

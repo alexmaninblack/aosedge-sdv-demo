@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Read native ingress prerequisites on the retained Vision VM, then stop it.
+"""Native prerequisites, dummy credential projection or owned nft roundtrip.
 
-No Source, simulator, Cloud mutation, key/certificate read or policy change.
+No Source process, simulator, Cloud mutation, key/certificate read or SELinux
+policy change. The network mode creates/removes only the Camera Source table.
 """
 import hashlib
 import json
@@ -11,6 +12,78 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+
+PROJECTION=r'''import gzip,grp,json,os,pathlib,pwd,subprocess
+def call(args):return subprocess.check_output(args,text=True,stderr=subprocess.DEVNULL,timeout=15)
+root=pathlib.Path('/run/vision-credential-projection-probe');assert not root.exists();root.mkdir(mode=0o700)
+dummy=root/'dummy';dummy.write_text('non-secret credential mechanism fixture');dummy.chmod(0o600)
+name='vision-credential-projection-probe'
+try:
+ call(['systemd-run','--quiet','--unit='+name,'-p','User=aos-camera-access','-p','Group=aos-camera-read',
+  '-p','LoadCredential=probe:'+str(dummy),'-p','IPAddressDeny=any','-p','IPAddressAllow=10.0.0.1/32','/usr/bin/sleep','20'])
+ pid=int(call(['systemctl','show',name,'--value','-p','MainPID']).strip());assert pid>0
+ path=pathlib.Path('/proc')/str(pid)/'root/run/credentials'/(name+'.service')/'probe'
+ info=path.stat()
+ versions=call(['systemctl','--version']).splitlines()
+ cfg=pathlib.Path('/proc/config.gz');flags={}
+ if cfg.exists():
+  text=gzip.decompress(cfg.read_bytes()).decode()
+  for name2 in ('CONFIG_CGROUP_BPF','CONFIG_BPF','CONFIG_BPF_SYSCALL'):
+   flags[name2]=next((v.split('=',1)[1] for v in text.splitlines() if v.startswith(name2+'=')),'NOT_ENABLED')
+ print(json.dumps(dict(uid=info.st_uid,gid=info.st_gid,mode=oct(info.st_mode&0o777),nlink=info.st_nlink,
+  bytes=info.st_size,expectedUid=pwd.getpwnam('aos-camera-access').pw_uid,systemdFeatures=versions[1] if len(versions)>1 else '',kernelFlags=flags)))
+finally:
+ call(['systemctl','stop',name]);dummy.unlink();root.rmdir()
+'''
+
+NETWORK=r'''import gzip,json,pathlib,pwd,subprocess,types
+module=types.ModuleType('source_network_proof');exec(SOURCE,module.__dict__)
+errors=[]
+class Trust:
+ @staticmethod
+ def call(args,data=None):
+  p=subprocess.run(args,input=data,capture_output=True,text=True,timeout=15)
+  if p.returncode:
+   errors.append(dict(exit=p.returncode,message=p.stderr[-3000:]))
+   raise ValueError('NATIVE_NFT_OPERATION_FAILED')
+  return p.stdout
+item=dict(localVmId=LOCAL_VM)
+facts={}
+try:
+ facts['created']=module.camera_egress(Trust,item,True)
+ facts['idempotent']=module.camera_egress(Trust,item,True)
+except Exception as error:
+ facts['failure']=str(error) if isinstance(error,ValueError) else type(error).__name__
+ p=subprocess.run(['nft','-j','list','table','inet',module.CAMERA_EGRESS],capture_output=True,text=True,timeout=10)
+ if p.returncode==0:facts['nativeTable']=json.loads(p.stdout)
+ # Dry-run each prefix in a single atomic transaction, never install a weaker
+ # rule while localizing a missing expression in the retained kernel.
+ rules=module.camera_egress_rules(pwd.getpwnam('aos-camera-access').pw_uid)
+ table=dict(family='inet',name=module.CAMERA_EGRESS)
+ chain=dict(family='inet',table=module.CAMERA_EGRESS,name='output',type='filter',hook='output',prio=-250,policy='accept')
+ base=[{'add':{'table':table}},{'add':{'chain':chain}}]
+ checks=[('table',base[:1]),('chain',base)]
+ for n in range(1,len(rules[0]['expr'])+1):
+  rule=dict(rules[0],expr=rules[0]['expr'][:n]+([] if n==len(rules[0]['expr']) else [{'counter':None}]))
+  checks.append(('allow-prefix-'+str(n),base+[{'add':{'rule':rule}}]))
+ checks.append(('reject',base+[{'add':{'rule':rules[1]}}]))
+ facts['dryChecks']=[]
+ for label,commands in checks:
+  p=subprocess.run(['nft','-c','-j','-f','-'],input=json.dumps(dict(nftables=commands)),capture_output=True,text=True,timeout=15)
+  facts['dryChecks'].append(dict(stage=label,exit=p.returncode,message=p.stderr[-1500:]))
+ cfg=pathlib.Path('/proc/config.gz')
+ if cfg.exists():
+  text=gzip.decompress(cfg.read_bytes()).decode()
+  facts['kernelNft']=[v for v in text.splitlines() if any(v.startswith(key) for key in ('CONFIG_NFT_','CONFIG_NF_TABLES','CONFIG_NF_REJECT'))]
+ facts['kernelRelease']=pathlib.Path('/proc/sys/kernel/osrelease').read_text().strip()
+ p=subprocess.run(['modprobe','-n','-v','nft_reject_inet'],capture_output=True,text=True,timeout=10)
+ facts['rejectModuleDryRun']=dict(exit=p.returncode,message=(p.stdout+p.stderr)[-3000:])
+finally:
+ try:facts['removed']=module.camera_egress(Trust,item,False)
+ except Exception as error:facts['cleanupFailure']=str(error) if isinstance(error,ValueError) else type(error).__name__
+facts['nftErrors']=errors
+print(json.dumps(facts))
+'''
 
 
 def main():
@@ -67,13 +140,20 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
  labels=facts,credentialMounts=[v for v in pathlib.Path('/proc/1/mountinfo').read_text().splitlines() if ' /run/credentials/' in v],
  pythonVersion=call(['python3','-V']).strip(),systemdVersion=call(['systemctl','--version']).splitlines()[0])))
 '''
+            if context.get('projectionProbe'):script=PROJECTION
+            if context.get('networkSource'):
+                script=NETWORK.replace('SOURCE',repr(context['networkSource'])).replace('LOCAL_VM',repr(item['localVmId']))
             import textwrap
             wrapped='import json,traceback\ntry:\n'+textwrap.indent(script,' ')+'\nexcept Exception as error:\n print(json.dumps(dict(probeError=type(error).__name__,line=traceback.extract_tb(error.__traceback__)[-1].lineno)))\n'
             done=subprocess.run(command,input="python3 - <<'VISION_PREFLIGHT'\n"+wrapped+"\nVISION_PREFLIGHT\n",capture_output=True,text=True,timeout=50)
             assert done.returncode==0,'NATIVE_PREFLIGHT_OBSERVATION_FAILED'
             result['facts']=json.loads(done.stdout)
             assert 'probeError' not in result['facts'],'NATIVE_PREFLIGHT_PROBE_ERROR'
-            assert result['facts']['unit']['ActiveState']=='active','NATIVE_CAMERA_NOT_ACTIVE'
+            if context.get('networkSource'):
+                assert result['facts'].get('created',{}).get('enforced') and not result['facts'].get('removed',{}).get('enforced',True),'NETWORK_ROUNDTRIP_FAILED'
+            elif context.get('projectionProbe'):
+                assert result['facts']['uid']==result['facts']['expectedUid']>0,'PROJECTION_IDENTITY_INVALID'
+            else:assert result['facts']['unit']['ActiveState']=='active','NATIVE_CAMERA_NOT_ACTIVE'
             result['outcome']='PASS_NATIVE_PREREQUISITES'
         except Exception as error:
             result['code']=str(error) if isinstance(error,AssertionError) else type(error).__name__

@@ -13,6 +13,7 @@ import ssl
 import stat
 import time
 import re
+import pwd
 from uuid import UUID
 
 PROFILE = 'aos-vision-main-qemuarm64-v1'
@@ -23,6 +24,7 @@ DROPIN = Path('/run/systemd/system/aos-sm.service.d/85-democtl-viss-mtls.conf')
 CAMERA_UNIT='aos-camera-ingress.service'
 CAMERA_SELECTION=Path('/run/democtl-source/camera-selection.json')
 CAMERA_DROPIN=Path('/run/systemd/system/aos-camera-ingress.service.d/85-democtl-camera-mtls.conf')
+CAMERA_EGRESS='democtl_vision_camera'
 
 
 def require(ok, code):
@@ -81,6 +83,62 @@ def status(trust):
                 platform='camera-access', updateRuntime=values, vdpInstalled=False)
 
 
+def camera_egress_rules(uid):
+    require(type(uid) is int and uid>0,'CAMERA_EGRESS_UID_INVALID')
+    owner={'match':{'op':'==','left':{'meta':{'key':'skuid'}},'right':uid}}
+    base=dict(family='inet',table=CAMERA_EGRESS,chain='output')
+    return [dict(base,expr=[owner,
+        {'match':{'op':'==','left':{'payload':{'protocol':'ip','field':'daddr'}},'right':'10.0.0.1'}},
+        {'match':{'op':'==','left':{'payload':{'protocol':'tcp','field':'dport'}},'right':6443}},
+        {'accept':None}]),dict(base,expr=[owner,{'counter':None},{'drop':None}])]
+
+
+def camera_egress_observed_rule(rule):
+    """Normalize only native counter values; refuse any other rule change."""
+    value={k:v for k,v in rule.items() if k!='handle'}
+    expressions=[]
+    for expression in value.get('expr',[]):
+        if 'counter' in expression:
+            counter=expression['counter']
+            require(set(expression)=={'counter'} and type(counter) is dict
+                and set(counter)=={'packets','bytes'} and all(type(v) is int and 0<=v<2**64
+                    for v in counter.values()),'CAMERA_EGRESS_COUNTER_INVALID')
+            expressions.append({'counter':None})
+        else:expressions.append(expression)
+    return dict(value,expr=expressions)
+
+
+def camera_egress(trust,item,enabled):
+    """Existing Source packet-filter owner; no BPF/Engine/global policy change.
+
+    UID is shared only with Camera core (which is AF_UNIX-only). The inet
+    chain runs before Source DNAT; other UIDs and Source's own gates retain
+    their original policy. Refuse unknown ownership/rules, never adopt them.
+    """
+    uid=pwd.getpwnam('aos-camera-access').pw_uid
+    expected=camera_egress_rules(uid);comment='democtl-vision-camera:'+UUID(item['localVmId']).hex
+    chain=dict(family='inet',table=CAMERA_EGRESS,name='output',type='filter',hook='output',prio=-250,policy='accept')
+    def observed():
+        tables=json.loads(trust.call(['nft','-j','list','tables']))['nftables']
+        if not any(v.get('table',{}).get('name')==CAMERA_EGRESS for v in tables):return False
+        data=json.loads(trust.call(['nft','-j','list','table','inet',CAMERA_EGRESS]))['nftables']
+        table=[v['table'] for v in data if 'table' in v]
+        chains=[{k:w for k,w in v['chain'].items() if k!='handle'} for v in data if 'chain' in v]
+        rules=[camera_egress_observed_rule(v['rule']) for v in data if 'rule' in v]
+        require(len(table)==1 and table[0].get('comment')==comment and chains==[chain]
+            and rules==expected,'CAMERA_EGRESS_OWNER_OR_RULES_CHANGED')
+        return True
+    before=observed()
+    if before==enabled:return dict(enforced=enabled,noOp=True)
+    if enabled:
+        commands=[{'add':{'table':dict(family='inet',name=CAMERA_EGRESS,comment=comment)}},
+            {'add':{'chain':chain}},*[{'add':{'rule':v}} for v in expected]]
+    else:commands=[{'delete':{'table':dict(family='inet',name=CAMERA_EGRESS)}}]
+    trust.call(['nft','-j','-f','-'],data=json.dumps(dict(nftables=commands)))
+    require(observed()==enabled,'CAMERA_EGRESS_APPLY_UNCONFIRMED')
+    return dict(enforced=enabled,noOp=False)
+
+
 def camera(request,trust,item):
     """The existing Source owner projects selection, never invents credentials.
 
@@ -91,11 +149,21 @@ def camera(request,trust,item):
     values=dict(line.split('=',1) for line in trust.call(['systemctl','show',CAMERA_UNIT,
         '--property=LoadState,ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in line)
     if action=='camera-stop':
-        if values.get('LoadState')=='not-found':return dict(stopped=True,noOp=True)
+        if values.get('LoadState')=='not-found':
+            require(values.get('ActiveState') in ('inactive','failed') and values.get('MainPID')=='0','CAMERA_STOP_UNCONFIRMED')
+            camera_egress(trust,item,False)
+            return dict(stopped=True,noOp=True)
         trust.call(['systemctl','stop',CAMERA_UNIT])
         after=dict(line.split('=',1) for line in trust.call(['systemctl','show',CAMERA_UNIT,
-            '--property=ActiveState,MainPID']).splitlines() if '=' in line)
-        require(after.get('ActiveState')=='inactive' and after.get('MainPID')=='0','CAMERA_STOP_UNCONFIRMED')
+            '--property=ActiveState,MainPID,Job,ControlGroup']).splitlines() if '=' in line)
+        require(after.get('ActiveState') in ('inactive','failed') and after.get('MainPID')=='0'
+            and after.get('Job','') in ('','0'),'CAMERA_STOP_UNCONFIRMED')
+        group=after.get('ControlGroup','')
+        require(group in ('','/system.slice/aos-camera-ingress.service'),'CAMERA_STOP_CGROUP_CHANGED')
+        if group:
+            procs=Path('/sys/fs/cgroup'+group+'/cgroup.procs')
+            require(not procs.exists() or not procs.read_text().strip(),'CAMERA_STOP_PROCESS_REMAINS')
+        camera_egress(trust,item,False)
         return dict(stopped=True,noOp=values.get('ActiveState')=='inactive')
     require(action=='camera-start','CAMERA_ACTION_INVALID')
     require(values.get('LoadState')=='loaded','CAMERA_INGRESS_NOT_INSTALLED')
@@ -120,6 +188,7 @@ def camera(request,trust,item):
     expected={CAMERA_SELECTION:(json.dumps(binding,sort_keys=True),0o600),CAMERA_DROPIN:(text,0o644)}
     same=all(path.is_file() and read(path,mode)==value for path,(value,mode) in expected.items())
     require(values.get('ActiveState')=='inactive' or same,'CAMERA_ACTIVE_BINDING_CHANGED')
+    camera_egress(trust,item,True)
     changed=False
     for path,(value,mode) in expected.items():changed=trust.write(path,value,mode) or changed
     if changed:trust.call(['systemctl','daemon-reload'])
