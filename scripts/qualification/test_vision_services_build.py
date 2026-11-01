@@ -10,6 +10,13 @@ import hashlib
 
 
 class ClosureCommandTests(unittest.TestCase):
+    def test_live_owner_evidence_does_not_persist_enrollment_fingerprints(self):
+        module=runpy.run_path(str(Path(__file__).with_name('vision_services_live.py')))
+        value=dict(status='CURRENT',selectedSource=dict(unitId='public-native-id',selectedPlatformUnitCertificateSha256='DO_NOT_COPY'),
+            token='DO_NOT_COPY',runnerCommand=['DO_NOT_COPY'],credentialMountReadonly=True)
+        cleaned=module['evidence'](value)
+        self.assertNotIn('DO_NOT_COPY',str(cleaned));self.assertTrue(cleaned['credentialMountReadonly'])
+
     def test_allocation_requires_real_writer_proof_and_no_dmips_overcommit(self):
         module=runpy.run_path(str(Path(__file__).with_name('vision_services_prepare.py')))
         root=Path(__file__).resolve().parents[2]

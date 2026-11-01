@@ -374,6 +374,25 @@ scope checks precede their first use, and the complete native proof still
 precedes the permanent image gate. This dependency ordering does not permit a
 manual crun substitute, a bypassed signature or an unqualified release claim.
 
+The Source-owned broker lifecycle now passes on the same VM
+(`vision-services-broker-live-03`): separate nonroot UID, `vision_exchange_t`,
+all-zero capabilities/NNP, four role sockets, read-only credentials, idempotent
+start, wrong-root denial, restart and reconnect. Canonical configurations and
+policy stores were restored; the VM, Source and owned wake helper stopped.
+The initial `/run` nosuid executable-fixture error was fixed with the existing
+owned executable-tmpfs proof pattern, **not** a nosuid-transition policy grant.
+This result is still not native Perception/Assessment allocation or model flow.
+
+The read-only result observation uses the **existing same-UID Source status
+socket**, with no new operation/listener or application credential. Its Vision
+projection is at most 3,072 bytes inside the unchanged 4-KiB response boundary.
+Full associations remain private; the UI gets an opaque reference, original
+frame counter, capture age, versions and bounded shadow result. Up to 16 path
+samples are presentation-only; planning/fusion retain their full data. A
+different live camera frame must never receive that result as an overlay.
+Source start must independently confirm the broker's confinement and all four
+ready sockets, not merely a successful `Type=exec` process launch.
+
 ## Source facts checked while preparing the packet
 
 Read the exact retained Git objects, not an evolving upstream branch:

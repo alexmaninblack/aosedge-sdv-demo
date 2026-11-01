@@ -14,6 +14,7 @@ import stat
 import time
 import re
 import pwd
+import grp
 import socket
 import struct
 from uuid import UUID
@@ -32,6 +33,7 @@ EXCHANGE_SELECTION=Path('/run/democtl-source/vision-selection.json')
 EXCHANGE_DROPIN=Path('/run/systemd/system/aos-vision-exchange.service.d/85-democtl-vision-mtls.conf')
 EXCHANGE_EGRESS='democtl_vision_exchange'
 EXCHANGE_SCOPES=['vision-context-read','vision-assessment-publish']
+EXCHANGE_ROLES=('perception-publish','perception-read','context-read','assessment-publish')
 
 
 def require(ok, code):
@@ -177,6 +179,36 @@ def camera_component_epoch():
     return hello['componentEpoch']
 
 
+def exchange_ready_facts(values,uid,gid,groups,context,credentials_readonly,sockets):
+    """An active Type=exec unit is not proof that Python is ready or confined."""
+    return (list(map(int,values.get('Uid','').split()))==[uid]*4
+        and list(map(int,values.get('Gid','').split()))==[gid]*4
+        and groups<=set(map(int,values.get('Groups','').split()))<=groups|{gid}
+        and values.get('NoNewPrivs','').strip()=='1'
+        and all(values.get(key,'').strip()=='0000000000000000' for key in ('CapEff','CapPrm','CapInh','CapBnd','CapAmb'))
+        and context.rstrip('\x00\n').split(':')[2:3]==['vision_exchange_t'] and credentials_readonly
+        and len(sockets)==4 and all(sockets))
+
+
+def exchange_process_ready(pid):
+    user=pwd.getpwnam('aos-vision-exchange');groups={grp.getgrnam('aos-vision-'+role).gr_gid for role in EXCHANGE_ROLES}
+    require(user.pw_uid>0 and user.pw_gid>0,'EXCHANGE_IDENTITY_INVALID')
+    try:
+        proc=Path('/proc')/str(pid);values=dict(row.split(':',1) for row in (proc/'status').read_text().splitlines() if ':' in row)
+        mounts=[row.split() for row in (proc/'mountinfo').read_text().splitlines()]
+        selected=[row for row in mounts if row[4]=='/run/credentials/aos-vision-exchange.service']
+        readonly=len(selected)==1 and 'ro' in selected[0][5].split(',')
+        listening={row[-1] for line in (proc/'net/unix').read_text().splitlines()[1:] if len(row:=line.split())>=8
+            and int(row[3],16)&0x10000 and row[4]=='0001'}
+        sockets=[]
+        for role in EXCHANGE_ROLES:
+            path=Path('/run/aos-vision-exchange')/role/'exchange.sock';info=path.lstat()
+            sockets.append(stat.S_ISSOCK(info.st_mode) and info.st_uid==user.pw_uid
+                and info.st_gid==grp.getgrnam('aos-vision-'+role).gr_gid and stat.S_IMODE(info.st_mode)==0o660 and str(path) in listening)
+        return exchange_ready_facts(values,user.pw_uid,user.pw_gid,groups,(proc/'attr/current').read_text(),readonly,sockets)
+    except (FileNotFoundError,ProcessLookupError):return False
+
+
 def exchange(request,trust,item,*,start):
     """Same Source selection and credentials, four role resources, no app key."""
     require(request.get('exchangeScopes')==EXCHANGE_SCOPES,'EXCHANGE_SCOPE_REQUIRED')
@@ -210,10 +242,14 @@ def exchange(request,trust,item,*,start):
     for path,(content,mode) in expected.items():changed=trust.write(path,content,mode) or changed
     if changed:trust.call(['systemctl','daemon-reload'])
     trust.call(['systemctl','start',EXCHANGE_UNIT])
-    after=dict(row.split('=',1) for row in trust.call(['systemctl','show',EXCHANGE_UNIT,
-        '--property=ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in row)
-    require(after.get('ActiveState')=='active' and after.get('Result')=='success' and after.get('NRestarts')=='0' and int(after.get('MainPID','0'))>0,'EXCHANGE_START_UNCONFIRMED')
-    return dict(started=True,noOp=same and values.get('ActiveState')=='active')
+    deadline=time.monotonic()+5
+    while True:
+        after=dict(row.split('=',1) for row in trust.call(['systemctl','show',EXCHANGE_UNIT,
+            '--property=ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in row)
+        pid=int(after.get('MainPID','0'))
+        require(after.get('ActiveState')=='active' and after.get('Result')=='success' and after.get('NRestarts')=='0' and pid>0,'EXCHANGE_START_UNCONFIRMED')
+        if exchange_process_ready(pid):return dict(started=True,noOp=same and values.get('ActiveState')=='active')
+        require(time.monotonic()<deadline,'EXCHANGE_READY_UNCONFIRMED');time.sleep(.05)
 
 
 def camera(request,trust,item):

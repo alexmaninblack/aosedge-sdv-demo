@@ -32,9 +32,9 @@ def run(args,**kwargs):return subprocess.run(args,check=True,capture_output=True
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--name',choices=('host-candidate-01','host-candidate-02'),default='host-candidate-01');a=p.parse_args()
     from vision_vm_campaign import configuration
-    c=configuration(a.config);records=Path(c['records']);output=BUILD/'host-candidate-01'
+    c=configuration(a.config);records=Path(c['records']);output=BUILD/a.name
     require(not output.exists(),'VISION_HOST_INPUT_EXISTS_RECONCILE')
     cpu=json.loads((records/'vision-services-cpu-04/result.json').read_bytes())
     require(cpu['outcome']=='PASS_NATIVE_QUOTA_MAPPING_AND_STOCK_RESTORATION' and all(cpu['cleanup'].values()),'VISION_HOST_CPU_PROOF_REQUIRED')
@@ -46,10 +46,12 @@ def main():
         sources[name]=run(['git','-C',str(path),'rev-parse','HEAD']).stdout.decode().strip()
     with directory(ROOT,root=Path('/Volumes/SDV-Dev/.s501/.tmp')) as scratch:
         junit=scratch/'gateway-unit.xml'
-        run(['ctest','--test-dir',str(BUILD/'gateway-unit'),'-R','^(runtime_options|vision_calibration|vision_exchange|vision_camera|viss_network)$','--output-on-failure','--output-junit',str(junit)],env=dict(os.environ,TMPDIR=str(scratch)))
+        names={'runtime_options','vision_calibration','vision_exchange','vision_camera','viss_network'}
+        if a.name=='host-candidate-02':names.add('viss_assignment_control')
+        run(['ctest','--test-dir',str(BUILD/'gateway-unit'),'-R','^('+'|'.join(sorted(names))+')$','--output-on-failure','--output-junit',str(junit)],env=dict(os.environ,TMPDIR=str(scratch)))
         require(junit.is_file() and junit.stat().st_size<1024**2,'VISION_HOST_GATEWAY_REPORT_MISSING')
         cases=ET.parse(junit).getroot().findall('testcase')
-        require(len(cases)==5 and {row.attrib.get('name') for row in cases}=={'runtime_options','vision_calibration','vision_exchange','vision_camera','viss_network'}
+        require(len(cases)==len(names) and {row.attrib.get('name') for row in cases}==names
             and all(row.find('failure') is None and row.find('skipped') is None and row.find('error') is None for row in cases),'VISION_HOST_GATEWAY_TESTS_FAILED')
     with directory(BUILD) as scratch:
         stage=scratch/'candidate';native=stage/'native';(native/'lib').mkdir(parents=True)
@@ -75,7 +77,7 @@ def main():
             contractSha256=digest(ROOT/'contracts/vision-vm/services.v1.json'),allocationSha256=digest(ROOT/'contracts/vision-vm/services-allocation.v1.json'))
         (stage/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
         (stage/'context.json').write_text(json.dumps(dict(candidateManifestSha256=digest(stage/'manifest.json')),indent=2)+'\n')
-        result=dict(outcome='PASS_VISION_SERVICES_HOST_SOURCE_PREREQUISITES',gatewayUnitTestsPassed=5,cpuProofRestored=True,
+        result=dict(outcome='PASS_VISION_SERVICES_HOST_SOURCE_PREREQUISITES',gatewayUnitTestsPassed=len(names),cpuProofRestored=True,
             nativeExchange='NOT_RUN',imageBuild='NOT_RUN',sources=sources)
         (stage/'result.json').write_text(json.dumps(result,indent=2)+'\n');stage.rename(output)
     print(json.dumps(result));return 0

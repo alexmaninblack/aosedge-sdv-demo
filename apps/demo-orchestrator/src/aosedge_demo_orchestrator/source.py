@@ -973,6 +973,15 @@ class SourceService:
             assignmentGeneration=source["assignmentGeneration"], readCompletedAt=now())
         try:
             value["controller"] = self.driver.ready(state)
+            if state.get('vmProfile')=='aos-vision-main-qemuarm64-v1':
+                from . import vision_observation
+                value['vision']=vision_observation.unavailable()
+                if source.get('state')=='RUNNING' and getattr(self.environment.catalog,'vision_exchange_scopes',())==('vision-context-read','vision-assessment-publish'):
+                    try:
+                        observed=authentication.observe(self.driver)
+                        if observed.get('assignmentGeneration')==source['assignmentGeneration']:
+                            value['vision']=vision_observation.observation(observed.get('vision'))
+                    except (ValueError,OSError):pass  # Explicit unavailable, never retained old data.
             if not guest:
                 value.update(state="SELECTED_NOT_PROBED" if state.get("currentVehicle") else "RUNNING_UNASSIGNED")
                 return value

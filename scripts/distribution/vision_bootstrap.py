@@ -51,7 +51,7 @@ def authorized_identity():
 
 def assemble(factory, camera_payload, base_manifest, platform_revision, identity, output,
              ingress_candidate=None, ingress_proof=None, update_platform_revision=None,
-             services_candidate=None, services_proof=None):
+             services_candidate=None, services_proof=None,host_version='0.6.0'):
     output=model.canonical(output)
     model.require(not output.exists() and output.suffix=='.bundle' and output.parent.is_dir(),'OUTPUT_EXISTS_OR_INVALID')
     model.require(output.parent.stat().st_dev==ROOT.stat().st_dev,'BUILD_REQUIRES_SELECTED_SSD')
@@ -78,8 +78,9 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
         contents=bundle/'Contents'
         model.require(services_candidate is None or ingress_candidate is None,'HOST_CANDIDATE_MODE_AMBIGUOUS')
         services=services_candidate is not None
+        model.require(not services or re.fullmatch(r'0\.6\.(?:0|[1-9][0-9]*)',host_version),'HOST_VERSION_INVALID')
         (contents/'Info.plist').write_bytes(plistlib.dumps(dict(CFBundleIdentifier=model.IDENTIFIER,
-            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.6.0' if services else '0.5.0')))
+            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion=host_version if services else '0.5.0')))
         target=resources/'images/main-qemuarm64.img';target.parent.mkdir()
         # APFS clone when available; the independent file is still signature-sealed.
         result=subprocess.run(['/bin/cp','-c',str(image),str(target)],capture_output=True)
@@ -107,7 +108,7 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
                 # exchange proof, never a claim that the new image passed it.
                 model.require(observed['outcome']=='PASS_VISION_SERVICES_HOST_SOURCE_PREREQUISITES'
                     and observed['nativeExchange']=='NOT_RUN' and observed['imageBuild']=='NOT_RUN'
-                    and observed['gatewayUnitTestsPassed']==5 and observed['cpuProofRestored'] is True
+                    and observed['gatewayUnitTestsPassed']==(5 if host_version=='0.6.0' else 6) and observed['cpuProofRestored'] is True
                     and manifest['kind']=='VISION_SERVICES_HOST_ENGINEERING_INPUT'
                     and manifest['releaseImage'] is False and manifest['nativeQualified'] is False
                     and set(manifest['source'])=={'integration','platform','gateway','services'}
@@ -182,8 +183,9 @@ def main():
     p.add_argument('--ingress-candidate',type=Path);p.add_argument('--ingress-proof',type=Path)
     p.add_argument('--update-platform-revision')
     p.add_argument('--services-candidate',type=Path);p.add_argument('--services-proof',type=Path)
+    p.add_argument('--host-version',default='0.6.0')
     a=p.parse_args();print(json.dumps(assemble(a.factory,a.camera_payload,a.base_manifest,a.platform_revision,a.identity,a.output,
-        a.ingress_candidate,a.ingress_proof,a.update_platform_revision,a.services_candidate,a.services_proof)))
+        a.ingress_candidate,a.ingress_proof,a.update_platform_revision,a.services_candidate,a.services_proof,a.host_version)))
 
 
 if __name__=='__main__':main()

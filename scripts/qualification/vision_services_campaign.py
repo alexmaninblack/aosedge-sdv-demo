@@ -53,7 +53,9 @@ def worker(context):
         from aosedge_demo_orchestrator.environment import EnvironmentService,JOURNAL
         from aosedge_demo_orchestrator.vm import VMService,access_path
         from aosedge_demo_orchestrator.guest_access import ssh_command
-        bootstrap=v.verify(bundle,c['baseManifest']);require(bootstrap.manifest_sha256==BOOTSTRAP,'VISION_BOOTSTRAP_CHANGED')
+        expected_bootstrap=c.get('bootstrapManifest',BOOTSTRAP)
+        require(expected_bootstrap in (BOOTSTRAP,'c4694c1b440bb036b3df63a1b0adc573724d9371e11f98abb596d005ecc84ea9'),'VISION_BOOTSTRAP_SELECTION_INVALID')
+        bootstrap=v.verify(bundle,c['baseManifest']);require(bootstrap.manifest_sha256==expected_bootstrap,'VISION_BOOTSTRAP_CHANGED')
         native=Path.home()/v.INSTANCE_NAME;retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
         before=json.loads((native/JOURNAL).read_bytes());item=before['vehicles']['test']
         require(item['unitId']==UNIT and item['localVmId']==VM and item['runtime']['state']==before['source']['state']=='STOPPED'
@@ -111,6 +113,64 @@ print(json.dumps(dict(cpuCount=os.cpu_count(),memTotalKiB=int(next(v.split()[1] 
                 atomic(records/'native-capacity-observed.json',facts)
                 require(native_profile_valid(facts),'PRESERVED_VISION_PROFILE_CHANGED');return facts
             phase('native-capacity-and-profile',inventory);result['outcome']='PASS_SAME_VM_NATIVE_INVENTORY_ONLY'
+            if c.get('nativePrimitives'):
+                def native_primitives():
+                    proof=c['nativePrimitives'];base=Path('/run/aos-vision-services-input-01')
+                    for name,pin in proof['files'].items():require(hashlib.sha256((records/name).read_bytes()).hexdigest()==pin,'VISION_PRIMITIVE_INPUT_CHANGED')
+                    current=json.loads((native/JOURNAL).read_bytes())['vehicles']['test'];command=ssh_command(access_path(native,'test'),current['sshPort'],8)
+                    prepare=subprocess.run(command,input='test ! -e '+shlex.quote(str(base))+'\nmkdir -m 755 '+shlex.quote(str(base))+'\n',capture_output=True,text=True,timeout=10)
+                    require(prepare.returncode==0,'VISION_PRIMITIVE_STAGING_CONFLICT')
+                    options=command[1:-3];options.remove('-T');options[options.index('-p')]='-P'
+                    delivered=subprocess.run(['/usr/bin/scp','-O',*options,*[str(records/name) for name in proof['files']],'root@127.0.0.1:'+str(base)+'/'],capture_output=True,text=True,timeout=30)
+                    require(delivered.returncode==0,'VISION_PRIMITIVE_STAGING_FAILED')
+                    code='import pathlib,hashlib,json,shutil\nbase=pathlib.Path('+repr(str(base))+')\nfiles='+repr(proof['files'])+'\n'
+                    code+='assert all(not (base/name).is_symlink() and hashlib.sha256((base/name).read_bytes()).hexdigest()==pin for name,pin in files.items())\n'
+                    code+='ns={};exec((base/"vision_services_primitives_guest.py").read_text(),ns)\nresult=ns["run"](base)\n'
+                    code+='if result["outcome"].startswith("PASS_"):shutil.rmtree(base);result["cleanup"]["stagedInputsRemoved"]=True\nprint(json.dumps(result))\n'
+                    observed=subprocess.run(command,input="python3 -I -B - <<'VISION_NATIVE_PRIMITIVES'\n"+code+"\nVISION_NATIVE_PRIMITIVES\n",capture_output=True,text=True,timeout=280)
+                    require(observed.returncode==0 and len(observed.stdout)<262144,'VISION_PRIMITIVE_OBSERVER_FAILED')
+                    value=json.loads(observed.stdout);atomic(records/'native-primitives-observed.json',value)
+                    require(value['outcome']=='PASS_REVERSIBLE_NATIVE_PRIMITIVES_PREPARATION',value.get('code',value.get('cleanupCode','VISION_PRIMITIVES_UNCONFIRMED')))
+                    require(all(value['cleanup'].values()),'VISION_PRIMITIVE_RESTORATION_UNCONFIRMED');return value
+                phase('reversible-native-exchange-primitives',native_primitives);result['outcome']='PASS_NATIVE_EXCHANGE_PRIMITIVES_AND_STOCK_RESTORATION'
+            if c.get('nativeExchangePreflight'):
+                def exchange_preflight():
+                    code='''import json,pathlib,shutil,pwd,grp,subprocess
+assert pathlib.Path('/etc/machine-id').read_text().strip()=='89273f164be04b22b4cb58d08533c8bc'
+paths=('/run','/var/aos/workdirs','/var/aos/storages','/var/aos/states','/var/aos/images','/var/aos')
+storage={}
+for name in paths:
+ p=pathlib.Path(name)
+ if p.exists():
+  d=shutil.disk_usage(p);storage[name]=dict(bytes=d.total,free=d.free,used=d.used,device=p.stat().st_dev)
+resource=json.loads(pathlib.Path('/etc/aos/resources.cfg').read_bytes())
+names=('aos-vision-exchange','aos-vision-perception-publish','aos-vision-perception-read','aos-vision-context-read','aos-vision-assessment-publish')
+groups={name:bool([g for g in grp.getgrall() if g.gr_name==name]) for name in names}
+configs={}
+for name in ('sm','cm'):
+ value=json.loads((pathlib.Path('/etc/aos')/(name+'.cfg')).read_bytes())
+ configs[name]=dict(fields=sorted(value),paths={k:v for k,v in value.items() if type(v) is str and v.startswith('/var/aos/')})
+measurement=pathlib.Path('/var/aos/workdirs/vision-services-measure-inputs')
+ownedInputs=[dict(name=p.name,bytes=p.stat().st_size) for p in sorted(measurement.iterdir()) if p.is_file() and not p.is_symlink()] if measurement.is_dir() else []
+for config in configs.values():
+ for path in config['paths'].values():
+  p=pathlib.Path(path)
+  if p.exists():
+   d=shutil.disk_usage(p);storage[path]=dict(bytes=d.total,free=d.free,used=d.used,device=p.stat().st_dev)
+print(json.dumps(dict(storage=storage,resourceNames=[r['name'] for r in resource],exchangeGroupsPresent=groups,
+ exchangeUserPresent=any(u.pw_name=='aos-vision-exchange' for u in pwd.getpwall()),
+ nativeStorageConfiguration=configs,ownedMeasurementInputs=ownedInputs,
+ stockPolicyBytes=pathlib.Path('/sys/fs/selinux/policy').stat().st_size,
+ stoppedProofPathsAbsent=all(not pathlib.Path(p).exists() for p in ('/run/aos-vision-services-proof','/run/vision-camera-store-proof')),
+ rootfsWritable=False,selinux=subprocess.check_output(['getenforce'],text=True).strip())))
+'''
+                    current=json.loads((native/JOURNAL).read_bytes())['vehicles']['test'];command=ssh_command(access_path(native,'test'),current['sshPort'],8)
+                    observed=subprocess.run(command,input="python3 -I -B - <<'VISION_EXCHANGE_PREFLIGHT'\n"+code+"\nVISION_EXCHANGE_PREFLIGHT\n",capture_output=True,text=True,timeout=25)
+                    require(observed.returncode==0 and len(observed.stdout)<16384,'VISION_EXCHANGE_PREFLIGHT_FAILED');facts=json.loads(observed.stdout)
+                    require(facts['resourceNames']==['vision-camera-read'] and not any(facts['exchangeGroupsPresent'].values())
+                        and facts['exchangeUserPresent'] is False and facts['stoppedProofPathsAbsent'] and facts['selinux']=='Enforcing','VISION_EXCHANGE_BASELINE_CHANGED')
+                    return facts
+                phase('native-exchange-storage-preflight',exchange_preflight);result['outcome']='PASS_READ_ONLY_NATIVE_EXCHANGE_PREFLIGHT'
             if c.get('cpuTopologyProof'):
                 def prove_cpu_topology():
                     proof=c['cpuTopologyProof']
@@ -202,17 +262,37 @@ print(json.dumps(info))
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--config',type=Path);p.add_argument('--worker',type=Path);group=p.add_mutually_exclusive_group();group.add_argument('--measure-closures',action='store_true');group.add_argument('--diagnose-measurement',action='store_true');group.add_argument('--prove-cpu-info',nargs='?',const=1,type=int,choices=(1,2,3,4));group.add_argument('--resume-measurement',nargs='?',const=2,type=int,choices=(2,3,4,5,6));a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--config',type=Path);p.add_argument('--worker',type=Path);group=p.add_mutually_exclusive_group();group.add_argument('--measure-closures',action='store_true');group.add_argument('--diagnose-measurement',action='store_true');group.add_argument('--prove-cpu-info',nargs='?',const=1,type=int,choices=(1,2,3,4));group.add_argument('--resume-measurement',nargs='?',const=2,type=int,choices=(2,3,4,5,6));group.add_argument('--exchange-preflight',nargs='?',const=1,type=int,choices=(1,2));group.add_argument('--exchange-primitives',action='store_true');a=p.parse_args()
     if a.worker:return worker(a.worker)
     require(a.config is not None,'PRIVATE_CONFIG_REQUIRED')
     import remote_harness as h
     from vision_vm_campaign import configuration
     c=configuration(a.config);t=c['transport'];q=shlex.quote;name='vision-services-cpu-'+str(a.prove_cpu_info).zfill(2) if a.prove_cpu_info else ('vision-services-closure-'+str(a.resume_measurement).zfill(2) if a.resume_measurement else ('vision-services-closure-diagnosis-01' if a.diagnose_measurement else ('vision-services-closure-01' if a.measure_closures else 'vision-services-native-01')))
+    if a.exchange_preflight:name='vision-services-exchange-preflight-'+str(a.exchange_preflight).zfill(2)
+    if a.exchange_primitives:name='vision-services-exchange-primitives-01'
     records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
     require(not records.exists(),'ATTEMPT_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     source=Path(__file__).resolve();context=dict(packageRoot=c['main']['packageRoot'],baseManifest=c['main']['manifestSha256'],
         bundle=str(Path(c['remoteRoot'])/'vision-fresh-accept-11/AosEdge Vision Bootstrap 0.5.0.bundle'),workerSha256=h.digest(source))
     inputs=[];extra_files=[]
+    if a.exchange_preflight or a.exchange_primitives:
+        delivered=json.loads((Path(c['records'])/'vision-services-host-01/result.json').read_bytes())
+        require(delivered['outcome']=='PASS_SIGNED_VISION_HOST_DELIVERY' and delivered['retainedJournalsUnchanged'],'VISION_HOST_DELIVERY_PROOF_REQUIRED')
+        context.update(bundle=delivered['bundle'],bootstrapManifest=delivered['manifestSha256'],nativeExchangePreflight=bool(a.exchange_preflight))
+    if a.exchange_primitives:
+        import runpy,tarfile,io
+        platform=Path(__file__).resolve().parents[3]/'vision-camera-platform';build=Path('/Volumes/SDV-Dev/sdv/build/vision-services/exchange-primitives-01')
+        primitive=json.loads((build/'result.json').read_bytes());require(primitive['outcome']=='PASS_VISION_EXCHANGE_TARGETED_PRIMITIVES' and primitive['builderStopped'],'VISION_PRIMITIVE_COMPILE_REQUIRED')
+        for name in ('aos-vision-exchange-proof','vision_exchange.pp'):
+            require(h.digest(build/name)==primitive['files'][name]['sha256'],'VISION_PRIMITIVE_COMPILE_CHANGED')
+        payload=runpy.run_path(str(platform/'tools/build_camera_access_payload.py'))['payload']('0.1.2')
+        with tarfile.open(fileobj=io.BytesIO(payload)) as archive:raw=archive.extractfile('bin/camera-access').read()
+        zipfile=records/'camera-access';zipfile.write_bytes(raw);zipfile.chmod(0o555)
+        extra_files=[Path(__file__).with_name('vision_services_primitives_guest.py'),platform/'tools/vision_cpuinfo_projection.py',
+            platform/'tests/fixtures/vision-native-exchange/aos-vision-exchange.service',build/'aos-vision-exchange-proof',build/'vision_exchange.pp',
+            Path('/Volumes/SDV-Dev/sdv/build/vision-bootstrap/0.1.0/evidence/camera-store-policy-loader-01/vision-policy-load')]
+        context['nativePrimitives']=dict(files={path.name:h.digest(path) for path in [*extra_files,zipfile]})
+        extra_files.append(zipfile)
     if a.prove_cpu_info:
         prior=json.loads((Path(c['records'])/'vision-services-closure-06/result.json').read_bytes())
         capacity=json.loads((Path(c['records'])/'vision-services-cloud-preflight-02/result.json').read_bytes())
@@ -313,6 +393,9 @@ def main():
         for name in ('cpu-topology-observed.json','cpu-proof-command-diagnostics.json'):
             raw=h.remote(t,'if test -f '+q(str(remote/name))+'; then /bin/cat '+q(str(remote/name))+'; else printf null; fi',timeout=10)
             if json.loads(raw) is not None:atomic(records/name,json.loads(raw))
+    if a.exchange_primitives:
+        raw=h.remote(t,'if test -f '+q(str(remote/'native-primitives-observed.json'))+'; then /bin/cat '+q(str(remote/'native-primitives-observed.json'))+'; else printf null; fi',timeout=10)
+        if json.loads(raw) is not None:atomic(records/'native-primitives-observed.json',json.loads(raw))
     atomic(records/'transport.json',dict(exit=exit_code,stderrPresent=bool(stderr)))
     return exit_code
 

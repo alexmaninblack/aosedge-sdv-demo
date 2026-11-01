@@ -65,7 +65,7 @@ def sdk(tooling):
         require(len(matches)<=1,'VISION_PREFLIGHT_SERVICE_AMBIGUOUS')
         versions=read_step('VERSION_LIST',lambda:provider.pages('services/'+matches[0]['id']+'/service-versions/')) if matches else []
         services[role]=dict(exists=bool(matches),versionOccupied=any(row.get('version')=='0.1.0' for row in versions))
-    subjects=[row for row in read_step('SUBJECT_LIST',lambda:cloud.pages('subjects/')) if row.get('title')=='SDV Vision Pilot']
+    subjects=[row for row in read_step('SUBJECT_LIST',lambda:cloud.pages('subjects/')) if row.get('label')=='SDV Vision Pilot']
     require(len(subjects)<=1,'VISION_PREFLIGHT_SUBJECT_AMBIGUOUS')
     return dict(outcome='PASS_READ_ONLY_VISION_CLOUD_PREFLIGHT',unitPreserved=True,nodePreserved=True,online=unit['online_status']=='Online',
         nodeFieldNames=sorted(node),capacity=numeric_capacity(node),services=services,visionSubjectExists=bool(subjects),cloudMutation=False)

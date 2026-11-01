@@ -17,6 +17,16 @@ REQUEST=dict(role='test',vmProfile=v.PROFILE,vehicle=dict(localVmId=LOCAL))
 
 
 class VisionProjectionTests(unittest.TestCase):
+    def test_active_exec_does_not_substitute_for_native_broker_readiness(self):
+        values=dict(Uid='991 991 991 991',Gid='989 989 989 989',Groups='985 986 987 988 989',NoNewPrivs='1',
+            **{key:'0000000000000000' for key in ('CapEff','CapPrm','CapInh','CapBnd','CapAmb')})
+        args=(991,989,{985,986,987,988},'system_u:system_r:vision_exchange_t:s0\x00',True,[True]*4)
+        self.assertTrue(v.exchange_ready_facts(values,*args))
+        for changed in (dict(values,NoNewPrivs='0'),dict(values,CapEff='0000000000000001'),dict(values,Groups='985 986 987 989'),dict(values,Uid='0 0 0 0')):
+            self.assertFalse(v.exchange_ready_facts(changed,*args))
+        self.assertFalse(v.exchange_ready_facts(values,991,989,{985,986,987,988},'system_u:system_r:initrc_t:s0',True,[True]*4))
+        self.assertFalse(v.exchange_ready_facts(values,*args[:-1],[True]*3+[False]))
+
     def test_exchange_hello_is_native_bounded_and_duplicate_free(self):
         for text,accepted in ((json.dumps(dict(schemaVersion=1,componentEpoch=LOCAL,state='OEM_HELLO')),True),
             ('{"schemaVersion":1,"componentEpoch":"'+LOCAL+'","state":"OEM_HELLO","state":"OEM_HELLO"}',False),('[]',False)):

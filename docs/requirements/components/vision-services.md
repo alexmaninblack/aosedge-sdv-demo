@@ -27,6 +27,13 @@ Missing/invalid geometry is unavailable, not a borrowed example homography.
 AutoSteer's raw finite `h_vector` is a height/mask, not a bounded probability;
 preserve its values and the upstream mask threshold without sigmoid or clamp.
 
+Read-only display observations reuse the existing Source-owned status socket,
+not another result/control listener. Its bounded projection contains only an
+opaque reference and display data; full associations remain private. Display
+path sampling is not algorithm input, and a different live image cannot be
+treated as the processed frame. Broker readiness requires its real nonroot
+identity/domain/privilege and four ready role sockets, not only Type=exec.
+
 | ID | Derived requirement | Parent | Stable isolated proof |
 | --- | --- | --- | --- |
 | <a id="req-vis-001"></a>`REQ-VIS-001` | Separate targets/versions and exact role-specific native resources, no network/control dependencies. | [`SYS-VIS-009`](../system-requirements-and-traceability.md#sys-vis-009) | <a id="ut-vis-001"></a>`UT-VIS-001`: composition, permission and incompatible independent-update negatives |
