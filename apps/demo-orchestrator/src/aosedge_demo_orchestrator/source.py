@@ -111,7 +111,16 @@ class SourceDriver:
         code = Path(worker.__file__).read_text()
         vehicle = dict(state["vehicles"][role], sourceProbeSelected=state.get("currentVehicle") == role)
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
-        script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"
+        if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1' and action in (
+                'factory-role', 'configure', 'probe', 'trust-probe', 'trust-configure', 'trust-status'):
+            from . import vision_source_guest, source_trust_guest
+            code = vision_source_guest.script(dict(request, vmProfile=state['vmProfile']),
+                source_code=Path(source_guest.__file__).read_text(),
+                trust_code=Path(source_trust_guest.__file__).read_text())
+            # This fixed wrapper already emits the ordinary bounded response.
+            script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nDEMOCTL_SOURCE_PY\n"
+        else:
+            script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"
         try:
             timeout = self.budget(360 if action == "service-kac-data-proof" else 120 if action in ("core-permissions-apply", "core-permissions-iam-response-apply", "service-kac-time-proof") else 90 if action == "provider-readiness-apply" else 40 if action == "core-permissions-status" else 110 if action == "service-runtime-activate" else 60 if action in ("component-sm-apply", "component-cm-apply", "trust-configure") else 25)
             command = ssh_command(access_path(self.root, role), state["vehicles"][role]["sshPort"], min(5, timeout))
@@ -851,10 +860,15 @@ class SourceService:
             # Reuse the final read; do not return pre-activation NOT_READY
             # alongside the newly authenticated LIVE connection.
             observed_guest = data["guest"]
-            views[role].update(vdpProcess=observed_guest["vdpProcess"],
-                vdpData="NOT_DEPLOYED" if data.get("factoryBaseline") else "REPORTED_READY",
-                vdpStatusText=observed_guest["vdpData"],
-                vdpRestarts=observed_guest["vdpRestarts"])
+            if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1':
+                for key in ('vdpProcess','vdpData','vdpStatusText','vdpRestarts'):
+                    views[role].pop(key,None)
+                views[role].update(platform='camera-access',updateRuntime=observed_guest['updateRuntime'])
+            else:
+                views[role].update(vdpProcess=observed_guest["vdpProcess"],
+                    vdpData="NOT_DEPLOYED" if data.get("factoryBaseline") else "REPORTED_READY",
+                    vdpStatusText=observed_guest["vdpData"],
+                    vdpRestarts=observed_guest["vdpRestarts"])
         source["operation"]["phase"] = "ATTACHED"
         state["currentVehicle"] = role
         self.vm._save(state)

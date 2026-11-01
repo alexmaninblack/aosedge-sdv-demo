@@ -4,9 +4,9 @@
 # ADR 0019: A Separate Single Node Vision Lab
 
 - Status: Accepted for the isolated M4 VM, engineering previews and Camera Access native-boundary implementation; live activation remains unqualified
-- Version: 0.8
+- Version: 0.9
 - Prepared: 2026-10-28
-- Updated: 2026-10-31
+- Updated: 2026-11-01
 - Owner: SDV Lab System Architecture
 - Change class: C; Camera Access resource/IPC/OEM target allocated; downstream Gateway ingress and service contracts remain required
 - Direction selected: independent Brake/Tire and Vision single-node tracks
@@ -130,6 +130,30 @@ package/image, normal OEM activation and actual native Aos container delivery
 as separate gates. A root probe, manual crun or mocked runtime never counts as
 native service authorization. Revocation stops/reinstantiates the native
 consumer; editing resources.cfg alone is not active-instance revocation.
+
+### Early signed Vision bootstrap delivery
+
+On 2026-11-01 the operator authorized delivering a separate signed Vision
+bootstrap before native Camera Access acceptance, rather than waiting for the
+final V7 installer. This does not authorize replacing Main or publishing a new
+operator DMG. The [bootstrap contract](../../../contracts/vision-vm/bootstrap.v1.json)
+fixes its identity, scope, separate model, verification set and instance.
+
+Use a resource-only macOS bundle with an independent identifier and the selected
+Apple Development identity. It seals the Vision Factory, exact source tooling,
+Camera Access payload and provenance. Reuse the installed verified QEMU/SDK
+inputs; include neither CARLA nor credentials. Verify the Apple signature,
+identifier/team, base-program manifest and image/source digests before use.
+This is an engineering delivery, not notarized/public Vision distribution.
+
+A closed signed-bootstrap catalog extends image selection only for the fixed
+Vision profile and fresh native instance. Existing EnvironmentService/VMService
+and UnitService own manufacture, VM and Unit lifecycle; no image-path override,
+second VM manager or parallel state database is introduced. Preserve both the
+Brake/Tire and engineering Vision roots. Native proof uses a fresh separately
+provisioned Vision Unit; create an absent Vision-only model/verification set,
+never modify a shared Main model. The diagnostic read-resource service is not
+the final Perception/Assessment implementation or evidence of full Vision E2E.
 
 ## Service responsibilities
 

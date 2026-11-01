@@ -68,7 +68,7 @@ def bundle_view(value):
     return result
 
 
-def publication(version, deployment_id, bundles, versions):
+def publication(version, deployment_id, bundles, versions, *, component_type=COMPONENT):
     """Do not conflate HTTP acceptance, bundle parsing and catalog readiness."""
     value = dict(stage="NOT_PUBLISHED", deploymentId=deployment_id, bundleState=None,
                  versionState=None, versionId=None, buildInfo=None, observedAt=now())
@@ -91,7 +91,7 @@ def publication(version, deployment_id, bundles, versions):
         return dict(value, stage="UNKNOWN", reason="COMPONENT_BUNDLE_STATE_UNKNOWN")
     items = bundle.get("items")
     if (not isinstance(items, list) or len(items) != 1 or items[0].get("type") != "component"
-            or items[0].get("codename") != COMPONENT or items[0].get("version") != version):
+            or items[0].get("codename") != component_type or items[0].get("version") != version):
         return dict(value, stage="ERROR", reason="COMPONENT_BUNDLE_CONTENT_MISMATCH")
     if len(versions) > 1:
         return dict(value, stage="ERROR", reason="COMPONENT_CATALOG_VERSION_AMBIGUOUS")
@@ -132,10 +132,10 @@ def recipients(reads, request):
                 recipientUnitIds=[expected] if expected else [], verificationMemberships=memberships)
 
 
-def snapshot(cloud, request):
+def snapshot(cloud, request, *, component_type=COMPONENT):
     cloud.require("deployment_bundles_list")
     reads = Reads(cloud)
-    component = resolve_component(cloud, reads)
+    component = resolve_component(cloud, reads, component_type=component_type)
     component_id = component["id"] if component else None
     if request.get("componentId") and request["componentId"] != component_id:
         raise CloudFailure("COMPONENT_CLOUD_IDENTITY_CHANGED")
@@ -155,14 +155,14 @@ def snapshot(cloud, request):
         prior_id = object_id(prior["deploymentId"])
         previous = publication(prior["version"], prior_id,
             [bundle_view(row) for row in bundles if row["id"] == prior_id],
-            [row for row in all_versions if row.get("version") == prior["version"]])
+            [row for row in all_versions if row.get("version") == prior["version"]], component_type=component_type)
     if not deployment_id:
-        bundles = [row for row in bundles if any(isinstance(item, dict) and item.get("codename") == COMPONENT
+        bundles = [row for row in bundles if any(isinstance(item, dict) and item.get("codename") == component_type
             and item.get("version") == version for item in row.get("items") or [])]
     result = dict(source="AOS_CLOUD_ONLY", ownerId=cloud.user["ownerId"], componentId=component_id,
                   catalogState="PRESENT" if component else "ABSENT", versions=versions,
                   deploymentBundles=[bundle_view(row) for row in bundles])
-    result["publication"] = publication(version, deployment_id, result["deploymentBundles"], versions)
+    result["publication"] = publication(version, deployment_id, result["deploymentBundles"], versions, component_type=component_type)
     if previous:
         result["previousPublication"] = previous
     released = [row["version"] for row in all_versions if row.get("is_fake") is False
@@ -174,7 +174,7 @@ def snapshot(cloud, request):
     identity = request.get("vehicles", {}).get("test")
     if identity:
         cloud.require("units_read")
-        result["test"] = unit_view(reads, identity, strict=True)
+        result["test"] = unit_view(reads, identity, strict=True, component_type=component_type)
         if request.get("purpose") == "upload" and (result["test"].get("status") != "provisioned"
                 or result["test"].get("components") is None):
             raise CloudFailure("COMPONENT_CURRENT_TEST_UPDATE_STATE_NOT_PROVEN")

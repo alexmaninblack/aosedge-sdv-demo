@@ -15,20 +15,20 @@ from .components import COMPONENT, VERSION
 from .unit_cloud import Cloud, CloudFailure
 from .status import object_id
 
-def resolve_component(cloud, reads=None):
+def resolve_component(cloud, reads=None, *, component_type=COMPONENT):
     """Resolve an OEM-local identity in this Cloud, including first publication.
 
     Only a successful complete list can prove absence. HTTP failures (including
     404 on the collection) are never translated into an empty catalog.
     """
     cloud.require("components_list")
-    rows = (reads or cloud).pages("components/?" + urlencode({"search": COMPONENT}))
+    rows = (reads or cloud).pages("components/?" + urlencode({"search": component_type}))
     matches = []
     for row in rows:
         if (not isinstance(row, dict) or not isinstance(row.get("codename"), str)
                 or not isinstance(row.get("oem_id"), str)):
             raise CloudFailure("COMPONENT_CATALOG_SCHEMA_INVALID")
-        if row["codename"].casefold() == COMPONENT.casefold() and row["oem_id"] == cloud.user["ownerId"]:
+        if row["codename"].casefold() == component_type.casefold() and row["oem_id"] == cloud.user["ownerId"]:
             matches.append(dict(row, id=object_id(row.get("id"))))
     if len(matches) > 1:
         raise CloudFailure("COMPONENT_CLOUD_IDENTITY_AMBIGUOUS")
@@ -113,7 +113,7 @@ def send_observed(value, component_id):
     return None
 
 
-def unit_view(cloud, identity, strict=False):
+def unit_view(cloud, identity, strict=False, *, component_type=COMPONENT):
     from .cloud_observation import pick
     value = cloud.call("units/" + object_id(identity["unitId"]) + "/")
     if value["system_uid"] != identity["systemUid"] or (strict and value.get("id") != identity["unitId"]):
@@ -129,7 +129,7 @@ def unit_view(cloud, identity, strict=False):
         result["components"] = None
         return result
     for item in value.get("unit_update_components") or []:
-        if item.get("type") != COMPONENT:
+        if item.get("type") != component_type:
             continue
         row = project(item, ("type", "pending_component_status", "pending_validation_batch_id", "installed_component_id"))
         if strict:

@@ -52,7 +52,15 @@ def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cl
         if shutdown or factory_role != "test" or source_restore.get("role") != "test":
             raise EnvironmentError("SOURCE_TRUST_GUEST_IDENTITY_MISMATCH")
         from . import source_trust_guest
-        script += ("printf 'DEMO_SOURCE_RESTORE_STARTED\\n'\npython3 - <<'DEMOCTL_TRUST_PY'\n"
+        if source_restore.get('vmProfile') == 'aos-vision-main-qemuarm64-v1':
+            from . import vision_source_guest, source_guest
+            code = vision_source_guest.script(source_restore,
+                source_code=Path(source_guest.__file__).read_text(),
+                trust_code=Path(source_trust_guest.__file__).read_text())
+            script += ("printf 'DEMO_SOURCE_RESTORE_STARTED\\n'\npython3 - <<'DEMOCTL_TRUST_PY'\n"+code+
+                "\nDEMOCTL_TRUST_PY\n[ $? -eq 0 ] || exit 1\nprintf 'DEMO_SOURCE_RESTORE_READY\\n'\n")
+        else:
+            script += ("printf 'DEMO_SOURCE_RESTORE_STARTED\\n'\npython3 - <<'DEMOCTL_TRUST_PY'\n"
             + Path(source_trust_guest.__file__).read_text()
             + "\ntry:\n    execute(" + repr(source_restore) + ")\n"
             + "except Exception as error:\n    import json, re\n"

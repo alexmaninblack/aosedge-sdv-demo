@@ -144,6 +144,18 @@ def connection(driver, state, role, wait=False):
     while True:
         current = observe(driver)
         guest = driver.guest(state, role, "trust-status")
+        if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1':
+            # Camera Access is not a VDP process. Establish the same selected
+            # Unit/runtime TLS proof without inventing a telemetry-ready state.
+            selected = (current['state'] == 'SELECTED' and current.get('selectedSource') == selection(state)
+                and current['assignmentGeneration'] == state['source']['assignmentGeneration'])
+            probe = driver.guest(state, role, 'trust-probe') if selected and guest.get('mutualTlsConfigured') else {}
+            good = selected and probe.get('serverTls') is True and probe.get('mutualTls') is True and probe.get('advancingVissFrames') is True
+            if good or time.monotonic() >= deadline:
+                return dict(serverTls=good, mutualTls=good, advancingVissFrames=good,
+                    gateway=current, guest=guest, evidence='VISION_GUEST_UPDATE_IDENTITY_MUTUAL_TLS_READ_NOT_CAMERA_INGRESS')
+            time.sleep(.25)
+            continue
         good = (current["state"] == "SELECTED" and current.get("selectedSource") == selection(state)
             and current["assignmentGeneration"] == state["source"]["assignmentGeneration"]
             and current.get("activeRoleCounts", {}).get("selectedPlatformUnit") == 1

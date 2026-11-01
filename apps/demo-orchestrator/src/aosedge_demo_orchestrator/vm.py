@@ -570,6 +570,8 @@ class VMService:
                 vehicle={**{key: item[key] for key in ("localVmId", "unitId", "nodeId")},
                     "cloud": {"identity": {"nodeHardwareId": item["cloud"]["identity"]["nodeHardwareId"]}}},
                 fingerprints={key: trust["fingerprints"][key] for key in ("vdp", "runtime")})
+            if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1':
+                source_restore['vmProfile'] = state['vmProfile']
         if cloud is not None:
             self.progress(role + ": debug hosts and Cloud endpoint will be applied before guest role/DNS readiness")
         self.progress(role + ": VM process running; waiting for console/SSH/DNS readiness")

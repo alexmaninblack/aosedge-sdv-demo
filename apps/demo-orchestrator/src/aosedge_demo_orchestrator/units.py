@@ -69,7 +69,8 @@ class UnitService:
             request.setdefault("ownerId", profile["expectedOwnerId"])
         from .cloud_runtime import launch
         command, environment = launch(self.root, config["cloudPython"], "unit_cloud.py")
-        if action in ("provision", "assign", "remove", "deprovision", "delete", "service-assignment-step"):
+        if action in ("provision", "assign", "remove", "deprovision", "delete", "service-assignment-step",
+                      "vision-camera-upload", "vision-camera-send"):
             # Submission/attempt, not a claim that Cloud applied the operation.
             self.mutations_started = True
         try:

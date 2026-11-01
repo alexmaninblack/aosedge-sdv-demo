@@ -1393,7 +1393,7 @@ def configure(request):
     return {"configured": True}
 
 
-def probe(safe_stop=False, preprovision=False, mutual_tls=False):
+def probe(safe_stop=False, preprovision=False, mutual_tls=False, vision=False):
     # A real server-authenticated WebSocket read from this guest. No KUKSA or
     # mTLS success is inferred from it.
     def receive(stream, length):
@@ -1436,7 +1436,8 @@ def probe(safe_stop=False, preprovision=False, mutual_tls=False):
     def read():
         if preprovision and PROVISION_STATE.exists():
             raise ValueError("SOURCE_PROVISIONED_IDENTITY_REQUIRED")
-        ca = (FACTORY_INPUTS / "viss-update-ca" if FACTORY_INPUTS_MARKER.is_file()
+        ca = (Path('/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access/demo-inputs/viss-update-ca')
+              if vision and mutual_tls else FACTORY_INPUTS / "viss-update-ca" if FACTORY_INPUTS_MARKER.is_file()
               and not preprovision else ROOT / "ca.pem")
         started = time.monotonic()
         context = ssl.create_default_context(cafile=str(ca))

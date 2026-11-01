@@ -138,6 +138,9 @@ class Cloud:
 
 def execute(request):
     action = request["action"]
+    if action in ('vision-camera-status','vision-camera-upload','vision-camera-send'):
+        from aosedge_demo_orchestrator.vision_camera_delivery import execute as deliver
+        return deliver(Cloud(request),request)
     if action in ("first-use-subjects", "first-use-subject-check"):
         from aosedge_demo_orchestrator.subject_first_use import execute as first_use
         from aosedge_demo_orchestrator.cloud_connection import inspect_certificate

@@ -20,12 +20,28 @@ SP_DELIVERY_PERMISSIONS = (
 )
 
 
+def setup_profile(request):
+    """Closed model/config pair; never accept caller-selected Cloud identities."""
+    from .unit_cloud import CloudFailure
+    profile = request.get("setupProfile", "main")
+    if profile == "main":
+        return MODEL, TITLE, "aos-vm-main"
+    if profile == "vision-bootstrap-v1":
+        from .vision_bootstrap import MODEL as vision_model, SET_TITLE, NODE_TYPE
+        expected = {"nodes": [{"nodeType": NODE_TYPE, "labels": ["main"], "priority": 100}]}
+        if request.get("unitConfig") != expected:
+            raise CloudFailure("VISION_MODEL_CONFIGURATION_MISMATCH")
+        return vision_model, SET_TITLE, NODE_TYPE
+    raise CloudFailure("CLOUD_SETUP_PROFILE_UNSUPPORTED")
+
+
 def inspect_setup(cloud, request, sp_factory=None):
     """GET-only, complete collections; an inaccessible object is never absent."""
     from .unit_cloud import Cloud, CloudFailure
     from concurrent.futures import ThreadPoolExecutor
     sp_factory = sp_factory or Cloud
     checks, objects = [], {}
+    selected_model, title, node_type = setup_profile(request)
 
     def row(key, label, fn):
         try:
@@ -66,23 +82,23 @@ def inspect_setup(cloud, request, sp_factory=None):
         def model():
             cloud.require("unit_models_list", "unit_models_read")
             matches = [item for item in cloud.pages("unit-models/")
-                       if item.get("name") == MODEL["name"] and item.get("version") == MODEL["version"]]
+                       if item.get("name") == selected_model["name"] and item.get("version") == selected_model["version"]]
             if not matches:
                 cloud.require("unit_models_create")
-                return "MISSING", "Create aos-vm 1.0.0 with the single-node Factory configuration"
+                return "MISSING", "Create " + selected_model["name"] + " 1.0.0 with the single-node Factory configuration"
             if len(matches) != 1:
                 return "CONFLICT", "FACTORY_MODEL_AMBIGUOUS"
             value = cloud.call("unit-models/" + object_id(matches[0]["id"]) + "/")
-            if (value.get("oem_id") != cloud.user["ownerId"] or value.get("name") != MODEL["name"]
-                    or value.get("version") != MODEL["version"] or value.get("unit_config") != request["unitConfig"]):
+            if (value.get("oem_id") != cloud.user["ownerId"] or value.get("name") != selected_model["name"]
+                    or value.get("version") != selected_model["version"] or value.get("unit_config") != request["unitConfig"]):
                 return "CONFLICT", "FACTORY_MODEL_CONFIGURATION_MISMATCH"
             objects["modelId"] = object_id(value["id"])
-            return "READY", "aos-vm 1.0.0 · one aos-vm-main node"
+            return "READY", selected_model["name"] + " 1.0.0 · one " + node_type + " node"
         row("model", "Factory model and configuration", model)
 
         def node():
             cloud.require("node_types_list")
-            matches = [v for v in cloud.pages("node-types/") if v.get("name") == "aos-vm-main"]
+            matches = [v for v in cloud.pages("node-types/") if v.get("name") == node_type]
             if len(matches) > 1:
                 return "CONFLICT", "FACTORY_NODE_TYPE_AMBIGUOUS"
             if not matches:
@@ -91,20 +107,21 @@ def inspect_setup(cloud, request, sp_factory=None):
                 # The documented Node Types confirmation follows provisioning.
                 # Model creation alone does not populate this catalog in staging.
                 # Requiring it here would block the operation that creates it.
-                return "AFTER_PROVISION", "aos-vm-main configured; catalog registration is verified after provisioning"
-            return "READY", "aos-vm-main"
+                return "AFTER_PROVISION", node_type + " configured; catalog registration is verified after provisioning"
+            return "READY", node_type
         row("nodeType", "Node type", node)
 
         def test_set():
             cloud.require("unit_sets_list", "unit_sets_units_list")
             all_sets = cloud.pages("unit-sets/")
-            matches = [v for v in all_sets if v.get("title") == TITLE or str(v.get("title", "")).endswith(" / " + TITLE)]
+            matches = [v for v in all_sets if v.get("title") == title or (
+                request.get("setupProfile", "main") == "main" and str(v.get("title", "")).endswith(" / " + title))]
             objects["unrelatedSetIds"] = sorted(object_id(v["id"]) for v in all_sets if v not in matches)
             if not objects.get("fleetId"):
                 return "BLOCKED", "DEFAULT_FLEET_REQUIRED"
             if not matches:
                 cloud.require("unit_sets_create")
-                return "MISSING", "Create dedicated Test Vehicles verification set in Default"
+                return "MISSING", "Create dedicated " + title + " verification set in Default"
             if len(matches) != 1:
                 return "CONFLICT", "TEST_UNIT_SET_AMBIGUOUS"
             value = matches[0]
@@ -116,7 +133,7 @@ def inspect_setup(cloud, request, sp_factory=None):
             if any(v.get("id") != request.get("testUnitId") for v in members):
                 return "CONFLICT", "TEST_UNIT_SET_HAS_OTHER_UNITS"
             objects["testSetId"] = identity
-            return "READY", "Test Vehicles · verification enabled · Production unchanged"
+            return "READY", title + " · verification enabled · Production unchanged"
         row("testSet", "Test verification set", test_set)
 
         def sp_access():
@@ -135,13 +152,13 @@ def inspect_setup(cloud, request, sp_factory=None):
     if request.get("firstUse") is True:
         def components():
             cloud.require("components_list", "deployment_bundles_create")
-            return "READY", "VDP catalog and publication permissions"
-        row("componentDelivery", "VDP delivery permissions", components)
+            return "READY", "OEM component catalog and publication permissions"
+        row("componentDelivery", "OEM component delivery permissions", components)
 
         def services():
             sp_future.result().require(*SP_DELIVERY_PERMISSIONS)
-            return "READY", "One associated SP can deliver Brake and Tire packages"
-        row("serviceDelivery", "Brake and Tire delivery permissions", services)
+            return "READY", "Associated SP package delivery permissions"
+        row("serviceDelivery", "SP delivery permissions", services)
     failed = any(v["state"] in ("BLOCKED", "CONFLICT") for v in checks)
     missing = any(v["state"] == "MISSING" for v in checks)
     return dict(stage="BLOCKED" if failed else "MISSING" if missing else "READY",
@@ -154,6 +171,7 @@ def create_step(cloud, request):
     """Exactly one fixed create, with its own authoritative pre/post-read."""
     from .unit_cloud import CloudFailure
     step = request.get("step")
+    selected_model, title, _ = setup_profile(request)
     if step not in ("model", "testSet") or cloud.user["ownerId"] != request["owners"]["oem"]:
         raise CloudFailure("CLOUD_SETUP_SCOPE_CHANGED")
     before = inspect_setup(cloud, request)
@@ -162,10 +180,10 @@ def create_step(cloud, request):
     if step not in before["steps"]:
         return dict(attempted=False, stage="READY", report=before)
     if step == "model":
-        body, route = dict(MODEL, unit_config=request["unitConfig"]), "unit-models/"
+        body, route = dict(selected_model, unit_config=request["unitConfig"]), "unit-models/"
         cloud.require("unit_models_create")
     else:
-        body = dict(title=TITLE, fleet=before["objects"]["fleetId"],
+        body = dict(title=title, fleet=before["objects"]["fleetId"],
                     description="AosEdge SDV demo Test verification set",
                     is_validation_set=True, allow_unknown_components=False,
                     auto_provision_new_nodes=False, update_strategy="MinimizeRestarts")
@@ -206,9 +224,17 @@ class CloudSetup:
         journal = self.root / JOURNAL
         state = read_json(journal) if journal.exists() else {}
         domain = config.get("cloudConnection", {}).get("domain", LEGACY_DOMAIN)
-        return dict(cloudDomain=domain, spCredential=str(sp["credential"]),
+        request = dict(cloudDomain=domain, spCredential=str(sp["credential"]),
                     testUnitId=state.get("vehicles", {}).get("test", {}).get("unitId"),
                     unitConfig=read_json(program_root(self.root) / "config/aosvm-single-node-unitconfig.json"))
+        selected = getattr(self.environment.catalog, "cloud_setup_profile", None)
+        if selected is not None:
+            if selected != "vision-bootstrap-v1":
+                raise EnvironmentError("CLOUD_SETUP_PROFILE_UNSUPPORTED")
+            # Only a verified catalog binds this profile; no UI model/path override.
+            request.update(setupProfile=selected, unitConfig=self.environment.catalog.unit_configuration)
+            setup_profile(request)
+        return request
 
     def check(self, *, first_use=False):
         request = self._request()
@@ -246,7 +272,10 @@ class CloudSetup:
             if report["stage"] == "BLOCKED":
                 return report
             config = CloudConnection(self.environment)._configuration()
-            key = digest(dict(domain=report["domain"], ownerId=report["owners"]["oem"]))
+            key_input = dict(domain=report["domain"], ownerId=report["owners"]["oem"])
+            if request.get("setupProfile"):
+                key_input["setupProfile"] = request["setupProfile"]
+            key = digest(key_input)
             setup = config.setdefault("cloudSetupContexts", {}).setdefault(key, {})
             setup.update(domain=report["domain"], ownerId=report["owners"]["oem"])
             path = self.root / CONFIG

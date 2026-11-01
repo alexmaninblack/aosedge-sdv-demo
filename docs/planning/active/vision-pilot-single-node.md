@@ -4,9 +4,9 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.8
+- Version: 0.9
 - Prepared: 2026-10-28
-- Updated: 2026-10-31
+- Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 - Execution status: M4 VM/engineering preview and Camera Access native-source/targeted-compile gates complete;
@@ -228,10 +228,34 @@ completion or an actual scope/security/credential/fit boundary. Reuse successful
 immutable outputs; fix the failing owner and rerun its gate, not the entire
 build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 
-## Current native Camera Access packet
+## Current signed-bootstrap and native Camera Access packet
+
+The operator authorized the early signed bootstrap on 2026-11-01. Apply
+[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.9.
+Build/sign only on SDV-Dev; install/test only on M4 internal storage. Reuse the
+warm Builder/cache and compatible Linux inputs. Preserve the current DMG and
+both retained VM roots. No Main merge or public publication is requested.
+
+The bootstrap is a separately identified signed resource bundle, not a duplicate
+CARLA kit or the final Vision UI/installer. It contains the new Vision image,
+source-bound tooling and Camera payload. Its closed catalog checks signature,
+team/identifier, base-program selection and image digest before the normal
+manufacture owner can consume it. No arbitrary image override is permitted.
+Use a fresh `SDV-Vision-Native-Lab-Data` instance with the existing fixed 4-CPU/
+4-GiB Vision profile; preserve the earlier engineering Vision overlay/models.
+
+The closed Cloud setup profile selects `aos-vision-vm` and `SDV Vision Verification`;
+it cannot adopt or amend the Main model/set. The existing Source owner projects
+fresh native-Unit Safe Stop credentials only into the Vision SM. It never starts
+VDP or gives Camera Access a Gateway credential. OEM Camera delivery reuses the
+official signer, multipart uploader, bounded publication reader and journal;
+only its exact Camera type and owned Vision verification recipient are permitted.
+The static ARM64 reader fixture is a diagnostic Aos service, not Perception.
+Its local JPEG fixture, UID/mount/protocol-denial and revocation observations
+must remain distinct from authenticated Gateway camera ingress and final AI E2E.
 
 The operator authorized native Aos-container access and separate OEM activation.
-Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.8 allocates the fixed
+Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.9 allocates the fixed
 resource, local IPC, own OEM target and Vision-only bootstrap. The platform
 repository owns the executable native profile; the foundation receipt remains
 frozen and is not relabelled as native acceptance.
@@ -262,7 +286,8 @@ frozen and is not relabelled as native acceptance.
 
 Authenticated Gateway ingress and full Perception/Assessment product deployment
 remain their own V2–V5 gates. Neither an OEM-local fixture nor a manual crun probe
-closes them. No Main merge, signing/publication or current DMG change is implied.
+closes them. Signing the separate engineering bootstrap is authorized; Main
+merge, public publication and replacement of the current DMG remain excluded.
 
 The [native source receipt](../../../contracts/vision-vm/camera-access-native-source.v1.json)
 binds the platform commit, 32 camera cases, 274 Python cases (three skips),

@@ -94,6 +94,27 @@ class SetupTests(unittest.TestCase):
         self.assertEqual([OTHER], result["objects"]["unrelatedSetIds"])
         self.assertEqual([], self.cloud.posts)
 
+    def test_vision_profile_is_separate_and_cannot_adopt_main(self):
+        self.ready()
+        main_models = copy.deepcopy(self.cloud.models)
+        main_sets = copy.deepcopy(self.cloud.sets)
+        request = dict(REQUEST, setupProfile="vision-bootstrap-v1", unitConfig={
+            "nodes": [{"nodeType": "aos-vision-vm-main", "labels": ["main"], "priority": 100}]})
+        report = inspect_setup(self.cloud, request)
+        self.assertEqual("MISSING", report["stage"])
+        self.assertEqual(["model", "testSet"], report["steps"])
+        self.assertIn(SET, report["objects"]["unrelatedSetIds"])
+        self.assertEqual(main_models, self.cloud.models)
+        self.assertEqual(main_sets, self.cloud.sets)
+        self.assertNotIn("aos-vm 1.0.0", str(report["checks"]))
+
+    def test_vision_profile_rejects_main_or_arbitrary_configuration_before_reads(self):
+        for request in (dict(REQUEST, setupProfile="vision-bootstrap-v1"),
+                        dict(REQUEST, setupProfile="arbitrary")):
+            with self.assertRaises(CloudFailure):
+                inspect_setup(self.cloud, request)
+        self.assertEqual([], self.cloud.posts)
+
     def test_first_create_repeat_and_unrelated_objects(self):
         prior = copy.deepcopy(self.cloud.sets[0])
         self.ready()

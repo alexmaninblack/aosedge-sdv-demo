@@ -106,6 +106,9 @@ class EnvironmentService:
         self.root = (Path(root) if root else project_root()).resolve()
         packaged = installed(self.root)
         self.catalog = catalog or ImageCatalog()
+        required_profile = getattr(self.catalog, 'required_vm_profile', None)
+        if isinstance(required_profile, str) and required_profile != self._vm_profile.name:
+            raise EnvironmentError('IMAGE_VM_PROFILE_BINDING_MISMATCH')
         self.qemu_img = qemu_img or (None if packaged else shutil.which("qemu-img"))
         self._writer_thread = threading.local()
 
@@ -216,7 +219,7 @@ class EnvironmentService:
         if alternate.exists() or alternate.is_symlink():
             raise EnvironmentError("DIFFERENT_LOCAL_FACTORY_PRESENT")
         metadata = {"schemaVersion": 1, "kind": "democtl.factory-copy",
-                    "runtimeProfile": "aos-main-qemuarm64-v1" if image.architecture == "main-qemuarm64" else None,
+                    "runtimeProfile": (getattr(image, 'runtime_profile', None) or "aos-main-qemuarm64-v1") if image.architecture == "main-qemuarm64" else None,
                     "image": {"path": paths[image.image_format], "format": image.image_format,
                               "version": image.version, "sha256": image.sha256,
                               "sizeBytes": image.size, "virtualSizeBytes": virtual_size},
@@ -312,7 +315,11 @@ class EnvironmentService:
                         from .cloud_connection import bind_tenant
                         from .package_artifacts import digest as context_digest
                         scope = bind_tenant(journal, connection["domain"], connection["owners"])
-                        key = context_digest(dict(domain=connection["domain"], ownerId=connection["owners"]["oem"]))
+                        context_key = dict(domain=connection["domain"], ownerId=connection["owners"]["oem"])
+                        setup_profile = getattr(self.catalog, 'cloud_setup_profile', None)
+                        if isinstance(setup_profile, str):
+                            context_key['setupProfile'] = setup_profile
+                        key = context_digest(context_key)
                         setup = read_json(configuration).get("cloudSetupContexts", {}).get(key, {})
                         objects = setup.get("objects", {})
                         if objects.get("testSetId") and objects.get("fleetId"):

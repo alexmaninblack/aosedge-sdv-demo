@@ -4,12 +4,12 @@
 # OEM Camera Access Requirements
 
 - Status: Accepted source and native-boundary contract; live deployment remains gated
-- Version: 0.2
+- Version: 0.3
 - Prepared: 2026-10-31
 - Owner: OEM Vehicle Platform
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Flow input: [Camera Access flow](../../architecture/demo-scenario-architecture-flows.md#af-vis-cam)
-- Decision: [ADR 0019 v0.8](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+- Decision: [ADR 0019 v0.9](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 
 ## Boundary
 
@@ -49,6 +49,13 @@ unchanged original sensor time. It does not qualify image/capture-time accuracy.
 | <a id="ut-cam-006"></a>`UT-CAM-006` | Distinct payload/target mapping and restart binding; native activation requires its separate live proof | `REQ-CAM-006` |
 
 ## Native allocation
+
+The [signed Vision bootstrap](../../../contracts/vision-vm/bootstrap.v1.json)
+supplies the isolated input before native acceptance. Verify its Apple identity,
+base-program binding and source/image digests. Normal manufacture/VM/Unit owners
+remain authoritative. Use a fresh native Vision instance/Unit; retain the old
+Main and engineering Vision disks, keys and data. This adds no arbitrary image
+override, public release, alternate lifecycle manager or motion authority.
 
 `vision-camera-read` is a native Aos resource, allocated to at most one
 Perception instance. It assigns `aos-camera-read` and mounts only the read
