@@ -3,7 +3,7 @@
 
 # Vision Camera Store Isolation
 
-- Status: Accepted on 2026-11-01; storage/image/provisioning passed, native activation blocked by first enrollment
+- Status: Accepted on 2026-11-01; storage and activation passed, transient native-resource proof passed, permanent image-policy acceptance pending
 - Prepared: 2026-11-01
 - Owner: SDV Lab architecture and OEM platform
 - Parent: [Vision implementation packet](vision-pilot-single-node.md#current-signed-bootstrap-and-native-camera-access-packet)
@@ -107,36 +107,49 @@ observed. The original directory inode and kernel policy were restored, all
 temporary mounts/module removed, VM stopped and three retained journals
 verified unchanged. This is not native Camera or container acceptance.
 
-The successor image passed 86 completed ARM64 runtime/archive unit cases and
+The original successor image passed 86 completed ARM64 runtime/archive unit cases and
 package/rootfs QA; two opt-in live VDP cases remain excluded, not passed.
-The platform Camera suite passed 34 cases; its full Python suite completed 276
-cases with three skips. The image reused the warm SSD Builder and did not
-rebuild CARLA or the Main Factory. Cold VM restart and native reader gates
-remain pending on this exact successor.
+That image's platform Camera suite passed 34 cases; its full Python suite
+completed 276 cases with three skips. The image reused the warm SSD Builder
+and did not rebuild CARLA or the Main Factory.
 
 The signed 0.2.0 successor passed normal manufacture and OEM/SDK provisioning
 in `signed-bootstrap-02` (152.34 seconds on M4, 190.48 seconds including
-transfer). Its independent store was verified live. The native campaign then
+transfer). Its independent store was verified live. The initial native campaign
 observed a different boundary: Cloud had automatically queued the previously
 published Camera package before Source's first enrollment. The native writer
-retains a first-install `waiting-for-safe-stop` transaction; Source correctly
-refuses to create enrollment during that pending transaction. No Camera
-activation, reader, restart or revocation pass is claimed. The
+was waiting for Safe Stop while Source refused initial enrollment. The accepted
 [first-enrollment change request](vision-camera-first-enrollment-change-request.md)
-requires a separate bounded decision; do not weaken transaction protection or
-edit the retained transaction to continue.
+is now implemented and signed in bootstrap 0.2.1. On the same retained VM/Unit,
+the normal SM committed that same candidate after real physical Safe Stop.
+Daemon restart and an independent retained cold boot confirmed the installed
+record, store and guest hardware. No transaction was deleted or rewritten to
+manufacture an activation pass.
+
+The [native-resource source/proof receipt](../../../contracts/vision-vm/camera-access-native-resource-source.v1.json)
+records actual Aos-container UID/GID, read-only delivery and JPEG hashes,
+producer/control denial, SOTA revocation and clean fresh scoped AVCs under a
+reversible policy. The corrected policy passed 35 Camera cases, 277 Python cases
+with three skips, and targeted compilation of the full Camera policy and both
+native launchers. It is committed but not installed in image
+`6.1.1-vision-camera.2`: the temporary kernel policy was restored exactly and
+removed. The retained cold-boot check is functional-only, not permanent
+image-policy acceptance. The remaining delivery boundary is recorded in the
+[first-enrollment packet](vision-camera-first-enrollment-change-request.md#remaining-native-image-acceptance).
 
 Private compact evidence is retained under the integration worktree's
 `.local/remote-qualification/vision-vm-m4/`: `signed-bootstrap-01` and
 `signed-bootstrap-02`, `camera-store-proof-11`, the inventory observations,
-and `native-camera-01` through `native-camera-06`.
-Source/compile/image receipts are retained on SDV-Dev under
-`sdv/build/vision-bootstrap/0.1.0/evidence`. The preceding transient scenario stopped
-before CARLA, restored stock SM, stopped the native VM and verified both
-retained journals unchanged. Earlier stop timeouts were reconciled through
-the normal VM owner, not forced termination. No SP reader service or Subject
-has been published/created. No Main merge or public upload occurred.
-The successor campaign's owned Source/CARLA/VM/DNS processes are independently
-confirmed stopped with listeners released. Preserve its unfinished Source
-initialization and Camera transaction for the bounded lifecycle correction;
-the failed original receipt is not upgraded to a native activation pass.
+and `native-camera-01` through `native-camera-13`, including the separate
+retained-cold-boot observation. Failed receipts remain failed, with their
+diagnosis and restoration evidence intact. Source/compile/image receipts are
+retained on SDV-Dev under `sdv/build/vision-bootstrap/0.1.0/evidence` and
+`sdv/build/vision-bootstrap/0.2.1`.
+
+Owned Source/CARLA/VM/DNS and Builder processes are confirmed stopped; the three
+other retained journals are unchanged. The diagnostic SP reader and its Subject
+are limited to this Vision Unit; the latest delivered service version has no
+Camera resource, and cold boot retained that revocation. Preserve the current
+VM, Unit, installed component, evidence and data. No Main merge, public upload,
+replacement VM, rootfs remount or overlay rebase occurred. Authenticated Gateway
+camera ingress, Perception and full Vision E2E remain separate unexecuted gates.

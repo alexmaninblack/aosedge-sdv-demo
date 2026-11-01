@@ -1,0 +1,16 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-native-resource-source-selection",
+  "platformRevision": "aeaa290b7d367352ff8496f630ee0c4eb91e1b72",
+  "nativeProfileCanonicalSha256": "b9c7dc47d7c1dcd89b902b988c7053c8b00df7ba4a148b65a615c4b0ec11d2b9",
+  "cameraPolicySourceSha256": "01a76017f3d77b06cb344ad9c7c743e5e91ddc00bd5e88dbc38e7e1977b5b572",
+  "compiledCameraPolicySha256": "d9a1627289ce55406a4af352e07e7d0fc37da19997f9ce7b4545e3c85917cfad",
+  "sourceGates": {"cameraCases": 35, "platformPythonCases": 277, "platformPythonSkips": 3, "targetedPrimitiveCompile": "PASS"},
+  "proof": {"scenario": "native-camera-13", "scope": "TRANSIENT_RESOURCE_POLICY_NOT_IMAGE_ACCEPTANCE", "seconds": 91.15, "nativeReader": true, "jpegPairBytesVerified": true, "readOnlyMount": true, "oemAndMutationDenied": true, "resourceRevocation": true, "freshScopedAvcs": 0, "stockPolicyRestored": true, "retainedJournalsUnchanged": true},
+  "observedNativeConsumer": {"selinuxDomain": "container_engine_t", "uid": 5000, "readerGid": 990, "effectiveCapabilities": "empty", "noNewPrivileges": true, "revokedGroups": [], "revokedMountPresent": false},
+  "coldBoot": "Same retained Unit/VM, store and installed record retained, resource revocation retained; functional-only proof, not successor-image policy acceptance",
+  "signedSourceBootstrap": {"version": "0.2.1", "manifestSha256": "fbf8c943d2ba6b8801c22ddf4b98374acdb6ca20c2e777620103948875722659", "integrationRevision": "15d3d89f43383da4e5a78f505b9f2efd8b18005d", "imagePlatformRevision": "c0e99717e40c38fc85b7335d7d48dbf2b99076c1"},
+  "nativeImagePolicyAcceptance": "NOT_RUN_NEW_SIGNED_IMAGE_REQUIRED",
+  "excludedClaims": ["distinct per-service SELinux/MCS domain", "authenticated Gateway camera ingress", "Perception/Assessment deployment", "full Vision E2E", "Main release or option A promotion"]
+}

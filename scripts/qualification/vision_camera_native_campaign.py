@@ -27,6 +27,11 @@ def main():
     p.add_argument('--reconcile-stop',choices=('native-camera-04',))
     p.add_argument('--reuse-camera-publication',action='store_true')
     p.add_argument('--source-proof',action='store_true')
+    p.add_argument('--resource-policy',type=Path)
+    p.add_argument('--probe-resume',choices=('native-camera-09',))
+    p.add_argument('--probe-cycle',type=int,choices=(1,2),default=1)
+    p.add_argument('--consumer-only',action='store_true')
+    p.add_argument('--reuse-probe-read',choices=('native-camera-12',))
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     h.require(not a.repair_store_labels or a.transient_sm is not None,'LABEL_PROOF_REQUIRES_TRANSIENT_CONTEXT')
     h.require(a.name.startswith('native-camera-') and a.name.removeprefix('native-camera-').isdecimal(),'ATTEMPT_NAME_INVALID')
@@ -34,9 +39,19 @@ def main():
     h.require(not root.exists(),'ATTEMPT_EXISTS_RECONCILE');root.mkdir(mode=0o700)
     here=Path(__file__).resolve().parent
     context=dict(main=c['main'],bundle=a.bundle_remote,bootstrapManifestSha256=a.bootstrap_manifest,
-        probeSha256=h.digest(a.probe),fixtureWorkerSha256=h.digest(here/'vision_camera_fixture_cloud.py'))
+        probeSha256=h.digest(a.probe),fixtureWorkerSha256=h.digest(here/'vision_camera_fixture_cloud.py'),
+        probeCycle=a.probe_cycle,consumerOnly=a.consumer_only)
+    h.require(not a.consumer_only or (a.reuse_camera_publication and a.probe_resume),'CONSUMER_ONLY_RETAINED_SCOPE_REQUIRED')
     if a.resume:context['resumeFrom']=str(remote.parent/a.resume)
+    if a.probe_resume:context['probeResumeFrom']=str(remote.parent/a.probe_resume)
+    if a.reuse_probe_read:context['probeReadReuseFrom']=str(remote.parent/a.reuse_probe_read)
     files=[here/'vision_camera_native_worker.py',here/'vision_camera_fixture_cloud.py',a.probe]
+    if a.resource_policy:
+        record=json.loads((a.resource_policy.parent/'result.json').read_bytes())
+        h.require(record['outcome']=='PASS_TARGETED_RESOURCE_POLICY_COMPILE' and h.digest(a.resource_policy)==record['sha256'],'RESOURCE_POLICY_GATE_REQUIRED')
+        loader=Path('/Volumes/SDV-Dev/sdv/build/vision-bootstrap/0.1.0/evidence/camera-store-policy-loader-01/vision-policy-load')
+        context['resourcePolicy']={f.name:h.digest(f) for f in (a.resource_policy,loader,here/'vision_camera_resource_guest.py')}
+        files.extend([a.resource_policy,loader,here/'vision_camera_resource_guest.py'])
     proof_files=[]
     if a.source_proof:
         source=here.parents[1]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator'
@@ -99,7 +114,7 @@ with runtime_paths.installed_session(pathlib.Path.home()/v.INSTANCE_NAME):
     code=process.wait(timeout=10);diagnostic=process.stderr.read(8192)
     collect="""import json,pathlib
 p=pathlib.Path(REMOTE)
-names=['result.json','camera-native-health.json','failure-diagnostics.json','native-reader.json','native-revocation.json']
+names=['result.json','camera-native-health.json','failure-diagnostics.json','native-reader.json','native-revocation.json','resource-policy-rollback.json','native-cold-restart.json']
 print(json.dumps({n:json.loads((p/n).read_bytes()) for n in names if (p/n).is_file()}))
 """.replace('REMOTE',repr(str(remote)))
     observed=json.loads(h.remote(t,q(python)+' -I -B -c '+q(collect),timeout=20))

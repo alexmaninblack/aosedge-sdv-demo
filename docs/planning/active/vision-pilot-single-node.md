@@ -9,8 +9,8 @@
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: independent Camera store and signed successor OEM provisioning passed on M4;
-  native activation is blocked by first-enrollment/FOTA ordering; Aos consumer and full Vision E2E remain open
+- Execution status: signed Source first enrollment and native Camera activation passed on the retained M4 VM;
+  native reader/revocation passed under reversible policy; permanent successor-image security acceptance and full Vision E2E remain open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -231,7 +231,7 @@ build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 ## Current signed-bootstrap and native Camera Access packet
 
 The operator authorized the early signed bootstrap on 2026-11-01. Apply
-[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.10.
+[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.11.
 Build/sign only on SDV-Dev; install/test only on M4 internal storage. Reuse the
 warm Builder/cache and compatible Linux inputs. Preserve the current DMG and
 all retained VM roots. No Main merge or public publication is requested.
@@ -265,7 +265,7 @@ retain the exact single-node type and IAM-proven hardware/Cloud-node binding
 rather than treating that optional display field as the native Main-Node proof.
 
 The operator authorized native Aos-container access and separate OEM activation.
-Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.10 allocates the fixed
+Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.11 allocates the fixed
 resource, local IPC, own OEM target and Vision-only bootstrap. The platform
 repository owns the executable native profile; the foundation receipt remains
 frozen and is not relabelled as native acceptance.
@@ -327,16 +327,24 @@ the fixed 512-MiB backend and Source's read-only identity check. Its successor
 image passed package/rootfs QA using the warm SSD Builder. Signed bootstrap
 0.2.0 then passed normal manufacture/OEM provisioning on M4. The exact Camera
 0.1.0 catalog/payload binding was revalidated without another upload. Native
-activation reached the
+activation initially reached the
 [first-enrollment/FOTA ordering boundary](vision-camera-first-enrollment-change-request.md):
 automatic Cloud delivery queued a first install before Source could project
 its initial runtime identity, while the existing transaction guard forbids
-that projection. Do not bypass it or erase the pending transaction. After
-the bounded decision, prove native activation, daemon and cold-VM restart,
-actual Aos-resource read and revocation. Preserve the old native Unit and its
-verification set; the successor owns a separate set/Subject. Actual native
-consumer/revocation/cold restart, authenticated camera ingress and full Vision
-E2E remain NOT_RUN until their independent live receipts exist.
+that projection. The accepted bounded correction now passes on this same
+VM/Unit with signed Source bootstrap 0.2.1. The native writer committed the
+same Camera candidate after real Safe Stop; daemon restart and retained cold
+VM/store restoration were observed. The separate
+[resource source/proof receipt](../../../contracts/vision-vm/camera-access-native-resource-source.v1.json)
+records native read-only delivery, denial and revocation with clean fresh AVCs
+under a temporary policy. That policy was restored/removed, not shipped into
+the installed image. Permanent successor-image security acceptance remains
+open under the [current preservation boundary](vision-camera-first-enrollment-change-request.md#remaining-native-image-acceptance).
+The final gate still requires these native activation, restart, read and
+revocation results on the signed successor image, not only transient policy.
+Preserve the old native Unit and its verification set; the current successor
+owns its separate set/Subject.
+Authenticated camera ingress and full Vision E2E remain NOT_RUN.
 
 The [foundation native source receipt](../../../contracts/vision-vm/camera-access-native-source.v1.json)
 binds the platform commit, 32 camera cases, 274 Python cases (three skips),

@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+# Temporary proof only. Native runtime may inspect the declared read mount;
+# no OEM subtree, component store, configuration or motion permission is added.
+module vision_camera_resource_probe 1.0;
+
+require {
+    type container_engine_t;
+    type camera_access_runtime_t;
+    type camera_access_read_t;
+    type camera_access_t;
+    type cert_t;
+    type sysctl_vm_t;
+    class dir { getattr search };
+    class sock_file { getattr write };
+    class unix_stream_socket connectto;
+}
+
+allow container_engine_t camera_access_runtime_t:dir search;
+allow container_engine_t camera_access_read_t:dir { getattr search };
+allow container_engine_t camera_access_read_t:sock_file { getattr write };
+# The pinned native Aos OCI instance is observed as container_engine_t with
+# UID 5000, resource GID and empty capabilities. DAC/resource projection and
+# daemon SO_PEERCRED/closed read protocol remain mandatory; no OEM grant.
+allow container_engine_t camera_access_t:unix_stream_socket connectto;
+# OpenSSL's optional default-certificate-directory probe already remains
+# denied while Camera's offline test and actual daemon run successfully.
+# Keep that denial; suppress only its search noise, never grant certificate read.
+dontaudit camera_access_t cert_t:dir search;
+# This directory-search probe also remained denied during the completed
+# 17 real pair reads and denial/revocation proof; no sysctl access is granted.
+dontaudit camera_access_t sysctl_vm_t:dir search;

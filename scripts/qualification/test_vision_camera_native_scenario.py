@@ -7,6 +7,7 @@ from pathlib import Path
 import unittest
 
 from vision_camera_native_worker import completion
+from vision_camera_fixture_cloud import configuration
 
 
 class CompletionTests(unittest.TestCase):
@@ -44,6 +45,28 @@ class CompletionTests(unittest.TestCase):
             if isinstance(value,ast.Constant) and isinstance(value.value,str) and value.value.startswith('import ') and '\n' in value.value:
                 compile(value.value,'native-camera-guest-fixture','exec');checked+=1
         self.assertGreaterEqual(checked,8)
+
+
+class ProbeConfigurationTests(unittest.TestCase):
+    def test_read_versions_request_only_the_camera_read_resource(self):
+        for version in ('0.1.0','0.1.2'):
+            with self.subTest(version=version):
+                item=configuration(version)['items'][0]
+                self.assertEqual(item['version'],version)
+                self.assertEqual(item['configuration']['resources'],[dict(name='vision-camera-read')])
+                self.assertEqual(item['configuration']['allowedConnections'],[])
+
+    def test_revoked_versions_request_neither_camera_nor_network(self):
+        for version in ('0.1.1','0.1.3'):
+            with self.subTest(version=version):
+                item=configuration(version)['items'][0]
+                self.assertEqual(item['configuration']['resources'],[])
+                self.assertEqual(item['configuration']['allowedConnections'],[])
+
+    def test_unknown_version_cannot_silently_omit_resource(self):
+        for version in ('0.1.4','latest',None,1):
+            with self.subTest(version=version),self.assertRaisesRegex(ValueError,'VERSION_INVALID'):
+                configuration(version)
 
 
 if __name__=='__main__':unittest.main()

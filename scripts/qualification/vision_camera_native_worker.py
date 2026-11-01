@@ -95,7 +95,9 @@ def main():
     result=dict(scenario='VISION_NATIVE_CAMERA_ACCESS',outcome='NOT_COMPLETE',phases=[],
         fullVisionE2E='NOT_RUN',gatewayCameraIngress='NOT_RUN',cameraRestart='NOT_RUN',
         nativeColdRestart='NOT_RUN',input='OEM_LOCAL_RECORDED_JPEG_FIXTURE',cleanup={})
-    began=time.monotonic();source_started=False;producer=None;app=None;transient=False
+    began=time.monotonic();source_started=False;producer=None;app=None;transient=False;resource_policy=False
+    read_version='0.1.2' if c.get('probeCycle')==2 else '0.1.0'
+    revoke_version='0.1.3' if c.get('probeCycle')==2 else '0.1.1'
     def phase(name,action):
         print(json.dumps(dict(stage=name,state='STARTED')),flush=True);start=time.monotonic()
         value=action();atomic(records/(name+'.json'),dict(seconds=round(time.monotonic()-start,2),facts=value))
@@ -145,6 +147,26 @@ print(json.dumps(dict(stopped=True)))
             phase('isolate-native-unit-memberships',units.isolate_vision_test)
             boot=phase('native-start',lambda:vm.execute('start','test',timeout=150))
             require(boot['vehicles']['test']['state']=='COMPLETED','VM_START_INCOMPLETE')
+            if c.get('resourcePolicy'):
+                import base64,io,tarfile
+                require(set(c['resourcePolicy'])=={'vision_camera_resource_probe.pp','vision-policy-load','vision_camera_resource_guest.py'},'RESOURCE_POLICY_SCOPE_INVALID')
+                payload=io.BytesIO()
+                with tarfile.open(fileobj=payload,mode='w:gz') as archive:
+                    for name,digest in c['resourcePolicy'].items():
+                        path=records/name;require(hashlib.sha256(path.read_bytes()).hexdigest()==digest,'RESOURCE_POLICY_CHANGED')
+                        archive.add(path,arcname=name)
+                raw=payload.getvalue();require(len(raw)<256*1024,'RESOURCE_POLICY_PAYLOAD_LIMIT')
+                prepare=r'''import base64,hashlib,io,json,pathlib,subprocess,tarfile
+p=pathlib.Path('/run/vision-camera-store-proof');assert not p.exists();p.mkdir(mode=0o700)
+raw=base64.b64decode(DATA);assert hashlib.sha256(raw).hexdigest()==DIGEST
+with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as t:t.extractall(p,filter='data')
+r=subprocess.run(['python3',str(p/'vision_camera_resource_guest.py'),'start'],capture_output=True,text=True,timeout=160)
+assert r.returncode==0,'RESOURCE_POLICY_START_FAILED'
+print(r.stdout)
+'''.replace('DATA',repr(base64.b64encode(raw).decode())).replace('DIGEST',repr(hashlib.sha256(raw).hexdigest()))
+                resource_policy=True
+                phase('temporary-native-resource-policy',lambda:guest(prepare,timeout=170))
+                result['bootstrapAcceptance']='TRANSIENT_RESOURCE_POLICY_NOT_IMAGE_ACCEPTANCE'
             if c.get('transientSm'):
                 import base64
                 binary=(records/'aos-sm-profile-proof').read_bytes()
@@ -209,11 +231,18 @@ print(json.dumps(dict(transient=True,stockRootfsUnchanged=True,rollbackArmed=Tru
                 binary=str(records/'vision-camera-probe'),binarySha256=c['probeSha256'])
             require(hashlib.sha256((records/'vision_camera_fixture_cloud.py').read_bytes()).hexdigest()==c['fixtureWorkerSha256'],'FIXTURE_WORKER_CHANGED')
             def fixture(action,**extra):
-                done=subprocess.run([sdk[0],'-I','-B',str(records/'vision_camera_fixture_cloud.py'),str(tooling)],
-                    input=json.dumps(dict(request,action=action,**extra)),capture_output=True,text=True,env=environment,timeout=100)
-                require(done.returncode==0 and len(done.stdout)<131072,'FIXTURE_SDK_UNAVAILABLE')
-                value=json.loads(done.stdout);require(value.get('ok'),value.get('reason','FIXTURE_SDK_FAILED'))
-                return value['data']
+                # Only authoritative reads can retry an explicit transient
+                # provider failure. Never repeat sign/upload/create/bind/assign.
+                for attempt in range(3):
+                    done=subprocess.run([sdk[0],'-I','-B',str(records/'vision_camera_fixture_cloud.py'),str(tooling)],
+                        input=json.dumps(dict(request,action=action,**extra)),capture_output=True,text=True,env=environment,timeout=100)
+                    require(done.returncode==0 and len(done.stdout)<131072,'FIXTURE_SDK_UNAVAILABLE')
+                    value=json.loads(done.stdout)
+                    if (value.get('reason') in ('CLOUD_HTTP_502','CLOUD_HTTP_503','CLOUD_HTTP_504')
+                            and action in ('preflight','publication','subject-status') and attempt<2):
+                        time.sleep(2);continue
+                    require(value.get('ok'),value.get('reason','FIXTURE_SDK_FAILED'))
+                    return value['data']
             phase('probe-cloud-preflight',lambda:fixture('preflight'))
             if transient:
                 # Classify known offline failures before paying CARLA startup.
@@ -230,9 +259,15 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
             # The existing Source owner, not this diagnostic, owns all CARLA
             # ticks and physical Safe Stop. Inference/fixture never actuates it.
             app=DemoOrchestrator(environment_service=env,vm_service=vm)
-            source_started=True
-            phase('source-start',lambda:app.source_service.simulation('start',target='test'))
-            phase('source-native-authentication',app.source_service.initialize_test)
+            if c.get('consumerOnly'):
+                current=read_json(native/JOURNAL)
+                require(current['source']['state']=='STOPPED' and not current['source'].get('operation')
+                    and current['source']['trust']['onboarding']['state']=='COMPLETE','CONSUMER_ONLY_SOURCE_NOT_PRESERVED')
+                result['physicalSource']='NOT_STARTED_RETAINED_CAMERA_CONSUMER_ONLY'
+            else:
+                source_started=True
+                phase('source-start',lambda:app.source_service.simulation('start',target='test'))
+                phase('source-native-authentication',app.source_service.initialize_test)
             # Same real physical-control path used by the API campaign. A
             # first enrollment finishes in stationary Manual, not Safe Stop.
             def physical_safe_stop():
@@ -248,7 +283,7 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
                     require(final.get('fresh') and not final.get('held') and frame.get('activeMode')=='SAFE_STOP'
                         and frame.get('speedKmh',float('inf'))<=.5 and frame.get('brake',0)>=.99,'CAMERA_PHYSICAL_SAFE_STOP_UNCONFIRMED')
                     return dict(physicalSafeStop=True,held=False)
-            phase('camera-physical-safe-stop',physical_safe_stop)
+            if not c.get('consumerOnly'):phase('camera-physical-safe-stop',physical_safe_stop)
             component=ComponentService(env)
             if not existing:
                 prepared=records/'camera-package';prepared.mkdir(mode=0o700)
@@ -285,7 +320,17 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
             require(publication['publication']['stage']=='READY','CAMERA_PUBLICATION_TIMEOUT')
             atomic(records/'camera-publication.json',publication)
             scope['updateComponentId']=publication['publication']['versionId']
-            if not resume:
+            previous_send=initial.get('componentOperations',{}).get('0.1.0',{}).get('send')
+            require(not c.get('consumerOnly') or bool(previous_send),'CONSUMER_ONLY_COMPONENT_SEND_FORBIDDEN')
+            if previous_send and reuse:
+                previous_operation=initial['componentOperations']['0.1.0']
+                require(previous_send.get('state')=='RESPONDED' and previous_operation.get('deploymentId')==scope['deploymentId'],
+                    'CAMERA_PREVIOUS_SEND_RECONCILE_REQUIRED')
+                # Do not replay a completed send on the retained target. The
+                # next independent native-health read proves its real commit.
+                atomic(records/'automatic-delivery-reconciled.json',dict(noUpload=True,noSend=True,
+                    reason='EXACT_RECORDED_SEND_AND_CATALOG_REUSED_NATIVE_COMMIT_CHECK_FOLLOWS'))
+            elif not resume:
                 phase('camera-native-send',lambda:mutation('send',lambda:units._cloud('vision-camera-send',**scope)))
             else:
                 atomic(records/'automatic-delivery-reconciled.json',dict(deploymentId=scope['deploymentId'],
@@ -347,6 +392,28 @@ print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE
                 value=action();atomic(records/(name+'-response.json'),value)
                 return value
             def publish_probe(version):
+                if version==read_version and c.get('probeReadReuseFrom'):
+                    prior=Path(c['probeReadReuseFrom']);require(prior.parent==records.parent and prior.name=='native-camera-12','PROBE_READ_REUSE_SCOPE_INVALID')
+                    previous=json.loads((prior/'context.json').read_bytes())
+                    require(previous['probeSha256']==c['probeSha256'] and previous['main']==c['main'],'PROBE_READ_REUSE_INPUT_CHANGED')
+                    intent=json.loads((prior/('probe-upload-'+version+'-intent.json')).read_bytes())
+                    require(intent['unitId']==item['unitId'],'PROBE_READ_REUSE_UNIT_CHANGED')
+                    response=json.loads((prior/('probe-upload-'+version+'-response.json')).read_bytes())
+                    value=fixture('publication',probeVersion=version,deploymentId=response['deploymentId'])
+                    require(value['stage']=='READY','PROBE_READ_REUSE_NOT_READY')
+                    atomic(records/'probe-read-reused.json',dict(noSigning=True,noUpload=True,publication=value))
+                    return value
+                if version=='0.1.0' and c.get('probeResumeFrom'):
+                    prior=Path(c['probeResumeFrom']);require(prior.parent==records.parent and prior.name=='native-camera-09','PROBE_RESUME_SCOPE_INVALID')
+                    previous=json.loads((prior/'context.json').read_bytes())
+                    require(previous['probeSha256']==c['probeSha256'] and previous['main']==c['main'],'PROBE_RESUME_INPUT_CHANGED')
+                    intent=json.loads((prior/'probe-upload-0.1.0-intent.json').read_bytes())
+                    require(intent['unitId']==item['unitId'] and intent['attemptStarted'] is True,'PROBE_RESUME_UNIT_CHANGED')
+                    response=json.loads((prior/'probe-upload-0.1.0-response.json').read_bytes())
+                    value=fixture('publication',probeVersion=version,deploymentId=response['deploymentId'])
+                    require(value['stage']=='READY','PROBE_RESUME_PUBLICATION_NOT_READY')
+                    atomic(records/'probe-publication-reused.json',dict(noUpload=True,noSigning=True,publication=value))
+                    return value
                 output=records/('probe-'+version+'.tar.gz')
                 signed=phase('probe-sign-'+version,lambda:fixture('sign',probeVersion=version,output=str(output)))
                 response=phase('probe-upload-'+version,lambda:external('probe-upload-'+version,
@@ -357,14 +424,23 @@ print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE
                     if value['stage']=='READY':return value
                     require(value['stage']=='PROCESSING','PROBE_PUBLICATION_FAILED');time.sleep(2)
                 raise ValueError('PROBE_PUBLICATION_TIMEOUT')
-            published=publish_probe('0.1.0');service_id=published['serviceId']
-            created=phase('probe-subject-create',lambda:external('probe-subject-create',
-                lambda:fixture('subject-create',serviceId=service_id)))
-            subject=created['subject']
-            phase('probe-subject-bind',lambda:external('probe-subject-bind',
-                lambda:fixture('subject-bind',serviceId=service_id,subject=subject)))
-            phase('probe-subject-assign',lambda:external('probe-subject-assign',
-                lambda:fixture('subject-assign',serviceId=service_id,subject=subject)))
+            published=publish_probe(read_version);service_id=published['serviceId']
+            if c.get('probeResumeFrom'):
+                prior=Path(c['probeResumeFrom']);subject=json.loads((prior/'probe-subject-create-response.json').read_bytes())['subject']
+                for name in ('probe-subject-bind','probe-subject-assign'):
+                    intent=json.loads((prior/(name+'-intent.json')).read_bytes())
+                    response=json.loads((prior/(name+'-response.json')).read_bytes())
+                    require(intent['unitId']==item['unitId'] and response['accepted'] is True,'PROBE_ASSIGNMENT_NOT_RECONCILED')
+                observed=phase('probe-subject-reconciled',lambda:fixture('subject-status',serviceId=service_id,subject=subject))
+                require(observed['unitBound'] and observed['serviceBound'],'PROBE_ASSIGNMENT_CHANGED')
+            else:
+                created=phase('probe-subject-create',lambda:external('probe-subject-create',
+                    lambda:fixture('subject-create',serviceId=service_id)))
+                subject=created['subject']
+                phase('probe-subject-bind',lambda:external('probe-subject-bind',
+                    lambda:fixture('subject-bind',serviceId=service_id,subject=subject)))
+                phase('probe-subject-assign',lambda:external('probe-subject-assign',
+                    lambda:fixture('subject-assign',serviceId=service_id,subject=subject)))
             # Retained recording, explicit OEM-local replay. Preserve original
             # frame/time/bytes; a new fixture epoch is selected for each replay.
             # This proves IPC/identity, not live ingress/calibration or models.
@@ -420,19 +496,19 @@ finally:
             producer.stdin.write(script);producer.stdin.close()
             require(producer.stdout.readline().strip()=='VISION_CAMERA_FIXTURE_STARTED','OEM_FIXTURE_START_FAILED')
             def native_reader():
-                return guest("""import hashlib,json,pathlib,pwd,grp,subprocess
+                return guest("""import hashlib,json,pathlib,pwd,grp,subprocess,os
 rows=[]
 for path in pathlib.Path('/proc').iterdir():
  if not path.name.isdecimal():continue
  try:
-  exe=(path/'exe').resolve(strict=True)
-  if exe.name!='vision-camera-probe':continue
+  exe=os.readlink(path/'exe')
+  if pathlib.Path(exe).name!='vision-camera-probe':continue
   status=dict(line.split(':',1) for line in (path/'status').read_text().splitlines() if ':' in line)
   mount=[line.split() for line in (path/'mountinfo').read_text().splitlines() if ' /run/aosedge/platform/camera ' in line]
   rows.append(dict(pid=int(path.name),uid=int(status['Uid'].split()[0]),groups=[int(v) for v in status['Groups'].split()],
    capEff=status['CapEff'].strip(),noNewPrivs=status.get('NoNewPrivs','').strip(),
    binarySha256=hashlib.sha256((path/'exe').read_bytes()).hexdigest(),context=(path/'attr/current').read_text().strip(),
-   mountReadonly=bool(mount) and all('ro' in line[5].split(',') for line in mount)))
+   mountPresent=bool(mount),mountReadonly=bool(mount) and all('ro' in line[5].split(',') for line in mount)))
  except (OSError,KeyError,ValueError):pass
 p=subprocess.run(['journalctl','-b','-n','500','--no-pager','-o','cat'],capture_output=True,text=True)
 messages=[]
@@ -457,23 +533,24 @@ print(json.dumps(dict(processes=rows,messages=messages[-80:],readerGid=grp.getgr
             require(any(row.get('probe')=='READ' and row.get('pair') and row.get('bytesVerified') for row in reader['messages']), 'NATIVE_READER_BYTES_NOT_PROVEN')
             require(any(row.get('probe')=='READER_MUTATION_DENIED' for row in reader['messages']),'NATIVE_READER_DENIAL_NOT_PROVEN')
             before_pid=process['pid'];result['aosConsumer']='PASS_READ_ONLY_NATIVE_RESOURCE'
-            updated=publish_probe('0.1.1');require(updated['serviceId']==service_id,'PROBE_SERVICE_CHANGED')
+            updated=publish_probe(revoke_version);require(updated['serviceId']==service_id,'PROBE_SERVICE_CHANGED')
             deadline=time.monotonic()+60;revoked=None
             while time.monotonic()<deadline:
                 revoked=native_reader()
-                if len(revoked['processes'])==1 and revoked['processes'][0]['pid']!=before_pid and not revoked['processes'][0]['mountReadonly']:break
+                if len(revoked['processes'])==1 and revoked['processes'][0]['pid']!=before_pid and not revoked['processes'][0]['mountPresent']:break
                 time.sleep(2)
             atomic(records/'native-revocation.json',revoked)
             require(len(revoked['processes'])==1 and revoked['processes'][0]['pid']!=before_pid
-                    and not revoked['processes'][0]['mountReadonly'],'NATIVE_RESOURCE_REVOCATION_NOT_PROVEN')
+                    and not revoked['processes'][0]['mountPresent'],'NATIVE_RESOURCE_REVOCATION_NOT_PROVEN')
             def camera_audit():
                 value=guest("""import json,pathlib,subprocess
 p=pathlib.Path('/var/log/audit/audit.log');assert p.is_file()
+cursor=pathlib.Path('/run/vision-camera-store-proof/policy-state.json')
 with p.open('rb') as f:
- f.seek(max(0,p.stat().st_size-1024**2));raw=f.read().decode(errors='replace')
+ f.seek(json.loads(cursor.read_bytes())['auditCursor'] if cursor.exists() else max(0,p.stat().st_size-1024**2));raw=f.read().decode(errors='replace')
 lines=raw.splitlines();starts=[i for i,line in enumerate(lines) if 'type=DAEMON_START ' in line]
-assert starts,'AUDIT_BOOT_MARKER_REQUIRED'
-scope=lines[starts[-1]:]
+assert cursor.exists() or starts,'AUDIT_BOOT_MARKER_REQUIRED'
+scope=lines if cursor.exists() else lines[starts[-1]:]
 avcs=[line[:1600] for line in scope if 'avc:' in line and 'camera_access' in line]
 camera=dict(line.split('=',1) for line in subprocess.check_output(['systemctl','show','aos-camera-access','-p','ActiveState','-p','Result','-p','NRestarts'],text=True).splitlines() if '=' in line)
 assert camera==dict(ActiveState='active',Result='success',NRestarts='0')
@@ -482,7 +559,7 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
                 require(value['enforcing'] and not value['scopedAvcs'],'NATIVE_CAMERA_AVC_PRESENT')
                 return value
             phase('native-camera-audit',camera_audit)
-            if not transient:
+            if not transient and not resource_policy:
                 # Service restart is not cold-boot evidence. Stop the physical
                 # Source/fixture normally, then restart the same VM/Cloud Unit.
                 # No re-manufacture, overlay replacement or credential copying.
@@ -529,13 +606,13 @@ print(json.dumps(dict(bootId=pathlib.Path('/proc/sys/kernel/random/boot_id').rea
                 current=read_json(native/JOURNAL)['vehicles']['test']
                 require(current['localVmId']==old['localVmId'] and current['unitId']==old['unitId'],'COLD_IDENTITY_CHANGED')
                 cold_reader=native_reader()
-                require(len(cold_reader['processes'])==1 and not cold_reader['processes'][0]['mountReadonly'],
+                require(len(cold_reader['processes'])==1 and not cold_reader['processes'][0]['mountPresent'],
                         'CAMERA_COLD_REVOCATION_NOT_RETAINED')
                 atomic(records/'native-cold-restart.json',dict(newBoot=True,newEpoch=True,storeIdentityRetained=True,
                     installedComponentRetained=True,unitIdentityRetained=True,revocationRetained=True,enforcing=True,noRestarts=True))
                 result['nativeColdRestart']='PASS_SAME_UNIT_STORE_AND_REVOKED_RESOURCE'
                 phase('native-camera-cold-audit',camera_audit)
-            result.update(outcome='PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ' if transient else 'PASS_NATIVE_CAMERA_OEM_AND_AOS_READ',resourceRevocation='PASS',
+            result.update(outcome='PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ' if transient or resource_policy else 'PASS_NATIVE_CAMERA_OEM_AND_AOS_READ',resourceRevocation='PASS',
                           diagnosticService='NOT_PERCEPTION',captureClockAccuracy='NOT_QUALIFIED')
         except SourceProofComplete:
             result.update(outcome='PASS_TRANSIENT_SOURCE_ENROLLMENT_AND_CAMERA',sourceTooling='UNSIGNED_TARGETED_PROOF',
@@ -573,6 +650,17 @@ print(json.dumps(dict(units=units,paths=paths,avcs=avcs[-20:],errors=errors[-20:
             try:
                 stop_source();result['cleanup']['sourceStopped']=True
             except Exception:result['cleanup']['sourceStopped']=False
+            if resource_policy:
+                try:
+                    rollback=guest("""import json,pathlib,subprocess
+p=pathlib.Path('/run/vision-camera-store-proof/vision_camera_resource_guest.py')
+r=subprocess.run(['python3',str(p),'stop'],capture_output=True,text=True,timeout=100)
+assert r.returncode==0
+print(r.stdout)
+""",timeout=110)
+                    atomic(records/'resource-policy-rollback.json',rollback)
+                    result['cleanup']['resourcePolicyRestored']=rollback['stockPolicyRestored'] and rollback['temporaryMountRemoved'] and rollback['canonicalStoresUnchanged']
+                except Exception:result['cleanup']['resourcePolicyRestored']=False
             if transient:
                 try:
                     guest("""import json,pathlib,subprocess

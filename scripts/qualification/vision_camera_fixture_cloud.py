@@ -20,14 +20,14 @@ def require(ok, code):
 
 
 def configuration(version):
-    require(version in ('0.1.0','0.1.1'),'VERSION_INVALID')
+    require(version in ('0.1.0','0.1.1','0.1.2','0.1.3'),'VERSION_INVALID')
     return dict(schemaVersion=2,publisher=dict(author='maninblack'),items=[dict(
         identity=dict(type='service',codename=CODENAME,title='Vision Camera Access Probe'),
         version=version,sourceFolder='service',images=[dict(sourceFolder='arm64',archInfo=dict(architecture='arm64'))],
         configuration=dict(workingDir='/',cmd='/usr/bin/vision-camera-probe',instances=dict(minInstances=1,priority=10),
             offlineTTL='P7D',quotas=dict(cpuLimit=1000,ramLimit=134217728,storageLimit=16777216,
                 stateLimit=1048576,tmpLimit=1048576,noFileLimit=1024,pidsLimit=32),alertRules=None,
-            resources=[dict(name='vision-camera-read')] if version=='0.1.0' else [],allowedConnections=[]),dependencies=[])] )
+            resources=[dict(name='vision-camera-read')] if version in ('0.1.0','0.1.2') else [],allowedConnections=[]),dependencies=[])] )
 
 
 def execute(r):

@@ -3,13 +3,13 @@
 
 # Vision First Enrollment and Queued Camera Installation
 
-- Status: Accepted on 2026-11-01; transient first-enrollment/activation/restart proof passed, signed consumer proof pending
+- Status: First enrollment fixed and signed; native resource proof passed with temporary policy, successor-image acceptance pending
 - Prepared: 2026-11-01
 - Owner: SDV Lab Source lifecycle and OEM platform
 - Parent: [Vision implementation packet](vision-pilot-single-node.md#current-signed-bootstrap-and-native-camera-access-packet)
 - Requirements: [Camera Access](../../requirements/components/camera-access.md), especially `REQ-CAM-005` and `REQ-CAM-006`
 
-## Proven boundary
+## Original boundary and verified correction
 
 The independent Camera backend and signed bootstrap 0.2.0 are built on SSD.
 The successor passed normal manufacture/OEM provisioning on the M4 in
@@ -33,10 +33,13 @@ The current cancellation path requires the same operation in `SAFE_STOP`;
 repeating that operation's Safe Stop request does not change its completed
 Manual-ready phase. Do not forge a completed Source stop or discard this intent.
 
-Native Camera activation, Aos reader, revocation and cold restart remain
-unqualified. A scoped Camera-domain certificate-directory search denial was
-also observed during startup; its exact executable/purpose and necessity remain
-to be classified before any policy change. It is not a passed native AVC gate.
+At this original boundary, native Camera activation, Aos reader, revocation and
+cold restart were unqualified. Camera-domain certificate and VM-sysctl directory
+search probes were subsequently classified as optional: offline self-test,
+daemon restart and actual JPEG delivery succeed while both accesses stay denied.
+The source correction suppresses only these two denied directory-search audits;
+it grants no certificate or sysctl access. This does not turn an earlier failed
+AVC receipt into a pass.
 
 The failed native receipt remains unchanged. Independent stop reconciliation
 confirms that the exact Source/Controller/CARLA processes and native VM are
@@ -54,6 +57,42 @@ fresh epoch, rejected the old epoch and remained nonroot/capability-empty in
 Enforcing. The 94.01-second scenario closed its Source/CARLA/VM owners and
 verified three retained journals unchanged. This is a transient tooling proof,
 not signed Source, Aos-reader, revocation or full Vision E2E acceptance.
+
+Signed Source bootstrap 0.2.1 then passed retained VM boot/restoration and real
+Source authentication in `native-camera-09`. Camera Access 0.1.0 is committed
+by the normal SM on the same Unit/VM, not a deleted/recreated transaction. The
+retained cold-boot observation independently confirmed the same store,
+installed record and guest hardware, with an active Camera service and zero
+automatic restarts. Initial connection, physical Safe Stop and cancellation
+are no longer the blocking boundary.
+
+The [native resource source selection](../../../contracts/vision-vm/camera-access-native-resource-source.v1.json)
+binds the subsequent policy correction and its separate proof. The observed
+native OCI consumer uses `container_engine_t`, UID 5000, resource GID and no
+effective capabilities/NNP. `native-camera-13` passed actual pair/hash delivery,
+read-only mounting, producer/control denial, SOTA revocation (new process,
+removed mount and group), fresh scoped AVC review and exact stock-policy
+restoration in 91.15 seconds. It reused the same VM, Unit and probe bytes.
+The earlier provider HTTP 503 affected an authoritative read; its completed
+upload was reconciled, not repeated. All owned processes/listeners were closed
+and the three other journals remained unchanged. Authenticated camera ingress,
+AI models and full Vision E2E are not inferred from this recorded-JPEG IPC proof.
+
+## Remaining native image acceptance
+
+The resource correction is committed and compiled in the platform feature
+branch. The installed `6.1.1-vision-camera.2` image still contains its earlier
+policy: the successful temporary policy was removed, not silently persisted.
+Bootstrap 0.2.1 supplies the signed Source fix, not a replacement OS image.
+The policy's permanent delivery and cold-image security acceptance therefore
+remain open. Neither original failure receipt is relabelled as a full pass.
+
+Do not remount/rewrite the current rootfs, rebase its overlay, or promote the
+diagnostic policy loader into a new production boot owner. Keep the current VM,
+Unit, keys, installed component and all data. Closing this last gate needs an
+accepted normal OS-update route or a separately authorized successor-image
+validation instance while retaining the current one. This packet created no
+replacement Test or successor VM and did not change Main/public delivery.
 
 ## Accepted minimal correction
 

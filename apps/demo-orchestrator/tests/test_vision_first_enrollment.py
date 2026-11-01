@@ -113,6 +113,19 @@ class GuestTests(unittest.TestCase):
         self.assertTrue(value['transactionPreservedAtResume']);trust.write.assert_called_once_with(Path('/fixed'),'data',0o600)
         trust.activate_consumers.assert_called_once_with(['aos-sm.service'])
 
+    def test_failed_write_rolls_back_only_new_exact_files_and_restores_writer(self):
+        trust=Mock();trust.call.return_value='ActiveState=inactive\nJob=0\n'
+        first,second=Path('/fixed-one'),Path('/fixed-two')
+        trust.write.side_effect=[True,OSError('injected write failure')]
+        with patch.object(guest,'first_install_state',return_value=('tx','candidate')), \
+                patch.object(guest,'validate_material'),patch.object(guest.os.path,'lexists',return_value=False), \
+                patch.object(guest,'read',return_value='first'),patch.object(Path,'unlink',autospec=True) as remove:
+            with self.assertRaises(OSError):
+                guest.initial_projection(dict(action='trust-configure'),trust,{}, {},{first:('first',0o600),second:('second',0o600)})
+        remove.assert_called_once_with(first)
+        trust.call.assert_any_call(['systemctl','--no-block','start','aos-sm.service'])
+        trust.activate_consumers.assert_not_called()
+
     def test_restore_is_not_first_enrollment(self):
         trust=Mock()
         with self.assertRaisesRegex(ValueError,'CONFIGURE_ONLY'):
