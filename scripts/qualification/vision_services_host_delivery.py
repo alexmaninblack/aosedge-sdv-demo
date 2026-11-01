@@ -19,10 +19,12 @@ NAME='AosEdge Vision Bootstrap 0.6.0.bundle'
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);a=p.parse_args();c=configuration(a.config)
-    records=Path(c['records'])/'vision-services-host-01';remote=Path(c['remoteRoot'])/records.name
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--observation-successor',action='store_true');a=p.parse_args();c=configuration(a.config)
+    base=BASE.parent/'0.6.1-services-observe' if a.observation_successor else BASE
+    name='AosEdge Vision Bootstrap 0.6.1.bundle' if a.observation_successor else NAME
+    records=Path(c['records'])/('vision-services-host-02' if a.observation_successor else 'vision-services-host-01');remote=Path(c['remoteRoot'])/records.name
     h.require(not records.exists(),'VISION_HOST_DELIVERY_EXISTS_RECONCILE');records.mkdir(mode=0o700)
-    result=json.loads((BASE/'result.json').read_bytes());bundle=BASE/NAME;archive=BASE/'host-files.tar'
+    result=json.loads((base/'result.json').read_bytes());bundle=base/name;archive=base/'host-files.tar'
     h.require(result['manifestSha256']==hashlib.sha256((bundle/'Contents/Resources/bootstrap.json').read_bytes()).hexdigest(),'VISION_HOST_MANIFEST_CHANGED')
     h.require(not archive.exists(),'VISION_HOST_TRANSFER_INPUT_EXISTS')
     with tarfile.open(archive,'w') as output:
@@ -73,7 +75,7 @@ assert (native/journal).read_bytes()==before and all((p/journal).read_bytes()==r
 print(json.dumps(dict(outcome='PASS_SIGNED_VISION_HOST_DELIVERY',signatureVerified=True,exactScopesVerified=True,
  retainedJournalsUnchanged=True,sameVmAndUnit=True,vmRebased=False,cloudMutation=False,bundle=str(bundle),manifestSha256=MANIFEST)))
 '''
-    values=dict(REMOTE=str(remote),NAME=NAME,OLD=str(Path(c['remoteRoot'])/'vision-fresh-accept-11/AosEdge Vision Bootstrap 0.5.0.bundle'),
+    values=dict(REMOTE=str(remote),NAME=name,OLD=str(Path(c['remoteRoot'])/'vision-fresh-accept-11/AosEdge Vision Bootstrap 0.5.0.bundle'),
         PIN=pin,MANIFEST=result['manifestSha256'],BASE_MANIFEST=c['main']['manifestSha256'],PACKAGE=c['main']['packageRoot'])
     import re
     code=re.sub(r'\b('+'|'.join(sorted(values,key=len,reverse=True))+r')\b',lambda m:repr(values[m[0]]),code)
