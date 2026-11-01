@@ -146,6 +146,12 @@ inputs; include neither CARLA nor credentials. Verify the Apple signature,
 identifier/team, base-program manifest and image/source digests before use.
 This is an engineering delivery, not notarized/public Vision distribution.
 
+Native delivery has exposed the workdirs filesystem's forced SELinux context:
+the declared Camera subtree label cannot override it. The proposed independent
+storage backend is a [bounded change request](../../planning/active/vision-camera-store-change-request.md),
+not an approved policy widening or a completed activation. Preserve this gate
+before another image build; the resource/IPC/OEM logical boundary is unchanged.
+
 A closed signed-bootstrap catalog extends image selection only for the fixed
 Vision profile and fresh native instance. Existing EnvironmentService/VMService
 and UnitService own manufacture, VM and Unit lifecycle; no image-path override,

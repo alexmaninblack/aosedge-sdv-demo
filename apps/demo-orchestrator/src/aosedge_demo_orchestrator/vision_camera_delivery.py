@@ -83,9 +83,16 @@ def execute(cloud, request):
     current=unit_view(cloud,vehicle,strict=True,component_type=COMPONENT)
     version_id=object_id(request['updateComponentId'])
     existing=cloud.call('units/'+vehicle['unitId']+'/components/send-requests/')
-    require(not any(v.get('component_type')==COMPONENT for v in existing),'SEND_EXISTS_RECONCILE')
-    require(not any((v.get(k) or {}).get('id')==version_id for v in current['components'] or []
-                    for k in ('installed_component','pending_component')),'UPDATE_EXISTS_RECONCILE')
+    observed=next((k for v in current['components'] or [] for k in ('installed_component','pending_component')
+                   if (v.get(k) or {}).get('id')==version_id),None)
+    queued=[v for v in existing if v.get('component_type')==COMPONENT]
+    require(not queued or all(v.get('update_component')==version_id for v in queued),'SEND_EXISTS_RECONCILE')
+    if observed or queued:
+        # Verification sets can enqueue the exact uploaded candidate themselves.
+        # This is authoritative observation, not a second send or installation
+        # success. Native commit/health still have their independent gate.
+        return dict(noOp=True,requestAccepted=False,unitId=vehicle['unitId'],updateComponentId=version_id,
+                    deliveryObserved=observed or 'REQUEST_LISTED',origin='EXISTING_VERIFICATION_DELIVERY')
     response=cloud.call('units/'+vehicle['unitId']+'/components/send-requests/','POST',
                         {'update_component_ids':[version_id]},expected=201)
     require(isinstance(response,list) and len(response)==1 and response[0].get('component_type')==COMPONENT

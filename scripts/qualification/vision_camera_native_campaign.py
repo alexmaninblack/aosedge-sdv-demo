@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""One M4 retained-Vision native Camera campaign, including bounded collection."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import shlex
+import subprocess
+import time
+
+import remote_harness as h
+from vision_vm_campaign import configuration
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--config',type=Path,required=True)
+    p.add_argument('--name',required=True)
+    p.add_argument('--bundle-remote',required=True)
+    p.add_argument('--bootstrap-manifest',required=True)
+    p.add_argument('--probe',type=Path,required=True)
+    p.add_argument('--resume',choices=('native-camera-02',))
+    p.add_argument('--transient-sm',type=Path)
+    p.add_argument('--repair-store-labels',action='store_true')
+    p.add_argument('--reconcile-stop',choices=('native-camera-04',))
+    a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
+    h.require(not a.repair_store_labels or a.transient_sm is not None,'LABEL_PROOF_REQUIRES_TRANSIENT_CONTEXT')
+    h.require(a.name.startswith('native-camera-') and a.name.removeprefix('native-camera-').isdecimal(),'ATTEMPT_NAME_INVALID')
+    root=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
+    h.require(not root.exists(),'ATTEMPT_EXISTS_RECONCILE');root.mkdir(mode=0o700)
+    here=Path(__file__).resolve().parent
+    context=dict(main=c['main'],bundle=a.bundle_remote,bootstrapManifestSha256=a.bootstrap_manifest,
+        probeSha256=h.digest(a.probe),fixtureWorkerSha256=h.digest(here/'vision_camera_fixture_cloud.py'))
+    if a.resume:context['resumeFrom']=str(remote.parent/a.resume)
+    files=[here/'vision_camera_native_worker.py',here/'vision_camera_fixture_cloud.py',a.probe]
+    if a.transient_sm:
+        h.require(a.transient_sm.name=='aos-sm-profile-proof','TRANSIENT_BINARY_NAME_INVALID')
+        context['transientSm']=dict(sha256=h.digest(a.transient_sm));files.append(a.transient_sm)
+        context['repairStoreLabels']=a.repair_store_labels
+    h.atomic(root/'context.json',context);files.append(root/'context.json')
+    python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+    if a.reconcile_stop:
+        code="""import json,pathlib,sys
+p=pathlib.Path(PREVIOUS);r=json.loads((p/'result.json').read_bytes());c=json.loads((p/'context.json').read_bytes())
+assert r['cleanup']['sourceStopped'] is True and r['cleanup']['stockSmRestored'] is True and r['cleanup']['retainedJournalsUnchanged'] is True
+package=pathlib.Path(c['main']['packageRoot']);bundle=pathlib.Path(c['bundle'])
+sys.path.insert(0,str(package/'aosedge-sdv-demo/apps/demo-orchestrator/src'))
+import aosedge_demo_orchestrator
+from aosedge_demo_orchestrator import runtime_paths
+aosedge_demo_orchestrator.__path__.insert(0,str(bundle/'Contents/Resources/tooling/aosedge-sdv-demo/apps/demo-orchestrator/src/aosedge_demo_orchestrator'))
+from aosedge_demo_orchestrator import vision_bootstrap as v
+from aosedge_demo_orchestrator.environment import EnvironmentService
+from aosedge_demo_orchestrator.vm import VMService
+b=v.verify(bundle,c['main']['manifestSha256'])
+with runtime_paths.installed_session(pathlib.Path.home()/v.INSTANCE_NAME):
+ vm=VMService(EnvironmentService(catalog=v.SignedVisionCatalog(b),vm_profile=v.VM_PROFILE))
+ value=vm.execute('stop','test',timeout=150)
+ assert value['vehicles']['test']['state']=='COMPLETED'
+ print(json.dumps(dict(normalStopReconciled=True,facts=value['vehicles']['test'])))
+""".replace('PREVIOUS',repr(str(remote.parent/a.reconcile_stop)))
+        observed=json.loads(h.remote(t,q(python)+' -I -B -c '+q(code),timeout=165))
+        h.atomic(root/'previous-normal-stop-reconciled.json',observed)
+    h.remote(t,'umask 077\nmkdir '+q(str(remote)),timeout=15)
+    options=h.ssh_args(t)[1:-1];options.remove('-T');i=options.index('-b')
+    options[i:i+2]=['-o','BindAddress='+options[i+1]]
+    h.run(['/usr/bin/scp',*options,*map(str,files),t['user']+'@'+t['host']+':'+str(remote)+'/'],timeout=90)
+    command=q(python)+' -I -B '+q(str(remote/'vision_camera_native_worker.py'))+' --context '+q(str(remote/'context.json'))
+    started=time.monotonic();process=subprocess.Popen(h.ssh_args(t)+[command],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    with (root/'progress.jsonl').open('x') as log:
+        for line in process.stdout:
+            h.require(log.tell()<2**20,'PROGRESS_LIMIT');log.write(line);log.flush()
+            if line.startswith('{'):print(line.strip(),flush=True)
+    code=process.wait(timeout=10);diagnostic=process.stderr.read(8192)
+    collect="""import json,pathlib
+p=pathlib.Path(REMOTE)
+names=['result.json','camera-native-health.json','failure-diagnostics.json','native-reader.json','native-revocation.json']
+print(json.dumps({n:json.loads((p/n).read_bytes()) for n in names if (p/n).is_file()}))
+""".replace('REMOTE',repr(str(remote)))
+    observed=json.loads(h.remote(t,q(python)+' -I -B -c '+q(collect),timeout=20))
+    for name,value in observed.items():h.atomic(root/name,value)
+    result=observed.get('result.json',dict(outcome='UNCERTAIN',code='WORKER_RESULT_MISSING'))
+    h.atomic(root/'transport.json',dict(exit=code,seconds=round(time.monotonic()-started,2),stderrPresent=bool(diagnostic)))
+    print(json.dumps(result),flush=True)
+    return code
+
+
+if __name__=='__main__':raise SystemExit(main())

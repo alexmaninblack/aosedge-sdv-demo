@@ -4,13 +4,13 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.9
+- Version: 0.10
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: M4 VM/engineering preview and Camera Access native-source/targeted-compile gates complete;
-  native Camera Access deployment, full-pipeline fit and E2E acceptance remain open
+- Execution status: signed Vision bootstrap built/installed and separate native OEM/SDK provisioning passed;
+  Camera activation is blocked by the workdirs fixed SELinux context; native consumer and E2E remain open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -298,20 +298,43 @@ remain their own V2–V5 gates. Neither an OEM-local fixture nor a manual crun p
 closes them. Signing the separate engineering bootstrap is authorized; Main
 merge, public publication and replacement of the current DMG remain excluded.
 
-The [native source receipt](../../../contracts/vision-vm/camera-access-native-source.v1.json)
+### Observed native delivery boundary
+
+The signed bootstrap is now installed on M4 in a separate native instance.
+Normal manufacture and official OEM/SDK provisioning passed; Cloud observed
+the new Vision Unit Online with its own single Main Node and verification set.
+Both retained VM journals remain unchanged. Camera Access 0.1.0 was signed and
+uploaded once; automatic verification delivery was observed without a second
+send. No native component activation is claimed from those Cloud facts.
+
+The native archive gate's VDP-only executable restriction is corrected in the
+platform feature branch and passed 86 ARM64 unit cases. A reversible M4 SM
+target passed the archive boundary, then reached an actual SELinux denial in
+the offline Camera self-test. Workdirs has a forced whole-filesystem
+`aos_var_run_t` context, so the declared Camera subtree type cannot take effect.
+No broad policy grant, root Camera process, shared VDP slot or rootfs remount
+was used. Stock SM was restored; the latest scenario stopped the native VM and
+verified retained journals unchanged. Actual Aos-container delivery, revocation,
+cold restart, authenticated camera ingress and full Vision E2E remain NOT_RUN.
+
+The next architecture boundary is the
+[independent Camera-store change request](vision-camera-store-change-request.md).
+Do not rebuild another image or repeat Cloud upload until its storage contract
+is closed and its reversible proof passes.
+
+The [foundation native source receipt](../../../contracts/vision-vm/camera-access-native-source.v1.json)
 binds the platform commit, 32 camera cases, 274 Python cases (three skips),
 83 completed ARM64 unit cases and the separately compiled launcher/policy. Two
 opt-in live VDP qualifications were skipped, not passed. None of these is
-native deployment acceptance. Inventory proves the current engineering image
-has no Camera bootstrap and Vision has no provisioned Unit. The temporary
+native deployment acceptance. The retained engineering image has no Camera
+bootstrap/Unit; it is not the new separately provisioned native instance. The temporary
 account probe returned exit 1; it was cleaned up and is not a functional pass.
 No policy was loaded. Preserve that result rather than substituting root.
 
-The installed input catalog currently accepts only package-owned immutable
-images; it has no selected Vision bootstrap input. Close the normal Vision
-bootstrap/catalog delivery binding before image installation and provisioning.
-Do not invent an arbitrary image override, overwrite the installed Main input,
-reuse a VDP target or rebase an engineering overlay to cross this gate.
+The signed Vision-only catalog now supplies its exact sealed image to normal
+manufacture/VM/Unit owners. Main still uses its package-owned immutable inputs.
+The isolated binding does not permit an arbitrary image override, changing
+Main inputs, VDP-target reuse or an engineering overlay rebase.
 
 ## Current live-preview packet
 

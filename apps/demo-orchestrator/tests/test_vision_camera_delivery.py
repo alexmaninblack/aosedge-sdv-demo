@@ -62,5 +62,16 @@ class ScopeTests(unittest.TestCase):
             self.assertEqual({'observed':True},v.execute(self.cloud,dict(REQUEST,action='vision-camera-status')))
         self.assertEqual(v.COMPONENT,read.call_args.kwargs['component_type'])
 
+    def test_exact_automatic_verification_delivery_is_observed_without_second_post(self):
+        request=dict(REQUEST,action='vision-camera-send',updateComponentId=FLEET)
+        with patch.object(v,'scope',return_value=REQUEST['vehicles']['test']), \
+             patch.object(v,'snapshot',return_value={'publication':dict(stage='READY',versionId=FLEET)}), \
+             patch.object(v,'unit_view',return_value={'components':[dict(pending_component=dict(id=FLEET))]}):
+            self.cloud.call.side_effect=lambda path:[]
+            observed=v.execute(self.cloud,request)
+        self.assertTrue(observed['noOp']);self.assertFalse(observed['requestAccepted'])
+        self.assertEqual('pending_component',observed['deliveryObserved'])
+        self.assertTrue(all(len(c.args)==1 and not c.kwargs for c in self.cloud.call.call_args_list))
+
 
 if __name__=='__main__':unittest.main()
