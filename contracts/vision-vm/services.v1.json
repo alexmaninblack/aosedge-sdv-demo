@@ -1,0 +1,55 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-native-services-contract",
+  "status": "ACCEPTED_FOR_IMPLEMENTATION_AND_SAME_VM_VERIFICATION",
+  "acceptedByOperator": "2026-11-01: S1-S6 accepted in full; implement and verify on the same Vision VM; preserve data and VDP/Brake/Tire; SSD builds; no CARLA/Main Factory rebuild; no routine prompts",
+  "authorityDocument": "docs/planning/active/vision-services-native-delivery.md",
+  "target": {"host": "M4", "unitId": "af6d074a-6ce1-49ba-b613-0476e7b6d1b5", "localVmId": "89273f16-4be0-4b22-b4cb-58d08533c8bc", "instance": "SDV-Vision-Camera-Image-Lab-Data", "preserveData": true, "newVm": false, "resetOrReprovision": false, "vcpus": 4, "memoryMiB": 4096},
+  "services": {
+    "perception": {"codename": "vision-perception", "version": "0.1.0", "resources": ["vision-camera-read", "vision-perception-publish"], "allowedConnections": [], "maximumExtractedBytes": 536870912},
+    "assessment": {"codename": "vision-assessment", "version": "0.1.0", "resources": ["vision-perception-read", "vision-context-read", "vision-assessment-publish"], "allowedConnections": [], "modelsBundled": false}
+  },
+  "exchange": {
+    "owner": "Internal nonroot adapter in Camera Access OEM package, not another application or lifecycle owner",
+    "platformRoot": "/run/aos-vision-exchange",
+    "applicationRoot": "/run/aosedge/vision",
+    "socketFile": "exchange.sock",
+    "roles": {
+      "vision-perception-publish": {"directory": "perception-publish", "group": "aos-vision-perception-publish", "sharedCount": 1, "operations": ["status", "publish"]},
+      "vision-perception-read": {"directory": "perception-read", "group": "aos-vision-perception-read", "sharedCount": 1, "operations": ["status", "latest"]},
+      "vision-context-read": {"directory": "context-read", "group": "aos-vision-context-read", "sharedCount": 1, "operations": ["status", "context"]},
+      "vision-assessment-publish": {"directory": "assessment-publish", "group": "aos-vision-assessment-publish", "sharedCount": 1, "operations": ["status", "publish"]}
+    },
+    "mountOptions": ["bind", "ro", "nosuid", "nodev", "noexec"],
+    "framing": "4-byte unsigned network-order length followed by duplicate-free strict UTF-8 JSON; no nonfinite constants, trailing data or extra fields",
+    "requestDeadlineSeconds": 2,
+    "latestPerceptionResults": 1,
+    "latestAssessmentResults": 1,
+    "maximumContextRecords": 128,
+    "localRetentionSeconds": 1,
+    "producerAuthority": "Native resource projection/group plus kernel DAC/SELinux and actual nonroot peer, never a claimed JSON role or credential issued by the broker"
+  },
+  "gateway": {
+    "listener": "Existing enrolled Gateway TLS listener; selected Vision profile only; no new listening port",
+    "context": {"method": "GET", "path": "/vision/v1/context", "queryFields": ["sourceId", "sourceEpoch", "frame"], "scope": "vision-context-read", "match": "Exact physical world frame and original sample time; absent is unavailable; no interpolation or nearest-frame substitution"},
+    "result": {"method": "POST", "path": "/vision/v1/results", "scope": "vision-assessment-publish", "maximumPerSecond": 10},
+    "identity": "Only the existing selected Vision Unit/node Source-owned identity with explicit context/result scopes; wrong roles/generation and detached clients denied",
+    "credentialConsumer": "Separate narrow OEM exchange adapter domain/systemd credential projection only; no app or Camera core key, CA/store creation or Main credential copying",
+    "controlAuthority": false,
+    "browserProjection": "Opaque references and bounded status only; full Unit/node/source/certificate IDs stay server-side"
+  },
+  "dtos": {
+    "common": {"schemaVersion": 1, "bindingFields": ["componentEpoch", "sourceId", "sourceEpoch", "cameraId", "calibrationId"], "frameFields": ["frame", "simulationTimeNs", "sensorSimulationTimeNs", "sha256"], "producerFields": ["epoch", "sequence", "serviceVersion"], "unknownFields": "reject", "finiteNumbersOnly": true, "autoSteerConfidence": "Raw finite upstream h_vector height/mask, not a 0..1 probability; preserve upstream >=0.5 threshold, no sigmoid or clamp"},
+    "perception": {"kind": "perception", "modelProfile": "vision-pilot-fp32-v1", "preprocessingProfile": "carla-forward-720p-fov50-v1", "fields": ["schemaVersion", "kind", "binding", "frames", "producer", "modelProfile", "preprocessingProfile", "models", "timingsMs"], "models": {"autodrive": ["valid", "distanceNormalized", "curvatureRaw", "presenceProbability"], "autosteer": ["valid", "xp", "confidence"], "autospeed": ["valid", "detections"]}, "waypoints": 64, "detections": 128, "detectionFields": ["box", "score", "classId", "probabilities"], "classProbabilities": 4},
+    "context": {"kind": "context", "fields": ["schemaVersion", "kind", "binding", "frame", "dynamics", "vehicleProfile", "calibration"], "dynamicsFields": ["available", "speedMps", "simulationTimeNs"], "vehicleProfileFields": ["id", "available", "frontAxleToCogM", "speedLimitMps"], "missing": "available=false with nullable values, never zero/default/fabricated timestamp", "groundTruthModelInput": false},
+    "gatewayContext": {"kind": "gateway-context", "fields": ["schemaVersion", "kind", "binding", "frame", "dynamics", "vehicleProfile", "calibration"], "bindingFields": ["sourceId", "sourceEpoch", "cameraId", "calibrationId"], "localProjection": "OEM adapter adds only the Camera componentEpoch from Source-owned native selection, never from an application. All remaining binding/frame facts must match authenticated Gateway context."},
+    "calibration": {"acceptedByOperator": "2026-11-01: exact Source-derived camera calibration through existing Perception publish status and Assessment context-read; no new port/resource/app key/control", "kind": "calibration", "fields": ["schemaVersion", "kind", "binding", "frames", "calibration"], "contextFields": ["available", "reason", "profile", "rawToModel", "resizedToVehicle"], "profileEnvelopeFields": ["id", "document"], "profileIdentity": "SHA-256 of complete strict UTF-8 document, never mount name only", "maximumProfileDocumentBytes": 2048, "profileDocumentFields": ["schemaVersion", "profile", "scope", "camera", "modelViewToVehicle", "projection", "origin"], "scope": "PLANAR_REFERENCE_ONLY", "projection": {"algorithm": "CARLA_PINHOLE_LOCAL_PLANAR_V1", "coordinates": "forward-metres-left-positive", "maximumPlaneResidualMetres": 0.02, "maximumNormalAngleDegrees": 0.5, "referenceDistancesMetres": [15, 30, 75, 150]}, "perception": "Capture-bound status only on perception-publish, two exact frame mappings and no dynamics; unavailable with null profile/maps", "assessment": "Same profile and current-frame resizedToVehicle in context-read, matching upstream H_resized=H_raw*inverse(top-crop/resize); never substitute the AutoDrive training-view V; no application file/config/key input"},
+    "assessment": {"kind": "assessment", "fields": ["schemaVersion", "kind", "binding", "frames", "producer", "input", "state", "reason", "deltaSimulationNs", "lead", "path", "plan", "timingsMs"], "inputFields": ["epoch", "sequence", "serviceVersion", "modelProfile", "preprocessingProfile"], "states": ["WARMING", "AVAILABLE", "UNAVAILABLE", "INCOMPATIBLE"], "leadFields": ["valid", "present", "distanceMetres", "relativeSpeedMps", "distanceStddevMetres"], "pathFields": ["valid", "points", "crossTrackMetres", "yawRadians", "curvaturePerMetre"], "planFields": ["valid", "accelerationMps2", "steeringRadians"], "maximumPathPoints": 64, "maximumPlanPoints": 64, "shadowOnly": true}
+  },
+  "bounds": {"jpegBytes": 4194304, "requestBytes": 4096, "contextBytes": 4096, "resultBytes": 65536, "sensorWorldDisagreementNs": 75000000, "pairMinimumNs": 80000000, "pairMaximumNs": 120000000, "temporalResetGapNs": 1000000000},
+  "temporal": {"fusionDelta": "Actual positive simulation-time difference between processed current frames, not the 80-120 ms input-pair interval", "plannerCycleDelta": "Actual inter-result elapsed time; do not reuse the upstream global horizon step", "plannerHorizonStepSeconds": 0.05, "reset": ["source", "sourceEpoch", "componentEpoch", "calibration", "producerEpoch", "discontinuity", "timeRegression", "gapOverOneSimulationSecond"], "firstAfterReset": "WARMING with no valid temporal estimates or plan", "noTarget": "present=false, distance/speed nullable; upstream 150-m sentinel is not a detected object"},
+  "upstream": {"repository": "https://github.com/autowarefoundation/vision_pilot", "revision": "e7e5c614832f175f1f9f10a0d0c0df2559ff2c38", "precision": "FP32", "provider": "CPUExecutionProvider", "threadsPerSession": 1, "parallelSessions": 3, "models": {"autodrive_fp32.onnx": "196a82289ba7d96f574cc4dfa8815dadb9f104397c7c2bec7c98333e5ee8762d", "autosteer_fp32.onnx": "770d26f431467bbcc7fe3e794411cac36d8dfbd1658e4eb4a37d48342db7cbf6", "autospeed_fp32.onnx": "adff7dd9fa9c2d306d9228a87edcf2ae256edbdc9e4b9541fd471880aa5c1451"}},
+  "delivery": {"cameraVersion": "0.1.2", "optionalRootfsVersion": "6.1.1-vision-camera.6", "optionalHostBootstrapVersion": "0.6.0", "subjectTitle": "SDV Vision Pilot", "nativeQuotaRule": "Measure actual closure and node DMIPS mapping, freeze before publication; no VM increase or unmeasured capacity claim", "sourceFanIn": ["vision-pilot-services", "aos-vehicle-platform/carla-ego-runtime", "aosedge-sdv-demo"], "unknownMutation": "Reconcile authoritative intent/result, never blind replay"},
+  "excluded": ["new/reset/reprovisioned VM", "VDP/Brake/Tire mutation", "application TLS key or network access", "motion/advisory writes", "CARLA/Unreal/Main Factory rebuild", "GPU/ROS", "Main promotion", "public Vision artifacts", "fabricated valid estimates or qualified model accuracy"]
+}

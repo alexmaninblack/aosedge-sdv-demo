@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import stat
+import struct
 import sys
 from types import SimpleNamespace
 import unittest
@@ -16,6 +17,40 @@ REQUEST=dict(role='test',vmProfile=v.PROFILE,vehicle=dict(localVmId=LOCAL))
 
 
 class VisionProjectionTests(unittest.TestCase):
+    def test_exchange_hello_is_native_bounded_and_duplicate_free(self):
+        for text,accepted in ((json.dumps(dict(schemaVersion=1,componentEpoch=LOCAL,state='OEM_HELLO')),True),
+            ('{"schemaVersion":1,"componentEpoch":"'+LOCAL+'","state":"OEM_HELLO","state":"OEM_HELLO"}',False),('[]',False)):
+            data=text.encode();pending=bytearray(struct.pack('!I',len(data))+data)
+            connection=Mock();connection.__enter__=Mock(return_value=connection);connection.__exit__=Mock(return_value=False)
+            def recv(size):
+                chunk=bytes(pending[:size]);del pending[:size];return chunk
+            connection.recv.side_effect=recv
+            with patch.object(v.socket,'socket',return_value=connection):
+                if accepted:self.assertEqual(v.camera_component_epoch(),LOCAL)
+                else:
+                    with self.assertRaises(ValueError):v.camera_component_epoch()
+            connection.connect.assert_called_once_with('/run/aos-camera-access/oem/producer.sock')
+
+    def test_exchange_requires_exact_scope_and_installed_unit_before_credentials(self):
+        for scopes,loaded in (([],True),(list(reversed(v.EXCHANGE_SCOPES)),True),(v.EXCHANGE_SCOPES,False)):
+            trust=Mock();trust.call.return_value='LoadState='+('loaded' if loaded else 'not-found')+'\n'
+            with patch.object(v,'read') as read:
+                with self.assertRaisesRegex(ValueError,'EXCHANGE_'):
+                    v.exchange(dict(exchangeScopes=scopes),trust,{},start=True)
+                read.assert_not_called();trust.write.assert_not_called()
+
+    def test_exchange_stop_does_not_remove_egress_until_processes_and_jobs_exit(self):
+        for after,accepted in (('ActiveState=inactive\nMainPID=0\nJob=0\nControlGroup=\n',True),
+                ('ActiveState=inactive\nMainPID=9\nJob=0\n',False),('ActiveState=inactive\nMainPID=0\nJob=4\n',False)):
+            trust=Mock();trust.call.side_effect=['LoadState=loaded\nActiveState=active\nMainPID=9\n','',after]
+            with patch.object(v,'_egress') as firewall:
+                if accepted:
+                    self.assertTrue(v.exchange(dict(exchangeScopes=v.EXCHANGE_SCOPES),trust,{},start=False)['stopped'])
+                    firewall.assert_called_once_with(trust,{},False,exchange=True)
+                else:
+                    with self.assertRaisesRegex(ValueError,'EXCHANGE_STOP_'):v.exchange(dict(exchangeScopes=v.EXCHANGE_SCOPES),trust,{},start=False)
+                    firewall.assert_not_called()
+
     def test_pending_first_boot_restore_writes_only_missing_volatile_binding(self):
         expected={Path('/persisted-enrollment'):('same',0o600),v.DROPIN:('dropin',0o644)}
         trust=Mock();trust.call.return_value='ActiveState=inactive\nJob=0\n'

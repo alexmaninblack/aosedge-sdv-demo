@@ -144,6 +144,21 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(checked.platform_revision,'b'*40)
         self.assertEqual(checked.image.version,'6.1.1-vision-camera.5')
 
+    def test_only_a_verified_services_descriptor_grants_the_two_exchange_scopes(self):
+        base=SimpleNamespace(**{n:self.root/n for n in ('root','workspace','project','input_root','input_project')})
+        descriptor=self.host_extension()
+        self.assertEqual(v.SignedVisionCatalog(v.verify(self.bundle,BASE),base).vision_exchange_scopes,())
+        descriptor.update(kind='signed-vision-services-host',rootfsVersion='6.1.1-vision-camera.6',cameraVersion='0.1.2',exchangeScopes=['vision-context-read','vision-assessment-publish'])
+        descriptor['sources']['services']='e'*40
+        def replace():
+            raw=json.dumps(descriptor).encode();path=self.resources/v.HOST_DESCRIPTOR;path.chmod(0o644);path.write_bytes(raw);path.chmod(0o444)
+            row=next(row for row in self.manifest['files'] if row['path']==v.HOST_DESCRIPTOR);row.update(bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest());self.save()
+        replace();catalog=v.SignedVisionCatalog(v.verify(self.bundle,BASE),base)
+        self.assertEqual(catalog.vision_exchange_scopes,('vision-context-read','vision-assessment-publish'))
+        self.assertEqual(catalog.resolve(v.SELECTOR).version,v.VERSION)
+        descriptor['exchangeScopes'].append('control');replace()
+        with self.assertRaisesRegex(ImageError,'HOST_EXCHANGE_SCOPE'):v.verify(self.bundle,BASE)
+
     def test_host_extension_cannot_select_an_arbitrary_runtime(self):
         descriptor=self.host_extension();descriptor['assets']['runtime']='tooling/other'
         path=self.resources/v.HOST_DESCRIPTOR;raw=json.dumps(descriptor).encode()

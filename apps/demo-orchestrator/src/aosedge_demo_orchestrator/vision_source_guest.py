@@ -14,6 +14,8 @@ import stat
 import time
 import re
 import pwd
+import socket
+import struct
 from uuid import UUID
 
 PROFILE = 'aos-vision-main-qemuarm64-v1'
@@ -25,6 +27,11 @@ CAMERA_UNIT='aos-camera-ingress.service'
 CAMERA_SELECTION=Path('/run/democtl-source/camera-selection.json')
 CAMERA_DROPIN=Path('/run/systemd/system/aos-camera-ingress.service.d/85-democtl-camera-mtls.conf')
 CAMERA_EGRESS='democtl_vision_camera'
+EXCHANGE_UNIT='aos-vision-exchange.service'
+EXCHANGE_SELECTION=Path('/run/democtl-source/vision-selection.json')
+EXCHANGE_DROPIN=Path('/run/systemd/system/aos-vision-exchange.service.d/85-democtl-vision-mtls.conf')
+EXCHANGE_EGRESS='democtl_vision_exchange'
+EXCHANGE_SCOPES=['vision-context-read','vision-assessment-publish']
 
 
 def require(ok, code):
@@ -83,10 +90,11 @@ def status(trust):
                 platform='camera-access', updateRuntime=values, vdpInstalled=False)
 
 
-def camera_egress_rules(uid):
+def camera_egress_rules(uid,*,table=CAMERA_EGRESS):
     require(type(uid) is int and uid>0,'CAMERA_EGRESS_UID_INVALID')
+    require(table in (CAMERA_EGRESS,EXCHANGE_EGRESS),'EGRESS_TABLE_INVALID')
     owner={'match':{'op':'==','left':{'meta':{'key':'skuid'}},'right':uid}}
-    base=dict(family='inet',table=CAMERA_EGRESS,chain='output')
+    base=dict(family='inet',table=table,chain='output')
     return [dict(base,expr=[owner,
         {'match':{'op':'==','left':{'payload':{'protocol':'ip','field':'daddr'}},'right':'10.0.0.1'}},
         {'match':{'op':'==','left':{'payload':{'protocol':'tcp','field':'dport'}},'right':6443}},
@@ -108,20 +116,22 @@ def camera_egress_observed_rule(rule):
     return dict(value,expr=expressions)
 
 
-def camera_egress(trust,item,enabled):
+def _egress(trust,item,enabled,*,exchange=False):
     """Existing Source packet-filter owner; no BPF/Engine/global policy change.
 
-    UID is shared only with Camera core (which is AF_UNIX-only). The inet
+    Camera's UID is shared only with its AF_UNIX-only core; the exchange has
+    its own distinct UID and owned table. The inet
     chain runs before Source DNAT; other UIDs and Source's own gates retain
     their original policy. Refuse unknown ownership/rules, never adopt them.
     """
-    uid=pwd.getpwnam('aos-camera-access').pw_uid
-    expected=camera_egress_rules(uid);comment='democtl-vision-camera:'+UUID(item['localVmId']).hex
-    chain=dict(family='inet',table=CAMERA_EGRESS,name='output',type='filter',hook='output',prio=-250,policy='accept')
+    table_name=EXCHANGE_EGRESS if exchange else CAMERA_EGRESS
+    uid=pwd.getpwnam('aos-vision-exchange' if exchange else 'aos-camera-access').pw_uid
+    expected=camera_egress_rules(uid,table=table_name);comment=('democtl-vision-exchange:' if exchange else 'democtl-vision-camera:')+UUID(item['localVmId']).hex
+    chain=dict(family='inet',table=table_name,name='output',type='filter',hook='output',prio=-250,policy='accept')
     def observed():
         tables=json.loads(trust.call(['nft','-j','list','tables']))['nftables']
-        if not any(v.get('table',{}).get('name')==CAMERA_EGRESS for v in tables):return False
-        data=json.loads(trust.call(['nft','-j','list','table','inet',CAMERA_EGRESS]))['nftables']
+        if not any(v.get('table',{}).get('name')==table_name for v in tables):return False
+        data=json.loads(trust.call(['nft','-j','list','table','inet',table_name]))['nftables']
         table=[v['table'] for v in data if 'table' in v]
         chains=[{k:w for k,w in v['chain'].items() if k!='handle'} for v in data if 'chain' in v]
         rules=[camera_egress_observed_rule(v['rule']) for v in data if 'rule' in v]
@@ -131,12 +141,79 @@ def camera_egress(trust,item,enabled):
     before=observed()
     if before==enabled:return dict(enforced=enabled,noOp=True)
     if enabled:
-        commands=[{'add':{'table':dict(family='inet',name=CAMERA_EGRESS,comment=comment)}},
+        commands=[{'add':{'table':dict(family='inet',name=table_name,comment=comment)}},
             {'add':{'chain':chain}},*[{'add':{'rule':v}} for v in expected]]
-    else:commands=[{'delete':{'table':dict(family='inet',name=CAMERA_EGRESS)}}]
+    else:commands=[{'delete':{'table':dict(family='inet',name=table_name)}}]
     trust.call(['nft','-j','-f','-'],data=json.dumps(dict(nftables=commands)))
     require(observed()==enabled,'CAMERA_EGRESS_APPLY_UNCONFIRMED')
     return dict(enforced=enabled,noOp=False)
+
+
+def camera_egress(trust,item,enabled):return _egress(trust,item,enabled)
+
+
+def camera_component_epoch():
+    """Root Source reads only native OEM hello, never another daemon's key."""
+    with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as connection:
+        connection.settimeout(2);connection.connect('/run/aos-camera-access/oem/producer.sock')
+        value=json.dumps(dict(schemaVersion=1,operation='hello'),separators=(',',':')).encode()
+        connection.sendall(struct.pack('!I',len(value))+value);end=time.monotonic()+2
+        def exact(size):
+            output=bytearray()
+            while len(output)<size:
+                left=end-time.monotonic();require(left>0,'EXCHANGE_HELLO_TIMEOUT');connection.settimeout(left)
+                part=connection.recv(size-len(output));require(part,'EXCHANGE_HELLO_TRUNCATED');output.extend(part)
+            return bytes(output)
+        def unique(rows):
+            result={}
+            for key,value in rows:
+                require(key not in result,'EXCHANGE_HELLO_DUPLICATE');result[key]=value
+            return result
+        size=struct.unpack('!I',exact(4))[0];require(0<size<=4096,'EXCHANGE_HELLO_LIMIT')
+        hello=json.loads(exact(size),object_pairs_hook=unique)
+    require(type(hello) is dict,'EXCHANGE_HELLO_INVALID')
+    require(set(hello)=={'schemaVersion','componentEpoch','state'} and type(hello['schemaVersion']) is int
+        and hello['schemaVersion']==1 and hello['state']=='OEM_HELLO' and str(UUID(hello['componentEpoch']))==hello['componentEpoch'],'EXCHANGE_HELLO_INVALID')
+    return hello['componentEpoch']
+
+
+def exchange(request,trust,item,*,start):
+    """Same Source selection and credentials, four role resources, no app key."""
+    require(request.get('exchangeScopes')==EXCHANGE_SCOPES,'EXCHANGE_SCOPE_REQUIRED')
+    values=dict(row.split('=',1) for row in trust.call(['systemctl','show',EXCHANGE_UNIT,
+        '--property=LoadState,ActiveState,MainPID']).splitlines() if '=' in row)
+    require(values.get('LoadState')=='loaded','EXCHANGE_NOT_INSTALLED')
+    if not start:
+        trust.call(['systemctl','stop',EXCHANGE_UNIT])
+        after=dict(row.split('=',1) for row in trust.call(['systemctl','show',EXCHANGE_UNIT,
+            '--property=ActiveState,MainPID,Job,ControlGroup']).splitlines() if '=' in row)
+        require(after.get('ActiveState') in ('inactive','failed') and after.get('MainPID')=='0' and after.get('Job','') in ('','0'),'EXCHANGE_STOP_UNCONFIRMED')
+        group=after.get('ControlGroup','');require(group in ('','/system.slice/aos-vision-exchange.service'),'EXCHANGE_STOP_CGROUP_CHANGED')
+        if group:
+            procs=Path('/sys/fs/cgroup'+group+'/cgroup.procs');require(not procs.exists() or not procs.read_text().strip(),'EXCHANGE_STOP_PROCESS_REMAINS')
+        _egress(trust,item,False,exchange=True);return dict(stopped=True)
+    require(trust.call(['systemctl','is-active',CAMERA_UNIT]).strip()=='active','EXCHANGE_INGRESS_REQUIRED')
+    selected=json.loads(read(INPUTS/'selected.json',0o644))['selectedSource']
+    generation=request.get('generation');source=request.get('sourceId')
+    require(type(generation) is int and generation>0 and selected['assignmentGeneration']==generation
+        and selected['role']=='SELECTED_PLATFORM_UNIT' and selected['unitId']==item['unitId'] and selected['nodeId']==item['nodeId'],'EXCHANGE_SELECTION_MISMATCH')
+    require(type(source) is str and str(UUID(source))==source,'EXCHANGE_SOURCE_INVALID')
+    binding=dict(schemaVersion=1,sourceId=source,assignmentGeneration=generation,unitId=item['unitId'],nodeId=item['nodeId'],
+        componentEpoch=camera_component_epoch(),scopes=EXCHANGE_SCOPES)
+    text='[Service]\n'+''.join('LoadCredential='+name+':'+str(path)+'\n' for name,path in (
+        ('vision-selection',EXCHANGE_SELECTION),('vision-ca',INPUTS/'viss-update-ca'),
+        ('vision-certificate',STORE/'selected-platform-unit/client.pem'),('vision-private-key',STORE/'selected-platform-unit/client-key.pem')))
+    expected={EXCHANGE_SELECTION:(json.dumps(binding,sort_keys=True),0o600),EXCHANGE_DROPIN:(text,0o644)}
+    same=all(path.is_file() and read(path,mode)==content for path,(content,mode) in expected.items())
+    require(values.get('ActiveState')=='inactive' or same,'EXCHANGE_ACTIVE_BINDING_CHANGED')
+    _egress(trust,item,True,exchange=True);changed=False
+    for path,(content,mode) in expected.items():changed=trust.write(path,content,mode) or changed
+    if changed:trust.call(['systemctl','daemon-reload'])
+    trust.call(['systemctl','start',EXCHANGE_UNIT])
+    after=dict(row.split('=',1) for row in trust.call(['systemctl','show',EXCHANGE_UNIT,
+        '--property=ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in row)
+    require(after.get('ActiveState')=='active' and after.get('Result')=='success' and after.get('NRestarts')=='0' and int(after.get('MainPID','0'))>0,'EXCHANGE_START_UNCONFIRMED')
+    return dict(started=True,noOp=same and values.get('ActiveState')=='active')
 
 
 def camera(request,trust,item):
@@ -146,6 +223,8 @@ def camera(request,trust,item):
     the new internal OEM unit (a reversible /run unit in the accepted proof).
     """
     action=request['action']
+    scopes=request.get('exchangeScopes',[]);require(scopes in ([],EXCHANGE_SCOPES),'EXCHANGE_SCOPE_INVALID')
+    if action=='camera-stop' and scopes:exchange(request,trust,item,start=False)
     values=dict(line.split('=',1) for line in trust.call(['systemctl','show',CAMERA_UNIT,
         '--property=LoadState,ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in line)
     if action=='camera-stop':
@@ -197,6 +276,7 @@ def camera(request,trust,item):
         '--property=ActiveState,Result,NRestarts,MainPID']).splitlines() if '=' in line)
     require(after.get('ActiveState')=='active' and after.get('Result')=='success'
         and after.get('NRestarts')=='0' and int(after.get('MainPID','0'))>0,'CAMERA_INGRESS_START_UNCONFIRMED')
+    if scopes:exchange(request,trust,item,start=True)
     return dict(started=True,noOp=same and values.get('ActiveState')=='active',credentials='SOURCE_OWNED_SYSTEMD_PROJECTION')
 
 

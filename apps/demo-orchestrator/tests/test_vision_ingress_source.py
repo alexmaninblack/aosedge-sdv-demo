@@ -42,6 +42,18 @@ class IngressSourceTests(unittest.TestCase):
     def test_stop_uses_the_same_source_guest_owner(self):
         self.run_action('stop');self.service.driver.guest.assert_called_once_with(self.state,'test','camera-stop')
 
+    def test_exchange_scopes_come_only_from_the_verified_catalog(self):
+        scopes=('vision-context-read','vision-assessment-publish')
+        self.service.environment.catalog=SimpleNamespace(vision_exchange_scopes=scopes)
+        selection=auth.selection(self.state)
+        with patch.object(auth,'observe',return_value=dict(state='SELECTED',selectedSource=selection,assignmentGeneration=7)):
+            self.run_action('start')
+        self.service.driver.guest.assert_called_once_with(self.state,'test','camera-start',sourceId='source',generation=7,exchangeScopes=list(scopes))
+        self.service.driver.guest.reset_mock();self.run_action('stop')
+        # Stop delegates to SourceDriver.guest, which injects the same verified
+        # catalog scopes. The service must not manufacture a second selection.
+        self.service.driver.guest.assert_called_once_with(self.state,'test','camera-stop')
+
     def test_foreign_gateway_selection_is_not_mutated_even_to_stop_ingress(self):
         driver=SimpleNamespace(guest=Mock(),vm=Mock())
         with patch.object(auth,'observe',return_value=dict(state='SELECTED',selectedSource={},assignmentGeneration=7)):

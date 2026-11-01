@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 2.5
+# System Requirements and Traceability 2.6
 
 - Status: Accepted
-- Version: 2.5
+- Version: 2.6
 - Updated: 2026-10-31
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.6](../architecture/demo-scenario-architecture-flows.md)
+- Architecture input: [High-Level Architecture 1.10](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.7](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -93,9 +93,9 @@ passes its acceptance criteria, and the evidence is retained.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.9 owns boundaries, authority and invariants.
-2. Demo Scenario 2.4 owns the audience-visible stage progression.
-3. Architecture Flows 2.6 owns detailed lifecycle, runtime, observability and
+1. High-Level Architecture 1.10 owns boundaries, authority and invariants.
+2. Demo Scenario 2.5 owns the audience-visible stage progression.
+3. Architecture Flows 2.7 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -395,6 +395,23 @@ Camera Access component from source tests.
 | <a id="sys-vis-007"></a>`SYS-VIS-007` | Honest delivery and reset | Both pair members shall meet the one-second receiver-monotonic retention bound; rejected packets shall not renew age. Disconnect shall clear images while retaining current-epoch replay high-water marks, and explicit source/epoch/calibration changes shall flush them. Restart requires a fresh authenticated session/epoch. Local age shall not be claimed as capture freshness or cross-clock capture latency. | `T,I` | `CMP-CAM`; deterministic clock/reset/reconnect tests; native restart remains gated |
 | <a id="sys-vis-008"></a>`SYS-VIS-008` | Native camera authority | Only the trusted OEM adapter may establish the source binding. Metadata validation shall not be presented as authentication. Container access shall use reviewed native Aos resources/local IPC with actual peer identity, SELinux and revocation proof, no credential database or VDP/KUKSA permission shortcut. Camera Access and inference shall grant no motion authority. | `T,I,A` | `CMP-CAM`, `IF-CAM-001`, `IF-CAM-002`; core exclusions and later native security/activation proof |
 
+### Native Vision service extension
+
+These accepted branch-only obligations follow the
+[native service flow](../architecture/demo-scenario-architecture-flows.md#af-vis-services)
+and [service packet](../planning/active/vision-services-native-delivery.md).
+
+| ID | Short name | System requirement | Verification | Allocation |
+| --- | --- | --- | --- | --- |
+| <a id="sys-vis-009"></a>`SYS-VIS-009` | Independent native services | Perception and Assessment shall be separate headless, versioned Aos services in the same retained Vision VM, with only their declared native named resources and no CARLA/VISS/Cloud producer/control access. | `T,I,A` | `CMP-VPER`, `CMP-VASM`, `CMP-VEX`; service source/native resource/SOTA cases |
+| <a id="sys-vis-010"></a>`SYS-VIS-010` | Exact model input and raw outputs | Perception shall use digest-bound FP32 models, exact calibrated per-model preprocessing and real 80–120 ms pairs; preserve raw outputs, original identities/times and explicit invalidity. | `T,I` | `CMP-VPER`; replay/model/calibration/reference cases |
+| <a id="sys-vis-011"></a>`SYS-VIS-011` | Trusted Vision context | Only the OEM exchange adapter shall obtain exact-frame factual speed/original time and trusted geometry from the selected Gateway using explicit Vision context authority. Missing data shall stay unavailable; no VDP/credential/ground-truth reuse or zero-speed default. | `T,I,A` | `CMP-VEX`, `CMP-GW`, `CMP-VASM`; context/wrong-role/missing-frame cases |
+| <a id="sys-vis-012"></a>`SYS-VIS-012` | Temporal and semantic validity | Assessment shall join exact compatible identities, pass actual positive inter-result elapsed time to fusion, separate planner cycle time from horizon step, reset on changed producer/source/calibration, discontinuity or over-one-second gap, and expose explicit warming/invalidity and nullable no-target estimates. | `T,I` | `CMP-VASM`; deterministic/reference time/reset/sentinel cases |
+| <a id="sys-vis-013"></a>`SYS-VIS-013` | Bounded typed exchange | Closed native IPC and Gateway return shall reject extra/duplicate fields, nonfinite or oversized content, replay/conflicts and wrong epochs. Retain only latest raw/interpreted results and at most 128 context records; resources and source/result scopes remain separate. | `T,I,A` | `CMP-VEX`, `CMP-VPER`, `CMP-VASM`, `CMP-GW`; schemas, bounds, native denial/revocation cases |
+| <a id="sys-vis-014"></a>`SYS-VIS-014` | Display-only results | Inference and shadow plans shall have no actuator/advisory writer. Gateway shall display only matching current frames, clear invalid/stale/reset output and retain full identifiers server-side in browser projections. | `T,I,A` | `CMP-VASM`, `CMP-VEX`, `CMP-GW`, `CMP-ORCH`; containment/API/visible UI cases |
+| <a id="sys-vis-015"></a>`SYS-VIS-015` | Verified bounded closures | Both Linux ARM64 service closures shall validate paths/links/files/digests/licenses and exact dependencies. Only the dedicated Perception profile may use a 512-MiB extracted ceiling; other guards remain unchanged. Measure native quotas and fit without increasing the fixed VM resources. | `T,I,A` | `CMP-VPER`, `CMP-VASM`, `CMP-ORCH`; closure/SBOM/quota/performance cases |
+| <a id="sys-vis-016"></a>`SYS-VIS-016` | Same-VM delivery and honest proof | One scenario shall preserve Vision identity/store/data and all retained instances, prove actual native execution/restart/revocation/independent SOTA and API/UI separately, reconcile unknown writes without replay, and verify owned shutdown. No Main promotion, reset or CARLA/Main Factory rebuild is inferred. | `T,I,A` | `CMP-ORCH`, `CMP-VPER`, `CMP-VASM`, `CMP-VEX`; named scenario/retained-state checks |
+
 ## Gap Coverage Matrix
 
 | Gap | Governing system requirements |
@@ -432,7 +449,7 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 2.4](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 2.5](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.

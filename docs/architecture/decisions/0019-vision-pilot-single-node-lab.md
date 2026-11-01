@@ -3,15 +3,15 @@
 
 # ADR 0019: A Separate Single Node Vision Lab
 
-- Status: Accepted for the isolated M4 VM, engineering previews and Camera Access native-boundary implementation; live activation remains unqualified
-- Version: 0.12
+- Status: Accepted for the isolated Vision VM, Camera Access and native Perception/Assessment contract; service acceptance remains gated
+- Version: 0.13
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab System Architecture
 - Change class: C; Camera Access resource/IPC/OEM target allocated; downstream Gateway ingress and service contracts remain required
 - Direction selected: independent Brake/Tire and Vision single-node tracks
 - Scope: isolated VM, bounded compute, stationary/moving engineering previews and Camera Access source foundation authorized on 2026-10-31; no implicit Main merge, public release or unrelated Cloud mutation
-- Architecture input: [High-Level Architecture 1.9](../high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.10](../high-level-architecture.md)
 - Implementation plan: [Vision Lab delivery plan](../../planning/active/vision-pilot-single-node.md)
 
 ## Decision to implement
@@ -77,13 +77,28 @@ Driving Control <- Vehicle Gateway <- OEM result adapter
 ```
 
 Camera Access owns selected-source image admission, metadata and bounded
-delivery. The OEM result adapter owns typed result validation. Images do not
-pass through scalar VSS/KUKSA values. Assessment's future vehicle-dynamics
-input must close as a separate approved Vision contract; it is not a reason
-to install the Brake/Tire VDP or silently copy its credentials. Services receive no CARLA control
+delivery. The internal OEM exchange/result adapter owns typed result validation.
+Images do not pass through scalar VSS/KUKSA values. The operator accepted the
+[native service packet](../../planning/active/vision-services-native-delivery.md)
+in full on 2026-11-01. Four native named resources isolate raw-result publication,
+raw-result/context reads and interpreted-result publication. The adapter obtains
+exact-frame factual speed and trusted geometry through `GET /vision/v1/context`
+and returns only typed results through `POST /vision/v1/results` on the existing
+Source-enrolled Gateway TLS listener. These explicit selected-Vision-Unit scopes
+do not follow from ordinary camera/VISS permission. The adapter is inside the
+Camera Access platform package, not a third application or lifecycle owner.
+No Brake/Tire VDP or credentials are installed/adopted. Services receive no CARLA control
 endpoint, VDP private key, Cloud producer credential or arbitrary VISS writer.
 The existing [QM containment boundary](0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 remains authoritative.
+
+The accepted [native-service packet](../../planning/active/vision-services-native-delivery.md#accepted-frame-calibration-completion)
+also closes calibration delivery. Source/Gateway supplies the full digest-bound
+intrinsic/mount/model profile and exact frame-specific planar maps. Perception
+receives no dynamics grant: its existing publish-resource status exposes only
+pair-bound calibration. Assessment obtains the same profile and current-frame
+resized-pixel ground map through context-read. Invalid camera/plane geometry
+withholds valid output; the foreign example ground homography is never adopted.
 
 Camera Access belongs to `aos-vehicle-platform`, with its own payload identity
 and explicit Vision-only platform selection. Reuse the native OEM/Aos lifecycle

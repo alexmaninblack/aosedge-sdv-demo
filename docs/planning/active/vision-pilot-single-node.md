@@ -11,7 +11,7 @@
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 - Execution status: permanent Camera ingress, native read/revoke and retained cold boot passed
   on the same fresh .5 Vision VM. Perception/Assessment native deployment and full Vision E2E
-  remain open; the next service-interface packet is proposed, not yet accepted.
+  remain open; the native service-interface packet is accepted and in implementation.
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -232,7 +232,7 @@ build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 ## Current signed-bootstrap and native Camera Access packet
 
 The operator authorized the early signed bootstrap on 2026-11-01. Apply
-[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.12.
+[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.13.
 Build/sign only on SDV-Dev; install/test only on M4 internal storage. Reuse the
 warm Builder/cache and compatible Linux inputs. Preserve the current DMG and
 all retained VM roots. No Main merge or public publication is requested.
@@ -267,7 +267,7 @@ retain the exact single-node type and IAM-proven hardware/Cloud-node binding
 rather than treating that optional display field as the native Main-Node proof.
 
 The operator authorized native Aos-container access and separate OEM activation.
-Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.12 allocates the fixed
+Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.13 allocates the fixed
 resource, local IPC, own OEM target and Vision-only bootstrap. The platform
 repository owns the executable native profile; the foundation receipt remains
 frozen and is not relabelled as native acceptance.
@@ -939,11 +939,11 @@ under the private `vision-camera-20261029` / `optimize-01` evidence root.
 
 ## V2 Freeze interfaces and update the design chain
 
-The [next native-service boundary packet](vision-services-native-delivery.md)
-consolidates the still-unaccepted dynamics, inter-service and result-return
+The [accepted native-service boundary packet](vision-services-native-delivery.md)
+consolidates the dynamics, inter-service and result-return
 interfaces, dependency cut, package ceiling and native delivery ladder. Camera
 acceptance does not authorize those new resource/credential scopes by inference.
-Resolve that packet once before downstream implementation; retain the same VM.
+The operator accepted it in full on 2026-11-01; implement it on the same VM.
 
 Apply the class-C cascade on the Vision branch: HLA, Scenario, Flows, system
 requirements, component/interface allocation, relevant component packages and

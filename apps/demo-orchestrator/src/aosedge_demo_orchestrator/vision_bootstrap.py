@@ -171,16 +171,21 @@ def _host_assets(bootstrap):
         return {}
     value=json.loads(meta.read_bytes(),object_pairs_hook=unique)
     envelope=json.loads((bootstrap.resources/'bootstrap.json').read_bytes(),object_pairs_hook=unique)
-    require(set(value)=={'schemaVersion','kind','profile','baseProgramManifestSha256','rootfsVersion','cameraVersion','sources','assets'}
+    services=value.get('kind')=='signed-vision-services-host'
+    fields={'schemaVersion','kind','profile','baseProgramManifestSha256','rootfsVersion','cameraVersion','sources','assets'}
+    if services:fields.add('exchangeScopes')
+    require(set(value)==fields
         and type(value['schemaVersion']) is int and value['schemaVersion']==1
-        and value['kind']=='signed-vision-ingress-host' and value['profile']==PROFILE
+        and value['kind'] in ('signed-vision-ingress-host','signed-vision-services-host') and value['profile']==PROFILE
         and value['baseProgramManifestSha256']==envelope['baseProgramManifestSha256']
-        and value['rootfsVersion']=='6.1.1-vision-camera.5' and value['cameraVersion']=='0.1.1'
+        and value['rootfsVersion']==('6.1.1-vision-camera.6' if services else '6.1.1-vision-camera.5')
+        and value['cameraVersion']==('0.1.2' if services else '0.1.1')
         and value['assets']==dict(runtime=HOST_RUNTIME,runner=HOST_RUNNER),'HOST_DESCRIPTOR_INVALID')
     sources=value['sources']
-    require(set(sources)=={'integration','platform','gateway'}
+    require(set(sources)==({'integration','platform','gateway','services'} if services else {'integration','platform','gateway'})
         and all(isinstance(v,str) and REV.fullmatch(v) for v in sources.values())
         and sources['integration']==bootstrap.source_revision,'HOST_SOURCE_BINDING_INVALID')
+    if services:require(value['exchangeScopes']==['vision-context-read','vision-assessment-publish'],'HOST_EXCHANGE_SCOPE_INVALID')
     for name in (HOST_RUNTIME,HOST_RUNNER,HOST_PREFIX+'tools/run_m5.py',HOST_PREFIX+'tools/behavior_agent_controller.py',
                  HOST_PREFIX+'native/lib/libssl.3.dylib',HOST_PREFIX+'native/lib/libcrypto.3.dylib'):
         require(bootstrap.resources/name in bootstrap.stamps,'HOST_RESOURCE_MISSING')
@@ -223,3 +228,13 @@ class SignedVisionCatalog(ImageCatalog):
 
     def source_assets(self):
         return _host_assets(self.bootstrap)
+
+    @property
+    def vision_exchange_scopes(self):
+        # Explicit signed service-host grant, never inferred from camera read
+        # or supplied by an application/operator URL/config field.
+        _host_assets(self.bootstrap)
+        path=self.bootstrap.resources/HOST_DESCRIPTOR
+        if path not in self.bootstrap.stamps:return ()
+        value=json.loads(path.read_bytes(),object_pairs_hook=unique)
+        return tuple(value['exchangeScopes']) if value['kind']=='signed-vision-services-host' else ()

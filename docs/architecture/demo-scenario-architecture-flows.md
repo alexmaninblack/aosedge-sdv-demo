@@ -1,19 +1,19 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.6
+# Demo Scenario Architecture Flows 2.7
 
 - Status: Accepted
-- Version: 2.6
+- Version: 2.7
 - Updated: 2026-11-01
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.9](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Architecture input: [High-Level Architecture 1.10](high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](https://github.com/alexmaninblack/aosedge-sdv-demo/blob/84056efdf73c518d14929d66a772673212e8a2d9/docs/research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 2.5](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 2.4](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 2.6](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 2.5](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -62,7 +62,36 @@ Allocate [Vision composition](../requirements/system-requirements-and-traceabili
 and [native authority](../requirements/system-requirements-and-traceability.md#sys-vis-008)
 to the [Camera Access package](../requirements/components/camera-access.md).
 
-This document connects HLA 1.9, Scenario 2.4 and the component requirements.
+<a id="af-vis-services"></a>
+### AF-VIS-SERVICES — Native Perception and Assessment
+
+The [accepted service packet](../planning/active/vision-services-native-delivery.md)
+and [executable contract](../../contracts/vision-vm/services.v1.json) govern this
+separate Vision-only flow. Existing Main/VDP/Brake/Tire and their Subjects are
+not targets.
+
+1. Native Aos gives only Perception `vision-camera-read` and
+   `vision-perception-publish`. Perception decodes the latest genuine capture
+   pair, applies the digest-bound camera/model preprocessing and emits all
+   three raw FP32 model outputs with their validity and original identities.
+2. The internal OEM exchange adapter validates source/component/producer epochs,
+   frames, schema, model/calibration, bounds and replay before retaining one
+   latest raw result. Assessment alone gets `vision-perception-read`,
+   `vision-context-read` and `vision-assessment-publish`.
+3. Only the adapter's explicit selected-Unit context scope can query actual
+   frame-bound speed/geometry at the existing Gateway listener. No app key,
+   VDP import, old sample re-timestamping or ground-truth detections are allowed.
+4. Assessment joins by identity/time and uses actual elapsed processing time
+   for upstream fusion. Reset epochs/gaps explicitly; missing dynamics or
+   geometry prevents a valid shadow plan. No-detection is not a 150-m object.
+5. The adapter's distinct result scope returns a bounded interpreted message
+   to Gateway, never a control command. The selected Gateway validates and
+   displays only matching frames; browser projections keep full IDs server-side.
+6. Service resource revocation, independent compatible SOTA, context/media loss,
+   wrong role/generation, stale/reset, native quota/SELinux and owned shutdown
+   require actual same-VM proof. Source/unit evidence is not native/API/UI E2E.
+
+This document connects HLA 1.10, Scenario 2.5 and the component requirements.
 It specifies software/data/decision/evidence movement, not a second lifecycle
 authority. The current installed profile is one Test, one OEM and one associated
 SP; the detailed VU/PU promotion and two-SP flows are the expanded accepted
@@ -141,9 +170,9 @@ legacy schema differences are explicitly tracked in the
 
 When the inputs differ, use this order:
 
-1. High-Level Architecture 1.9 owns component boundaries, interfaces,
+1. High-Level Architecture 1.10 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 2.4 owns stage order, component presence, audience-visible
+2. Demo Scenario 2.5 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -1876,7 +1905,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 2.4 claim | Architecture flow coverage |
+| Demo Scenario 2.5 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -1974,7 +2003,7 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Downstream Component Requirement Gate
 
-System Requirements and Traceability 2.5 and Component Register 2.4
+System Requirements and Traceability 2.6 and Component Register 2.5
 allocate these flows and their authorization,
 Release Authority, Safe Stop and workspace obligations to the canonical
 component packages. The accepted component sequence remains:

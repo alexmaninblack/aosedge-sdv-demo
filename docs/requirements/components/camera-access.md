@@ -7,9 +7,9 @@
 - Version: 0.6
 - Prepared: 2026-10-31
 - Owner: OEM Vehicle Platform
-- Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.10](../../architecture/high-level-architecture.md)
 - Flow input: [Camera Access flow](../../architecture/demo-scenario-architecture-flows.md#af-vis-cam)
-- Decision: [ADR 0019 v0.12](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+- Decision: [ADR 0019 v0.13](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 
 ## Boundary
 

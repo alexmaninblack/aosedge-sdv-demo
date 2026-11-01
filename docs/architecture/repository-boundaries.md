@@ -3,7 +3,7 @@
 
 # Architecture and Repository Ownership
 
-The accepted boundary is [High-Level Architecture 1.9](high-level-architecture.md),
+The accepted boundary is [High-Level Architecture 1.10](high-level-architecture.md),
 including installed Test, native-input, signing and lifecycle boundaries. The [implemented architecture](current-implementation.md)
 and [current release evidence](../qualification/current-baseline.md) distinguish
 expanded design obligations from the installed first-demo scope.

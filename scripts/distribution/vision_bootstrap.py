@@ -50,7 +50,8 @@ def authorized_identity():
 
 
 def assemble(factory, camera_payload, base_manifest, platform_revision, identity, output,
-             ingress_candidate=None, ingress_proof=None, update_platform_revision=None):
+             ingress_candidate=None, ingress_proof=None, update_platform_revision=None,
+             services_candidate=None, services_proof=None):
     output=model.canonical(output)
     model.require(not output.exists() and output.suffix=='.bundle' and output.parent.is_dir(),'OUTPUT_EXISTS_OR_INVALID')
     model.require(output.parent.stat().st_dev==ROOT.stat().st_dev,'BUILD_REQUIRES_SELECTED_SSD')
@@ -75,8 +76,10 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
     with directory(output.parent) as scratch:
         bundle=scratch/output.name;resources=bundle/'Contents/Resources';resources.mkdir(parents=True)
         contents=bundle/'Contents'
+        model.require(services_candidate is None or ingress_candidate is None,'HOST_CANDIDATE_MODE_AMBIGUOUS')
+        services=services_candidate is not None
         (contents/'Info.plist').write_bytes(plistlib.dumps(dict(CFBundleIdentifier=model.IDENTIFIER,
-            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.5.0')))
+            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.6.0' if services else '0.5.0')))
         target=resources/'images/main-qemuarm64.img';target.parent.mkdir()
         # APFS clone when available; the independent file is still signature-sealed.
         result=subprocess.run(['/bin/cp','-c',str(image),str(target)],capture_output=True)
@@ -92,16 +95,32 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
             if source.suffix not in ('.py','.json') or not source.is_file():continue
             destination=resources/'tooling/aosedge-sdv-demo'/name;destination.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(source,destination);destination.chmod(0o444)
-        if ingress_candidate is not None:
-            model.require(ingress_proof is not None and isinstance(update_platform_revision,str)
+        if ingress_candidate is not None or services:
+            selected_proof=services_proof if services else ingress_proof
+            model.require(selected_proof is not None and isinstance(update_platform_revision,str)
                           and model.REV.fullmatch(update_platform_revision),'HOST_PROOF_REQUIRED')
-            candidate=model.canonical(ingress_candidate);proof=model.canonical(ingress_proof)
+            candidate=model.canonical(services_candidate if services else ingress_candidate);proof=model.canonical(selected_proof)
             observed=json.loads((proof/'result.json').read_bytes());context=json.loads((proof/'context.json').read_bytes())
-            model.require(observed['outcome']=='PASS_TRANSIENT_NATIVE_STORE_INGRESS_POLICY'
-                          and all(observed['cleanup'].values()) and digest(candidate/'manifest.json')==context['candidateManifestSha256'],
-                          'HOST_NATIVE_PROOF_MISMATCH')
             manifest=json.loads((candidate/'manifest.json').read_bytes())
-            model.require(manifest['nativePolicy'] is True and manifest['releaseImage'] is False,'HOST_CANDIDATE_INVALID')
+            if services:
+                # An early sealed Source/Gateway is an input to the native
+                # exchange proof, never a claim that the new image passed it.
+                model.require(observed['outcome']=='PASS_VISION_SERVICES_HOST_SOURCE_PREREQUISITES'
+                    and observed['nativeExchange']=='NOT_RUN' and observed['imageBuild']=='NOT_RUN'
+                    and observed['gatewayUnitTestsPassed']==5 and observed['cpuProofRestored'] is True
+                    and manifest['kind']=='VISION_SERVICES_HOST_ENGINEERING_INPUT'
+                    and manifest['releaseImage'] is False and manifest['nativeQualified'] is False
+                    and set(manifest['source'])=={'integration','platform','gateway','services'}
+                    and manifest['source']['integration']==revision and manifest['source']['platform']==update_platform_revision
+                    and all(model.REV.fullmatch(v) for v in manifest['source'].values())
+                    and manifest['contractSha256']==digest(ROOT/'contracts/vision-vm/services.v1.json')
+                    and manifest['allocationSha256']==digest(ROOT/'contracts/vision-vm/services-allocation.v1.json'),
+                    'HOST_SERVICES_PREREQUISITES_MISMATCH')
+            else:
+                model.require(observed['outcome']=='PASS_TRANSIENT_NATIVE_STORE_INGRESS_POLICY'
+                              and all(observed['cleanup'].values()),'HOST_NATIVE_PROOF_MISMATCH')
+                model.require(manifest['nativePolicy'] is True and manifest['releaseImage'] is False,'HOST_CANDIDATE_INVALID')
+            model.require(digest(candidate/'manifest.json')==context['candidateManifestSha256'],'HOST_CANDIDATE_PROOF_CHANGED')
             host=resources/model.HOST_PREFIX;host.mkdir(parents=True)
             selected=[name for name in manifest['files'] if name.startswith(('native/','tools/'))]
             for name in selected:
@@ -120,10 +139,13 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
                     '=anchor apple generic and certificate leaf[subject.OU] = "'+model.TEAM+'"',str(path)],capture_output=True,timeout=20)
                 model.require(done.returncode==0,'HOST_NATIVE_SIGNATURE_INVALID')
                 path.chmod(0o555)
-            descriptor=dict(schemaVersion=1,kind='signed-vision-ingress-host',profile=model.PROFILE,
-                baseProgramManifestSha256=base_manifest,rootfsVersion='6.1.1-vision-camera.5',cameraVersion='0.1.1',
+            descriptor=dict(schemaVersion=1,kind='signed-vision-services-host' if services else 'signed-vision-ingress-host',profile=model.PROFILE,
+                baseProgramManifestSha256=base_manifest,rootfsVersion='6.1.1-vision-camera.6' if services else '6.1.1-vision-camera.5',cameraVersion='0.1.2' if services else '0.1.1',
                 sources=dict(integration=revision,platform=update_platform_revision,gateway=manifest['source']['gateway']),
                 assets=dict(runtime=model.HOST_RUNTIME,runner=model.HOST_RUNNER))
+            if services:
+                descriptor['sources']['services']=manifest['source']['services']
+                descriptor['exchangeScopes']=['vision-context-read','vision-assessment-publish']
             (host/'host-runtime.json').write_text(json.dumps(descriptor,indent=2)+'\n');(host/'host-runtime.json').chmod(0o444)
             for path in (host/'tools').rglob('*'):
                 if path.is_file():path.chmod(0o444)
@@ -159,8 +181,9 @@ def main():
     for name in ('base-manifest','platform-revision','identity'):p.add_argument('--'+name,required=True)
     p.add_argument('--ingress-candidate',type=Path);p.add_argument('--ingress-proof',type=Path)
     p.add_argument('--update-platform-revision')
+    p.add_argument('--services-candidate',type=Path);p.add_argument('--services-proof',type=Path)
     a=p.parse_args();print(json.dumps(assemble(a.factory,a.camera_payload,a.base_manifest,a.platform_revision,a.identity,a.output,
-        a.ingress_candidate,a.ingress_proof,a.update_platform_revision)))
+        a.ingress_candidate,a.ingress_proof,a.update_platform_revision,a.services_candidate,a.services_proof)))
 
 
 if __name__=='__main__':main()

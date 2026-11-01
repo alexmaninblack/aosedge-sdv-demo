@@ -7,7 +7,7 @@
 - Version: 1.4
 - Updated: 2026-10-31
 - Prepared: 2026-08-22
-- Reading baseline: HLA 1.9, Scenario 2.4, Flows/System 2.5, Register 2.4 and
+- Reading baseline: HLA 1.10, Scenario 2.5, Flows/System 2.5, Register 2.5 and
   current component packages; installed and expanded profiles are distinguished
 - Editorial consolidation: 2026-10-18; accepted behavior and stable IDs preserved
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.12](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.13](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3629,7 +3629,7 @@ the owning specification; no review narrative is a second normative copy.
 ### D4-030 — Independent Camera Access foundation
 
 - State: `DECIDED` for the source foundation authorized on 2026-10-31.
-- Authority: [ADR 0019 v0.12](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
+- Authority: [ADR 0019 v0.13](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
 - Owner: [OEM Camera Access](component-decomposition-and-interface-register.md#cmp-cam),
   source and fixed machine profile in `aos-vehicle-platform`'s Vision worktree.
 - Composition: separate Vision VM and OEM camera payload/target, no VDP,
@@ -3706,6 +3706,27 @@ boot, native `0.1.7` mount/GID revocation, isolation/staleness/restart/detach an
 verified shutdown. The exact scenario continuation preserves data and all four
 retained journals. This closes Camera ingress acceptance, not the separately
 required Perception/Assessment or full Vision E2E gates.
+
+<a id="d4-031-native-vision-services"></a>
+### D4-031 — Native Vision service exchange and delivery
+
+- State: `DECIDED`, accepted in full by the operator on 2026-11-01.
+- Authority: [native service packet](../planning/active/vision-services-native-delivery.md),
+  [ADR 0019](../architecture/decisions/0019-vision-pilot-single-node-lab.md) and
+  [executable contract](../../contracts/vision-vm/services.v1.json).
+- Allocation: [service requirements](components/vision-services.md),
+  [service flow](../architecture/demo-scenario-architecture-flows.md#af-vis-services).
+- Two independent native Aos services; four distinct native IPC resources;
+  internal nonroot OEM exchange adapter inside Camera Access. Explicit
+  selected-Vision-Unit context/result scopes on the existing Gateway listener,
+  no service key, VDP import or actuation. Exact frame/time/epoch/calibration,
+  actual fusion delta, nullable no-target and bounded latest-only messages.
+- Same retained Vision VM/data and unchanged VDP/Brake/Tire. Source/targeted
+  compile on SSD; real models/native/API/UI on M4. Source/unit checks do not
+  imply native acceptance. One scenario owns proof and verified cleanup.
+- Freeze exact source/dependency/closure/quota/native-policy evidence before
+  irreversible signing/publication. An optional narrow Vision successor uses
+  normal native update and proven recovery, never a reset or Main Factory build.
 
 ## Explicitly Deferred or Out-of-Scope Items
 

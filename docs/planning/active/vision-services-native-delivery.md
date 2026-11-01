@@ -3,8 +3,8 @@
 
 # Native Vision Services — V2/V3 Boundary Packet
 
-- Status: Proposed bounded contract delta; not implementation/publication authority
-- Version: 0.1
+- Status: Accepted by the operator; implementation and same-VM verification authorized
+- Version: 0.3
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration, Vision services and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#v2-freeze-interfaces-and-update-the-design-chain)
@@ -24,12 +24,14 @@ Perception-to-Assessment transport, the approved Vision dynamics input, and
 Assessment-to-Gateway result return. In particular, HLA and ADR 0019 require a
 separate approved dynamics contract; ordinary camera access cannot grant speed
 access, result publication, an arbitrary VISS connection or motion authority.
-This packet proposes those decisions together before implementing their users.
+This packet freezes those decisions together before implementing their users.
 
-The operator's instruction to proceed is authority to prepare this next packet,
-not acceptance of previously unspecified endpoints, resource grants, a new
-credential consumer or an image update. No VM/Cloud mutation, model run, build
-or new repository/publication was started while preparing it.
+On 2026-11-01 the operator accepted S1–S6 in full and authorized implementation
+and checks on the same Vision VM, preserving data and VDP/Brake/Tire. Build on
+SSD; do not rebuild CARLA or Main Factory. Routine exact-scope source, targeted
+compile, signing, native delivery and verification need no further prompts.
+This is not authority to weaken security, reset/reprovision the VM, promote
+Main, publish a public Vision artifact or claim unexecuted acceptance gates.
 
 ## Preserved target and exclusions
 
@@ -44,7 +46,7 @@ or new repository/publication was started while preparing it.
 - Source, targeted compile and package work stay on the development SSD. Model,
   native service, replay, simulator and UI execution stay on M4 internal storage.
 
-## Recommended decisions for acceptance
+## Accepted decisions
 
 ### S1 — Keep two independently deployed application services
 
@@ -100,7 +102,7 @@ in metres/second with the original physical frame and simulation sample time;
 it retains at most its bounded frame-history window. Simulation ground-truth
 object labels, lanes and lead position are never inputs to inference/fusion.
 
-Propose a Vision-only read route on the existing enrolled Gateway TLS listener:
+Use a Vision-only read route on the existing enrolled Gateway TLS listener:
 `GET /vision/v1/context`, with a closed source/epoch/frame query. It returns
 only that actual frame's speed/status plus the digest-bound vehicle profile,
 or explicit unavailable. Reject unknown fields, foreign source/epoch, replay,
@@ -122,7 +124,7 @@ or geometry invalidates shadow planning, not camera/perception status.
 
 ### S4 — Typed return to the Gateway, with no actuation
 
-Propose `POST /vision/v1/results` on the same existing TLS listener. Only the
+Use `POST /vision/v1/results` on the same existing TLS listener. Only the
 selected Vision Unit's OEM exchange adapter receives an explicit
 `vision-assessment-publish` scope. No new listener, application TLS key, public
 URL input or inference-to-control socket. The local service cannot choose a
@@ -161,6 +163,9 @@ presence probability. Missing/invalid/stale/incompatible differs from valid
 no-detection. A 150-m upstream free-road sentinel maps to `present=false` and
 nullable distance, never a detected lead object at 150 m. Interpreted world
 coordinates use forward metres and left-positive lateral metres.
+The raw AutoSteer `h_vector` is a finite height/mask, not a calibrated 0–1
+probability. Preserve its values and the upstream `>=0.5` mask; do not add a
+sigmoid/clamp or reject a finite value merely because it is outside 0–1.
 
 Reuse upstream fusion/planning algorithms rather than introduce another
 heuristic under their name. The shadow planner's **processing elapsed time**
@@ -186,7 +191,7 @@ needs separate comparison, not a performance shortcut.
 Reuse verified model/runtime inputs at upstream
 `e7e5c614832f175f1f9f10a0d0c0df2559ff2c38`. The retained engineering payload is
 145,774,349 compressed bytes / 303,758,366 extracted bytes, not a verified Aos
-closure. It already exceeds the old 256-MiB binary-service layout. Propose an
+closure. It already exceeds the old 256-MiB binary-service layout. Use an
 isolated **512-MiB extracted Perception profile ceiling**, including interpreter,
 libraries and models; retain all path/link/digest/architecture/license checks
 and existing limits for every other profile. Measure the actual closure before
@@ -200,7 +205,7 @@ Initial characterization remains 180 seconds, not soak or safety acceptance.
 The five-results/s and 500-ms capture-to-display goals remain unproven; previous
 moving results were about 4.3/s and measured only partial-path age.
 
-The packet's proposed writable boundaries are this integration branch, the
+The packet's writable boundaries are this integration branch, the
 existing Gateway/platform Vision worktrees and the new service repository.
 Keep one writer per owner, freeze exact revisions and fan in service → platform/
 Gateway → integration selections. No edit to prepared build sources.
@@ -210,7 +215,7 @@ one warm incremental **Vision-only** image/rootfs successor if required by the
 new accounts/resources/policy, with a proven stopped-VM recovery checkpoint.
 Use a new immutable version, normal native update and same retained Unit/VM.
 Do not reuse `.5` for changed bytes or assume Camera OEM payload alone can
-install rootfs-owned resources. Proposed first versions are Perception `0.1.0`,
+install rootfs-owned resources. First versions are Perception `0.1.0`,
 Assessment `0.1.0`, Camera Access `0.1.2`, Vision-only rootfs
 `6.1.1-vision-camera.6` if required, and signed host bootstrap `0.6.0` if its
 tooling changes. Check absence/collision before preparing any changed bytes.
@@ -218,13 +223,56 @@ Use only a distinct Vision-only `SDV Vision Pilot` Subject, containing this Unit
 and these two services; reuse only an exact verified owned definition, never
 by title alone. Freeze authoritative Cloud IDs, source pins and artifact
 digests in the implementation receipt before signing. Unknown effects or an
-occupied version fail closed; this proposed document authorizes no upload or
-retry. Once accepted, routine exact-scope source/build/deployment steps need
-no additional operator prompts.
+occupied version fail closed. Reconcile unknown effects; never blindly retry
+an upload. Routine exact-scope source/build/deployment steps need no additional
+operator prompts.
 
 ## One ordered implementation and proof ladder
 
-1. Accept S1–S6 together; cascade current HLA/Flows/requirements/D4 and freeze
+### Accepted frame-calibration completion
+
+On 2026-11-01 the operator also accepted the bounded calibration completion:
+Source/Gateway derives calibration from the real rigid CARLA camera. Perception
+obtains only calibration through `status` of its existing publish resource;
+Assessment obtains the same profile through its existing `context-read`.
+No new endpoint/resource/application key, dynamics grant for Perception or
+motion authority is introduced. An unusable frame calibration is unavailable.
+
+Separate the immutable **camera/model calibration profile** from its evaluated
+**per-frame planar mapping**. The profile binds actual intrinsics/rigid mount,
+the exact pinned upstream model-view matrix, coordinate convention and the
+declared planar projection/validity policy. Its ID is SHA-256 of the complete
+strict UTF-8 profile document, not only a mount-name string. Each actual
+physical-frame context binds the evaluated `rawToModel` matrix and validity to
+that original image/time/hash. Pose changes are frame geometry, not a new
+intrinsic/mount calibration; a changed profile ID still resets temporal state.
+The two AutoDrive images use their own frame mappings, not the current image's
+mapping twice. Never reuse the upstream example OpenLane ground homography.
+AutoDrive uses `rawToModel = inverse(V) * H_raw`, whereas AutoSteer/AutoSpeed
+fusion uses the current frame's `resizedToVehicle = H_raw * T`, where `T`
+undoes their top-crop/resize. Keep the pinned training-view `V` as
+`modelViewToVehicle` in the profile; it is not the fusion homography for these
+two models. This matches upstream `InferencePipeline::set_H_resized`.
+
+The initial scope is an OpenDRIVE local planar reference, not qualified learned
+accuracy or a guarantee about arbitrary rendered terrain. Source verifies
+finite positive camera/plane geometry and a declared 15–150 m reference patch:
+at most 0.02 m map-plane residual and 0.5 degree normal difference. Missing or
+incompatible map/camera/plane facts produce explicit unavailable and no valid
+model-dependent output. These engineering bounds do not change safety,
+control, freshness or model thresholds. Each matrix remains bounded, finite
+and nonsingular; consumers verify the full profile digest and exact captures.
+
+`status` without capture arguments still returns only readiness/epoch.
+Perception's calibration status accepts a closed binding plus the exact pair
+references, returns no dynamics/vehicle geometry, and uses the same 4-KiB
+deadline/size guard. Other role status operations cannot request this data.
+Assessment's context adds only this bounded calibration projection. Browser
+projection remains opaque; full associations stay server-side/native.
+
+### Execution sequence
+
+1. S1–S6 are accepted; cascade current HLA/Flows/requirements/D4 and freeze
    executable schemas, resource roles and machine-readable source/dependency pins.
 2. Extract model/fusion data types, separate headless targets and build only
    affected closures on SSD. Unit-test preprocessing, outputs, time/reset,
@@ -249,9 +297,82 @@ no additional operator prompts.
    after API/native gates. Finish with owned Source/CARLA/VM/helper shutdown,
    released listeners and unchanged retained journals. Keep data and evidence.
 
-No current gate is claimed passed by this proposal. Acceptance of the packet
-would close the design choices, not pre-approve a failing security check,
-invent an immutable artifact digest, or claim full Vision E2E.
+No implementation gate is claimed passed by accepting this packet. Acceptance
+closes the design choices, not a failing security check, an unmeasured artifact
+digest or full Vision E2E.
+
+## Current implementation checkpoint
+
+The calibration completion is implemented in Source/Gateway, the OEM exchange
+and both service consumers. Per-frame AutoDrive maps and resized-pixel fusion
+maps are distinct, digest-bound and unavailable on invalid geometry. Positive
+pair/status/context and mismatch/role negatives pass isolated tests. Gateway's
+five targeted C++/TLS tests pass; real calibrated native transport remains a
+separate gate.
+
+Both Linux ARM64 closures are built on SSD with recipe, Debian, header-library
+and model/runtime notices. Current application source is service revision
+`cd924e2120dcd3578274829f68995366a7e042d1`; notice-builder revision is
+`45aa14107f831ec362b971fae6bd59fd21336f77`. Build evidence is
+`build/vision-services/native-06` and `build/vision-services/closure-08`.
+Perception is 345,724,338 extracted bytes; Assessment is 57,595,066. The new
+Perception archive profile is isolated; existing Lab profile limits are not
+relaxed. Both first service versions are now signed through the official SDK
+and verified against the prepared files/configuration (`signed-03`). No
+service version has been published or deployed yet. The configured Vision SP
+account is used only for these signatures; no VM/Source identity is copied.
+
+The [fixed allocation](../../../contracts/vision-vm/services-allocation.v1.json)
+is frozen for native characterization: Perception 7,000 DMIPS/768 MiB and
+Assessment 250 DMIPS/128 MiB. With the retained 1,000-DMIPS diagnostic, 1,750
+DMIPS remain within the unchanged node budget. Expected native CPU quotas are
+280,000/100,000 and 10,000/100,000 respectively. These are containment
+allocations, not proof of native disk fit, cadence or capture-to-display age.
+Package preparation preserves every recipe notice, including Linux filenames
+that differ only by case: only colliding notice basenames are renamed and a
+digest-bearing original/packaged path map ships with them. Runtime/model paths
+are never normalized; their case aliases fail closed.
+
+On the retained M4 Vision VM, `vision-services-closure-06` passed synthetic,
+network-isolated, unprivileged closure execution: three FP32 model sessions,
+15 measured Perception cycles after five warmups, and 100 Assessment cycles.
+Perception mean wall time was 201.47 ms, mean CPU time 467.81 ms/result and
+peak RSS 553,779,200 bytes. Assessment without a geometry-dependent plan was
+0.069 ms mean with 39,714,816 peak RSS bytes. These are compute-only synthetic
+measurements, **not** actual native allocations, camera calibration, replay,
+freshness, five-results/s or UI acceptance. Raw finite AutoSteer `h_vector`
+values outside 0–1 are preserved, matching the pinned model and fusion mask.
+
+The pinned Core ARM cpuinfo parser reports one core/thread by default, despite
+four actual Linux vCPUs. The native quota calculation uses the reported core
+count. `vision-services-cpu-04` proved a reversible **standard IAM
+`cpuInfoPath` projection** from the same real `/proc`/sysfs topology: the
+unchanged 1,000-DMIPS diagnostic service changed from 10,000/100,000 to
+40,000/100,000 CPU quota. Original IAM bytes, original quota, Enforcing policy,
+healthy native owners and owned scratch removal were then verified. The full
+real CPU records are projected by IAM's own `ExecStartPre` atomic writer;
+the startup writer and zero owner restart counts passed the same proof. No
+separate daemon or shortened synthetic CPU description is used. Core code,
+the 10,000-DMIPS node budget and VM resources were unchanged. A permanent
+Vision-only projection must be included in the narrowly gated platform delta;
+do not publish service quotas using the erroneous one-core mapping.
+
+The read-only Cloud preflight found both first versions free and no existing
+`SDV Vision Pilot` Subject. The node-list API is used; its node-detail counterpart
+returned HTTP 500. No Subject/service/version mutation occurred. All completed
+campaigns preserved the Unit/VM and four retained journals and stopped owned
+VM/processes. These receipts live under the private qualification records, not
+the public service repository.
+
+Next gates remain: freeze quotas against the proven four-core mapping; exact
+transient broker/accounts/resources/credential/SELinux proof on actual Aos
+instances; stopped recovery; the one required Vision-only permanent platform
+successor; serial native delivery; calibrated replay/live and independent SOTA;
+then visible API/UI acceptance. The new signed first service versions are
+necessary inputs to their own native functional proof; prerequisite kernel/
+scope checks precede their first use, and the complete native proof still
+precedes the permanent image gate. This dependency ordering does not permit a
+manual crun substitute, a bypassed signature or an unqualified release claim.
 
 ## Source facts checked while preparing the packet
 

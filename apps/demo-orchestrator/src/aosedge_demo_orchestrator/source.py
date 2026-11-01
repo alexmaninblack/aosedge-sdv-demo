@@ -116,6 +116,12 @@ class SourceDriver:
         code = Path(worker.__file__).read_text()
         vehicle = dict(state["vehicles"][role], sourceProbeSelected=state.get("currentVehicle") == role)
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
+        if state.get('vmProfile')=='aos-vision-main-qemuarm64-v1' and action in ('camera-start','camera-stop'):
+            scopes=getattr(getattr(self.vm.environment,'catalog',None),'vision_exchange_scopes',())
+            if scopes:
+                if scopes!=('vision-context-read','vision-assessment-publish') or request.get('exchangeScopes',list(scopes))!=list(scopes):
+                    raise EnvironmentError('SOURCE_VISION_EXCHANGE_SCOPE_INVALID')
+                request['exchangeScopes']=list(scopes)
         if state.get('vmProfile') == 'aos-vision-main-qemuarm64-v1' and action in (
                 'factory-role', 'configure', 'probe', 'trust-probe', 'trust-configure', 'trust-status', 'camera-start', 'camera-stop'):
             from . import vision_source_guest, source_trust_guest
@@ -370,6 +376,11 @@ function run(args) {
             # Existing Source run identity; only this closed profile grants
             # media. Main keeps its original runtime configuration/arguments.
             config['runtime']['vision_camera_source_id'] = identity
+            scopes=getattr(self.vm.environment.catalog,'vision_exchange_scopes',())
+            if scopes:
+                if scopes!=('vision-context-read','vision-assessment-publish'):
+                    raise EnvironmentError('SOURCE_VISION_EXCHANGE_SCOPE_INVALID')
+                config['runtime']['vision_exchange_scopes']=list(scopes)
         if packaged is not None:
             config["route"]["start_spawn_point"] = 88  # Qualified equivalent of Editor index 40.
         atomic_json(run / "input.json", config)
@@ -643,8 +654,13 @@ class SourceService:
                 if (current.get('state')!='SELECTED' or current.get('selectedSource')!=authentication.selection(state)
                         or current.get('assignmentGeneration')!=source['assignmentGeneration']):
                     raise EnvironmentError('SOURCE_CAMERA_ASSIGNMENT_CHANGED')
-                return self.driver.guest(state,'test','camera-start',sourceId=source['runId'],
-                    generation=source['assignmentGeneration'])
+                fields=dict(sourceId=source['runId'],generation=source['assignmentGeneration'])
+                scopes=getattr(getattr(self.environment,'catalog',None),'vision_exchange_scopes',())
+                if scopes:
+                    if scopes!=('vision-context-read','vision-assessment-publish'):
+                        raise EnvironmentError('SOURCE_VISION_EXCHANGE_SCOPE_INVALID')
+                    fields['exchangeScopes']=list(scopes)
+                return self.driver.guest(state,'test','camera-start',**fields)
             return self.driver.guest(state,'test','camera-stop')
 
     def simulation(self, action, target=None, *, retiring=False):

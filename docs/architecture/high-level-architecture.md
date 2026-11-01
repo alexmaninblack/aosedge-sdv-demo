@@ -1,10 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.9
+# High-Level Architecture 1.10
 
 - Status: Accepted
-- Version: 1.9
+- Version: 1.10
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27, with the linked accepted lifecycle/interaction amendments
 - Owner: System Architecture
@@ -171,8 +171,15 @@ be shared; sharing a base is not sharing platform payloads or deployment slots.
 
 The Gateway owns simulation capture; Camera Access owns selected-source image
 admission, bounded frame delivery and metadata; Perception owns model execution.
-Images bypass the scalar KUKSA path. Assessment dynamics need their own approved
-Vision input, not installation of the Brake/Tire VDP. Native AosCore remains
+Images bypass the scalar KUKSA path. The accepted
+[native Vision services contract](../planning/active/vision-services-native-delivery.md)
+adds an internal nonroot OEM exchange adapter within the Camera Access package:
+native named resources separate Perception publication, Assessment reads of
+Perception/context, and Assessment publication. The adapter obtains exact-frame
+physical speed and trusted vehicle geometry from the selected Gateway, not the
+Brake/Tire VDP, and returns typed results over the existing enrolled TLS listener.
+Only the adapter receives the Source-owned context/result scopes and credentials;
+services and Camera core receive no keys or network/control authority. Native AosCore remains
 the deployment/resource authority. The transport-independent foundation grants
 no camera configuration, motion, Cloud or container access. Native ingress,
 resource/IPC and distinct OEM-target integration remain explicit delivery gates

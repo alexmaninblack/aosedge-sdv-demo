@@ -10,11 +10,11 @@
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
-- Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.6](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.5](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.4](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.10](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.5](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.7](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.6](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.5](../component-decomposition-and-interface-register.md)
 - Accepted D4 VISS trust decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)

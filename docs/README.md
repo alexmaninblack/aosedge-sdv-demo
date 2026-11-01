@@ -47,11 +47,11 @@ belong here, separately from user instructions:
 
 These are normative obligations, not claims that every case is implemented:
 
-1. [High-Level Architecture 1.9](architecture/high-level-architecture.md).
-2. [Demo Scenarios 2.4](demo/staged-post-sop-brake-health-demo-scenarios.md).
-3. [Architecture Flows 2.6](architecture/demo-scenario-architecture-flows.md).
-4. [System Requirements 2.5](requirements/system-requirements-and-traceability.md).
-5. [Component and Interface Register 2.4](requirements/component-decomposition-and-interface-register.md).
+1. [High-Level Architecture 1.10](architecture/high-level-architecture.md).
+2. [Demo Scenarios 2.5](demo/staged-post-sop-brake-health-demo-scenarios.md).
+3. [Architecture Flows 2.7](architecture/demo-scenario-architecture-flows.md).
+4. [System Requirements 2.6](requirements/system-requirements-and-traceability.md).
+5. [Component and Interface Register 2.5](requirements/component-decomposition-and-interface-register.md).
 6. [Component requirements](requirements/components/README.md) and
    [D4 decision register](requirements/d4-decision-register.md).
 7. [Executable contracts](../contracts/README.md) and

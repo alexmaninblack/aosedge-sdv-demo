@@ -10,7 +10,7 @@
 - Owner: Demo Solution Team
 - Change class: C for installed-state/first-use integration; the first delivery
   slice is an offline, non-activating installation tool
-- Architecture input: [High-Level Architecture 1.9](../high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.10](../high-level-architecture.md)
 - Authority: the user approved implementation after reviewing the installation
   proposal and explicitly retaining one OEM and one SP for Brake and Tire.
 - Parent: [Distribution plan](../../planning/roadmap.md)

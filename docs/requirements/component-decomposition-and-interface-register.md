@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 2.4
+# Component Decomposition and Interface Register 2.5
 
 - Status: Accepted
-- Version: 2.4
+- Version: 2.5
 - Prepared: 2026-08-22
 - Accepted: 2026-09-27
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.9](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.6](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 2.5](system-requirements-and-traceability.md)
+- Architecture input: [High-Level Architecture 1.10](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.7](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 2.6](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -90,12 +90,12 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.9 owns system boundaries, authorities and
+1. High-Level Architecture 1.10 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 2.4 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 2.6 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 2.5 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 2.7 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 2.5 owns normative `SYS-*` obligations and gap
+4. System Requirements 2.6 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -493,6 +493,36 @@ implementation:
 derive the [Camera Access requirements](components/camera-access.md).
 VDP and retained Brake/Tire packages remain unchanged. Assessment dynamics and
 result return are not authorized by a camera-read grant.
+
+### Native Vision services and internal exchange
+
+The [accepted service packet](../planning/active/vision-services-native-delivery.md)
+and [Vision service requirements](components/vision-services.md) allocate this
+branch-only extension. Main's component/lifecycle allocation is unchanged.
+
+| ID | Component | Owner and lifecycle |
+| --- | --- | --- |
+| <a id="cmp-vper"></a>`CMP-VPER` | Vision Perception | `vision-pilot-services`; independent SOTA, calibrated decode/preprocessing/three-model inference only |
+| <a id="cmp-vasm"></a>`CMP-VASM` | Vision Assessment | `vision-pilot-services`; independent SOTA, time-aware fusion/tracking and display-only shadow interpretation |
+| <a id="cmp-vex"></a>`CMP-VEX` | Internal OEM Vision exchange adapter | `aos-vehicle-platform`; internal part of Camera Access OEM package, native IPC/context/result validation, not a third Cloud application |
+
+| ID | Producer | Consumer | Data | Contract | State |
+| --- | --- | --- | --- | --- | --- |
+| <a id="if-vis-001"></a>`IF-VIS-001` | `CMP-VPER` | `CMP-VEX`, `CMP-VASM` | Raw Perception DTO | Separate native publish/read resources, no app TCP/key | Accepted, native proof gated |
+| <a id="if-vis-002"></a>`IF-VIS-002` | `CMP-GW`, `CMP-VEX` | `CMP-VASM` | Exact-frame speed/geometry | Explicit Vision context scope, missing is unavailable | Accepted, native proof gated |
+| <a id="if-vis-003"></a>`IF-VIS-003` | `CMP-VASM` | `CMP-VEX` | Interpreted DTO with producer epoch/input reference | Assessment-only native publication resource | Accepted, native proof gated |
+| <a id="if-vis-004"></a>`IF-VIS-004` | `CMP-VEX` | `CMP-GW` | Typed frame-matched display | Existing enrolled TLS listener, explicit result scope; full IDs stay server-side | Accepted, native/UI proof gated |
+
+| System obligation | Component allocation | Derived requirement |
+| --- | --- | --- |
+| [Vision service obligation (`SYS-VIS-009`)](system-requirements-and-traceability.md#sys-vis-009) | `CMP-VPER`, `CMP-VASM`, `CMP-VEX` | `REQ-VIS-001` |
+| [Vision service obligation (`SYS-VIS-010`)](system-requirements-and-traceability.md#sys-vis-010) | `CMP-VPER` | `REQ-VIS-002` |
+| [Vision service obligation (`SYS-VIS-011`)](system-requirements-and-traceability.md#sys-vis-011) | `CMP-VEX`, `CMP-GW`, `CMP-VASM` | `REQ-VIS-003` |
+| [Vision service obligation (`SYS-VIS-012`)](system-requirements-and-traceability.md#sys-vis-012) | `CMP-VASM` | `REQ-VIS-004` |
+| [Vision service obligation (`SYS-VIS-013`)](system-requirements-and-traceability.md#sys-vis-013) | `CMP-VEX`, `CMP-VPER`, `CMP-VASM` | `REQ-VIS-005` |
+| [Vision service obligation (`SYS-VIS-014`)](system-requirements-and-traceability.md#sys-vis-014) | `CMP-VASM`, `CMP-VEX`, `CMP-GW` | `REQ-VIS-006` |
+| [Vision service obligation (`SYS-VIS-015`)](system-requirements-and-traceability.md#sys-vis-015) | `CMP-VPER`, `CMP-VASM`, `CMP-ORCH` | `REQ-VIS-007` |
+| [Vision service obligation (`SYS-VIS-016`)](system-requirements-and-traceability.md#sys-vis-016) | `CMP-ORCH`, `CMP-VPER`, `CMP-VASM`, `CMP-VEX` | `REQ-VIS-008` |
 
 The Vision-only VM pilot adds [SYS-VIS-001](system-requirements-and-traceability.md#sys-vis-001),
 [SYS-VIS-002](system-requirements-and-traceability.md#sys-vis-002) and

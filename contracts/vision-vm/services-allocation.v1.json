@@ -1,0 +1,15 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-native-service-allocation",
+  "contract": "services.v1.json",
+  "status": "FROZEN_FOR_NATIVE_CHARACTERIZATION_NOT_E2E_QUALIFIED",
+  "node": {"vcpus": 4, "memoryMiB": 4096, "maxDmips": 10000, "quotaPeriodMicroseconds": 100000},
+  "basis": {"closures": "closure-08", "compute": "vision-services-closure-06", "nativeQuotaMapping": "vision-services-cpu-04", "topologyOwner": "IAM ExecStartPre; full actual proc records plus verified sysfs topology; no Core code change"},
+  "perception": {"cpuLimit": 7000, "ramLimit": 805306368, "storageLimit": 33554432, "stateLimit": 16777216, "tmpLimit": 67108864, "noFileLimit": 1024, "pidsLimit": 64},
+  "assessment": {"cpuLimit": 250, "ramLimit": 134217728, "storageLimit": 16777216, "stateLimit": 8388608, "tmpLimit": 16777216, "noFileLimit": 1024, "pidsLimit": 32},
+  "expectedCpuMax": {"perception": [280000, 100000], "assessment": [10000, 100000]},
+  "retainedDiagnosticDmips": 1000,
+  "remainingDmips": 1750,
+  "notes": "Memory exceeds measured synthetic closure peaks. Writable storage/state/tmp and PID/FD bounds are fixed containment allocations, not measured consumption or capacity acceptance. Verify actual native limits, disk fit and live cadence before qualification; do not auto-increase VM resources or allocations."
+}
