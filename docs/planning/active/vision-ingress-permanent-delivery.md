@@ -4,7 +4,7 @@
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
 - Status: Accepted on 2026-11-01; disposable Vision reset and fresh .5 delivery
-- Version: 0.7
+- Version: 0.8
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -38,6 +38,34 @@ Factory, Core/kernel revisions and unrelated services are not rebuilt.
 
 The historical preservation-bound route below records the failed attempt and
 its evidence; it is not authority to reuse or recover the disposable old VM.
+
+### Fresh execution checkpoint
+
+The old disposable Unit is deprovisioned/deleted and its child disks, backing
+image and instance root removed (`vision-fresh-retire-02`, 10.96 s). Shared
+credentials and all four retained journals are unchanged. Empty-recipient
+preflight passed; `.5` was built on the SSD with warm caches (264.06 s), signed
+and published once before fresh provisioning (`vision-fresh-oem-02`, 55.81 s).
+The signed bootstrap manufactured/provisioned the new Unit normally
+(`signed-bootstrap-04`, 187.43 s including transfer). Main and CARLA were not
+rebuilt. This is not yet permanent-ingress acceptance.
+
+The first Source connection passed but the scenario omitted physical Safe Stop
+after stationary Manual, so native Camera activation correctly stayed pending.
+The scenario now uses the existing control owner to prove real Safe Stop before
+activation checks; no synthetic update permission is injected. Its observer also
+normalizes native ComponentInfo's capitalized metadata fields without editing
+the native journal.
+
+Cold boot exposed a Source restore defect while that exact first install was
+pending: persistent enrollment survived, but the volatile `/run` SM binding did
+not. `vision-first-restore-proof-01` proves restoring only that binding, with the
+same native transaction/candidate, unchanged persistent enrollment, Enforcing
+and no immutable guest writes. The source correction follows the closed
+[first-enrollment contract](../../../contracts/vision-vm/first-enrollment.v1.json).
+No new VM, reset, re-enrollment, component publication or credential rotation is
+needed for this correction. The remaining named scenario owns Camera `0.1.1`,
+native read/revoke, media denial/staleness, restart/cold-boot and shutdown gates.
 
 The reversible Gateway → Camera Access → native Aos reader proof passed.
 Permanent ingress still needs the labelled launcher, systemd unit, narrow

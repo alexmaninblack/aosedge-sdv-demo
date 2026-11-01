@@ -275,6 +275,38 @@ def initial_projection(request,trust,item,material,expected):
         transactionPreservedAtResume=True,**status(trust))
 
 
+def restore_initial_projection(request,trust,item,material,expected):
+    """Restore only the volatile SM binding for an exact first native wait."""
+    require(request['action']=='trust-restore','FIRST_INSTALL_RESTORE_ONLY')
+    before=first_install_state()
+    persistent={path:value for path,value in expected.items() if path!=DROPIN}
+    require(all(read(path,mode)==value for path,(value,mode) in persistent.items()),'FIRST_INSTALL_RESTORE_PERSISTENCE_CHANGED')
+    require(not os.path.lexists(DROPIN),'FIRST_INSTALL_RESTORE_DROPIN_CONFLICT')
+    validate_material(trust,item,material)
+    trust.call(['systemctl','--no-block','stop','aos-sm.service'])
+    try:
+        deadline=time.monotonic()+20
+        while True:
+            values=dict(line.split('=',1) for line in trust.call([
+                'systemctl','show','aos-sm.service','-p','ActiveState','-p','Job']).splitlines() if '=' in line)
+            if values.get('ActiveState')=='inactive' and values.get('Job') in ('','0'):break
+            require(time.monotonic()<deadline,'FIRST_INSTALL_WRITER_STOP_TIMEOUT');time.sleep(.25)
+        require(first_install_state()==before,'FIRST_INSTALL_STATE_CHANGED')
+        require(all(read(path,mode)==value for path,(value,mode) in persistent.items()),'FIRST_INSTALL_RESTORE_PERSISTENCE_CHANGED')
+        require(not os.path.lexists(DROPIN),'FIRST_INSTALL_RESTORE_DROPIN_CONFLICT')
+        value,mode=expected[DROPIN];trust.write(DROPIN,value,mode)
+        require(first_install_state()==before,'FIRST_INSTALL_STATE_CHANGED')
+        trust.call(['systemctl','daemon-reload'])
+    except BaseException:
+        # Keep an uncertain result for reconciliation; never rewrite native
+        # pending state or erase an independently changed configuration.
+        trust.call(['systemctl','--no-block','start','aos-sm.service'])
+        raise
+    trust.activate_consumers(['aos-sm.service'])
+    return dict(configured=True,noOp=False,smRestarted=True,restoredPendingFirstInstall=True,
+        persistentEnrollmentUnchanged=True,transactionPreservedAtResume=True,**status(trust))
+
+
 def execute(request, trust, source=None):
     action = request['action']
     item, hardware = identity(request, provisioned=action not in ('factory-role', 'configure') or bool(request['vehicle'].get('unitId')))
@@ -330,6 +362,7 @@ def execute(request, trust, source=None):
         if all(path.is_file() and not path.is_symlink() for path in expected):
             require(all(read(path, mode) == value for path, (value, mode) in expected.items()), 'ACTIVE_TRANSACTION_PRESERVED')
             return dict(configured=True, noOp=True, smRestarted=False, **status(trust))
+        if action=='trust-restore':return restore_initial_projection(request,trust,item,material,expected)
         return initial_projection(request,trust,item,material,expected)
     changed = False
     for name, path in files.items():

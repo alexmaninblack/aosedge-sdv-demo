@@ -28,7 +28,11 @@ def snapshot():
         if unit['ActiveState']=='active' or time.monotonic()>end:break
         time.sleep(.25)
     installed=json.loads((CAMERA/'state/installed.json').read_bytes())
-    selected={k:installed[k] for k in ('version','slot','itemId','manifestDigest','runtimeId','preinstalled') if k in installed}
+    # Native SM's persisted ComponentInfo uses capitalized field names;
+    # normalize only this closed public metadata view, never rewrite it.
+    names={'version':'Version','slot':'slot','itemId':'ItemId','manifestDigest':'ManifestDigest',
+           'runtimeId':'RuntimeId','preinstalled':'Preinstalled'}
+    selected={key:installed[source] for key,source in names.items() if source in installed}
     assert selected and unit['ActiveState']=='active' and unit['Result']=='success' and unit['NRestarts']=='0','CAMERA_BASELINE_NOT_HEALTHY'
     assert not (CAMERA/'state/transaction.json').exists(),'CAMERA_TRANSACTION_PENDING'
     assert call(['/usr/libexec/aos-camera-access-store-check','verify']).strip()=='Camera Access isolated component store is ready.'

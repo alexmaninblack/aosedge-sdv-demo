@@ -2,11 +2,12 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "profile": "aos-vision-main-qemuarm64-v1",
-  "scope": "Same retained Vision Unit and Source-owned certificate pair; initial enrollment only",
+  "scope": "Same retained Vision Unit and Source-owned certificate pair; initial enrollment and exact volatile restore of its pending first install only",
   "nativeWait": {"schemaVersion": 2, "operation": "install-or-replace", "phase": "waiting-for-safe-stop", "hasPrevious": false, "candidateVersion": "0.1.0"},
   "preconditions": ["verified independent Camera store", "same Unit/node/hardware and selected Source generation", "no active or installed component", "no existing or partial enrollment", "matching candidate metadata and exact certificate SAN/key pairs"],
   "writer": "Normally stop the sole native SM writer, re-read exact transaction/candidate/selector, write initial fixed-path Source identity, verify transaction unchanged, resume native SM",
   "activationAuthority": "Native SM alone proves real physical Safe Stop and resumes/commits the same transaction",
   "recovery": "Preserve first-connection cancellation intent and prove stationary hold or absent owned actor. Pending bound Vision may boot without claiming restored credentials; guest validation precedes initial projection.",
+  "enrolledPendingColdBoot": "If exact persistent enrollment matches and only the fixed /run SM drop-in is absent, stop the native writer, recheck the same first-install transaction/candidate and persistent material, recreate only that volatile binding, then resume SM. Never repeat initial enrollment or rewrite persistent files. An identical existing binding is a no-op; conflict or partial material fails closed.",
   "forbidden": ["credential rotation", "partial enrollment overwrite", "transaction deletion or rewrite", "slot write by Source", "destructive phase interruption", "foreign Unit", "VDP/Main changes", "rootfs remount", "new Test as retry"]
 }

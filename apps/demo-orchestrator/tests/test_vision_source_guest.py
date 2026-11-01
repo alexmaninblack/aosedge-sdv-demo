@@ -16,6 +16,36 @@ REQUEST=dict(role='test',vmProfile=v.PROFILE,vehicle=dict(localVmId=LOCAL))
 
 
 class VisionProjectionTests(unittest.TestCase):
+    def test_pending_first_boot_restore_writes_only_missing_volatile_binding(self):
+        expected={Path('/persisted-enrollment'):('same',0o600),v.DROPIN:('dropin',0o644)}
+        trust=Mock();trust.call.return_value='ActiveState=inactive\nJob=0\n'
+        with patch.object(v,'first_install_state',return_value=('transaction','candidate')) as native, \
+                patch.object(v,'read',return_value='same'),patch.object(v.os.path,'lexists',return_value=False), \
+                patch.object(v,'validate_material'),patch.object(v,'status',return_value={}):
+            value=v.restore_initial_projection(dict(action='trust-restore'),trust,{}, {},expected)
+        trust.write.assert_called_once_with(v.DROPIN,'dropin',0o644)
+        trust.activate_consumers.assert_called_once_with(['aos-sm.service'])
+        self.assertEqual(native.call_count,3);self.assertTrue(value['persistentEnrollmentUnchanged'])
+
+    def test_pending_first_restore_rejects_changed_material_and_conflicting_dropin(self):
+        expected={Path('/persisted-enrollment'):('same',0o600),v.DROPIN:('dropin',0o644)}
+        for material,exists in (('different',False),('same',True)):
+            trust=Mock()
+            with patch.object(v,'first_install_state',return_value=('a','b')),patch.object(v,'read',return_value=material), \
+                    patch.object(v.os.path,'lexists',return_value=exists):
+                with self.assertRaises(ValueError):v.restore_initial_projection(dict(action='trust-restore'),trust,{}, {},expected)
+            trust.call.assert_not_called();trust.write.assert_not_called()
+
+    def test_pending_first_restore_preserves_changed_native_state(self):
+        trust=Mock();trust.call.return_value='ActiveState=inactive\nJob=0\n'
+        expected={Path('/persisted-enrollment'):('same',0o600),v.DROPIN:('dropin',0o644)}
+        with patch.object(v,'first_install_state',side_effect=[('a','b'),('changed','b')]), \
+                patch.object(v,'read',return_value='same'),patch.object(v.os.path,'lexists',return_value=False),patch.object(v,'validate_material'):
+            with self.assertRaisesRegex(ValueError,'FIRST_INSTALL_STATE_CHANGED'):
+                v.restore_initial_projection(dict(action='trust-restore'),trust,{}, {},expected)
+        trust.write.assert_not_called()
+        self.assertIn((['systemctl','--no-block','start','aos-sm.service'],),[call.args for call in trust.call.call_args_list])
+
     def test_host_accepts_only_fixed_closed_vision_failure_codes(self):
         from aosedge_demo_orchestrator.source import SourceDriver
         driver=SourceDriver(SimpleNamespace(root=Path('/unit-test'),progress=lambda _:None))

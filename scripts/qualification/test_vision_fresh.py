@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import vision_fresh_retire_worker as worker
+from vision_fresh_accept_worker import pairs
 
 
 class FreshRetirementTests(unittest.TestCase):
@@ -30,6 +31,27 @@ class FreshRetirementTests(unittest.TestCase):
              patch.object(unit,'_cloud_profile',return_value={}) as call:
             unit._cloud('absence',unitId=worker.OLD_UNIT)
             self.assertEqual(call.call_args.kwargs['setIds'],dict(test='vision-only'))
+
+
+class FreshReaderEvidenceTests(unittest.TestCase):
+    def observation(self):
+        epoch='5c281add-e6d3-47fc-abeb-67bb85479471'
+        frame=dict(sourceId='e5da8297-853e-4b43-a0fa-48d3ee7adfbd',sourceEpoch='1b93e071-367c-4078-89ca-d603adf4dbaa',
+            cameraId='front',calibrationId='test-calibration',frame=10,simulationTimeNs=1000000000,sha256='a'*64)
+        return dict(health=dict(componentEpoch=epoch),messages=[dict(probe='LIVE_METADATA',bytesVerified=True,
+            value=dict(componentEpoch=epoch,frames=[frame,dict(frame,frame=11,simulationTimeNs=1100000000)]))])
+    def test_native_verified_current_pair(self):
+        self.assertEqual(len(pairs(self.observation())),1)
+    def test_rejects_unverified_old_epoch_and_invalid_cadence(self):
+        for change in ('unverified','old-core','different-source','regression','cadence','bad-hash'):
+            value=self.observation();row=value['messages'][0];frame=row['value']['frames'][1]
+            if change=='unverified':row['bytesVerified']=False
+            elif change=='old-core':row['value']['componentEpoch']='past'
+            elif change=='different-source':frame['sourceEpoch']='different'
+            elif change=='regression':frame['frame']=10
+            elif change=='cadence':frame['simulationTimeNs']=1400000000
+            else:frame['sha256']='not-a-sha256'
+            with self.subTest(change=change):self.assertEqual(pairs(value),[])
 
 
 if __name__=='__main__':unittest.main()
