@@ -11,8 +11,8 @@ import shutil
 import sys
 import tempfile
 
-CODENAME='vision-camera-access-probe'
-LABEL='SDV Vision Camera Probe'
+CODENAME='vision-camera-image-probe'
+LABEL='SDV Vision Camera Image Probe'
 
 
 def require(ok, code):

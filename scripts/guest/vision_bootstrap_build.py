@@ -19,7 +19,7 @@ import shutil
 import subprocess
 import time
 
-VERSION = '6.1.1-vision-camera.2'
+VERSION = '6.1.1-vision-camera.3'
 
 
 def require(ok, code):
@@ -37,13 +37,13 @@ def sha(path):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    for name in ('project', 'source', 'evidence', 'manifest', 'native-proof', 'store-proof'):
+    for name in ('project', 'source', 'evidence', 'manifest', 'native-proof', 'store-proof', 'resource-proof'):
         p.add_argument('--'+name, type=Path, required=True)
     p.add_argument('--revision', required=True)
     a = p.parse_args()
     require(os.uname().machine == 'aarch64' and os.uname().sysname == 'Linux', 'ARM64_BUILDER_REQUIRED')
     require(re.fullmatch('[a-f0-9]{40}', a.revision), 'REVISION_REQUIRED')
-    for path in (a.project, a.source, a.evidence, a.manifest, a.native_proof, a.store_proof):
+    for path in (a.project, a.source, a.evidence, a.manifest, a.native_proof, a.store_proof, a.resource_proof):
         require(path.is_absolute() and '..' not in path.parts and not any(q.is_symlink() for q in (path, *path.parents)), 'PATH_UNSAFE')
     require(a.project.name == 'factory42-475dc7c1ef3ac303', 'PINNED_WARM_PROJECT_REQUIRED')
     require(not a.evidence.exists(), 'BUILD_ATTEMPT_EXISTS_RECONCILE')
@@ -51,6 +51,10 @@ def main():
     require(proof['outcome'] == 'PASS_TARGETED_NATIVE_UNIT' and proof['tests'] == 86, 'NATIVE_GATE_REQUIRED')
     store=json.loads(a.store_proof.read_bytes())
     require(store['outcome']=='PASS_TRANSIENT_STORE_ONLY' and all(store['cleanup'].values()),'STORE_TRANSIENT_GATE_REQUIRED')
+    resource=json.loads(a.resource_proof.read_bytes())
+    require(resource['outcome']=='PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ'
+            and resource['cameraRestart']=='PASS_FRESH_EPOCH_WITHOUT_SOURCE'
+            and resource['resourceRevocation']=='PASS' and all(resource['cleanup'].values()),'RESOURCE_TRANSIENT_GATE_REQUIRED')
     require(a.source.name == 'aos-vehicle-platform-'+a.revision, 'SOURCE_REVISION_BINDING_REQUIRED')
     require((a.source/'qualification/vision-bootstrap-1.conf').is_file(), 'VISION_SOURCE_REQUIRED')
     a.evidence.mkdir(mode=0o700)

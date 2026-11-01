@@ -48,12 +48,12 @@ assert shutil.disk_usage(pathlib.Path.home()).free>80*1024**3
 p=pathlib.Path(c['main']['packageRoot'])
 assert hashlib.sha256((p/'application-manifest.json').read_bytes()).hexdigest()==c['main']['manifestSha256']
 assert not pathlib.Path(REMOTE).exists()
-assert not (pathlib.Path.home()/'SDV-Vision-Camera-Lab-Data').exists()
-for name in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data'):
+assert not (pathlib.Path.home()/INSTANCE).exists()
+for name in RETAINED:
  state=json.loads((pathlib.Path.home()/name/'.run/demo-current/journal.json').read_bytes())
  assert all(i.get('runtime',{}).get('state')=='STOPPED' for i in state['vehicles'].values())
 print('M4_SIGNED_BOOTSTRAP_PREFLIGHT_PASS')
-'''.replace('CONTEXT',repr(c)).replace('REMOTE',repr(str(remote)))
+'''.replace('CONTEXT',repr(c)).replace('REMOTE',repr(str(remote))).replace('INSTANCE',repr(v.INSTANCE_NAME)).replace('RETAINED',repr(v.RETAINED_INSTANCE_NAMES))
             h.remote(t,q(python)+' -I -B -c '+q(code),timeout=20)
             h.remote(t,'umask 077\nmkdir '+q(str(remote)),timeout=10)
             context=dict(main=c['main'],bundle=str(remote/a.bundle.name),bootstrapManifestSha256=verified.manifest_sha256)

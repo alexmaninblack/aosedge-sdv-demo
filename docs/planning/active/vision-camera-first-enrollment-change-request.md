@@ -89,10 +89,12 @@ remain open. Neither original failure receipt is relabelled as a full pass.
 
 Do not remount/rewrite the current rootfs, rebase its overlay, or promote the
 diagnostic policy loader into a new production boot owner. Keep the current VM,
-Unit, keys, installed component and all data. Closing this last gate needs an
-accepted normal OS-update route or a separately authorized successor-image
-validation instance while retaining the current one. This packet created no
-replacement Test or successor VM and did not change Main/public delivery.
+Unit, keys, installed component and all data. On 2026-11-01 the operator selected
+a completely separate successor-image validation instance while retaining the
+current one. The [image-validation packet](vision-pilot-single-node.md#separate-native-image-validation)
+authorizes that exact additional VM/Unit, not another Test as a retry of the
+retained first-enrollment transaction. No normal OS-update route, Main change
+or public delivery is introduced.
 
 ## Accepted minimal correction
 

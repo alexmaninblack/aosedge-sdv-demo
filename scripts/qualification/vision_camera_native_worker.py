@@ -77,7 +77,7 @@ def main():
     bootstrap=v.verify(bundle,c['main']['manifestSha256'])
     require(bootstrap.manifest_sha256==c['bootstrapManifestSha256'],'BOOTSTRAP_CHANGED')
     native=Path.home()/v.INSTANCE_NAME
-    retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data')}
+    retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
     initial=read_json(native/JOURNAL);old=initial['vehicles']['test']
     require(initial['vmProfile']==v.VM_PROFILE and old['runtime']['state']=='STOPPED'
             and old['cloud']['lifecycle']=='ONLINE' and old['cloud']['identity']['model']=='aos-vision-vm','RETAINED_VISION_REQUIRED')

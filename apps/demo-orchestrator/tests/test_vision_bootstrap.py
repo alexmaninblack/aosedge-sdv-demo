@@ -73,6 +73,17 @@ class BootstrapTests(unittest.TestCase):
             with self.assertRaises(ImageError):v.verify(self.bundle,BASE)
             self.manifest[key]=previous
 
+    def test_image_successor_is_distinct_and_retains_all_previous_instances(self):
+        contract=json.loads((Path(__file__).resolve().parents[3]/'contracts/vision-vm/bootstrap.v1.json').read_bytes())
+        self.assertEqual(contract['nativeInstanceName'],v.INSTANCE_NAME)
+        self.assertEqual(contract['verificationSetTitle'],v.SET_TITLE)
+        self.assertEqual(contract['factoryVersion'],v.VERSION)
+        self.assertEqual(tuple(contract['retainedInstanceNames']),v.RETAINED_INSTANCE_NAMES)
+        self.assertIn('SDV-Vision-Camera-Lab-Data',v.RETAINED_INSTANCE_NAMES)
+        self.assertNotIn(v.INSTANCE_NAME,v.RETAINED_INSTANCE_NAMES)
+        self.manifest['factory']['version']='6.1.1-vision-camera.2';self.save()
+        with self.assertRaisesRegex(ImageError,'FACTORY_PROFILE'):v.verify(self.bundle,BASE)
+
     def test_vdp_model_or_component_are_not_vision_bootstrap(self):
         for key,value in (('componentType','aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider'),
                           ('unitModel',{'name':'aos-vm','version':'1.0.0'}),('nodeType','aos-vm-main')):

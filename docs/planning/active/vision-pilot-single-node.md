@@ -360,6 +360,37 @@ manufacture/VM/Unit owners. Main still uses its package-owned immutable inputs.
 The isolated binding does not permit an arbitrary image override, changing
 Main inputs, VDP-target reuse or an engineering overlay rebase.
 
+### Separate native image validation
+
+On 2026-11-01 the operator explicitly accepted a completely separate VM for
+permanent image-policy qualification. Build signed bootstrap 0.3.0 with Factory
+`6.1.1-vision-camera.3` on SDV-Dev using the warm Builder. It contains the
+already proven native resource policy, not a transient boot-time policy loader.
+Do not rebuild CARLA or the Main Factory.
+
+Normal owners create internal-M4 `SDV-Vision-Camera-Image-Lab-Data` from the clean
+signed image, with a new VM/overlay, keys, Test-role Unit and its own
+`SDV Vision Camera Image Verification` set. Preserve all four earlier roots,
+especially the current `SDV-Vision-Camera-Lab-Data`, their journals, Cloud
+identities, installed state and data. No adoption, migration, rebase, rootfs
+rewrite, prior-transaction deletion or simultaneous Lab run is authorized.
+
+Reuse the exact published Camera Access 0.1.0 and its known upload receipt;
+verify payload/catalog identity and send only to this new Unit through the
+normal OEM owner. Do not upload Camera again or relax the global upload guard.
+Use a distinct diagnostic service `vision-camera-image-probe` and Subject
+`SDV Vision Camera Image Probe`; do not modify the retained probe/Subject.
+Authoritatively check role, permissions and account-level compatibility before
+image work and record intent before each provisioning/publication mutation.
+
+One named scenario owns image gates, signing/transfer, normal manufacture and
+OEM provisioning, first Source enrollment, physical Safe Stop, native Camera
+activation, real Aos read/denial/revocation and cold-image AVC checks. Preserve
+failed receipts; unknown effects require reconciliation, not a fresh retry.
+Stop owned Source/CARLA/VM/DNS/Builder processes and independently verify exit.
+Gateway ingress, Perception/Assessment, full Vision E2E, Main promotion and
+public publication remain outside this packet.
+
 ## Current live-preview packet
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview

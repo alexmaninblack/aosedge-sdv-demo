@@ -62,7 +62,7 @@ def main():
     require(verified.manifest_sha256==c['bootstrapManifestSha256'],'BOOTSTRAP_SELECTION_CHANGED')
     home=Path.home();native=home/v.INSTANCE_NAME
     require(native.stat().st_dev==home.stat().st_dev if native.exists() else native.parent==home,'NATIVE_INTERNAL_STORAGE_REQUIRED')
-    retained=[home/name for name in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data')]
+    retained=[home/name for name in v.RETAINED_INSTANCE_NAMES]
     before={root:(root/JOURNAL).read_bytes() for root in retained}
     for raw in before.values():
         state=json.loads(raw)

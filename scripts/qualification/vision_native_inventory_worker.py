@@ -32,7 +32,7 @@ def main():
     from aosedge_demo_orchestrator.guest_access import ssh_command
     bootstrap=v.verify(bundle,c['main']['manifestSha256']);assert bootstrap.manifest_sha256==c['bootstrapManifestSha256']
     native=Path.home()/v.INSTANCE_NAME
-    retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data')}
+    retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
     old=json.loads((native/JOURNAL).read_bytes())['vehicles']['test']
     assert old['cloud']['lifecycle']=='ONLINE' and old['runtime']['state']=='STOPPED'
     with runtime_paths.installed_session(native):
