@@ -101,5 +101,13 @@ class BootstrapTests(unittest.TestCase):
         self.signature.side_effect=ImageError('VISION_BOOTSTRAP_SIGNATURE_INVALID')
         with self.assertRaisesRegex(ImageError,'SIGNATURE_INVALID'):v.verify(self.bundle,BASE)
 
+    def test_codesign_receives_inline_requirement_not_a_filename(self):
+        self.sig.stop()
+        signed=SimpleNamespace(returncode=0,stdout='',stderr='Identifier='+v.IDENTIFIER+'\nTeamIdentifier='+v.TEAM+'\nAuthority=Apple Development: fixture\n')
+        with patch.object(v.subprocess,'run',return_value=signed) as run:
+            v._signature(self.bundle)
+        arguments=run.call_args_list[0].args[0]
+        self.assertTrue(arguments[arguments.index('-R')+1].startswith('=identifier '))
+
 
 if __name__=='__main__':unittest.main()

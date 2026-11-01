@@ -42,7 +42,7 @@ def main():
     require(subprocess.check_output(['/usr/sbin/sysctl','-n','hw.model'],text=True).strip()=='Mac16,8','M4_REQUIRED')
     require(hashlib.sha256((package/'application-manifest.json').read_bytes()).hexdigest()==c['main']['manifestSha256'],'BASE_PROGRAM_CHANGED')
     requirement='identifier "org.aosedge.sdvlab.vision.bootstrap" and anchor apple generic and certificate leaf[subject.OU] = "3NF57VKB3V"'
-    subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict','-R',requirement,str(bundle)],check=True,capture_output=True,timeout=120)
+    subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict','-R','='+requirement,str(bundle)],check=True,capture_output=True,timeout=120)
     # Do not import any bundle code until its OS signature has been verified.
     sys.path.insert(0,str(package/'aosedge-sdv-demo/apps/demo-orchestrator/src'))
     import aosedge_demo_orchestrator

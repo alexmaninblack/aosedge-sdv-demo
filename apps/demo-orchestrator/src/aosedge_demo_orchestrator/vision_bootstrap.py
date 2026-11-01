@@ -66,7 +66,7 @@ def unique(pairs):
 def _signature(bundle):
     requirement='identifier "'+IDENTIFIER+'" and anchor apple generic and certificate leaf[subject.OU] = "'+TEAM+'"'
     try:
-        p=subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict','-R',requirement,str(bundle)],capture_output=True,timeout=120)
+        p=subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict','-R','='+requirement,str(bundle)],capture_output=True,timeout=120)
         require(p.returncode==0,'SIGNATURE_INVALID')
         p=subprocess.run(['/usr/bin/codesign','-dvv',str(bundle)],capture_output=True,text=True,timeout=10)
         lines=(p.stdout+p.stderr).splitlines()
