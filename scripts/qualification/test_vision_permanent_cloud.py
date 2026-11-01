@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 import unittest
+import copy
+import tempfile
 from unittest.mock import patch
 from urllib.parse import urlsplit, parse_qs
 
@@ -79,6 +81,60 @@ class PermanentCloudTests(unittest.TestCase):
         value = self.observe(Cloud(pending=True))
         self.assertFalse(value['ready'])
         self.assertIn('VISION_PENDING_COMPONENT_RECONCILE', value['blockers'])
+
+
+class FlagMigrationTests(unittest.TestCase):
+    class Account:
+        def __init__(self, lose_response=False):
+            self.values = {k:dict(id=k,title=v[0],is_validation_set=True,fleet='retained',
+                                allow_unknown_components=False,update_strategy='MinimizeRestarts')
+                           for k,v in gate.RETIRED_VERIFICATION.items()}
+            self.writes = []
+            self.lose_response = lose_response
+
+        def require(self, *permissions): pass
+
+        def pages(self, path):
+            key = path.split('/')[1]
+            return [dict(id=gate.RETIRED_VERIFICATION[key][1])]
+
+        def call(self, path, method='GET', body=None):
+            key = path.split('/')[1]
+            if method != 'GET':
+                assert method == 'PATCH' and body == dict(is_validation_set=False)
+                self.writes.append((key,copy.deepcopy(body)))
+                self.values[key].update(body)
+                if self.lose_response: raise TimeoutError()
+            return copy.deepcopy(self.values[key])
+
+    def request(self, directory):
+        return dict(operationDirectory=directory,retireVerification=dict(
+            authorized=True,flagOnly=True,setIds=list(gate.RETIRED_VERIFICATION)))
+
+    def test_exact_two_flags_only_and_lost_response_is_read_not_replay(self):
+        for lost in (False,True):
+            cloud = self.Account(lost)
+            with tempfile.TemporaryDirectory() as directory:
+                result = gate.retire_verification(cloud,self.request(directory))
+            self.assertEqual(len(result),2)
+            self.assertEqual(len(cloud.writes),2)
+            self.assertTrue(all(v['responseReconciled']==lost and v['membersUnchanged'] for v in result))
+
+    def test_existing_intent_prevents_replaying_a_mutation(self):
+        cloud = self.Account()
+        with tempfile.TemporaryDirectory() as directory:
+            request = self.request(directory)
+            from pathlib import Path
+            (Path(directory)/('verification-'+next(iter(gate.RETIRED_VERIFICATION))+'-intent.json')).touch()
+            with self.assertRaises(FileExistsError): gate.retire_verification(cloud,request)
+        self.assertEqual(cloud.writes,[])
+
+    def test_changed_scope_blocks_before_either_write(self):
+        cloud = self.Account()
+        list(cloud.values.values())[1]['title'] = 'foreign'
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(Exception):gate.retire_verification(cloud,self.request(directory))
+        self.assertEqual(cloud.writes,[])
 
 
 if __name__ == '__main__':

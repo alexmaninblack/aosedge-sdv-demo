@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -26,10 +27,15 @@ def digest(path):
     return value.hexdigest()
 
 
-def assemble(factory, camera_payload, base_manifest, platform_revision, identity, output):
+def assemble(factory, camera_payload, base_manifest, platform_revision, identity, output,
+             ingress_candidate=None, ingress_proof=None, update_platform_revision=None):
     output=model.canonical(output)
     model.require(not output.exists() and output.suffix=='.bundle' and output.parent.is_dir(),'OUTPUT_EXISTS_OR_INVALID')
     model.require(output.parent.stat().st_dev==ROOT.stat().st_dev,'BUILD_REQUIRES_SELECTED_SSD')
+    if identity=='authorized-vision-owner':
+        listing=subprocess.check_output(['/usr/bin/security','find-identity','-v','-p','codesigning'],text=True)
+        matches=re.findall(r'^\s*\d+\) ([0-9A-Fa-f]{40}) "Apple Development: [^"\r\n]+ \('+model.TEAM+r'\)"\s*$',listing,re.M)
+        model.require(len(matches)==1,'AUTHORIZED_SIGNING_OWNER_UNAVAILABLE');identity=matches[0]
     identity=select(identity)
     # Source must be a committed, reproducible snapshot. Untracked retained
     # research files are not inputs and are deliberately not copied wholesale.
@@ -50,7 +56,7 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
         bundle=scratch/output.name;resources=bundle/'Contents/Resources';resources.mkdir(parents=True)
         contents=bundle/'Contents'
         (contents/'Info.plist').write_bytes(plistlib.dumps(dict(CFBundleIdentifier=model.IDENTIFIER,
-            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.3.0')))
+            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.4.0' if ingress_candidate else '0.3.0')))
         target=resources/'images/main-qemuarm64.img';target.parent.mkdir()
         # APFS clone when available; the independent file is still signature-sealed.
         result=subprocess.run(['/bin/cp','-c',str(image),str(target)],capture_output=True)
@@ -66,6 +72,41 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
             if source.suffix not in ('.py','.json') or not source.is_file():continue
             destination=resources/'tooling/aosedge-sdv-demo'/name;destination.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(source,destination);destination.chmod(0o444)
+        if ingress_candidate is not None:
+            model.require(ingress_proof is not None and isinstance(update_platform_revision,str)
+                          and model.REV.fullmatch(update_platform_revision),'HOST_PROOF_REQUIRED')
+            candidate=model.canonical(ingress_candidate);proof=model.canonical(ingress_proof)
+            observed=json.loads((proof/'result.json').read_bytes());context=json.loads((proof/'context.json').read_bytes())
+            model.require(observed['outcome']=='PASS_TRANSIENT_NATIVE_STORE_INGRESS_POLICY'
+                          and all(observed['cleanup'].values()) and digest(candidate/'manifest.json')==context['candidateManifestSha256'],
+                          'HOST_NATIVE_PROOF_MISMATCH')
+            manifest=json.loads((candidate/'manifest.json').read_bytes())
+            model.require(manifest['nativePolicy'] is True and manifest['releaseImage'] is False,'HOST_CANDIDATE_INVALID')
+            host=resources/model.HOST_PREFIX;host.mkdir(parents=True)
+            selected=[name for name in manifest['files'] if name.startswith(('native/','tools/'))]
+            for name in selected:
+                path=candidate/name;row=manifest['files'][name]
+                model.require(not path.is_symlink() and path.is_file() and path.stat().st_size==row['bytes']
+                              and digest(path)==row['sha256'],'HOST_INPUT_CHANGED')
+                destination=host/name;destination.parent.mkdir(parents=True,exist_ok=True)
+                shutil.copyfile(path,destination);destination.chmod(0o644 if name.startswith('tools/') else 0o755)
+            for name in ('native/lib/libcrypto.3.dylib','native/lib/libssl.3.dylib','native/carla-ego-runtime'):
+                path=host/name
+                dependencies=subprocess.check_output(['/usr/bin/otool','-L',str(path)],text=True)
+                model.require('/opt/homebrew/' not in dependencies,'HOST_NOT_PORTABLE')
+                done=subprocess.run(['/usr/bin/codesign','--force','--sign',identity,'--timestamp=none',str(path)],capture_output=True,timeout=120)
+                model.require(done.returncode==0,'HOST_NATIVE_SIGNING_FAILED')
+                done=subprocess.run(['/usr/bin/codesign','--verify','--strict','-R',
+                    '=anchor apple generic and certificate leaf[subject.OU] = "'+model.TEAM+'"',str(path)],capture_output=True,timeout=20)
+                model.require(done.returncode==0,'HOST_NATIVE_SIGNATURE_INVALID')
+                path.chmod(0o555)
+            descriptor=dict(schemaVersion=1,kind='signed-vision-ingress-host',profile=model.PROFILE,
+                baseProgramManifestSha256=base_manifest,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',
+                sources=dict(integration=revision,platform=update_platform_revision,gateway=manifest['source']['gateway']),
+                assets=dict(runtime=model.HOST_RUNTIME,runner=model.HOST_RUNNER))
+            (host/'host-runtime.json').write_text(json.dumps(descriptor,indent=2)+'\n');(host/'host-runtime.json').chmod(0o444)
+            for path in (host/'tools').rglob('*'):
+                if path.is_file():path.chmod(0o444)
         files=[]
         for p in sorted(resources.rglob('*')):
             if p.is_file():
@@ -79,7 +120,8 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
                          unitModel=model.MODEL,nodeType=model.NODE_TYPE,componentType=model.COMPONENT),
             cameraPayload=dict(rows['camera-access/payload.tar'],version='0.1.0'),files=files)
         p=resources/'bootstrap.json';p.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n');p.chmod(0o444)
-        subprocess.run(['/usr/bin/codesign','--sign',identity,'--timestamp=none',str(bundle)],check=True,capture_output=True,timeout=120)
+        done=subprocess.run(['/usr/bin/codesign','--sign',identity,'--timestamp=none',str(bundle)],capture_output=True,timeout=120)
+        model.require(done.returncode==0,'BUNDLE_SIGNING_FAILED')
         # codesign just hashed the complete clone. Corroborate its sealed image
         # hash against the transfer receipt instead of reading gigabytes again.
         seal=plistlib.loads((contents/'_CodeSignature/CodeResources').read_bytes())
@@ -95,7 +137,10 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('factory','camera-payload','output'):p.add_argument('--'+name,type=Path,required=True)
     for name in ('base-manifest','platform-revision','identity'):p.add_argument('--'+name,required=True)
-    a=p.parse_args();print(json.dumps(assemble(a.factory,a.camera_payload,a.base_manifest,a.platform_revision,a.identity,a.output)))
+    p.add_argument('--ingress-candidate',type=Path);p.add_argument('--ingress-proof',type=Path)
+    p.add_argument('--update-platform-revision')
+    a=p.parse_args();print(json.dumps(assemble(a.factory,a.camera_payload,a.base_manifest,a.platform_revision,a.identity,a.output,
+        a.ingress_candidate,a.ingress_proof,a.update_platform_revision)))
 
 
 if __name__=='__main__':main()

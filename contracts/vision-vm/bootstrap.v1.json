@@ -19,6 +19,18 @@
   "imageRecipe": "aos-image-vision",
   "factoryRelativePath": "images/main-qemuarm64.img",
   "manifestRelativePath": "Contents/Resources/bootstrap.json",
+  "permanentIngressHostExtension": {
+    "descriptor": "tooling/vision-host/host-runtime.json",
+    "runtime": "tooling/vision-host/native/carla-ego-runtime",
+    "runner": "tooling/vision-host/tools/run_m6_interactive.py",
+    "nativeLibraries": ["libssl.3.dylib", "libcrypto.3.dylib"],
+    "rootfsVersion": "6.1.1-vision-camera.4",
+    "cameraVersion": "0.1.1",
+    "binding": "Optional closed resources sealed by the existing Apple bundle signature, exact base-program manifest and integration/platform/Gateway source pins; absent on old bundles, malformed fails closed",
+    "limits": "Only the fixed Gateway Mach-O may be up to 32 MiB; other resource and total limits stay unchanged",
+    "lifecycle": "Normal Source owner selects only verified runtime/runner, retains private TLS and all base CARLA/Python/UI assets; no proof callback or arbitrary binary path",
+    "provenance": "Factory 6.1.1-vision-camera.3 manufacture image and its platform revision remain frozen; update-platform revision is recorded separately in the sealed host descriptor"
+  },
   "maximumFactoryBytes": 17179869184,
   "scope": "Signed Vision-only input catalog and tooling; normal EnvironmentService, VMService, UnitService and native Aos component/container owners retain lifecycle authority",
   "trust": "Apple signature/identifier/team plus exact base-program manifest and source/image digests. No arbitrary image-path override or Main input mutation.",

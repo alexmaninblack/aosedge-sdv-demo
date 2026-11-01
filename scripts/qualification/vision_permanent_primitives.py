@@ -23,6 +23,7 @@ PROJECT=Path('/home/yocto/r61-build/factory42-475dc7c1ef3ac303')
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True);p.add_argument('--name',required=True)
+    p.add_argument('--reuse-installed-boot-pin',action='store_true')
     a=p.parse_args();c=configuration(a.config)
     h.require(a.name.startswith('native-primitives-') and a.name.removeprefix('native-primitives-').isdecimal(),'PRIMITIVE_NAME_INVALID')
     recovery=json.loads((Path(c['records'])/'ingress-recovery-01/result.json').read_bytes())
@@ -58,7 +59,12 @@ revision=subprocess.check_output(['git','-C',str(p/'yocto/meta-aos'),'rev-parse'
 assert revision=='176da6346b1199f854106dede4cc49604174619c'
 print(json.dumps(dict(installedBootMatches=True,initramfsSha256=BOOT['sha256'],metaAosRevision=revision,helpers=helpers,sourceMatches=matches,bootUpdateRequired=False)))
 '''.replace('PROJECT',repr(str(PROJECT))).replace('TOOL_SHA',repr(h.digest(files['vision_delivery_guest.py']))).replace('TOOL',repr(str(source/'vision_delivery_guest.py'))).replace('BOOT',repr(boot_images[0]))
-    h.atomic(output/'boot-compatibility.json',json.loads(h.run(ssh+['python3 -'],data=pin,timeout=30)))
+    if a.reuse_installed_boot_pin:
+        prior=json.loads((BUILD/'native-primitives-01/boot-compatibility.json').read_bytes())
+        h.require(prior['installedBootMatches'] and not prior['bootUpdateRequired']
+            and all(prior['sourceMatches'].values()),'EXISTING_INSTALLED_BOOT_PIN_REQUIRED')
+        h.atomic(output/'boot-compatibility.json',prior)
+    else:h.atomic(output/'boot-compatibility.json',json.loads(h.run(ssh+['python3 -'],data=pin,timeout=30)))
     print(json.dumps(dict(stage='targeted-native-policy-launcher',state='STARTED')),flush=True)
     result=h.run(ssh+[shlex.join(['python3',str(source/'camera_ingress_compile_worker.py'),'--input',str(source),'--evidence',str(remote_output),'--native-policy'])],timeout=120)
     value=json.loads(result);h.require(value['outcome']=='PASS_TARGETED_INGRESS_PRIMITIVES','NATIVE_PRIMITIVES_FAILED')

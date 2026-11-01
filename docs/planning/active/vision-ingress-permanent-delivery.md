@@ -4,7 +4,7 @@
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
 - Status: Accepted on 2026-11-01; recovery gate must pass before build/publication/update
-- Version: 0.3
+- Version: 0.5
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -108,8 +108,8 @@ authorize new motion authority, model deployment or performance claims.
 ## Execution checkpoint — 2026-11-01
 
 Evidence below is retained in the private `vision-vm-m4` qualification records,
-not embedded in the public source tree. No permanent update, signing or Cloud
-mutation has begun.
+not embedded in the public source tree. The two flag-only Cloud changes below
+are complete; no component publication or permanent guest update has begun.
 
 | Gate | Observed result |
 | --- | --- |
@@ -149,17 +149,45 @@ for bundle upload, with no upload-level recipient selector or skip-verification
 parameter. A later explicit send request therefore does not establish that the
 initial upload was isolated. No undocumented control was attempted.
 
-**Proposed, not authorized or executed:** change only `is_validation_set` to
+**Accepted by the operator on 2026-11-01:** change only `is_validation_set` to
 `false` on those two older Vision sets, keeping the sets, all Unit memberships,
 Subjects, VMs, credentials and data. Keep the current selected verification set
 unchanged. Re-read definitions/members before each exact mutation, record intent,
 apply once, reconcile and rerun the account gate before build/publication.
-This extends the current packet's explicit prohibition on editing shared sets
-and requires a bounded authorization. Do not automatically restore verification
+This is the only exception to the current packet's prohibition on editing
+shared sets. Do not automatically restore verification
 eligibility after publication: that can reintroduce delivery to the old Units.
 Main/VDP/Brake/Tire and `Test Vehicles` remain excluded.
 
-Until this boundary is resolved, native rootfs/Camera delivery, the signed host
-tooling successor and the new native read/revoke acceptance are **NOT_RUN**.
-Preserve checkpoints, source, dependencies and caches; stop the owned Builder
-and M4 runtimes rather than leaving them running while waiting for direction.
+This boundary is now closed by `ingress-verification-05` (49.93 s): only the
+current Vision Unit remains an occupied verification recipient; both older sets
+and their Units/memberships remain present. The first flag operation was
+authoritatively reconciled from attempt 04 without replay. That older observer
+did not retain a full definition preimage and initially misclassified the
+expected nested flag projection in Unit membership data. The corrected observer
+records the preimage; the second operation proves every other definition field
+and membership unchanged. No Subject or Unit write endpoint was invoked.
+
+The SSD Builder was expanded monotonically from 220 to 320 GiB after a private
+stopped-disk checkpoint; native filesystem UUID and caches are retained. The
+minimum 60-GiB build reserve is unchanged. Only a checksum-verified redundant
+Builder copy of the `.3` manufacturing image was removed; the host input and
+M4 backing image are preserved.
+
+Native module packaging requires the refpolicy summary header for its generated
+module selection. The source correction adds that header, not permissions.
+`native-primitives-03` proves policy and launcher binaries identical to the
+previously live-proven ones. Package QA now requires `camera_ingress.pp` before
+rootfs work. The original manufacturing profile remains unchanged.
+
+The signed host-tooling successor uses the optional, closed extension in
+[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json). It seals the
+fixed Gateway/runner and portable libraries with the existing Apple owner;
+the normal Source selects them without proof callbacks. The Factory `.3` image
+and its platform provenance stay frozen, while the update platform/Gateway
+revisions are bound separately. Only the fixed Gateway Mach-O has a 32-MiB
+resource ceiling; other and total resource limits are unchanged.
+
+Native rootfs/Camera delivery and the new native read/revoke acceptance remain
+**NOT_RUN** until their actual receipts close. Preserve checkpoints, source,
+dependencies and caches, and stop owned runtimes at campaign completion/failure.

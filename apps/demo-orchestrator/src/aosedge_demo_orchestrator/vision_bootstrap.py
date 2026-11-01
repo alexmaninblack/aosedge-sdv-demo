@@ -30,6 +30,10 @@ RETAINED_INSTANCE_NAMES = ('SDV-Lab-Data', 'SDV-Vision-Lab-Data',
 MAX_IMAGE = 16*1024**3
 SHA = re.compile('[0-9a-f]{64}')
 REV = re.compile('[0-9a-f]{40}')
+HOST_PREFIX = 'tooling/vision-host/'
+HOST_DESCRIPTOR = HOST_PREFIX+'host-runtime.json'
+HOST_RUNTIME = HOST_PREFIX+'native/carla-ego-runtime'
+HOST_RUNNER = HOST_PREFIX+'tools/run_m6_interactive.py'
 
 
 def require(ok, code):
@@ -131,7 +135,7 @@ def verify(bundle, base_program_manifest_sha256):
                 and SHA.fullmatch(row['sha256']),'FILE_RECORD_INVALID')
         observed=stamp(target);require(observed[2]==row['bytes'] and not observed[5]&0o222,'FILE_MODE_OR_SIZE_INVALID')
         if name!=factory['path']:
-            require(row['bytes']<=8*2**20,'SMALL_FILE_LIMIT')
+            require(row['bytes']<=(32 if name==HOST_RUNTIME else 8)*2**20,'SMALL_FILE_LIMIT')
             require(hashlib.sha256(target.read_bytes()).hexdigest()==row['sha256'],'FILE_DIGEST_CHANGED')
         stamps[target]=observed;records[name]=row;total+=row['bytes']
     require(total<=MAX_IMAGE+64*2**20,'TOTAL_SIZE_LIMIT')
@@ -153,7 +157,35 @@ def verify(bundle, base_program_manifest_sha256):
                             'raw',('signed-vision-bootstrap/bootstrap.json',),())
     result=VerifiedBootstrap(bundle,root,hashlib.sha256(raw).hexdigest(),sources['integration'],sources['platform'],image,MappingProxyType(stamps))
     result.unchanged()
+    _host_assets(result)
     return result
+
+
+def _host_assets(bootstrap):
+    """Optional sealed ingress extension; old manufacture provenance is frozen."""
+    bootstrap.unchanged()
+    meta=bootstrap.resources/HOST_DESCRIPTOR
+    runtime=bootstrap.resources/HOST_RUNTIME
+    if meta not in bootstrap.stamps:
+        require(not any(p.is_relative_to(bootstrap.resources/HOST_PREFIX) for p in bootstrap.stamps),'HOST_DESCRIPTOR_MISSING')
+        return {}
+    value=json.loads(meta.read_bytes(),object_pairs_hook=unique)
+    envelope=json.loads((bootstrap.resources/'bootstrap.json').read_bytes(),object_pairs_hook=unique)
+    require(set(value)=={'schemaVersion','kind','profile','baseProgramManifestSha256','rootfsVersion','cameraVersion','sources','assets'}
+        and type(value['schemaVersion']) is int and value['schemaVersion']==1
+        and value['kind']=='signed-vision-ingress-host' and value['profile']==PROFILE
+        and value['baseProgramManifestSha256']==envelope['baseProgramManifestSha256']
+        and value['rootfsVersion']=='6.1.1-vision-camera.4' and value['cameraVersion']=='0.1.1'
+        and value['assets']==dict(runtime=HOST_RUNTIME,runner=HOST_RUNNER),'HOST_DESCRIPTOR_INVALID')
+    sources=value['sources']
+    require(set(sources)=={'integration','platform','gateway'}
+        and all(isinstance(v,str) and REV.fullmatch(v) for v in sources.values())
+        and sources['integration']==bootstrap.source_revision,'HOST_SOURCE_BINDING_INVALID')
+    for name in (HOST_RUNTIME,HOST_RUNNER,HOST_PREFIX+'tools/run_m5.py',HOST_PREFIX+'tools/behavior_agent_controller.py',
+                 HOST_PREFIX+'native/lib/libssl.3.dylib',HOST_PREFIX+'native/lib/libcrypto.3.dylib'):
+        require(bootstrap.resources/name in bootstrap.stamps,'HOST_RESOURCE_MISSING')
+    require(runtime.stat().st_mode&0o111,'HOST_RUNTIME_NOT_EXECUTABLE')
+    return dict(runtime=runtime,runner=bootstrap.resources/HOST_RUNNER)
 
 
 class SignedVisionCatalog(ImageCatalog):
@@ -188,3 +220,6 @@ class SignedVisionCatalog(ImageCatalog):
 
     def component_support(self,*args,**kwargs):
         raise ImageError('VISION_BOOTSTRAP_NOT_A_VDP_FACTORY')
+
+    def source_assets(self):
+        return _host_assets(self.bootstrap)

@@ -22,11 +22,13 @@ def main():
     mode.add_argument('--boot-inventory',action='store_true',help='Inspect installed boot/initramfs read-only before rootfs FOTA')
     mode.add_argument('--native-source-proof',action='store_true',help='Reversible exact permanent policy/store layout; no Cloud publication')
     mode.add_argument('--permanent-cloud-preflight',action='store_true',help='Read-only account-level recipient/collision gate before permanent delivery')
+    mode.add_argument('--retire-old-verification',action='store_true',help='Authorized flag-only change of the two exact old Vision sets, then recipient gate')
     p.add_argument('--candidate',type=Path)
+    p.add_argument('--reconcile-verification-04',action='store_true',help='Read-reconcile the exact first flag intent from attempt 04; never replay it')
     p.add_argument('--resume-read-from',help='Reconcile an existing 0.1.2 publication; never upload it again')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     live_mode=a.live or a.native_source_proof
-    prefix='ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
+    prefix='ingress-verification-' if a.retire_old_verification else 'ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
     h.require(a.name.startswith(prefix) and a.name.removeprefix(prefix).isdecimal(),'CAMPAIGN_NAME_INVALID')
     records=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
     h.require(not records.exists(),'ATTEMPT_EXISTS_RECONCILE');records.mkdir(mode=0o700)
@@ -37,11 +39,18 @@ def main():
     if a.network:context['networkSource']=(Path(__file__).resolve().parents[2]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator/vision_source_guest.py').read_text()
     worker=Path(__file__).with_name('vision_ingress_live_worker.py' if live_mode else 'vision_recovery_worker.py' if a.recovery else 'vision_ingress_preflight_worker.py')
     files=[worker]
-    if a.permanent_cloud_preflight:
+    if a.permanent_cloud_preflight or a.retire_old_verification:
         prior=json.loads((Path(c['records'])/'ingress-recovery-01/result.json').read_bytes())
         h.require(prior['outcome']=='PASS_SAME_VM_CHECKPOINT_RECOVERY' and all(prior['cleanup'].values()),'RECOVERY_GATE_REQUIRED')
         files.append(Path(__file__).with_name('vision_permanent_cloud.py'))
         context.update(permanentCloudPreflight=True,files={f.name:h.digest(f) for f in files})
+        if a.retire_old_verification:
+            from vision_permanent_cloud import RETIRED_VERIFICATION
+            context['retireVerification']=dict(authorized=True,flagOnly=True,setIds=list(RETIRED_VERIFICATION))
+            if a.reconcile_verification_04:
+                prior=Path(c['records'])/'ingress-verification-04'
+                h.require((prior/('verification-'+next(iter(RETIRED_VERIFICATION))+'-intent.json')).is_file(),'EXACT_PREVIOUS_FLAG_INTENT_REQUIRED')
+                context['resumeRetirement']=dict(attempt='ingress-verification-04',directory=str(Path(c['remoteRoot'])/'ingress-verification-04'))
     if a.boot_inventory:
         files.append(Path(__file__).with_name('vision_delivery_guest.py'))
         context.update(bootInventory=True,files={f.name:h.digest(f) for f in files})

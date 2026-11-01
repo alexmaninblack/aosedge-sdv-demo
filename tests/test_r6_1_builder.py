@@ -34,6 +34,17 @@ BUILDER = load_builder()
 
 
 class R61BuilderTests(unittest.TestCase):
+    def test_preserved_builder_may_grow_but_never_shrink_or_change_backing(self):
+        with patch.object(BUILDER,'verify_pinned_file'),patch.object(BUILDER,'require_regular_file'), \
+                patch.object(BUILDER,'run'),patch.object(BUILDER,'image_info') as info:
+            base=dict(format='qcow2',**{'full-backing-filename':str(BUILDER.BASE_IMAGE.resolve())})
+            for gib in (220,320,1024):
+                info.return_value=dict(base,**{'virtual-size':gib*1024**3});BUILDER.verify_prepared()
+            for size in (219*1024**3,1025*1024**3,320*1024**3+1,True):
+                info.return_value=dict(base,**{'virtual-size':size})
+                with self.assertRaises(BUILDER.BuilderError):BUILDER.verify_prepared()
+            info.return_value=dict(base,**{'virtual-size':320*1024**3,'full-backing-filename':'/foreign'})
+            with self.assertRaises(BUILDER.BuilderError):BUILDER.verify_prepared()
     def test_bound_storage_accepts_internal_but_not_wrong_or_unavailable_volume(self):
         with patch.object(BUILDER, 'ROOT', ROOT / 'not-created-builder'), \
                 patch.object(BUILDER, 'VOLUME_UUID', 'expected'):

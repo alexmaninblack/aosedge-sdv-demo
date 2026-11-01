@@ -452,7 +452,9 @@ def verify_prepared() -> None:
     require_regular_file(OVERLAY, "builder overlay")
     require_regular_file(SEED_ISO, "cloud-init seed image")
     info = image_info(OVERLAY)
-    if info.get("format") != "qcow2" or info.get("virtual-size") != DISK_GIB * 1024**3:
+    size=info.get("virtual-size")
+    if (info.get("format") != "qcow2" or type(size) is not int
+            or not DISK_GIB*1024**3 <= size <= 1024*1024**3 or size % 1024**3):
         fail("builder overlay format or virtual size is incorrect")
     backing = info.get("full-backing-filename")
     if backing != str(BASE_IMAGE.resolve()):

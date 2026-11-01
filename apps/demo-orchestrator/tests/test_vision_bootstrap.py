@@ -120,5 +120,43 @@ class BootstrapTests(unittest.TestCase):
         arguments=run.call_args_list[0].args[0]
         self.assertTrue(arguments[arguments.index('-R')+1].startswith('=identifier '))
 
+    def host_extension(self):
+        descriptor=dict(schemaVersion=1,kind='signed-vision-ingress-host',profile=v.PROFILE,
+            baseProgramManifestSha256=BASE,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',
+            sources=dict(integration='a'*40,platform='c'*40,gateway='d'*40),
+            assets=dict(runtime=v.HOST_RUNTIME,runner=v.HOST_RUNNER))
+        files={v.HOST_DESCRIPTOR:json.dumps(descriptor).encode(),v.HOST_RUNTIME:b'unit-native-fixture',
+            v.HOST_RUNNER:b'# runner',v.HOST_PREFIX+'tools/run_m5.py':b'# helper',
+            v.HOST_PREFIX+'tools/behavior_agent_controller.py':b'# controller',
+            v.HOST_PREFIX+'native/lib/libssl.3.dylib':b'unit-lib',
+            v.HOST_PREFIX+'native/lib/libcrypto.3.dylib':b'unit-lib'}
+        for name,raw in files.items():
+            path=self.resources/name;path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_bytes(raw);path.chmod(0o555 if name==v.HOST_RUNTIME else 0o444)
+            self.manifest['files'].append(dict(path=name,bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest()))
+        self.save();return descriptor
+
+    def test_closed_host_extension_keeps_manufacturing_provenance(self):
+        old=v.verify(self.bundle,BASE);self.assertEqual(v._host_assets(old),{})
+        self.host_extension();checked=v.verify(self.bundle,BASE)
+        assets=v._host_assets(checked)
+        self.assertEqual(assets,dict(runtime=self.resources/v.HOST_RUNTIME,runner=self.resources/v.HOST_RUNNER))
+        self.assertEqual(checked.platform_revision,'b'*40)
+        self.assertEqual(checked.image.version,'6.1.1-vision-camera.3')
+
+    def test_host_extension_cannot_select_an_arbitrary_runtime(self):
+        descriptor=self.host_extension();descriptor['assets']['runtime']='tooling/other'
+        path=self.resources/v.HOST_DESCRIPTOR;raw=json.dumps(descriptor).encode()
+        path.chmod(0o644);path.write_bytes(raw);path.chmod(0o444)
+        row=next(vv for vv in self.manifest['files'] if vv['path']==v.HOST_DESCRIPTOR)
+        row.update(bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest());self.save()
+        with self.assertRaisesRegex(ImageError,'HOST_DESCRIPTOR_INVALID'):v.verify(self.bundle,BASE)
+
+    def test_host_resources_without_the_closed_descriptor_fail(self):
+        self.host_extension()
+        (self.resources/v.HOST_DESCRIPTOR).unlink()
+        self.manifest['files']=[row for row in self.manifest['files'] if row['path']!=v.HOST_DESCRIPTOR];self.save()
+        with self.assertRaisesRegex(ImageError,'HOST_DESCRIPTOR_MISSING'):v.verify(self.bundle,BASE)
+
 
 if __name__=='__main__':unittest.main()

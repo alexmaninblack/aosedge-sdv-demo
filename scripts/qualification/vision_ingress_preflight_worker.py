@@ -9,6 +9,7 @@ policy change. The network mode creates/removes only the Camera Source table.
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -194,6 +195,7 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
                 assert result['facts']['uid']==result['facts']['expectedUid']>0,'PROJECTION_IDENTITY_INVALID'
             else:assert result['facts']['unit']['ActiveState']=='active','NATIVE_CAMERA_NOT_ACTIVE'
             if context.get('permanentCloudPreflight'):
+                result['stage']='unit-online-observation'
                 from aosedge_demo_orchestrator.units import UnitService
                 from aosedge_demo_orchestrator.status import read_json,load_configuration
                 from aosedge_demo_orchestrator.cloud_runtime import launch
@@ -202,23 +204,34 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
                     UnitService(vm)._wait(read_json(native/JOURNAL),'test',
                         lambda value:value and value['online_status']=='Online','CLOUD_ONLINE',timeout=60)
                 config=load_configuration(native)
+                result['stage']='sdk-launch-prepare'
                 sdk,sdk_environment=launch(native,config['cloudPython'],'unit_cloud.py')
                 request=dict(cloudDomain=selected_domain(before),oemOwner=cloud_binding(before)['ownerId'],
                     oemCredential=str(config['cloudProfiles']['oem-delivery']['credential']),
                     vehicles={'test':{k:item[k] for k in ('unitId','systemUid','unitSetId','nodeId')}})
                 request['vehicles']['test']['nodeHardwareId']=item['cloud']['identity']['nodeHardwareId']
+                if context.get('retireVerification'):
+                    request.update(retireVerification=context['retireVerification'],operationDirectory=str(records))
+                    if context.get('resumeRetirement'):request['resumeRetirement']=context['resumeRetirement']
                 tooling=bundle/'Contents/Resources/tooling/aosedge-sdv-demo/apps/demo-orchestrator/src'
+                result['stage']='sdk-account-preflight'
                 done=subprocess.run([sdk[0],'-I','-B',str(records/'vision_permanent_cloud.py'),str(tooling)],
                     input=json.dumps(request),text=True,capture_output=True,env=sdk_environment,timeout=120)
                 assert done.returncode==0 and len(done.stdout)<262144,'PERMANENT_CLOUD_SDK_FAILED'
                 value=json.loads(done.stdout)
+                if not value.get('ok'):
+                    result['sdkFailure']={k:value[k] for k in ('reason','failureFile','failureLine') if k in value}
                 assert value.get('ok'),value.get('reason','PERMANENT_CLOUD_PREFLIGHT_FAILED')
                 result['facts']['cloud']=value['data']
-                result['acceptance']='READ_ONLY_ACCOUNT_PREFLIGHT_NOT_UPDATE_ACCEPTANCE'
+                result['acceptance']='FLAG_ONLY_VERIFICATION_RECONCILIATION' if context.get('retireVerification') else 'READ_ONLY_ACCOUNT_PREFLIGHT_NOT_UPDATE_ACCEPTANCE'
                 assert value['data']['ready'],'PERMANENT_CLOUD_SCOPE_BLOCKED'
             result['outcome']='PASS_NATIVE_PREREQUISITES'
         except Exception as error:
-            result['code']=str(error) if isinstance(error,AssertionError) else type(error).__name__
+            import traceback
+            value=str(error)
+            result['code']=value if re.fullmatch('[A-Z][A-Z0-9_:,.-]{1,160}',value) else type(error).__name__
+            location=traceback.extract_tb(error.__traceback__)[-1]
+            result.update(failureFile=Path(location.filename).name,failureLine=location.lineno)
         finally:
             try:
                 stopped=vm.execute('stop','test',timeout=150)

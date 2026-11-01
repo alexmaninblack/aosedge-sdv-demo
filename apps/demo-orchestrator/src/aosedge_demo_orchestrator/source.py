@@ -76,6 +76,11 @@ class SourceDriver:
             if "tls" not in paths:
                 raise EnvironmentError("SOURCE_OPERATOR_TLS_REQUIRED")
             paths.update(packaged.source_assets(), ca=paths["tls"] / "server-cert.pem", key=paths["tls"] / "server-key.pem")
+            if self.vm.environment.vm_profile == 'aos-vision-main-qemuarm64-v1':
+                from .vision_bootstrap import SignedVisionCatalog
+                catalog=self.vm.environment.catalog
+                if isinstance(catalog,SignedVisionCatalog):
+                    paths.update(catalog.source_assets())
             if not all(paths[k].is_file() and not paths[k].is_symlink() for k in ("ca", "key")):
                 raise EnvironmentError("SOURCE_OPERATOR_TLS_REQUIRED")
             return paths
