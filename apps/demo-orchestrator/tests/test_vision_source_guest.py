@@ -16,6 +16,21 @@ REQUEST=dict(role='test',vmProfile=v.PROFILE,vehicle=dict(localVmId=LOCAL))
 
 
 class VisionProjectionTests(unittest.TestCase):
+    def test_host_accepts_only_fixed_closed_vision_failure_codes(self):
+        from aosedge_demo_orchestrator.source import SourceDriver
+        driver=SourceDriver(SimpleNamespace(root=Path('/unit-test'),progress=lambda _:None))
+        state=dict(vmProfile=v.PROFILE,vehicles=dict(test=dict(sshPort=12022)))
+        cases=[(dict(ok=False,reason='VISION_SOURCE_FILE_UNSAFE'),'VISION_SOURCE_FILE_UNSAFE'),
+               (dict(ok=False,reason='VISION_SOURCE_DO_NOT_PRINT secret'),'SOURCE_GUEST_UNAVAILABLE'),
+               (dict(ok=False,reason='VISION_SOURCE_FILE_UNSAFE',extra='secret'),'SOURCE_GUEST_UNAVAILABLE'),
+               (None,'SOURCE_GUEST_UNAVAILABLE')]
+        for value,expected in cases:
+            with patch('aosedge_demo_orchestrator.source.ssh_command',return_value=['unit-ssh']), \
+                    patch('aosedge_demo_orchestrator.source.subprocess.run',return_value=SimpleNamespace(returncode=1,stdout=json.dumps(value),stderr='DO_NOT_PRINT')):
+                with self.assertRaisesRegex(ValueError,expected) as error:
+                    driver.guest(state,'test','trust-status')
+                self.assertNotIn('DO_NOT_PRINT',str(error.exception))
+
     def test_foreign_profile_role_and_main_target_are_rejected_before_mutation(self):
         for extra in (dict(vmProfile='aos-main-qemuarm64-v1'),dict(role='production')):
             with self.assertRaisesRegex(ValueError,'PROFILE_REQUIRED'):

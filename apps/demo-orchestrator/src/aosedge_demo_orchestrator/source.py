@@ -134,6 +134,8 @@ class SourceDriver:
             if len(result.stdout) > 65536:
                 raise EnvironmentError("SOURCE_GUEST_UNAVAILABLE:" + role)
             value = json.loads(result.stdout)
+            if not isinstance(value,dict):
+                raise EnvironmentError('SOURCE_GUEST_UNAVAILABLE:'+role)
             if result.returncode:
                 # The closed Vision wrapper exits nonzero on a diagnosed
                 # failure. Preserve only its fixed code, never stderr/material.
