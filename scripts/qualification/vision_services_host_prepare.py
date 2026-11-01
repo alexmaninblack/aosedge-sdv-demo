@@ -44,7 +44,7 @@ def main():
         require(not run(['git','-C',str(path),'diff','HEAD','--name-only']).stdout,'VISION_HOST_COMMITTED_SOURCES_REQUIRED')
         sources[name]=run(['git','-C',str(path),'rev-parse','HEAD']).stdout.decode().strip()
     with directory(ROOT,root=Path('/Volumes/SDV-Dev/.s501/.tmp')) as scratch:
-        tests=run(['ctest','--test-dir',str(BUILD/'gateway-live'),'-R','^(runtime_options|vision_calibration|vision_exchange|vision_camera|viss_network)$','--output-on-failure'],env=dict(os.environ,TMPDIR=str(scratch)))
+        tests=run(['ctest','--test-dir',str(BUILD/'gateway-unit'),'-R','^(runtime_options|vision_calibration|vision_exchange|vision_camera|viss_network)$','--output-on-failure'],env=dict(os.environ,TMPDIR=str(scratch)))
         require(b'100% tests passed, 0 tests failed out of 5' in tests.stdout,'VISION_HOST_GATEWAY_TESTS_FAILED')
     with directory(BUILD) as scratch:
         stage=scratch/'candidate';native=stage/'native';(native/'lib').mkdir(parents=True)
