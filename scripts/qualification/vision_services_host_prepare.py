@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT=Path(__file__).resolve().parents[2]
 BUILD=Path('/Volumes/SDV-Dev/sdv/build/vision-services')
@@ -44,8 +45,12 @@ def main():
         require(not run(['git','-C',str(path),'diff','HEAD','--name-only']).stdout,'VISION_HOST_COMMITTED_SOURCES_REQUIRED')
         sources[name]=run(['git','-C',str(path),'rev-parse','HEAD']).stdout.decode().strip()
     with directory(ROOT,root=Path('/Volumes/SDV-Dev/.s501/.tmp')) as scratch:
-        tests=run(['ctest','--test-dir',str(BUILD/'gateway-unit'),'-R','^(runtime_options|vision_calibration|vision_exchange|vision_camera|viss_network)$','--output-on-failure'],env=dict(os.environ,TMPDIR=str(scratch)))
-        require(b'100% tests passed, 0 tests failed out of 5' in tests.stdout,'VISION_HOST_GATEWAY_TESTS_FAILED')
+        junit=scratch/'gateway-unit.xml'
+        run(['ctest','--test-dir',str(BUILD/'gateway-unit'),'-R','^(runtime_options|vision_calibration|vision_exchange|vision_camera|viss_network)$','--output-on-failure','--output-junit',str(junit)],env=dict(os.environ,TMPDIR=str(scratch)))
+        require(junit.is_file() and junit.stat().st_size<1024**2,'VISION_HOST_GATEWAY_REPORT_MISSING')
+        cases=ET.parse(junit).getroot().findall('testcase')
+        require(len(cases)==5 and {row.attrib.get('name') for row in cases}=={'runtime_options','vision_calibration','vision_exchange','vision_camera','viss_network'}
+            and all(row.find('failure') is None and row.find('skipped') is None and row.find('error') is None for row in cases),'VISION_HOST_GATEWAY_TESTS_FAILED')
     with directory(BUILD) as scratch:
         stage=scratch/'candidate';native=stage/'native';(native/'lib').mkdir(parents=True)
         binary=native/'carla-ego-runtime';shutil.copyfile(BUILD/'gateway-live/carla-ego-runtime',binary);binary.chmod(0o755)
