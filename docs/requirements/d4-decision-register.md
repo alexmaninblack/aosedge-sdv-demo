@@ -3700,6 +3700,13 @@ Preserve Unit, Subject memberships, VM, OEM component and data; no VDP/Brake/Tir
 changes or new service authority. This exception permits native consumer
 evidence, not Cloud authority for ingress or AI/full-E2E acceptance.
 
+The [permanent acceptance result](../planning/active/vision-ingress-permanent-delivery.md#permanent-ingress-acceptance-result)
+is now PASS on that same fresh `.5` VM: native `0.1.6` live read, retained cold
+boot, native `0.1.7` mount/GID revocation, isolation/staleness/restart/detach and
+verified shutdown. The exact scenario continuation preserves data and all four
+retained journals. This closes Camera ingress acceptance, not the separately
+required Perception/Assessment or full Vision E2E gates.
+
 ## Explicitly Deferred or Out-of-Scope Items
 
 | Tracker | Boundary | Re-entry condition | State |

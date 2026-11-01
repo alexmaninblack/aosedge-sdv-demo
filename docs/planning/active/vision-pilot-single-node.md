@@ -539,18 +539,20 @@ permanent image delivery, Perception/Assessment, model performance or full
 Vision E2E. Preserve the current VM/Unit and qualify an explicitly accepted
 permanent delivery route next; do not infer a Main merge or public release.
 
-The [permanent delivery packet](vision-ingress-permanent-delivery.md)
-is accepted on 2026-11-01 with recovery required before build/update. Read-only
-`ingress-delivery-02` confirms the current native rootfs/boot runtimes, installed
-Camera with no pending transaction and a read-only single rootfs partition.
-Boot A/B is not proof of rootfs atomic rollback. The recommended route is native
-Vision rootfs FOTA plus normal Camera OEM delivery, with a closed signed host
-resource binding and recovery gates. Recovery and reversible policy proof passed.
-The first native `.4` rootfs trial failed due to omitted image preprocessing;
-normal native revert restored `.3` with the same VM/data. The producer fix passed
-offline first/repeat checks. The accepted continuation rejects only the exact
-failed verification batch, reconciles pending state, then delivers `.5`; Camera,
-permanent Source and native read/revoke acceptance remain open.
+The [permanent delivery packet and result](vision-ingress-permanent-delivery.md#permanent-ingress-acceptance-result)
+close Camera ingress/read/revoke acceptance on 2026-11-01. Recovery of the failed
+native `.4` trial was proven first; after its assignment kept returning, the
+operator accepted exact retirement and a fresh `.5` manufacturing route.
+That exception is complete, not continuing reset authority. On the same fresh
+Vision VM, Camera `0.1.1`, permanent signed Source ingress, actual native JPEG
+pairs, negative isolation, stale/disconnect clearing, restart epochs, retained
+cold boot, `0.1.6` read and `0.1.7` resource revocation passed. All four retained
+journals and data are unchanged; owned runtimes and transient probes stopped.
+The packet records the warm proof, failed harness continuations and final exact
+continuation separately. Boot A/B still does not imply atomic rootfs rollback.
+This closes the Camera foundation only: Perception/Assessment, their native
+deployment, model performance and full Vision E2E remain subsequent gates.
+No Main promotion, public release or DMG replacement is inferred.
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,

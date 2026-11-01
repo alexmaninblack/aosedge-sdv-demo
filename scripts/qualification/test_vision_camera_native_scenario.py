@@ -15,6 +15,31 @@ from vision_camera_fixture_cloud import configuration,terminal_retry,title_corre
 
 
 class NativeFixtureIsolationTests(unittest.TestCase):
+    def test_negative_exec_mount_is_private_bounded_and_does_not_remount_run(self):
+        source=Path(__file__).with_name('vision_negative_probe.py').read_text()
+        tree=ast.parse(source)
+        commands=[n for n in ast.walk(tree) if isinstance(n,ast.List)
+            and n.elts and isinstance(n.elts[0],ast.Constant) and n.elts[0].value=='mount']
+        self.assertEqual(len(commands),1)
+        self.assertEqual([ast.literal_eval(n) for n in commands[0].elts[:-1]],
+            ['mount','-t','tmpfs','-o','size=4m,mode=0755,nodev,exec,suid','tmpfs'])
+        self.assertEqual(ast.unparse(commands[0].elts[-1]),'str(executable)')
+        self.assertIn("executable=root/'exec'",source)
+        self.assertIn("['mount','-t','tmpfs','-o','size=4m,mode=0755,nodev,exec,suid','tmpfs',str(executable)]",source)
+        self.assertNotIn('remount',source)
+        self.assertIn("st_mode&0o7777==0o555",source)
+        self.assertIn("st_uid==0",source)
+
+    def test_negative_exec_cleanup_unmounts_normally_before_removing_owned_root(self):
+        source=Path(__file__).with_name('vision_negative_probe.py').read_text()
+        cleanup=source[source.index('def cleanup(files):'):]
+        self.assertIn("json.loads((root/'.owner.json').read_bytes())==pins",cleanup)
+        self.assertLess(cleanup.index("['umount',str(executable)]"),cleanup.index('executable.rmdir()'))
+        self.assertIn('not executable.is_mount() and not any(executable.iterdir())',cleanup)
+        self.assertNotIn('rmtree',source)
+        self.assertNotIn("'-f'",cleanup)
+        self.assertNotIn("'-l'",cleanup)
+
     def test_negative_prerequisites_never_open_credential_or_network(self):
         root=Path(__file__).resolve().parents[2]/'tests/fixtures'
         for name,operation in (('vision-ingress-boundary.c','int fd=socket('),('vision-camera-credential-deny.c','int fd=open(')):

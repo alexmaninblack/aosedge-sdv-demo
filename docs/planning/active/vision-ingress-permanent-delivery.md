@@ -3,8 +3,8 @@
 
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
-- Status: Accepted fresh .5 packet and diagnostic successor delta D1
-- Version: 0.10
+- Status: Accepted packet; permanent Camera ingress/read/revoke acceptance passed
+- Version: 0.11
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -15,13 +15,15 @@
 ## Purpose and current boundary
 
 The operator accepted a **fresh development environment** after rejection of
-`.4` failed to clear its assignment. This explicitly supersedes the earlier
-preserve-current-Vision-VM restriction below, but only for current Unit
+`.4` failed to clear its assignment. That completed one-time exception superseded
+the earlier preserve-current-Vision-VM restriction below, only for old Unit
 `4374bcb2-0613-419c-8ac9-e8458358c91c`, node
 `d22dca91-5746-4218-ac1a-cc9bd489023c` and
-`SDV-Vision-Camera-Image-Lab-Data` on M4. Retire that Unit through normal owners,
-confirm its absence, remove its owned disks/checkpoints and disposable instance
-state, and create a new Unit/VM from a corrected `.5` manufacturing image.
+`SDV-Vision-Camera-Image-Lab-Data` on M4. Its normal retirement, absence check,
+owned disposable disk/state removal and replacement from `.5` are complete.
+The current Unit is `af6d074a-6ce1-49ba-b613-0476e7b6d1b5`, VM
+`89273f16-4be0-4b22-b4cb-58d08533c8bc`. D1 and its remaining acceptance ran on
+that same VM. No further reset/reprovisioning authority is inferred.
 Preserve the four other instance roots, Main/VDP/Brake/Tire, selected shared
 OEM/SP credentials, source, current DMG, Builder and caches. Keep compact failure
 evidence. No unproven restore of the old disk or manual pending-state edit.
@@ -79,6 +81,66 @@ the regression gate. No immutable guest file or native transaction was edited.
 
 ### Permanent delivery result and remaining boundary
 
+<a id="permanent-ingress-acceptance-result"></a>
+#### Current acceptance result — 2026-11-01
+
+**PASS_FRESH_PERMANENT_INGRESS_NATIVE_READ_REVOKE.** The warm gates in
+`vision-fresh-accept-11` and exact remaining continuation
+`vision-fresh-cold-finish-02` close this packet on the same fresh `.5` Vision VM:
+
+- Camera `0.1.1` remains installed through native OEM delivery with the same
+  store UUID and machine identity. Signed host tooling is the unchanged
+  `0.5.0-host-resume` bundle, integration `9dd0b087e468807d49c5e3396adb2ea27f8fb575`,
+  platform `64df0da36c845dc28d50a9e5a60d006acd222643`, Gateway
+  `d889b14ac854a64b9847f6a8a018bc5f45f90a10`.
+- Fixed diagnostic read `0.1.6` was uploaded once in attempt 09, authoritatively
+  reconciled and reused. Native Aos independently verified live JPEG body hashes,
+  current source/component epochs and real 80–120 ms frame pairs, both warm
+  and after a retained cold boot. It used the read-only resource, UID 5000,
+  `container_engine_t`, NNP and no active capabilities or credential mount.
+- Wrong media roles, anonymous TLS, second-session quota, wrong generation,
+  outside-peer/listener attempts and same-UID core credential access were denied.
+  The credential open returned EACCES; the actual native egress drop counter
+  increased. No security policy or system mount was weakened.
+- Stalled media aged out without new admission. Normal ingress Stop cleared
+  retained pixels; reconnect and Camera restart produced fresh epochs and real
+  pairs. Source detach drained media and denied the previous client.
+- The continuation performed real Stop/Start of the same VM, restored the same
+  Camera store, enrolled Source normally, proved physical Safe Stop, then
+  received fresh native JPEG pairs. It did not rebuild or reprovision anything.
+- Revocation `0.1.7` was signed/uploaded once and reconciled READY. The new native
+  process lost both the camera read mount and resource GID. Camera and ingress
+  retained `NRestarts=0`; warm/cold functional scoped AVC sets were empty with
+  SELinux Enforcing.
+- Final cleanup independently confirmed Source/CARLA and the owned VM stopped,
+  all four retained journals unchanged, the same fresh identity, stopped fixture
+  units and removal/unmount of the exact temporary execution view. Data, shared
+  credentials, dependencies, Builder and caches are preserved.
+
+Attempt 11 took 203.68 s and correctly remained NOT_COMPLETE after its warm gates:
+the detach test had kept its own physical Safe Stop hold, so normal Stop was
+rejected as a competing operation. A first 18.67-s continuation reselected the
+session but did not release that hold and also remained NOT_COMPLETE. Read-only
+controller/source inspection identified the existing held, fresh stopped frame;
+the second continuation released it through its owner, never patched the journal,
+and completed the remaining cold/read/revoke/cleanup gates in 142.59 s. These are
+distinct attempt timings, not a claim that the entire campaign took 142.59 s.
+The scenario now releases its detach probe's hold in `finally`; a regression
+checks this ordering before normal Stop.
+
+The negative probes initially ran on `/run` with `nosuid`, preventing their
+expected SELinux domain transition. The bounded harness correction uses only
+a private 4-MiB exec tmpfs with pinned root-owned 0555 binaries and zero
+capabilities. `/run`, rootfs and policy remain unchanged; normal unmount is
+verified. This is not a product permission change or a permanent loader.
+
+Compact private evidence is retained under the named ignored qualification
+records. The chronological diagnosis below is not the current completion state.
+**Perception, Assessment, model performance and full Vision E2E remain NOT_RUN.**
+No Main merge/push, public distribution or current DMG replacement is included.
+
+#### Diagnostic and recovery evidence leading to the result
+
 `vision-fresh-accept-07` proves native Camera `0.1.0` → `0.1.1` OEM delivery,
 same store UUID, Cloud/native version agreement, permanent nonroot ingress,
 idempotent start, empty ingress capabilities, read-only credential projection,
@@ -112,7 +174,9 @@ Only the two fixture targets were compiled on the SSD (`fresh-reader-03`);
 the Builder was stopped. `vision-reader-diagnostic-04` proves both default-env
 and no-config parser units pass in the same container filesystem view. No
 synthetic frames were sent in that final check. Scratch and owned VM stopped;
-all retained journals match. Corrected bytes are **not published**.
+all retained journals match. At this diagnostic checkpoint the corrected bytes
+were not yet published; D1 and the current acceptance result above supersede
+that checkpoint's publication state.
 
 <a id="vision-diagnostic-successors-d1"></a>
 #### Accepted bounded delta D1 — immutable diagnostic successors
@@ -145,6 +209,12 @@ journals match. Only those small diagnostic fixture targets were recompiled on
 the SSD with fixed prerequisite-stage/errno output and an identity-only mode.
 That preflight performs no socket/credential operation and does not replace
 the real full denial gates. Reconcile/reuse `0.1.6`; do not upload it again.
+
+### Historical basis for the permanent-delivery packet
+
+The following inventory/design/recovery notes predate the accepted fresh `.5`
+route and current acceptance result. They preserve the failed native update's
+bounded evidence, not instructions to repeat it or current NOT_RUN claims.
 
 The reversible Gateway → Camera Access → native Aos reader proof passed.
 Permanent ingress still needs the labelled launcher, systemd unit, narrow

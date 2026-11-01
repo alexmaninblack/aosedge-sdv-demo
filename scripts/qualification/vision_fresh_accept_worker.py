@@ -145,9 +145,9 @@ def main():
                 return value
             observation=(records/'vision_ingress_observation.py').read_text().replace("'2200'","'500'").replace("if __name__=='__main__':print(json.dumps(observe()))",'print(json.dumps(observe()))')
             def observe():return guest(observation)
-            def negative_probe(identity_only):
+            def negative_probe(identity_only,cleanup=False):
                 files={key:base64.b64encode((records/name).read_bytes()).decode() for key,name in (('boundary','vision-ingress-boundary'),('core-deny','vision-camera-credential-deny'))}
-                code='FILES='+repr(files)+'\nIDENTITY_ONLY='+repr(identity_only)+'\n'+(records/'vision_negative_probe.py').read_text()
+                code='FILES='+repr(files)+'\nIDENTITY_ONLY='+repr(identity_only)+'\nCLEANUP='+repr(cleanup)+'\n'+(records/'vision_negative_probe.py').read_text()
                 return guest(code,55)
             def current_pairs(observed):
                 source_id=read_json(native/JOURNAL)['source']['runId']
@@ -384,11 +384,14 @@ print(json.dumps(results))
             def detached_denial():
                 with env._writer(),app.source_service.driver.operation():
                     state=read_json(native/JOURNAL);driver=app.source_service.driver;operation=str(uuid.uuid4())
+                    record('detach-safe-stop-intent.json',dict(operationId=operation,action='SAFE_STOP'))
                     driver.rpc(state['source'],'safe_stop',operation);driver.wait(state['source'],operation,'SAFE_STOP')
-                    authentication.detach(driver,state)
-                    status=authentication.observe(driver)
-                    require(status['state']=='DETACHED' and all(status['activeRoleCounts'][k]==0 for k in ('selectedPlatformUnit','platformUpdateRuntime')),'SOURCE_MEDIA_DRAIN_INCOMPLETE')
-                    require(media_status('vdp')==403,'DETACHED_IDENTITY_ACCEPTED')
+                    try:
+                        authentication.detach(driver,state)
+                        status=authentication.observe(driver)
+                        require(status['state']=='DETACHED' and all(status['activeRoleCounts'][k]==0 for k in ('selectedPlatformUnit','platformUpdateRuntime')),'SOURCE_MEDIA_DRAIN_INCOMPLETE')
+                        require(media_status('vdp')==403,'DETACHED_IDENTITY_ACCEPTED')
+                    finally:driver.rpc(state['source'],'release',operation)
                     return dict(normalOwnerDetached=True,mediaDrained=True,oldSelectedIdentityDenied=True)
             phase('normal-source-detach-media-denial',detached_denial)
             phase('source-stop-before-cold-boot',lambda:app.source_service.simulation('stop',target='test'))
@@ -428,7 +431,8 @@ print(json.dumps(results))
                     try:
                         if source_started:app.source_service.simulation('stop',target='test');WorkspaceService(env,app.source_service.driver).execute('close')
                         try:
-                            removed=guest("import json,pathlib,shutil,subprocess;p=pathlib.Path('/run/vision-permanent-acceptance');\nfor u in ('vision-permanent-boundary','vision-permanent-core-deny','vision-permanent-identity-boundary','vision-permanent-identity-core-deny'):\n subprocess.run(['systemctl','stop',u],capture_output=True);subprocess.run(['systemctl','reset-failed',u],capture_output=True)\nif p.exists():shutil.rmtree(p)\nprint(json.dumps(dict(temporaryFixturesRemoved=not p.exists())))")
+                            if c.get('negativeIdentityPreflight'):removed=negative_probe(False,cleanup=True)
+                            else:removed=guest("import json,pathlib,shutil,subprocess;p=pathlib.Path('/run/vision-permanent-acceptance');\nfor u in ('vision-permanent-boundary','vision-permanent-core-deny','vision-permanent-identity-boundary','vision-permanent-identity-core-deny'):\n subprocess.run(['systemctl','stop',u],capture_output=True);subprocess.run(['systemctl','reset-failed',u],capture_output=True)\nif p.exists():shutil.rmtree(p)\nprint(json.dumps(dict(temporaryFixturesRemoved=not p.exists())))")
                             result['cleanup'].update(removed)
                         except Exception:result['cleanup']['temporaryFixturesRemoved']=False
                         stopped=vm.execute('stop','test',timeout=150);result['cleanup']['ownedRuntimesStopped']=stopped['vehicles']['test']['state']=='COMPLETED'

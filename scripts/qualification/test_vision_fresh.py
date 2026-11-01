@@ -1,11 +1,13 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 import copy
+import ast
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 import vision_fresh_retire_worker as worker
 from vision_fresh_accept_worker import pairs
+from vision_fresh_cold_finish import prior_gate,WARM_STAGES
 
 
 class FreshRetirementTests(unittest.TestCase):
@@ -34,6 +36,24 @@ class FreshRetirementTests(unittest.TestCase):
 
 
 class FreshReaderEvidenceTests(unittest.TestCase):
+    def test_detach_probe_releases_its_own_physical_stop_before_normal_stop(self):
+        tree=ast.parse(Path(__file__).with_name('vision_fresh_accept_worker.py').read_text())
+        probe=next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name=='detached_denial')
+        guarded=next(n for n in ast.walk(probe) if isinstance(n,ast.Try))
+        release=ast.unparse(guarded.finalbody[0])
+        self.assertIn("'release', operation",release)
+        self.assertNotIn('attach',ast.unparse(probe))
+
+    def test_cold_continuation_requires_exact_failed_stop_and_all_warm_proofs(self):
+        value=dict(outcome='NOT_COMPLETE',code='SOURCE_CONTROL_REJECTED',cloudMutation=False,
+            cleanup=dict(ownedRuntimesStopped=False,sameFreshIdentity=True,retainedJournalsUnchanged=True),
+            phases=[dict(stage=name) for name in WARM_STAGES])
+        prior_gate(value)
+        for mutate in (lambda v:v.update(cloudMutation=True),lambda v:v.update(code='UNKNOWN'),
+                lambda v:v['phases'].pop(),lambda v:v['cleanup'].update(sameFreshIdentity=False)):
+            wrong=copy.deepcopy(value);mutate(wrong)
+            with self.assertRaises(ValueError):prior_gate(wrong)
+
     def observation(self):
         epoch='5c281add-e6d3-47fc-abeb-67bb85479471'
         frame=dict(sourceId='e5da8297-853e-4b43-a0fa-48d3ee7adfbd',sourceEpoch='1b93e071-367c-4078-89ca-d603adf4dbaa',
