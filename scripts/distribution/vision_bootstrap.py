@@ -27,15 +27,35 @@ def digest(path):
     return value.hexdigest()
 
 
+def authorized_identity():
+    """Resolve the existing owner's OU, not the unrelated CN display suffix."""
+    import warnings
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.x509.oid import NameOID
+    listing=subprocess.check_output(['/usr/bin/security','find-identity','-v','-p','codesigning'],text=True)
+    valid=dict(re.findall(r'^\s*\d+\) ([0-9A-Fa-f]{40}) "([^"\r\n]+)"\s*$',listing,re.M))
+    certificates=subprocess.check_output(['/usr/bin/security','find-certificate','-a','-p'])
+    matches=set()
+    for pem in re.findall(b'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',certificates,re.S):
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore');certificate=x509.load_pem_x509_certificate(pem)
+        except ValueError:continue  # Unrelated system certificates cannot match.
+        identity=certificate.fingerprint(hashes.SHA1()).hex().upper()
+        owners=[v.value for v in certificate.subject.get_attributes_for_oid(NameOID.ORGANIZATIONAL_UNIT_NAME)]
+        if owners==[model.TEAM] and valid.get(identity,'').startswith('Apple Development: '):matches.add(identity)
+    model.require(len(matches)==1,'AUTHORIZED_SIGNING_OWNER_UNAVAILABLE')
+    return next(iter(matches))  # Private internal selector; never report it.
+
+
 def assemble(factory, camera_payload, base_manifest, platform_revision, identity, output,
              ingress_candidate=None, ingress_proof=None, update_platform_revision=None):
     output=model.canonical(output)
     model.require(not output.exists() and output.suffix=='.bundle' and output.parent.is_dir(),'OUTPUT_EXISTS_OR_INVALID')
     model.require(output.parent.stat().st_dev==ROOT.stat().st_dev,'BUILD_REQUIRES_SELECTED_SSD')
     if identity=='authorized-vision-owner':
-        listing=subprocess.check_output(['/usr/bin/security','find-identity','-v','-p','codesigning'],text=True)
-        matches=re.findall(r'^\s*\d+\) ([0-9A-Fa-f]{40}) "Apple Development: [^"\r\n]+ \('+model.TEAM+r'\)"\s*$',listing,re.M)
-        model.require(len(matches)==1,'AUTHORIZED_SIGNING_OWNER_UNAVAILABLE');identity=matches[0]
+        identity=authorized_identity()
     identity=select(identity)
     # Source must be a committed, reproducible snapshot. Untracked retained
     # research files are not inputs and are deliberately not copied wholesale.
