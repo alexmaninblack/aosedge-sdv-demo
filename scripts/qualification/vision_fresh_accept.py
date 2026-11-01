@@ -23,8 +23,9 @@ def main():
     parser.add_argument('--config',type=Path,required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--bundle',type=Path)
+    parser.add_argument('--transient-first-reselect',action='store_true')
     args=parser.parse_args();c=configuration(args.config);t=c['transport'];q=shlex.quote
-    h.require(args.name in ('vision-fresh-accept-01','vision-fresh-accept-02','vision-fresh-accept-03','vision-fresh-accept-04','vision-fresh-accept-05'),'EXACT_FRESH_ACCEPTANCE_REQUIRED')
+    h.require(args.name in ('vision-fresh-accept-01','vision-fresh-accept-02','vision-fresh-accept-03','vision-fresh-accept-04','vision-fresh-accept-05','vision-fresh-accept-06','vision-fresh-accept-07'),'EXACT_FRESH_ACCEPTANCE_REQUIRED')
     records=Path(c['records'])/args.name;remote=Path(c['remoteRoot'])/args.name
     h.require(not records.exists(),'ACCEPTANCE_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     source=Path(__file__).resolve().parents[2];here=Path(__file__).parent
@@ -45,6 +46,7 @@ def main():
     payload.chmod(0o444)
     files=[here/name for name in ('vision_fresh_accept_worker.py','vision_ingress_live_worker.py',
         'vision_ingress_observation.py','vision_delivery_guest.py','vision_camera_fixture_cloud.py','vision_permanent_component_cloud.py')]
+    if args.transient_first_reselect:files.append(here/'vision_pending_reselect_proof.py')
     build=Path('/Volumes/SDV-Dev/sdv/build/vision-ingress')
     files += [build/'fresh-reader-02/vision-camera-probe',build/'reader-01/vision-camera-credential-deny',
               build/'boundary-01/vision-ingress-boundary']
@@ -54,6 +56,8 @@ def main():
         previousNative=str(Path(c['remoteRoot'])/'native-camera-17'),
         files={f.name:h.digest(f) for f in files},camera=dict(bytes=payload.stat().st_size,sha256=h.digest(payload),platformRevision=platform_pin))
     context['existingPublication']=json.loads((Path(c['records'])/'native-camera-17/context.json').read_bytes())['existingPublication']
+    if args.transient_first_reselect:
+        h.require(args.name=='vision-fresh-accept-06','TRANSIENT_RESELECT_PROOF_NAME_REQUIRED');context['transientFirstReselect']=True
     if args.bundle:
         sys.path.insert(0,str(source/'apps/demo-orchestrator/src'))
         from aosedge_demo_orchestrator import vision_bootstrap as v

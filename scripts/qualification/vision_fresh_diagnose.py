@@ -11,9 +11,9 @@ from vision_vm_campaign import configuration
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True);p.add_argument('--attempt',type=int,choices=(1,2),default=1);a=p.parse_args()
     c=configuration(a.config);python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
-    records=Path(c['records'])/'vision-fresh-diagnose-01';h.require(not records.exists(),'DIAGNOSTIC_EXISTS_RECONCILE');records.mkdir(mode=0o700)
+    records=Path(c['records'])/('vision-fresh-diagnose-'+str(a.attempt).zfill(2));h.require(not records.exists(),'DIAGNOSTIC_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     code=r'''import json,sys,pathlib,subprocess,stat
 main=MAIN
 bundle=pathlib.Path(BUNDLE)
@@ -36,6 +36,7 @@ with runtime_paths.installed_session(native):
   result['start']=vm.execute('start','test',timeout=150)
   code=GUEST
   state=read_json(native/JOURNAL);item=state['vehicles']['test']
+  result['hostSource']=dict(generation=state.get('source',{}).get('assignmentGeneration'),onboarding=state.get('source',{}).get('trust',{}).get('onboarding',{}).get('state'))
   done=subprocess.run(ssh_command(access_path(native,'test'),item['sshPort'],5),input="python3 - <<'DIAG'\n"+code+"\nDIAG\n",capture_output=True,text=True,timeout=35)
   assert done.returncode==0 and len(done.stdout)<131072
   result['inventory']=json.loads(done.stdout)
@@ -61,6 +62,8 @@ check=subprocess.run(['/usr/libexec/aos-camera-access-store-check','verify'],cap
 metadata=json.loads((root/'state/installed.json').read_bytes()) if (root/'state/installed.json').is_file() else None
 transaction=json.loads((root/'state/transaction.json').read_bytes()) if (root/'state/transaction.json').is_file() else None
 print(json.dumps(dict(units=units,files=files,storeVerified=check.returncode==0,installed=metadata,transaction=transaction,
+ selectedGeneration=json.loads((root/'demo-inputs/selected.json').read_bytes())['selectedSource']['assignmentGeneration'] if (root/'demo-inputs/selected.json').exists() else None,
+ bindingGeneration=json.loads((root/'demo-inputs/viss-update-binding').read_bytes())['assignmentGeneration'] if (root/'demo-inputs/viss-update-binding').exists() else None,
  mounts=[s.split()[:4] for s in pathlib.Path('/proc/mounts').read_text().splitlines() if str(root) in s])))
 '''
     code=code.replace('MAIN',repr(c['main'])).replace('BUNDLE',repr(str(Path(c['remoteRoot'])/'signed-bootstrap-04/AosEdge Vision Bootstrap 0.5.0.bundle'))).replace('GUEST',repr(guest))

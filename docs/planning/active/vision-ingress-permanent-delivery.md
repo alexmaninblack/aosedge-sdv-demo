@@ -67,6 +67,16 @@ No new VM, reset, re-enrollment, component publication or credential rotation is
 needed for this correction. The remaining named scenario owns Camera `0.1.1`,
 native read/revoke, media denial/staleness, restart/cold-boot and shutdown gates.
 
+`vision-fresh-accept-06` then proved the complementary pending-first-install
+reconnect path (131.97 s): normal Source advanced its assignment generation,
+the exact old identities/material and native candidate remained unchanged,
+only public binding generations and the volatile SM projection were refreshed
+under a stopped writer, and real Safe Stop completed native Camera `0.1.0`
+activation. This was explicitly a transient projection proof, not permanent
+ingress acceptance. VM/Unit and all retained journals are unchanged; owned
+runtimes stopped. The source function matches the live-proven candidate in
+the regression gate. No immutable guest file or native transaction was edited.
+
 The reversible Gateway → Camera Access → native Aos reader proof passed.
 Permanent ingress still needs the labelled launcher, systemd unit, narrow
 SELinux policy, updated Camera payload and signed host Gateway/Source tooling.

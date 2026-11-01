@@ -17,6 +17,9 @@ import time
 import uuid
 
 
+class FirstReselectProofComplete(Exception):pass
+
+
 def require(ok,code):
     if not ok:raise ValueError(code)
 
@@ -77,6 +80,14 @@ def main():
         from aosedge_demo_orchestrator.application import DemoOrchestrator
         from aosedge_demo_orchestrator.workspace import WorkspaceService
         from aosedge_demo_orchestrator import source_authentication as authentication
+        if c.get('transientFirstReselect'):
+            from aosedge_demo_orchestrator import vision_source_guest as projection
+            candidate=runpy.run_path(str(records/'vision_pending_reselect_proof.py'))['candidate']
+            original_script=projection.script;original_source=Path(projection.__file__).read_text();updated=candidate(original_source)
+            def transient_script(request,**kwargs):
+                value=original_script(request,**kwargs);require(value.count(repr(original_source))==1,'PROJECTION_PROOF_BINDING_CHANGED')
+                return value.replace(repr(original_source),repr(updated))
+            projection.script=transient_script
         verified=v.verify(bundle,c['main']['manifestSha256']);require(verified.manifest_sha256==c['bootstrapManifestSha256'] and v.VERSION=='6.1.1-vision-camera.5','FRESH_BOOTSTRAP_CHANGED')
         native=Path.home()/v.INSTANCE_NAME;before=read_json(native/JOURNAL);item=before['vehicles']['test']
         require(item['unitId']!='4374bcb2-0613-419c-8ac9-e8458358c91c' and item['runtime']['state']==before.get('source',{}).get('state','STOPPED')=='STOPPED','FRESH_IDLE_UNIT_REQUIRED')
@@ -157,6 +168,9 @@ def main():
             native_snapshot=(records/'vision_delivery_guest.py').read_text()+"\nprint(json.dumps(run('snapshot')))\n"
             initial=phase('initial-camera-activation',lambda:guest(native_snapshot,45))
             require(initial['rootfsVersion']=='VERSION="6.1.1-vision-camera.5"' and initial['camera']['version']=='0.1.0' and initial['enforcing'],'INITIAL_CAMERA_NOT_ACTIVATED')
+            if c.get('transientFirstReselect'):
+                result.update(outcome='PASS_TRANSIENT_FIRST_RESELECT_NATIVE_ACTIVATION',nativeCameraActivated=True,immutableGuestFilesChanged=False,
+                    permanentIngress='NOT_RUN');raise FirstReselectProofComplete()
             camera=phase('camera-successor-catalog',lambda:component('status'))
             require(camera['publication']['stage']=='NOT_PUBLISHED','CAMERA_SUCCESSOR_EXISTS_RECONCILE')
             camera_input=c['camera'];payload=records/'camera-access-0.1.1.tar.gz'
@@ -338,9 +352,10 @@ print(json.dumps(results))
             phase('cold-functional-avc-check',lambda:check_audit(cursor))
             result.update(outcome='PASS_FRESH_PERMANENT_INGRESS_NATIVE_READ_REVOKE',sameFreshUnit=True,cameraVersion='0.1.1',rootfsVersion='6.1.1-vision-camera.5',
                 actualJpegPairs=True,disconnectClearing=True,stalledMediaAgeOut=True,mediaRoleQuotaDenial=True,sourceDetachDenial=True,cameraRestart=True,nativeColdBoot=True,resourceRevocation=True)
+    except FirstReselectProofComplete:pass
     except Exception as error:
         import traceback
-        frame=traceback.extract_tb(error.__traceback__)[-1];value=str(error)
+        frame=traceback.extract_tb(error.__traceback__)[-1];value=str(error).split(':',1)[0]
         result.update(code=value if re.fullmatch('[A-Z][A-Z0-9_:,.-]{1,160}',value) else type(error).__name__,failureFile=Path(frame.filename).name,failureLine=frame.lineno)
         if vm is not None:
             try:record('failure-observation.json',evidence(observe()))
