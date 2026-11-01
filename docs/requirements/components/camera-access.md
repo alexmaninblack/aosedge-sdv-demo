@@ -4,12 +4,12 @@
 # OEM Camera Access Requirements
 
 - Status: Accepted source and native-boundary contract; live deployment remains gated
-- Version: 0.4
+- Version: 0.5
 - Prepared: 2026-10-31
 - Owner: OEM Vehicle Platform
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Flow input: [Camera Access flow](../../architecture/demo-scenario-architecture-flows.md#af-vis-cam)
-- Decision: [ADR 0019 v0.10](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+- Decision: [ADR 0019 v0.11](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 
 ## Boundary
 
@@ -74,6 +74,12 @@ per-Unit filesystem identity and `camera_access_store_t` mount context. Preserve
 the existing workdirs context and the VDP backend. Verify preparation/recovery,
 capacity reserve, loop/backing identity, boot ordering and actual unmount/detach;
 never hide an existing unmounted directory's contents or silently migrate them.
+The accepted [first-enrollment exception](../../planning/active/vision-camera-first-enrollment-change-request.md)
+permits only the same fresh Vision Unit's initial Source projection while SM
+is stopped and an unchanged first install waits for Safe Stop. No prior
+deployment/enrollment, partial configuration, foreign identity or destructive
+phase is eligible; the normal native writer still owns physical Safe Stop and
+commit. This is not credential rotation or arbitrary transaction repair.
 An OEM-local producer is not authenticated Gateway ingress. Do not claim a
 normal native service/activation pass from source, root or manual-crun probes.
 

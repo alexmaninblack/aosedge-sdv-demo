@@ -561,7 +561,9 @@ class VMService:
             and not item.get("unitId") and not item.get("nodeId") and not item.get("cloud")
             and state.get("currentVehicle") is None and source.get("assignmentGeneration") == 0
             and not source.get("operation") and not source.get("stopOperation"))
-        if role == "test" and trust.get("enabled") is True and not local_only:
+        from .vision_first_enrollment import deferred_boot
+        first_vision = role=='test' and deferred_boot(state)
+        if role == "test" and trust.get("enabled") is True and not local_only and not first_vision:
             onboarding = trust.get("onboarding") or {}
             if (onboarding.get("state") != "COMPLETE" or not item.get("unitId") or not item.get("nodeId")
                     or onboarding.get("unitId") != item["unitId"] or onboarding.get("nodeId") != item["nodeId"]):

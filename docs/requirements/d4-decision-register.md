@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.10](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.11](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3629,7 +3629,7 @@ the owning specification; no review narrative is a second normative copy.
 ### D4-030 — Independent Camera Access foundation
 
 - State: `DECIDED` for the source foundation authorized on 2026-10-31.
-- Authority: [ADR 0019 v0.10](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
+- Authority: [ADR 0019 v0.11](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
 - Owner: [OEM Camera Access](component-decomposition-and-interface-register.md#cmp-cam),
   source and fixed machine profile in `aos-vehicle-platform`'s Vision worktree.
 - Composition: separate Vision VM and OEM camera payload/target, no VDP,
@@ -3674,6 +3674,11 @@ the owning specification; no review narrative is a second normative copy.
   Cloud model/set are fixed by [bootstrap v1](../../contracts/vision-vm/bootstrap.v1.json).
   Preserve existing roots and Main delivery; no arbitrary image override or
   public release is implied. A native diagnostic reader is not the final AI service.
+- The [accepted first-enrollment exception](../planning/active/vision-camera-first-enrollment-change-request.md)
+  allows the same fresh Vision Unit's initial Source identity projection only
+  with SM stopped, an unchanged first-install Safe Stop wait, and no previous
+  deployment or enrollment. Reject partial/foreign/destructive state; preserve
+  the transaction and normal native writer's sole activation authority.
 
 These entries remain visible so that they cannot reappear as accidental local
 implementation work. They do not block the current D4 sequence.

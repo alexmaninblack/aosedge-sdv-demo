@@ -3,7 +3,7 @@
 
 # Vision First Enrollment and Queued Camera Installation
 
-- Status: Proposed bounded architecture/lifecycle correction; not implemented
+- Status: Accepted on 2026-11-01; transient first-enrollment/activation/restart proof passed, signed consumer proof pending
 - Prepared: 2026-11-01
 - Owner: SDV Lab Source lifecycle and OEM platform
 - Parent: [Vision implementation packet](vision-pilot-single-node.md#current-signed-bootstrap-and-native-camera-access-packet)
@@ -46,7 +46,16 @@ stop. An intermediate receipt-collection error was reconciled by read, without
 replaying VM or Source actions. The SSD Builder and its DNS helper are stopped.
 Private evidence is `native-camera-06/enrollment-boundary-stop-reconciled.json`.
 
-## Proposed minimal correction
+The accepted correction passed `native-camera-08` using hash-pinned targeted
+Source tooling and the same VM/Unit/image/Camera publication. Normal Source
+authentication completed in 6.69 seconds; real physical Safe Stop was observed,
+native Camera activation committed and a normal daemon restart established a
+fresh epoch, rejected the old epoch and remained nonroot/capability-empty in
+Enforcing. The 94.01-second scenario closed its Source/CARLA/VM owners and
+verified three retained journals unchanged. This is a transient tooling proof,
+not signed Source, Aos-reader, revocation or full Vision E2E acceptance.
+
+## Accepted minimal correction
 
 Extend only the fresh Vision first-enrollment case, not general transaction
 reconfiguration or credential rotation:
@@ -68,8 +77,8 @@ reconfiguration or credential rotation:
    intent or claiming it was a completed Safe Stop. Keep the simulated actor
    termination and journal reconciliation independently evidenced.
 
-This changes the currently explicit no-projection-during-transaction rule.
-It therefore needs acceptance before implementation. An alternative is an
+This is the accepted narrow exception to the no-projection-during-transaction
+rule, not permission for general reconfiguration. An alternative would be an
 explicit native bootstrap admission gate that prevents all first deliveries
 until Source enrollment and Unit-set isolation finish; that is a broader new
 startup gate and is not silently substituted here.

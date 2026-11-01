@@ -18,6 +18,9 @@ def require(ok,code):
     if not ok:raise ValueError(code)
 
 
+class SourceProofComplete(Exception):pass
+
+
 def atomic(path,value):
     tmp=path.with_suffix('.pending')
     with tmp.open('x') as f:
@@ -52,6 +55,13 @@ def main():
     from aosedge_demo_orchestrator import runtime_paths
     tooling=bundle/'Contents/Resources/tooling/aosedge-sdv-demo/apps/demo-orchestrator/src'
     aosedge_demo_orchestrator.__path__.insert(0,str(tooling/'aosedge_demo_orchestrator'))
+    if c.get('sourceProof'):
+        require(set(c['sourceProof'])=={'vm.py','source.py','vision_source_guest.py','vision_first_enrollment.py'},'SOURCE_PROOF_SCOPE_INVALID')
+        proof=records/'source-proof'
+        for name,digest in c['sourceProof'].items():
+            path=proof/name
+            require(not path.is_symlink() and path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest()==digest,'SOURCE_PROOF_CHANGED')
+        aosedge_demo_orchestrator.__path__.insert(0,str(proof))
     from aosedge_demo_orchestrator import vision_bootstrap as v
     from aosedge_demo_orchestrator.environment import EnvironmentService,JOURNAL
     from aosedge_demo_orchestrator.vm import VMService,access_path
@@ -129,6 +139,9 @@ print(json.dumps(dict(stopped=True)))
                 source_started=False
             return dict(stopped=True)
         try:
+            if initial.get('source',{}).get('operation'):
+                app=DemoOrchestrator(environment_service=env,vm_service=vm)
+                phase('source-initial-cancel-reconcile',lambda:app.source_service.simulation('stop',target='test'))
             phase('isolate-native-unit-memberships',units.isolate_vision_test)
             boot=phase('native-start',lambda:vm.execute('start','test',timeout=150))
             require(boot['vehicles']['test']['state']=='COMPLETED','VM_START_INCOMPLETE')
@@ -220,6 +233,22 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
             source_started=True
             phase('source-start',lambda:app.source_service.simulation('start',target='test'))
             phase('source-native-authentication',app.source_service.initialize_test)
+            # Same real physical-control path used by the API campaign. A
+            # first enrollment finishes in stationary Manual, not Safe Stop.
+            def physical_safe_stop():
+                from uuid import uuid4
+                operation=str(uuid4())
+                atomic(records/'physical-safe-stop-intent.json',dict(operationId=operation,action='SAFE_STOP'))
+                with env._writer(),app.source_service.driver.operation():
+                    state=read_json(native/JOURNAL);source=state['source'];driver=app.source_service.driver
+                    driver.rpc(source,'safe_stop',operation)
+                    value=driver.wait(source,operation,'SAFE_STOP')
+                    if value.get('held'):driver.rpc(source,'release',operation)
+                    final=driver.ready(state);frame=final.get('frame') or {}
+                    require(final.get('fresh') and not final.get('held') and frame.get('activeMode')=='SAFE_STOP'
+                        and frame.get('speedKmh',float('inf'))<=.5 and frame.get('brake',0)>=.99,'CAMERA_PHYSICAL_SAFE_STOP_UNCONFIRMED')
+                    return dict(physicalSafeStop=True,held=False)
+            phase('camera-physical-safe-stop',physical_safe_stop)
             component=ComponentService(env)
             if not existing:
                 prepared=records/'camera-package';prepared.mkdir(mode=0o700)
@@ -310,6 +339,7 @@ assert 'camera_access_t' in (p/'attr/current').read_text()
 print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE',nonroot=True,noNewPrivs=True,capabilitiesEmpty=True)))
 ''',timeout=30))
             result['cameraRestart']='PASS_FRESH_EPOCH_WITHOUT_SOURCE'
+            if c.get('sourceProof'):raise SourceProofComplete()
             def external(name,action):
                 intent=records/(name+'-intent.json')
                 require(not intent.exists(),'FIXTURE_MUTATION_EXISTS_RECONCILE')
@@ -507,6 +537,9 @@ print(json.dumps(dict(bootId=pathlib.Path('/proc/sys/kernel/random/boot_id').rea
                 phase('native-camera-cold-audit',camera_audit)
             result.update(outcome='PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ' if transient else 'PASS_NATIVE_CAMERA_OEM_AND_AOS_READ',resourceRevocation='PASS',
                           diagnosticService='NOT_PERCEPTION',captureClockAccuracy='NOT_QUALIFIED')
+        except SourceProofComplete:
+            result.update(outcome='PASS_TRANSIENT_SOURCE_ENROLLMENT_AND_CAMERA',sourceTooling='UNSIGNED_TARGETED_PROOF',
+                aosConsumer='NOT_RUN',resourceRevocation='NOT_RUN')
         except Exception as error:
             # Keep the fixed code even when an owner appends a lowercase role
             # or private diagnostic. Never persist the unrestricted exception.
@@ -567,7 +600,7 @@ print(json.dumps(dict(stockSmRestored=True)))
             result['seconds']=round(time.monotonic()-began,2)
             completion(result)
             atomic(records/'result.json',result);print(json.dumps(result),flush=True)
-    return 0 if result['outcome'] in ('PASS_NATIVE_CAMERA_OEM_AND_AOS_READ','PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ') else 1
+    return 0 if result['outcome'] in ('PASS_NATIVE_CAMERA_OEM_AND_AOS_READ','PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ','PASS_TRANSIENT_SOURCE_ENROLLMENT_AND_CAMERA') else 1
 
 
 if __name__=='__main__':raise SystemExit(main())

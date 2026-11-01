@@ -26,6 +26,7 @@ def main():
     p.add_argument('--repair-store-labels',action='store_true')
     p.add_argument('--reconcile-stop',choices=('native-camera-04',))
     p.add_argument('--reuse-camera-publication',action='store_true')
+    p.add_argument('--source-proof',action='store_true')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     h.require(not a.repair_store_labels or a.transient_sm is not None,'LABEL_PROOF_REQUIRES_TRANSIENT_CONTEXT')
     h.require(a.name.startswith('native-camera-') and a.name.removeprefix('native-camera-').isdecimal(),'ATTEMPT_NAME_INVALID')
@@ -36,6 +37,11 @@ def main():
         probeSha256=h.digest(a.probe),fixtureWorkerSha256=h.digest(here/'vision_camera_fixture_cloud.py'))
     if a.resume:context['resumeFrom']=str(remote.parent/a.resume)
     files=[here/'vision_camera_native_worker.py',here/'vision_camera_fixture_cloud.py',a.probe]
+    proof_files=[]
+    if a.source_proof:
+        source=here.parents[1]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator'
+        proof_files=[source/n for n in ('vm.py','source.py','vision_source_guest.py','vision_first_enrollment.py')]
+        context['sourceProof']={f.name:h.digest(f) for f in proof_files}
     if a.transient_sm:
         h.require(a.transient_sm.name=='aos-sm-profile-proof','TRANSIENT_BINARY_NAME_INVALID')
         context['transientSm']=dict(sha256=h.digest(a.transient_sm));files.append(a.transient_sm)
@@ -81,6 +87,9 @@ with runtime_paths.installed_session(pathlib.Path.home()/v.INSTANCE_NAME):
     options=h.ssh_args(t)[1:-1];options.remove('-T');i=options.index('-b')
     options[i:i+2]=['-o','BindAddress='+options[i+1]]
     h.run(['/usr/bin/scp',*options,*map(str,files),t['user']+'@'+t['host']+':'+str(remote)+'/'],timeout=90)
+    if proof_files:
+        h.remote(t,'umask 077\nmkdir '+q(str(remote/'source-proof')),timeout=10)
+        h.run(['/usr/bin/scp',*options,*map(str,proof_files),t['user']+'@'+t['host']+':'+str(remote/'source-proof')+'/'],timeout=30)
     command=q(python)+' -I -B '+q(str(remote/'vision_camera_native_worker.py'))+' --context '+q(str(remote/'context.json'))
     started=time.monotonic();process=subprocess.Popen(h.ssh_args(t)+[command],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     with (root/'progress.jsonl').open('x') as log:

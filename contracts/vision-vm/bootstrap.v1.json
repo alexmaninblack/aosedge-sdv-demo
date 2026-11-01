@@ -15,6 +15,7 @@
   "nativeInstanceName": "SDV-Vision-Camera-Lab-Data",
   "retainedInstanceNames": ["SDV-Lab-Data", "SDV-Vision-Lab-Data", "SDV-Vision-Native-Lab-Data"],
   "cameraStorage": "Independent 512-MiB loop-ext4 Camera store with per-Unit UUID and camera_access_store_t context; preserve workdirs and VDP labels",
+  "firstEnrollmentContract": "contracts/vision-vm/first-enrollment.v1.json",
   "imageRecipe": "aos-image-vision",
   "factoryRelativePath": "images/main-qemuarm64.img",
   "manifestRelativePath": "Contents/Resources/bootstrap.json",

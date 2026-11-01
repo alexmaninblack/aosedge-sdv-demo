@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 import ssl
 import stat
+import time
+import re
 from uuid import UUID
 
 PROFILE = 'aos-vision-main-qemuarm64-v1'
@@ -76,6 +78,81 @@ def status(trust):
                 platform='camera-access', updateRuntime=values, vdpInstalled=False)
 
 
+def first_install_state():
+    """Read-only, closed native wait. No enrollment or slot repair authority."""
+    raw=read(RUNTIME/'state/transaction.json',0o600);value=json.loads(raw)
+    fields={'schemaVersion','operation','phase','candidateSlot','candidateItemId','candidateSubjectId',
+        'candidateInstance','candidateVersion','candidateManifestDigest','candidateRuntimeId','candidatePreinstalled','hasPrevious'}
+    require(set(value)==fields and value['schemaVersion']==2 and value['operation']=='install-or-replace'
+        and value['phase']=='waiting-for-safe-stop' and value['hasPrevious'] is False
+        and value['candidateSlot'] in ('a','b') and value['candidateVersion']=='0.1.0'
+        and type(value['candidateInstance']) is int and value['candidateInstance']>=0
+        and type(value['candidatePreinstalled']) is bool
+        and re.fullmatch('sha256:[a-f0-9]{64}',value['candidateManifestDigest']), 'FIRST_INSTALL_STATE_REQUIRED')
+    for name in ('candidateItemId','candidateSubjectId','candidateRuntimeId'):
+        require(str(UUID(value[name]))==value[name],'FIRST_INSTALL_IDENTITY_INVALID')
+    require(not os.path.lexists(RUNTIME/'active') and not os.path.lexists(RUNTIME/'state/installed.json'),
+        'FIRST_INSTALL_PREVIOUS_DEPLOYMENT')
+    candidate=RUNTIME/'slots'/value['candidateSlot']/'.aos-instance.json'
+    # Native SealPayload removes owner-write from the original 0600 record.
+    meta=read(candidate,0o400);record=json.loads(meta)
+    require(record.get('schemaVersion')==1 and record.get('slot')==value['candidateSlot']
+        and all(record.get(k)==value['candidate'+k] for k in
+            ('ItemId','SubjectId','Instance','Version','ManifestDigest','RuntimeId','Preinstalled')),
+        'FIRST_INSTALL_CANDIDATE_CHANGED')
+    return raw,meta
+
+
+def validate_material(trust,item,material):
+    """Validate both exact leaves/keys before the first persistent write."""
+    for name,role in (('vdp','selected-platform-unit'),('runtime','platform-update-runtime')):
+        san=trust.call(['openssl','x509','-noout','-ext','subjectAltName'],data=material[name+'Certificate']).splitlines()
+        require(len(san)==2 and san[1].strip()=='URI:urn:aosedge:demo:viss-client:v1:'+role+':'+item['unitId']+':'+item['nodeId'],
+            'CERTIFICATE_IDENTITY_INVALID')
+        require(trust.call(['openssl','x509','-pubkey','-noout'],data=material[name+'Certificate'])==
+            trust.call(['openssl','pkey','-pubout'],data=material[name+'Key']),'KEY_MISMATCH')
+
+
+def initial_projection(request,trust,item,material,expected):
+    """Quiesce one native writer, retain its exact first wait, then resume it."""
+    require(request['action']=='trust-configure','FIRST_INSTALL_CONFIGURE_ONLY')
+    before=first_install_state()
+    require(all(not os.path.lexists(path) for path in expected),'FIRST_INSTALL_PARTIAL_ENROLLMENT')
+    validate_material(trust,item,material)
+    trust.call(['systemctl','--no-block','stop','aos-sm.service'])
+    stopped=False;created=[]
+    try:
+        deadline=time.monotonic()+20
+        while True:
+            values=dict(line.split('=',1) for line in trust.call([
+                'systemctl','show','aos-sm.service','-p','ActiveState','-p','Job']).splitlines() if '=' in line)
+            if values.get('ActiveState')=='inactive' and values.get('Job') in ('','0'):
+                stopped=True;break
+            require(time.monotonic()<deadline,'FIRST_INSTALL_WRITER_STOP_TIMEOUT');time.sleep(.25)
+        require(first_install_state()==before,'FIRST_INSTALL_STATE_CHANGED')
+        require(all(not os.path.lexists(path) for path in expected),'FIRST_INSTALL_PARTIAL_ENROLLMENT')
+        for path,(value,mode) in expected.items():
+            trust.write(path,value,mode);created.append(path)
+        require(first_install_state()==before,'FIRST_INSTALL_STATE_CHANGED')
+        trust.call(['systemctl','daemon-reload'])
+    except BaseException:
+        # Only newly created, still-exact files may be rolled back. A crash
+        # leaves partial state fail-closed; never overwrite it on another run.
+        try:
+            if stopped and first_install_state()==before:
+                for path in reversed(created):
+                    value,mode=expected[path]
+                    require(read(path,mode)==value,'FIRST_INSTALL_ROLLBACK_CHANGED')
+                    path.unlink()
+                trust.call(['systemctl','daemon-reload'])
+        finally:
+            trust.call(['systemctl','--no-block','start','aos-sm.service'])
+        raise
+    trust.activate_consumers(['aos-sm.service'])
+    return dict(configured=True,noOp=False,smRestarted=True,firstEnrollment=True,
+        transactionPreservedAtResume=True,**status(trust))
+
+
 def execute(request, trust, source=None):
     action = request['action']
     item, hardware = identity(request, provisioned=action not in ('factory-role', 'configure') or bool(request['vehicle'].get('unitId')))
@@ -126,9 +203,10 @@ def execute(request, trust, source=None):
                 INPUTS/'selected.json': (json.dumps(selected, sort_keys=True), 0o644), DROPIN: (text, 0o644)}
     transaction = RUNTIME/'state/transaction.json'
     if transaction.exists() or transaction.is_symlink():
-        # No interrupted-transaction reconfiguration or credential replacement.
-        require(all(read(path, mode) == value for path, (value, mode) in expected.items()), 'ACTIVE_TRANSACTION_PRESERVED')
-        return dict(configured=True, noOp=True, smRestarted=False, **status(trust))
+        if all(path.is_file() and not path.is_symlink() for path in expected):
+            require(all(read(path, mode) == value for path, (value, mode) in expected.items()), 'ACTIVE_TRANSACTION_PRESERVED')
+            return dict(configured=True, noOp=True, smRestarted=False, **status(trust))
+        return initial_projection(request,trust,item,material,expected)
     changed = False
     for name, path in files.items():
         if name != 'ca' and path.exists():

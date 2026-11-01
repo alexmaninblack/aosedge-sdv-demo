@@ -4,7 +4,7 @@
 # ADR 0019: A Separate Single Node Vision Lab
 
 - Status: Accepted for the isolated M4 VM, engineering previews and Camera Access native-boundary implementation; live activation remains unqualified
-- Version: 0.10
+- Version: 0.11
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab System Architecture
@@ -155,6 +155,17 @@ bootstrap layout/prepare/attach/mount/check pattern, never a VDP file or slot.
 Do not change the shared workdirs label or grant Camera general Aos-file access.
 Prove the backend before another image build; the resource/IPC/OEM logical
 boundary is unchanged and native activation remains unqualified.
+
+The operator also accepted the bounded
+[first-enrollment correction](../../planning/active/vision-camera-first-enrollment-change-request.md).
+For the same fresh Vision Unit only, the Source owner may initially project its
+existing identity while the sole SM writer is stopped and an unchanged first
+Camera install waits for Safe Stop. Require no previous/active/installed
+component or enrollment; reject partial state, different identity and every
+destructive phase. The ordinary native writer alone resumes and commits the
+same transaction after real Safe Stop. Preserve the interrupted first Source
+intent in a cancellation receipt when its actor is normally terminated or
+independently proven absent; never fabricate a completed Safe Stop.
 
 A closed signed-bootstrap catalog extends image selection only for the fixed
 Vision profile and fresh native instance. Existing EnvironmentService/VMService

@@ -131,9 +131,18 @@ class SourceDriver:
                 command[1:1] = ["-o", "ControlPersist=10"]
                 self._connections[role] = command
             result = subprocess.run(command, input=script, text=True, capture_output=True, timeout=timeout)
-            if result.returncode or len(result.stdout) > 65536:
+            if len(result.stdout) > 65536:
                 raise EnvironmentError("SOURCE_GUEST_UNAVAILABLE:" + role)
             value = json.loads(result.stdout)
+            if result.returncode:
+                # The closed Vision wrapper exits nonzero on a diagnosed
+                # failure. Preserve only its fixed code, never stderr/material.
+                reason=value.get('reason') if isinstance(value,dict) else None
+                if (state.get('vmProfile')=='aos-vision-main-qemuarm64-v1' and set(value)=={'ok','reason'}
+                        and value.get('ok') is False and isinstance(reason,str)
+                        and re.fullmatch('VISION_SOURCE_[A-Z0-9_]{1,100}',reason)):
+                    raise EnvironmentError(reason+':'+role)
+                raise EnvironmentError("SOURCE_GUEST_UNAVAILABLE:" + role)
             if not value.get("ok"):
                 raise EnvironmentError(value.get("reason", "SOURCE_GUEST_FAILED") + ":" + role)
             return value["data"]
@@ -695,6 +704,10 @@ class SourceService:
                 raise EnvironmentError("SIMULATION_ACTION_INVALID")
             if not source:
                 return dict(state="STOPPED", noOp=True, currentVehicle=None)
+            if source.get('operation'):
+                from .vision_first_enrollment import cancel
+                cancelled=cancel(self,state)
+                if cancelled is not None:return cancelled
             if source.get("operation"):
                 pending = source["operation"]
                 if (not pending.get("initialManual") or state.get("currentVehicle") is not None
