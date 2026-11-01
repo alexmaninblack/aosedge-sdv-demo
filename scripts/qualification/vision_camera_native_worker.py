@@ -27,6 +27,12 @@ def atomic(path,value):
 
 def completion(result):
     """An action pass never hides failed cleanup or unexecuted acceptance gates."""
+    if result['outcome']=='PASS_NATIVE_CAMERA_OEM_AND_AOS_READ' and (
+            result.get('cameraRestart')!='PASS_FRESH_EPOCH_WITHOUT_SOURCE'
+            or result.get('nativeColdRestart')!='PASS_SAME_UNIT_STORE_AND_REVOKED_RESOURCE'
+            or result.get('resourceRevocation')!='PASS'):
+        result['outcome']='NOT_COMPLETE'
+        result['code']='CAMERA_ACCEPTANCE_GATE_NOT_COMPLETE'
     if result['outcome'].startswith('PASS_') and not all(result['cleanup'].values()):
         result['outcome']='NOT_COMPLETE'
         result['code']='CAMERA_CLEANUP_NOT_CONFIRMED'
@@ -61,11 +67,13 @@ def main():
     bootstrap=v.verify(bundle,c['main']['manifestSha256'])
     require(bootstrap.manifest_sha256==c['bootstrapManifestSha256'],'BOOTSTRAP_CHANGED')
     native=Path.home()/v.INSTANCE_NAME
-    retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in ('SDV-Lab-Data','SDV-Vision-Lab-Data')}
+    retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data')}
     initial=read_json(native/JOURNAL);old=initial['vehicles']['test']
     require(initial['vmProfile']==v.VM_PROFILE and old['runtime']['state']=='STOPPED'
             and old['cloud']['lifecycle']=='ONLINE' and old['cloud']['identity']['model']=='aos-vision-vm','RETAINED_VISION_REQUIRED')
     resume=Path(c['resumeFrom']) if c.get('resumeFrom') else None
+    reuse=c.get('existingPublication')
+    require(not (resume and reuse),'PUBLICATION_REUSE_SCOPE_INVALID')
     if resume:
         require(resume.parent==records.parent and resume.name=='native-camera-02','RESUME_SCOPE_INVALID')
         previous=json.loads((resume/'result.json').read_bytes())
@@ -95,6 +103,31 @@ def main():
             done=subprocess.run(command,input=script,text=True,capture_output=True,timeout=timeout)
             require(done.returncode==0,'CAMERA_GUEST_WORKER_FAILED')
             return json.loads(done.stdout)
+        def stop_producer():
+            nonlocal producer
+            if producer is None:return dict(stopped=True)
+            guest(r'''import json,os,pathlib,signal,time
+p=pathlib.Path('/run/vision-camera-probe-fixture/pid')
+if p.exists():
+ value=json.loads(p.read_bytes());proc=pathlib.Path('/proc')/str(value['pid'])
+ if proc.exists():
+  assert (proc/'stat').read_text().split()[21]==value['start']
+  assert (proc/'cmdline').read_bytes().startswith(b'python3\0-u\0-\0')
+  os.kill(value['pid'],signal.SIGTERM)
+  end=time.monotonic()+4
+  while proc.exists() and time.monotonic()<end:time.sleep(.1)
+  assert not proc.exists()
+print(json.dumps(dict(stopped=True)))
+''')
+            producer.wait(timeout=8);producer=None
+            return dict(stopped=True)
+        def stop_source():
+            nonlocal source_started
+            if source_started and app is not None:
+                app.source_service.simulation('stop',target='test')
+                WorkspaceService(env,app.source_service.driver).execute('close')
+                source_started=False
+            return dict(stopped=True)
         try:
             phase('isolate-native-unit-memberships',units.isolate_vision_test)
             boot=phase('native-start',lambda:vm.execute('start','test',timeout=150))
@@ -145,9 +178,15 @@ print(json.dumps(dict(transient=True,stockRootfsUnchanged=True,rollbackArmed=Tru
             scope['vehicles']['test']['nodeHardwareId']=item['cloud']['identity']['nodeHardwareId']
             if resume:
                 scope['deploymentId']=initial['componentOperations']['0.1.0']['deploymentId']
-            before=phase('camera-publication-preflight',lambda:units._cloud('vision-camera-status',purpose='status' if resume else 'upload',**scope))
-            require(before['publication']['stage']==('READY' if resume else 'NOT_PUBLISHED')
-                    and (bool(before['versions']) if resume else not before['versions']),'CAMERA_PUBLICATION_EXISTS_RECONCILE')
+            if reuse:
+                require(reuse['ownerId']==scope['ownerId'] and reuse['cloudDomain']==selected_domain(state),'PUBLICATION_OWNER_CHANGED')
+                manifest=json.loads((bootstrap.resources/'bootstrap.json').read_bytes())
+                require(reuse['payloadSha256']==manifest['cameraPayload']['sha256'],'PUBLICATION_PAYLOAD_CHANGED')
+                scope['deploymentId']=reuse['deploymentId']
+            existing=bool(resume or reuse)
+            before=phase('camera-publication-preflight',lambda:units._cloud('vision-camera-status',purpose='status' if existing else 'upload',**scope))
+            require(before['publication']['stage']==('READY' if existing else 'NOT_PUBLISHED')
+                    and (bool(before['versions']) if existing else not before['versions']),'CAMERA_PUBLICATION_EXISTS_RECONCILE')
             config=load_configuration(native)
             sdk,environment=launch(native,config['cloudPython'],'unit_cloud.py')
             request=dict(scope,cloudDomain=selected_domain(state),oemOwner=cloud_binding(state)['ownerId'],
@@ -182,7 +221,7 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
             phase('source-start',lambda:app.source_service.simulation('start',target='test'))
             phase('source-native-authentication',app.source_service.initialize_test)
             component=ComponentService(env)
-            if not resume:
+            if not existing:
                 prepared=records/'camera-package';prepared.mkdir(mode=0o700)
                 (prepared/'camera-access').mkdir()
                 raw=(bootstrap.resources/'camera-access/payload.tar').read_bytes()
@@ -196,7 +235,8 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
                 with env._writer():
                     state=read_json(native/JOURNAL)
                     record=state.setdefault('componentOperations',{}).setdefault('0.1.0',dict(
-                        version='0.1.0',componentType=v.COMPONENT,ownerId=scope['ownerId'],cloudDomain=selected_domain(state),publicationPath='VERIFICATION_TEST'))
+                        version='0.1.0',componentType=v.COMPONENT,ownerId=scope['ownerId'],cloudDomain=selected_domain(state),publicationPath='CATALOG_REUSE' if reuse else 'VERIFICATION_TEST'))
+                    if reuse:record['deploymentId']=reuse['deploymentId']
                     require(name not in record,'CAMERA_MUTATION_EXISTS_RECONCILE')
                     record[name]=dict(state='ATTEMPTING',attemptStarted=True,startedAt=now());vm._save(state)
                     value=operation()
@@ -204,7 +244,7 @@ print(json.dumps(dict(line.split('=',1) for line in p.stdout.splitlines() if '='
                     if name=='upload':record['deploymentId']=value['deploymentId']
                     vm._save(state)
                     return value
-            if not resume:
+            if not existing:
                 upload=phase('camera-oem-upload',lambda:mutation('upload',lambda:units._cloud('vision-camera-upload',**scope)))
                 scope['deploymentId']=upload['deploymentId']
             deadline=time.monotonic()+150;publication=None
@@ -238,7 +278,38 @@ print(json.dumps(dict(unit=dict(line.split('=',1) for line in r.stdout.splitline
             atomic(records/'camera-native-health.json',health)
             require(health['unit'].get('ActiveState')=='active' and health['installed'] and not health['transactionPresent'],'CAMERA_NATIVE_ACTIVATION_NOT_CONFIRMED')
             require(health['installed'].get('Version')=='0.1.0','CAMERA_NATIVE_VERSION_MISMATCH')
+            require(health['unit'].get('Result')=='success' and health['unit'].get('NRestarts')=='0','CAMERA_UNEXPECTED_RESTART')
             result['nativeActivation']='PASS'
+            restart=phase('camera-restart-epoch',lambda:guest(r'''import json,pathlib,socket,struct,subprocess
+def exchange(value):
+ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as s:
+  s.settimeout(2);s.connect('/run/aos-camera-access/oem/producer.sock')
+  raw=json.dumps(value,separators=(',',':')).encode();s.sendall(struct.pack('!I',len(raw))+raw)
+  def exact(n):
+   out=b''
+   while len(out)<n:
+    chunk=s.recv(n-len(out))
+    if not chunk:return None
+    out+=chunk
+   return out
+  head=exact(4)
+  if head is None:return None
+  size=struct.unpack('!I',head)[0];assert 0<size<=4096
+  raw=exact(size);return json.loads(raw) if raw is not None else None
+before=exchange(dict(schemaVersion=1,operation='hello'))['componentEpoch']
+subprocess.run(['systemctl','restart','aos-camera-access'],check=True,capture_output=True,timeout=20)
+after=exchange(dict(schemaVersion=1,operation='hello'))['componentEpoch'];assert before!=after
+assert exchange(dict(schemaVersion=1,operation='health',componentEpoch=before)) is None
+health=exchange(dict(schemaVersion=1,operation='health',componentEpoch=after))
+assert health['status']['deliveryState']=='UNAVAILABLE'
+pid=int(subprocess.check_output(['systemctl','show','aos-camera-access','--value','-p','MainPID'],text=True))
+p=pathlib.Path('/proc')/str(pid);status=dict(v.split(':',1) for v in (p/'status').read_text().splitlines() if ':' in v)
+assert int(status['Uid'].split()[0])>0 and status['NoNewPrivs'].strip()=='1'
+assert all(int(status[n].strip(),16)==0 for n in ('CapEff','CapPrm','CapInh','CapBnd','CapAmb'))
+assert 'camera_access_t' in (p/'attr/current').read_text()
+print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE',nonroot=True,noNewPrivs=True,capabilitiesEmpty=True)))
+''',timeout=30))
+            result['cameraRestart']='PASS_FRESH_EPOCH_WITHOUT_SOURCE'
             def external(name,action):
                 intent=records/(name+'-intent.json')
                 require(not intent.exists(),'FIXTURE_MUTATION_EXISTS_RECONCILE')
@@ -365,6 +436,75 @@ print(json.dumps(dict(processes=rows,messages=messages[-80:],readerGid=grp.getgr
             atomic(records/'native-revocation.json',revoked)
             require(len(revoked['processes'])==1 and revoked['processes'][0]['pid']!=before_pid
                     and not revoked['processes'][0]['mountReadonly'],'NATIVE_RESOURCE_REVOCATION_NOT_PROVEN')
+            def camera_audit():
+                value=guest("""import json,pathlib,subprocess
+p=pathlib.Path('/var/log/audit/audit.log');assert p.is_file()
+with p.open('rb') as f:
+ f.seek(max(0,p.stat().st_size-1024**2));raw=f.read().decode(errors='replace')
+lines=raw.splitlines();starts=[i for i,line in enumerate(lines) if 'type=DAEMON_START ' in line]
+assert starts,'AUDIT_BOOT_MARKER_REQUIRED'
+scope=lines[starts[-1]:]
+avcs=[line[:1600] for line in scope if 'avc:' in line and 'camera_access' in line]
+camera=dict(line.split('=',1) for line in subprocess.check_output(['systemctl','show','aos-camera-access','-p','ActiveState','-p','Result','-p','NRestarts'],text=True).splitlines() if '=' in line)
+assert camera==dict(ActiveState='active',Result='success',NRestarts='0')
+print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_text().strip()=='1',scopedAvcs=avcs,unit=camera)))
+""")
+                require(value['enforcing'] and not value['scopedAvcs'],'NATIVE_CAMERA_AVC_PRESENT')
+                return value
+            phase('native-camera-audit',camera_audit)
+            if not transient:
+                # Service restart is not cold-boot evidence. Stop the physical
+                # Source/fixture normally, then restart the same VM/Cloud Unit.
+                # No re-manufacture, overlay replacement or credential copying.
+                snapshot_code=r'''import json,pathlib,socket,struct,subprocess
+subprocess.run(['/usr/libexec/aos-camera-access-store-check','verify'],check=True,capture_output=True,timeout=10)
+with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as s:
+ s.settimeout(2);s.connect('/run/aos-camera-access/oem/producer.sock')
+ raw=b'{"schemaVersion":1,"operation":"hello"}'
+ s.sendall(struct.pack('!I',len(raw))+raw)
+ def exact(n):
+  out=b''
+  while len(out)<n:
+   part=s.recv(n-len(out));assert part;out+=part
+  return out
+ size=struct.unpack('!I',exact(4))[0];assert 0<size<=4096
+ epoch=json.loads(exact(size))['componentEpoch']
+p=pathlib.Path('/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access')
+unit=dict(line.split('=',1) for line in subprocess.check_output(['systemctl','show','aos-camera-access','-p','ActiveState','-p','Result','-p','NRestarts'],text=True).splitlines() if '=' in line)
+print(json.dumps(dict(bootId=pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip(),epoch=epoch,
+ storeIdentity=pathlib.Path('/var/aos/workdirs/sm/runtimes/.camera-access-store.identity').read_text(),
+ installed=json.loads((p/'state/installed.json').read_bytes()),transactionPresent=(p/'state/transaction.json').exists(),unit=unit,
+ enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_text().strip()=='1')))
+'''
+                before_cold=guest(snapshot_code)
+                phase('fixture-stop-before-cold-boot',stop_producer)
+                phase('source-stop-before-cold-boot',stop_source)
+                cold_stop=phase('native-cold-stop',lambda:vm.execute('stop','test',timeout=150))
+                require(cold_stop['vehicles']['test']['state']=='COMPLETED','NATIVE_COLD_STOP_INCOMPLETE')
+                cold_boot=phase('native-cold-start',lambda:vm.execute('start','test',timeout=150))
+                require(cold_boot['vehicles']['test']['state']=='COMPLETED','NATIVE_COLD_START_INCOMPLETE')
+                deadline=time.monotonic()+40
+                while True:
+                    try:
+                        after_cold=guest(snapshot_code)
+                        if after_cold['unit']['ActiveState']=='active':break
+                    except ValueError:pass
+                    require(time.monotonic()<deadline,'CAMERA_COLD_RESTORE_TIMEOUT');time.sleep(1)
+                require(before_cold['bootId']!=after_cold['bootId'] and before_cold['epoch']!=after_cold['epoch'],
+                        'CAMERA_COLD_BOOT_OR_EPOCH_NOT_NEW')
+                require(before_cold['storeIdentity']==after_cold['storeIdentity'] and before_cold['installed']==after_cold['installed']
+                        and not after_cold['transactionPresent'],'CAMERA_COLD_PERSISTENCE_FAILED')
+                require(after_cold['enforcing'] and after_cold['unit']==dict(ActiveState='active',Result='success',NRestarts='0'),
+                        'CAMERA_COLD_SECURITY_OR_STABILITY_FAILED')
+                current=read_json(native/JOURNAL)['vehicles']['test']
+                require(current['localVmId']==old['localVmId'] and current['unitId']==old['unitId'],'COLD_IDENTITY_CHANGED')
+                cold_reader=native_reader()
+                require(len(cold_reader['processes'])==1 and not cold_reader['processes'][0]['mountReadonly'],
+                        'CAMERA_COLD_REVOCATION_NOT_RETAINED')
+                atomic(records/'native-cold-restart.json',dict(newBoot=True,newEpoch=True,storeIdentityRetained=True,
+                    installedComponentRetained=True,unitIdentityRetained=True,revocationRetained=True,enforcing=True,noRestarts=True))
+                result['nativeColdRestart']='PASS_SAME_UNIT_STORE_AND_REVOKED_RESOURCE'
+                phase('native-camera-cold-audit',camera_audit)
             result.update(outcome='PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ' if transient else 'PASS_NATIVE_CAMERA_OEM_AND_AOS_READ',resourceRevocation='PASS',
                           diagnosticService='NOT_PERCEPTION',captureClockAccuracy='NOT_QUALIFIED')
         except Exception as error:
@@ -387,30 +527,12 @@ print(json.dumps(dict(units=units,paths=paths,avcs=avcs[-20:],errors=errors[-20:
                 atomic(records/'failure-diagnostics.json',facts)
             except Exception:result['diagnostic']='BOUNDED_GUEST_OBSERVATION_UNAVAILABLE'
         finally:
-            if producer is not None:
-                try:
-                    guest("""import json,os,pathlib,signal,time
-p=pathlib.Path('/run/vision-camera-probe-fixture/pid')
-if p.exists():
- value=json.loads(p.read_bytes());proc=pathlib.Path('/proc')/str(value['pid'])
- if proc.exists():
-  assert (proc/'stat').read_text().split()[21]==value['start']
-  assert (proc/'cmdline').read_bytes().startswith(b'python3\\0-u\\0-\\0')
-  os.kill(value['pid'],signal.SIGTERM)
-  end=time.monotonic()+4
-  while proc.exists() and time.monotonic()<end:time.sleep(.1)
-  assert not proc.exists()
-print(json.dumps(dict(stopped=True)))
-""")
-                    producer.wait(timeout=8);result['cleanup']['producerStopped']=True
-                except Exception:result['cleanup']['producerStopped']=False
-            if source_started and app is not None:
-                try:
-                    app.source_service.simulation('stop',target='test')
-                    WorkspaceService(env,app.source_service.driver).execute('close')
-                    result['cleanup']['sourceStopped']=True
-                except Exception:result['cleanup']['sourceStopped']=False
-            else:result['cleanup']['sourceStopped']=True
+            try:
+                stop_producer();result['cleanup']['producerStopped']=True
+            except Exception:result['cleanup']['producerStopped']=False
+            try:
+                stop_source();result['cleanup']['sourceStopped']=True
+            except Exception:result['cleanup']['sourceStopped']=False
             if transient:
                 try:
                     guest("""import json,pathlib,subprocess

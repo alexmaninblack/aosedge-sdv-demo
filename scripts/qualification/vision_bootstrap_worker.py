@@ -62,7 +62,7 @@ def main():
     require(verified.manifest_sha256==c['bootstrapManifestSha256'],'BOOTSTRAP_SELECTION_CHANGED')
     home=Path.home();native=home/v.INSTANCE_NAME
     require(native.stat().st_dev==home.stat().st_dev if native.exists() else native.parent==home,'NATIVE_INTERNAL_STORAGE_REQUIRED')
-    retained=[home/name for name in ('SDV-Lab-Data','SDV-Vision-Lab-Data')]
+    retained=[home/name for name in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data')]
     before={root:(root/JOURNAL).read_bytes() for root in retained}
     for raw in before.values():
         state=json.loads(raw)
@@ -140,7 +140,7 @@ printf 'VISION_NATIVE_BOOTSTRAP_CONFIRMED\\n'
         if runtime is not None and own_started:
             try:
                 with runtime_paths.installed_session(native):
-                    stopped=runtime.execute('stop','test',timeout=90)
+                    stopped=runtime.execute('stop','test',timeout=150)
                 result['cleanup']['nativeVmStopped']=stopped['vehicles']['test']['state']=='COMPLETED'
             except Exception as error:
                 result['cleanup']['nativeVmStopped']=False

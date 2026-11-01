@@ -50,11 +50,12 @@ def read(path, mode):
     return path.read_text()
 
 
-def native_store():
-    """The native runtime's directory is inside Aos' mounted workdir volume.
+def native_store(trust):
+    """Read-only verification of the exact native Camera filesystem owner.
 
-    It is not a separate mount point. Do not inherit the VDP bootstrap's old
-    per-component-mount assumption, create a fallback, or mount anything here.
+    Workdirs forces one SELinux context. Camera therefore has its own fixed
+    loop/ext4 backend; Source must neither mount it nor accept a plain folder.
+    The immutable bootstrap verifier checks backing inode, UUID and options.
     """
     parent=Path('/var/aos/workdirs')
     require(not any(p.is_symlink() for p in (RUNTIME,*RUNTIME.parents)), 'STORE_LINKED')
@@ -63,7 +64,9 @@ def native_store():
             and os.path.ismount(parent), 'NATIVE_VOLUME_NOT_MOUNTED')
     info=RUNTIME.stat()
     require(stat.S_ISDIR(info.st_mode) and info.st_uid==0 and not info.st_mode&0o022
-            and info.st_dev==parent.stat().st_dev, 'NATIVE_STORE_UNSAFE')
+            and info.st_dev!=parent.stat().st_dev and os.path.ismount(RUNTIME), 'NATIVE_STORE_UNSAFE')
+    require(trust.call(['/usr/libexec/aos-camera-access-store-check','verify']).strip()==
+            'Camera Access isolated component store is ready.', 'NATIVE_STORE_IDENTITY_INVALID')
 
 
 def status(trust):
@@ -92,7 +95,7 @@ def execute(request, trust, source=None):
     if action == 'trust-status':
         return status(trust)
     require(action in ('trust-configure', 'trust-restore'), 'ACTION_UNSUPPORTED')
-    native_store()
+    native_store(trust)
     files = {'ca': INPUTS/'viss-update-ca'}
     for name, role in (('vdp', 'selected-platform-unit'), ('runtime', 'platform-update-runtime')):
         files[name+'Certificate'] = STORE/role/'client.pem'

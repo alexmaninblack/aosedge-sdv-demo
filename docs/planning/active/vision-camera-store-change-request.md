@@ -1,9 +1,9 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Vision Camera Store Isolation Change Request
+# Vision Camera Store Isolation
 
-- Status: Proposed; required before further native Camera activation
+- Status: Accepted on 2026-11-01; storage proof and image QA passed, native acceptance pending
 - Prepared: 2026-11-01
 - Owner: SDV Lab architecture and OEM platform
 - Parent: [Vision implementation packet](vision-pilot-single-node.md#current-signed-bootstrap-and-native-camera-access-packet)
@@ -34,7 +34,7 @@ tmpfiles relabel does not change the effective context. Repeating either is not
 a solution. No policy allowance was added, and no component activation pass
 is claimed.
 
-## Proposed bounded change
+## Accepted bounded change
 
 Use the platform's existing demonstration storage pattern described in the
 [native OEM runtime decision](https://github.com/alexmaninblack/aos-vehicle-platform/blob/81d098e5a958710d8c12a6bfdb86c7c493274920/docs/decisions/0001-service-manager-component-runtime.md):
@@ -43,9 +43,9 @@ logical component root with its own fixed SELinux context. Instantiate it
 independently for Camera Access; never reuse a VDP file, filesystem UUID, mount,
 slot, credential, Unit or data directory.
 
-The proposed Camera binding is:
+The accepted Camera binding is:
 
-| Item | Proposed value |
+| Item | Accepted value |
 | --- | --- |
 | Logical root | `/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access` (unchanged) |
 | Backing file | `/var/aos/workdirs/sm/runtimes/.camera-access-store.ext4` |
@@ -57,8 +57,9 @@ The proposed Camera binding is:
 | Lifecycle | Existing bootstrap layout/prepare/attach/mount/check pattern, before SM and Source restoration |
 
 Close first-create, interrupted preparation, idempotent reuse, identity checks,
-bounded capacity, loop attachment, dependency ordering, cold boot and unmount
-behavior before adding this backend to a signed image. Update the Vision Source
+bounded capacity, loop attachment, dependency ordering and unmount behavior
+before adding this backend to a signed image; qualify cold boot on that exact
+image before accepting the native deployment. Update the Vision Source
 store check to verify this exact backing/mount identity; no arbitrary mount or
 directory fallback. Keep signed Camera payload identity, A/B transaction engine,
 physical Safe Stop, read-resource contract and current Main image unchanged.
@@ -66,16 +67,28 @@ physical Safe Stop, read-resource contract and current Main image unchanged.
 This is a demonstration backend, not a production vehicle storage claim.
 Changing the shared workdirs context, granting Camera general file access to
 `aos_var_run_t`, using root for Camera, or reusing the VDP store are not accepted
-alternatives. The storage backend is not yet implemented or approved by this
-change request.
+alternatives. Operator acceptance authorizes implementation, not a claim of
+successful native activation or a broader storage migration.
 
 ## Resume and acceptance
 
-After the backend contract is accepted, first prove the exact storage binding
-reversibly on the isolated native Vision target. Preserve the failing target
+The encrypted workdirs volume is created by native OEM provisioning, so an
+unprovisioned disposable VM cannot qualify this backend. Prove the binding on
+the existing isolated native Vision Unit: stop its SM, rename the complete
+failing Camera subtree to a fixed private preservation path, and restore the
+same directory after the proof. Arm rollback before moving it. Preserve the failing target
 and its Cloud identity; do not hide existing contents beneath a new mount or
-automatically migrate them. A clean successor uses the normal manufacture owner
+automatically migrate them. Preserve its disk/identity while a clean successor
+uses the normal manufacture owner
 with an explicitly declared retained-versus-fresh policy, never an overlay rebase.
+
+The successor is `SDV-Vision-Camera-Lab-Data`, Factory
+`6.1.1-vision-camera.2`, with its own `SDV Vision Camera Verification` set.
+Retain the previous `SDV-Vision-Native-Lab-Data` and its Cloud identity/set.
+Reuse the exact already signed/published Camera Access 0.1.0 payload after
+authoritative catalog and digest checks; do not republish it or widen the
+existing global OEM verification-recipient guard. SP probe assignment is
+limited to the new Unit's own Subject.
 
 Only after targeted compile, primitive/security proof and source gates pass,
 build/sign one incremental Vision bootstrap successor on SDV-Dev. Then complete
@@ -85,6 +98,21 @@ AVCs and stop/reinstantiate revocation. Perception, authenticated Gateway camera
 ingress, UI and full Vision E2E remain separate gates.
 
 ## Evidence and preservation
+
+The reversible storage scenario `camera-store-proof-11` passed: first-create,
+idempotent repeat, detach/reattach with retained data and UUID, wrong label and
+malformed UUID denial, unsafe backing-mode denial, nonempty-root denial and
+partial-identity denial. Enforcing remained enabled; no fresh scoped AVCs were
+observed. The original directory inode and kernel policy were restored, all
+temporary mounts/module removed, VM stopped and three retained journals
+verified unchanged. This is not native Camera or container acceptance.
+
+The successor image passed 86 completed ARM64 runtime/archive unit cases and
+package/rootfs QA; two opt-in live VDP cases remain excluded, not passed.
+The platform Camera suite passed 34 cases; its full Python suite completed 276
+cases with three skips. The image reused the warm SSD Builder and did not
+rebuild CARLA or the Main Factory. Cold VM restart and native reader gates
+remain pending on this exact successor.
 
 Private compact evidence is retained under the integration worktree's
 `.local/remote-qualification/vision-vm-m4/`: `signed-bootstrap-01`, the two

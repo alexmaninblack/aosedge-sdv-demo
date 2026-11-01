@@ -19,7 +19,7 @@ import shutil
 import subprocess
 import time
 
-VERSION = '6.1.1-vision-camera.1'
+VERSION = '6.1.1-vision-camera.2'
 
 
 def require(ok, code):
@@ -37,18 +37,20 @@ def sha(path):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    for name in ('project', 'source', 'evidence', 'manifest', 'native-proof'):
+    for name in ('project', 'source', 'evidence', 'manifest', 'native-proof', 'store-proof'):
         p.add_argument('--'+name, type=Path, required=True)
     p.add_argument('--revision', required=True)
     a = p.parse_args()
     require(os.uname().machine == 'aarch64' and os.uname().sysname == 'Linux', 'ARM64_BUILDER_REQUIRED')
     require(re.fullmatch('[a-f0-9]{40}', a.revision), 'REVISION_REQUIRED')
-    for path in (a.project, a.source, a.evidence, a.manifest, a.native_proof):
+    for path in (a.project, a.source, a.evidence, a.manifest, a.native_proof, a.store_proof):
         require(path.is_absolute() and '..' not in path.parts and not any(q.is_symlink() for q in (path, *path.parents)), 'PATH_UNSAFE')
     require(a.project.name == 'factory42-475dc7c1ef3ac303', 'PINNED_WARM_PROJECT_REQUIRED')
     require(not a.evidence.exists(), 'BUILD_ATTEMPT_EXISTS_RECONCILE')
     proof = json.loads(a.native_proof.read_bytes())
-    require(proof['outcome'] == 'PASS_TARGETED_NATIVE_UNIT' and proof['tests'] == 83, 'NATIVE_GATE_REQUIRED')
+    require(proof['outcome'] == 'PASS_TARGETED_NATIVE_UNIT' and proof['tests'] == 86, 'NATIVE_GATE_REQUIRED')
+    store=json.loads(a.store_proof.read_bytes())
+    require(store['outcome']=='PASS_TRANSIENT_STORE_ONLY' and all(store['cleanup'].values()),'STORE_TRANSIENT_GATE_REQUIRED')
     require(a.source.name == 'aos-vehicle-platform-'+a.revision, 'SOURCE_REVISION_BINDING_REQUIRED')
     require((a.source/'qualification/vision-bootstrap-1.conf').is_file(), 'VISION_SOURCE_REQUIRED')
     a.evidence.mkdir(mode=0o700)
@@ -109,6 +111,8 @@ def main():
         require(not (rootfs/'usr/libexec/aos-vehicle-data-provider-launcher').exists(), 'VDP_INCLUDED')
         require(not (rootfs/'etc/systemd/system/aos-sm.service.d/40-aos-demo-service-inputs.conf').exists(), 'VDP_PROJECTION_INCLUDED')
         require('aos-camera-access:' in (rootfs/'etc/passwd').read_text(), 'CAMERA_STATIC_ACCOUNT_MISSING')
+        require((rootfs/'usr/libexec/aos-camera-access-store-check').is_file(), 'CAMERA_STORE_OWNER_MISSING')
+        require((rootfs/r'usr/lib/systemd/system/var-aos-workdirs-sm-runtimes-systemd\x2dslot\x2dcamera\x2daccess.mount').is_file(), 'CAMERA_STORE_MOUNT_NOT_SHIPPED')
         # Derive only image assembly variables; do not regenerate Main's graph.
         manifest = a.manifest.read_text()
         for key, old_value, new_value in (

@@ -4,12 +4,12 @@
 # OEM Camera Access Requirements
 
 - Status: Accepted source and native-boundary contract; live deployment remains gated
-- Version: 0.3
+- Version: 0.4
 - Prepared: 2026-10-31
 - Owner: OEM Vehicle Platform
 - Architecture input: [High-Level Architecture 1.9](../../architecture/high-level-architecture.md)
 - Flow input: [Camera Access flow](../../architecture/demo-scenario-architecture-flows.md#af-vis-cam)
-- Decision: [ADR 0019 v0.9](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
+- Decision: [ADR 0019 v0.10](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 
 ## Boundary
 
@@ -68,6 +68,12 @@ The `camera-access-v1` native OEM profile selects its own identity, unit,
 health adapter and A/B store. Keep VDP defaults, physical Safe Stop and durable
 recovery unchanged. The Vision-only bootstrap provides the missing dedicated
 account/resource/target; no overlay rebase or Main image replacement is allowed.
+The [accepted Camera-store backend](../../planning/active/vision-camera-store-change-request.md)
+implements that logical root with its own fully allocated 512-MiB ext4 image,
+per-Unit filesystem identity and `camera_access_store_t` mount context. Preserve
+the existing workdirs context and the VDP backend. Verify preparation/recovery,
+capacity reserve, loop/backing identity, boot ordering and actual unmount/detach;
+never hide an existing unmounted directory's contents or silently migrate them.
 An OEM-local producer is not authenticated Gateway ingress. Do not claim a
 normal native service/activation pass from source, root or manual-crun probes.
 

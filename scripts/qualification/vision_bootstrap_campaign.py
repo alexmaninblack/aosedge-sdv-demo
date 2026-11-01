@@ -23,10 +23,12 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config',type=Path,required=True)
     p.add_argument('--bundle',type=Path,required=True)
+    p.add_argument('--attempt',type=int,default=1)
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     verified=v.verify(a.bundle,c['main']['manifestSha256'])
-    records=Path(c['records'])/'signed-bootstrap-01'
-    remote=Path(c['remoteRoot'])/'signed-bootstrap-01'
+    h.require(1<=a.attempt<=10,'ATTEMPT_INVALID')
+    records=Path(c['records'])/('signed-bootstrap-'+str(a.attempt).zfill(2))
+    remote=Path(c['remoteRoot'])/records.name
     h.require(not records.exists(),'LOCAL_ATTEMPT_EXISTS_RECONCILE')
     records.mkdir(mode=0o700)
     worker=Path(__file__).with_name('vision_bootstrap_worker.py')
@@ -46,8 +48,8 @@ assert shutil.disk_usage(pathlib.Path.home()).free>80*1024**3
 p=pathlib.Path(c['main']['packageRoot'])
 assert hashlib.sha256((p/'application-manifest.json').read_bytes()).hexdigest()==c['main']['manifestSha256']
 assert not pathlib.Path(REMOTE).exists()
-assert not (pathlib.Path.home()/'SDV-Vision-Native-Lab-Data').exists()
-for name in ('SDV-Lab-Data','SDV-Vision-Lab-Data'):
+assert not (pathlib.Path.home()/'SDV-Vision-Camera-Lab-Data').exists()
+for name in ('SDV-Lab-Data','SDV-Vision-Lab-Data','SDV-Vision-Native-Lab-Data'):
  state=json.loads((pathlib.Path.home()/name/'.run/demo-current/journal.json').read_bytes())
  assert all(i.get('runtime',{}).get('state')=='STOPPED' for i in state['vehicles'].values())
 print('M4_SIGNED_BOOTSTRAP_PREFLIGHT_PASS')

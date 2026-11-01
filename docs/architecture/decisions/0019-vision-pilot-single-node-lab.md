@@ -4,7 +4,7 @@
 # ADR 0019: A Separate Single Node Vision Lab
 
 - Status: Accepted for the isolated M4 VM, engineering previews and Camera Access native-boundary implementation; live activation remains unqualified
-- Version: 0.9
+- Version: 0.10
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab System Architecture
@@ -147,10 +147,14 @@ identifier/team, base-program manifest and image/source digests before use.
 This is an engineering delivery, not notarized/public Vision distribution.
 
 Native delivery has exposed the workdirs filesystem's forced SELinux context:
-the declared Camera subtree label cannot override it. The proposed independent
-storage backend is a [bounded change request](../../planning/active/vision-camera-store-change-request.md),
-not an approved policy widening or a completed activation. Preserve this gate
-before another image build; the resource/IPC/OEM logical boundary is unchanged.
+the declared Camera subtree label cannot override it. On 2026-11-01 the operator
+accepted the [independent Camera-store binding](../../planning/active/vision-camera-store-change-request.md):
+a separate fully allocated 512-MiB ext4 backend, per-Unit identity and fixed
+Camera label, at the unchanged logical component root. Reuse the established
+bootstrap layout/prepare/attach/mount/check pattern, never a VDP file or slot.
+Do not change the shared workdirs label or grant Camera general Aos-file access.
+Prove the backend before another image build; the resource/IPC/OEM logical
+boundary is unchanged and native activation remains unqualified.
 
 A closed signed-bootstrap catalog extends image selection only for the fixed
 Vision profile and fresh native instance. Existing EnvironmentService/VMService

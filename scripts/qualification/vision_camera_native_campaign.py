@@ -25,6 +25,7 @@ def main():
     p.add_argument('--transient-sm',type=Path)
     p.add_argument('--repair-store-labels',action='store_true')
     p.add_argument('--reconcile-stop',choices=('native-camera-04',))
+    p.add_argument('--reuse-camera-publication',action='store_true')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     h.require(not a.repair_store_labels or a.transient_sm is not None,'LABEL_PROOF_REQUIRES_TRANSIENT_CONTEXT')
     h.require(a.name.startswith('native-camera-') and a.name.removeprefix('native-camera-').isdecimal(),'ATTEMPT_NAME_INVALID')
@@ -41,6 +42,20 @@ def main():
         context['repairStoreLabels']=a.repair_store_labels
     h.atomic(root/'context.json',context);files.append(root/'context.json')
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+    if a.reuse_camera_publication:
+        h.require(not a.resume,'PUBLICATION_REUSE_SCOPE_INVALID')
+        code="""import json,pathlib,subprocess
+p=pathlib.Path.home()/'SDV-Vision-Native-Lab-Data/.run/demo-current/journal.json'
+s=json.loads(p.read_bytes());r=s['componentOperations']['0.1.0'];u=r['upload']['response']
+assert u['httpStatus']==201 and u['deploymentId']==r['deploymentId']
+b=pathlib.Path(BUNDLE)
+requirement='=identifier "org.aosedge.sdvlab.vision.bootstrap" and anchor apple generic and certificate leaf[subject.OU] = "3NF57VKB3V"'
+subprocess.run(['codesign','--verify','--deep','--strict','-R',requirement,str(b)],check=True,capture_output=True,timeout=120)
+m=json.loads((b/'Contents/Resources/bootstrap.json').read_bytes())
+print(json.dumps(dict(deploymentId=u['deploymentId'],ownerId=r['ownerId'],cloudDomain=r['cloudDomain'],payloadSha256=m['cameraPayload']['sha256'])))
+""".replace('BUNDLE',repr(str(Path(c['remoteRoot'])/'native-camera-02/AosEdge Vision Bootstrap 0.1.2.bundle')))
+        context['existingPublication']=json.loads(h.remote(t,q(python)+' -I -B -c '+q(code),timeout=135))
+        h.atomic(root/'context.json',context)
     if a.reconcile_stop:
         code="""import json,pathlib,sys
 p=pathlib.Path(PREVIOUS);r=json.loads((p/'result.json').read_bytes());c=json.loads((p/'context.json').read_bytes())

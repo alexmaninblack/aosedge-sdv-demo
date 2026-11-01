@@ -4,13 +4,13 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.10
+- Version: 0.11
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: signed Vision bootstrap built/installed and separate native OEM/SDK provisioning passed;
-  Camera activation is blocked by the workdirs fixed SELinux context; native consumer and E2E remain open
+- Execution status: independent Camera store passed reversible M4 functional/security proof;
+  successor image built, with native activation, Aos consumer and full Vision E2E still open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -231,20 +231,21 @@ build. Do not claim later gates from replay, fixtures or another DMG's evidence.
 ## Current signed-bootstrap and native Camera Access packet
 
 The operator authorized the early signed bootstrap on 2026-11-01. Apply
-[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.9.
+[bootstrap v1](../../../contracts/vision-vm/bootstrap.v1.json) and ADR 0019 v0.10.
 Build/sign only on SDV-Dev; install/test only on M4 internal storage. Reuse the
 warm Builder/cache and compatible Linux inputs. Preserve the current DMG and
-both retained VM roots. No Main merge or public publication is requested.
+all retained VM roots. No Main merge or public publication is requested.
 
 The bootstrap is a separately identified signed resource bundle, not a duplicate
 CARLA kit or the final Vision UI/installer. It contains the new Vision image,
 source-bound tooling and Camera payload. Its closed catalog checks signature,
 team/identifier, base-program selection and image digest before the normal
 manufacture owner can consume it. No arbitrary image override is permitted.
-Use a fresh `SDV-Vision-Native-Lab-Data` instance with the existing fixed 4-CPU/
-4-GiB Vision profile; preserve the earlier engineering Vision overlay/models.
+Use a fresh `SDV-Vision-Camera-Lab-Data` instance with the existing fixed 4-CPU/
+4-GiB Vision profile and Factory `6.1.1-vision-camera.2`. Preserve Main, the
+engineering Vision overlay/models and the previous failing native Vision Unit.
 
-The closed Cloud setup profile selects `aos-vision-vm` and `SDV Vision Verification`;
+The closed Cloud setup profile selects `aos-vision-vm` and `SDV Vision Camera Verification`;
 it cannot adopt or amend the Main model/set. The existing Source owner projects
 fresh native-Unit Safe Stop credentials only into the Vision SM. It never starts
 VDP or gives Camera Access a Gateway credential. OEM Camera delivery reuses the
@@ -264,7 +265,7 @@ retain the exact single-node type and IAM-proven hardware/Cloud-node binding
 rather than treating that optional display field as the native Main-Node proof.
 
 The operator authorized native Aos-container access and separate OEM activation.
-Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.9 allocates the fixed
+Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.10 allocates the fixed
 resource, local IPC, own OEM target and Vision-only bootstrap. The platform
 repository owns the executable native profile; the foundation receipt remains
 frozen and is not relabelled as native acceptance.
@@ -298,12 +299,12 @@ remain their own V2–V5 gates. Neither an OEM-local fixture nor a manual crun p
 closes them. Signing the separate engineering bootstrap is authorized; Main
 merge, public publication and replacement of the current DMG remain excluded.
 
-### Observed native delivery boundary
+### Current storage and native delivery boundary
 
-The signed bootstrap is now installed on M4 in a separate native instance.
+The preceding signed bootstrap is retained on M4 in its separate native instance.
 Normal manufacture and official OEM/SDK provisioning passed; Cloud observed
 the new Vision Unit Online with its own single Main Node and verification set.
-Both retained VM journals remain unchanged. Camera Access 0.1.0 was signed and
+Main and engineering Vision journals remain unchanged. Camera Access 0.1.0 was signed and
 uploaded once; automatic verification delivery was observed without a second
 send. No native component activation is claimed from those Cloud facts.
 
@@ -313,14 +314,23 @@ target passed the archive boundary, then reached an actual SELinux denial in
 the offline Camera self-test. Workdirs has a forced whole-filesystem
 `aos_var_run_t` context, so the declared Camera subtree type cannot take effect.
 No broad policy grant, root Camera process, shared VDP slot or rootfs remount
-was used. Stock SM was restored; the latest scenario stopped the native VM and
-verified retained journals unchanged. Actual Aos-container delivery, revocation,
-cold restart, authenticated camera ingress and full Vision E2E remain NOT_RUN.
+was used. Stock SM was restored. The accepted independent backend now passes
+the reversible `camera-store-proof-11` scenario: first-create, repeat, detach/
+reattach with retained identity/data, malformed and wrong-identity denial,
+Enforcing and no fresh scoped AVCs. Original directory inode, kernel policy,
+temporary mounts/module and stopped VM were independently reconciled. All
+three retained journals are unchanged. This is storage-only evidence, not a
+native daemon/container acceptance claim.
 
-The next architecture boundary is the
-[independent Camera-store change request](vision-camera-store-change-request.md).
-Do not rebuild another image or repeat Cloud upload until its storage contract
-is closed and its reversible proof passes.
+The [accepted Camera-store packet](vision-camera-store-change-request.md) binds
+the fixed 512-MiB backend and Source's read-only identity check. Its successor
+image passed package/rootfs QA using the warm SSD Builder. Next sign and
+provision that exact image, reuse the already published Camera 0.1.0 after
+catalog/digest checks, then prove native activation, daemon and cold-VM restart,
+actual Aos-resource read and revocation. Preserve the old native Unit and its
+verification set; the successor owns a separate set/Subject. Actual native
+consumer/revocation/cold restart, authenticated camera ingress and full Vision
+E2E remain NOT_RUN until their independent live receipts exist.
 
 The [foundation native source receipt](../../../contracts/vision-vm/camera-access-native-source.v1.json)
 binds the platform commit, 32 camera cases, 274 Python cases (three skips),

@@ -3597,7 +3597,7 @@ the owning specification; no review narrative is a second normative copy.
 - State: `DECIDED` for the authorized local VM/compute pilot only; downstream
   Vision IPC, calibration, service and installer contracts remain open in V2.
 - Owner: existing `CMP-ORCH`; native guest enforcement remains AosCore-owned.
-- Authority: [ADR 0019 v0.9](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+- Authority: [ADR 0019 v0.10](../architecture/decisions/0019-vision-pilot-single-node-lab.md),
   operator-approved implementation plan on 2026-10-31.
 - Contract: [Vision VM v1](../../contracts/vision-vm/vision-vm-profile.v1.json).
 - Requirements: [SYS-VIS-001–003](system-requirements-and-traceability.md#vision-branch-vm-pilot-extension).
@@ -3629,7 +3629,7 @@ the owning specification; no review narrative is a second normative copy.
 ### D4-030 — Independent Camera Access foundation
 
 - State: `DECIDED` for the source foundation authorized on 2026-10-31.
-- Authority: [ADR 0019 v0.9](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
+- Authority: [ADR 0019 v0.10](../architecture/decisions/0019-vision-pilot-single-node-lab.md).
 - Owner: [OEM Camera Access](component-decomposition-and-interface-register.md#cmp-cam),
   source and fixed machine profile in `aos-vehicle-platform`'s Vision worktree.
 - Composition: separate Vision VM and OEM camera payload/target, no VDP,
@@ -3665,6 +3665,10 @@ the owning specification; no review narrative is a second normative copy.
   and data are not adopted. Stop/reinstantiate native consumers for revocation.
 - Source and targeted compile are separate from transient security, image,
   provisioning, native activation and actual SM consumer-delivery acceptance.
+- The accepted [Camera-store binding](../planning/active/vision-camera-store-change-request.md)
+  supplies a distinct fully allocated 512-MiB filesystem, UUID, fixed Camera
+  context and boot dependency chain. Preserve workdirs/VDP labels; reject
+  nonempty unmounted roots, unsafe identity and inconsistent partial state.
 - The 2026-11-01 authorization moves a minimal signed Vision bootstrap ahead of
   native acceptance. Its own identity/catalog, fresh native instance and distinct
   Cloud model/set are fixed by [bootstrap v1](../../contracts/vision-vm/bootstrap.v1.json).
