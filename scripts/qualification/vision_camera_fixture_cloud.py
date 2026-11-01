@@ -19,6 +19,12 @@ def require(ok, code):
     if not ok:raise ValueError('VISION_PROBE_'+code)
 
 
+def terminal_retry(bundle, deployment_id, service_id, versions):
+    """A failed build with no catalog effect permits one journalled resubmit."""
+    require(bundle.get('id')==deployment_id and str(bundle.get('state')).lower()=='error'
+            and service_id is None and not versions,'TERMINAL_BUILD_WITHOUT_EFFECT_REQUIRED')
+
+
 def configuration(version):
     require(version in ('0.1.0','0.1.1','0.1.2','0.1.3'),'VERSION_INVALID')
     return dict(schemaVersion=2,publisher=dict(author='maninblack'),items=[dict(
@@ -83,6 +89,10 @@ def execute(r):
         require(all(row['id']==current['unitId'] and row['system_uid']==current['systemUid'] for row in recipients),'FOREIGN_RECIPIENT')
     if action=='upload':
         require(not selected,'VERSION_EXISTS_RECONCILE')
+        if r.get('failedDeploymentId'):
+            rows=reads.pages('deployment-bundles/',r['failedDeploymentId'])
+            require(len(rows)==1,'FAILED_BUILD_NOT_OBSERVED')
+            terminal_retry(rows[0],r['failedDeploymentId'],service_id,versions)
         path=Path(r['bundle']);verify(path,Path(r['spCredential']),r['expectedSha256'])
         from aosedge_demo_orchestrator.components import archive_files
         outer=archive_files(path.read_bytes());inner=archive_files(outer['batch.tar.gz'])
@@ -92,7 +102,7 @@ def execute(r):
         deployment=object_id(r['deploymentId']);bundles=Reads(provider).pages('deployment-bundles/',deployment)
         require(len(bundles)==1 and bundles[0]['id']==deployment,'BUNDLE_NOT_OBSERVED')
         bundle=bundle_view(bundles[0]);state=str(bundle['state']).lower()
-        if state=='error':return dict(stage='ERROR',serviceId=service_id)
+        if state=='error':return dict(stage='ERROR',serviceId=service_id,catalogVersionCount=len(versions))
         if state!='done' or not selected:return dict(stage='PROCESSING',serviceId=service_id)
         require(len(bundle['items'])==1 and bundle['items'][0]['type']=='service'
                 and bundle['items'][0]['codename']==CODENAME and bundle['items'][0]['version']==version,'BUNDLE_CONTENT_CHANGED')

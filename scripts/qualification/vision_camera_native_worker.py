@@ -392,6 +392,29 @@ print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE
                 value=action();atomic(records/(name+'-response.json'),value)
                 return value
             def publish_probe(version):
+                if version==read_version and c.get('probeBuildRetryFrom'):
+                    prior=Path(c['probeBuildRetryFrom']);require(prior.parent==records.parent and prior.name=='native-camera-14','PROBE_RETRY_SCOPE_INVALID')
+                    previous=json.loads((prior/'context.json').read_bytes())
+                    failed=json.loads((prior/'result.json').read_bytes())
+                    require(previous['probeSha256']==c['probeSha256'] and previous['main']==c['main']
+                        and previous['bootstrapManifestSha256']==c['bootstrapManifestSha256']
+                        and failed.get('code')=='PROBE_PUBLICATION_FAILED' and all(failed['cleanup'].values()),'PROBE_RETRY_INPUT_CHANGED')
+                    intent=json.loads((prior/('probe-upload-'+version+'-intent.json')).read_bytes())
+                    require(intent['unitId']==item['unitId'],'PROBE_RETRY_UNIT_CHANGED')
+                    original=json.loads((prior/('probe-upload-'+version+'-response.json')).read_bytes())
+                    require(original['httpStatus']==201,'PROBE_RETRY_UPLOAD_NOT_RECONCILED')
+                    before=phase('probe-terminal-build-reconcile',lambda:fixture('publication',probeVersion=version,deploymentId=original['deploymentId']))
+                    require(before['stage']=='ERROR' and before['serviceId'] is None and before['catalogVersionCount']==0,'PROBE_RETRY_CATALOG_EFFECT_PRESENT')
+                    signed=json.loads((prior/('probe-sign-'+version+'.json')).read_bytes())['facts']
+                    response=phase('probe-upload-'+version,lambda:external('probe-upload-'+version,
+                        lambda:fixture('upload',probeVersion=version,bundle=str(prior/('probe-'+version+'.tar.gz')),
+                            expectedSha256=signed['sha256'],failedDeploymentId=original['deploymentId'])))
+                    deadline=time.monotonic()+150
+                    while time.monotonic()<deadline:
+                        value=fixture('publication',probeVersion=version,deploymentId=response['deploymentId'])
+                        if value['stage']=='READY':return value
+                        require(value['stage']=='PROCESSING','PROBE_PUBLICATION_FAILED');time.sleep(2)
+                    raise ValueError('PROBE_PUBLICATION_TIMEOUT')
                 if version==read_version and c.get('probeReadReuseFrom'):
                     prior=Path(c['probeReadReuseFrom']);require(prior.parent==records.parent and prior.name=='native-camera-12','PROBE_READ_REUSE_SCOPE_INVALID')
                     previous=json.loads((prior/'context.json').read_bytes())

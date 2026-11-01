@@ -7,7 +7,7 @@ from pathlib import Path
 import unittest
 
 from vision_camera_native_worker import completion
-from vision_camera_fixture_cloud import configuration
+from vision_camera_fixture_cloud import configuration,terminal_retry
 
 
 class CompletionTests(unittest.TestCase):
@@ -48,6 +48,15 @@ class CompletionTests(unittest.TestCase):
 
 
 class ProbeConfigurationTests(unittest.TestCase):
+    def test_terminal_retry_requires_exact_failed_job_and_no_catalog_effect(self):
+        terminal_retry(dict(id='known',state='error'),'known',None,[])
+        for bundle,identity,versions in ((dict(id='other',state='error'),None,[]),
+                (dict(id='known',state='processing'),None,[]),
+                (dict(id='known',state='error'),'existing-service',[]),
+                (dict(id='known',state='error'),None,[dict(version='0.1.0')])):
+            with self.subTest(bundle=bundle,identity=identity,versions=versions),self.assertRaisesRegex(ValueError,'TERMINAL_BUILD_WITHOUT_EFFECT_REQUIRED'):
+                terminal_retry(bundle,'known',identity,versions)
+
     def test_read_versions_request_only_the_camera_read_resource(self):
         for version in ('0.1.0','0.1.2'):
             with self.subTest(version=version):
