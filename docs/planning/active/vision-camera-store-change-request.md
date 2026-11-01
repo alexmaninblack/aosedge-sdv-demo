@@ -3,7 +3,7 @@
 
 # Vision Camera Store Isolation
 
-- Status: Accepted on 2026-11-01; storage proof and image QA passed, native acceptance pending
+- Status: Accepted on 2026-11-01; storage/image/provisioning passed, native activation blocked by first enrollment
 - Prepared: 2026-11-01
 - Owner: SDV Lab architecture and OEM platform
 - Parent: [Vision implementation packet](vision-pilot-single-node.md#current-signed-bootstrap-and-native-camera-access-packet)
@@ -114,12 +114,29 @@ cases with three skips. The image reused the warm SSD Builder and did not
 rebuild CARLA or the Main Factory. Cold VM restart and native reader gates
 remain pending on this exact successor.
 
+The signed 0.2.0 successor passed normal manufacture and OEM/SDK provisioning
+in `signed-bootstrap-02` (152.34 seconds on M4, 190.48 seconds including
+transfer). Its independent store was verified live. The native campaign then
+observed a different boundary: Cloud had automatically queued the previously
+published Camera package before Source's first enrollment. The native writer
+retains a first-install `waiting-for-safe-stop` transaction; Source correctly
+refuses to create enrollment during that pending transaction. No Camera
+activation, reader, restart or revocation pass is claimed. The
+[first-enrollment change request](vision-camera-first-enrollment-change-request.md)
+requires a separate bounded decision; do not weaken transaction protection or
+edit the retained transaction to continue.
+
 Private compact evidence is retained under the integration worktree's
-`.local/remote-qualification/vision-vm-m4/`: `signed-bootstrap-01`, the two
-inventory observations, and `native-camera-01` through `native-camera-05`.
+`.local/remote-qualification/vision-vm-m4/`: `signed-bootstrap-01` and
+`signed-bootstrap-02`, `camera-store-proof-11`, the inventory observations,
+and `native-camera-01` through `native-camera-06`.
 Source/compile/image receipts are retained on SDV-Dev under
-`sdv/build/vision-bootstrap/0.1.0/evidence`. The latest bounded scenario stopped
+`sdv/build/vision-bootstrap/0.1.0/evidence`. The preceding transient scenario stopped
 before CARLA, restored stock SM, stopped the native VM and verified both
 retained journals unchanged. Earlier stop timeouts were reconciled through
 the normal VM owner, not forced termination. No SP reader service or Subject
 has been published/created. No Main merge or public upload occurred.
+The successor campaign's owned Source/CARLA/VM/DNS processes are independently
+confirmed stopped with listeners released. Preserve its unfinished Source
+initialization and Camera transaction for the bounded lifecycle correction;
+the failed original receipt is not upgraded to a native activation pass.

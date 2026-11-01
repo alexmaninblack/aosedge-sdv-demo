@@ -9,8 +9,8 @@
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: independent Camera store passed reversible M4 functional/security proof;
-  successor image built, with native activation, Aos consumer and full Vision E2E still open
+- Execution status: independent Camera store and signed successor OEM provisioning passed on M4;
+  native activation is blocked by first-enrollment/FOTA ordering; Aos consumer and full Vision E2E remain open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -324,9 +324,15 @@ native daemon/container acceptance claim.
 
 The [accepted Camera-store packet](vision-camera-store-change-request.md) binds
 the fixed 512-MiB backend and Source's read-only identity check. Its successor
-image passed package/rootfs QA using the warm SSD Builder. Next sign and
-provision that exact image, reuse the already published Camera 0.1.0 after
-catalog/digest checks, then prove native activation, daemon and cold-VM restart,
+image passed package/rootfs QA using the warm SSD Builder. Signed bootstrap
+0.2.0 then passed normal manufacture/OEM provisioning on M4. The exact Camera
+0.1.0 catalog/payload binding was revalidated without another upload. Native
+activation reached the
+[first-enrollment/FOTA ordering boundary](vision-camera-first-enrollment-change-request.md):
+automatic Cloud delivery queued a first install before Source could project
+its initial runtime identity, while the existing transaction guard forbids
+that projection. Do not bypass it or erase the pending transaction. After
+the bounded decision, prove native activation, daemon and cold-VM restart,
 actual Aos-resource read and revocation. Preserve the old native Unit and its
 verification set; the successor owns a separate set/Subject. Actual native
 consumer/revocation/cold restart, authenticated camera ingress and full Vision

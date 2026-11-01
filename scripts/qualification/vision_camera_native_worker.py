@@ -27,15 +27,15 @@ def atomic(path,value):
 
 def completion(result):
     """An action pass never hides failed cleanup or unexecuted acceptance gates."""
-    if result['outcome']=='PASS_NATIVE_CAMERA_OEM_AND_AOS_READ' and (
+    if result['outcome'].startswith('PASS_') and not all(result['cleanup'].values()):
+        result['outcome']='NOT_COMPLETE'
+        result['code']='CAMERA_CLEANUP_NOT_CONFIRMED'
+    elif result['outcome']=='PASS_NATIVE_CAMERA_OEM_AND_AOS_READ' and (
             result.get('cameraRestart')!='PASS_FRESH_EPOCH_WITHOUT_SOURCE'
             or result.get('nativeColdRestart')!='PASS_SAME_UNIT_STORE_AND_REVOKED_RESOURCE'
             or result.get('resourceRevocation')!='PASS'):
         result['outcome']='NOT_COMPLETE'
         result['code']='CAMERA_ACCEPTANCE_GATE_NOT_COMPLETE'
-    if result['outcome'].startswith('PASS_') and not all(result['cleanup'].values()):
-        result['outcome']='NOT_COMPLETE'
-        result['code']='CAMERA_CLEANUP_NOT_CONFIRMED'
     return result
 
 
@@ -508,7 +508,10 @@ print(json.dumps(dict(bootId=pathlib.Path('/proc/sys/kernel/random/boot_id').rea
             result.update(outcome='PASS_TRANSIENT_CAMERA_OEM_AND_AOS_READ' if transient else 'PASS_NATIVE_CAMERA_OEM_AND_AOS_READ',resourceRevocation='PASS',
                           diagnosticService='NOT_PERCEPTION',captureClockAccuracy='NOT_QUALIFIED')
         except Exception as error:
-            value=str(error);result['code']=value if re.fullmatch('[A-Z][A-Z0-9_:,.-]{1,180}',value) else type(error).__name__
+            # Keep the fixed code even when an owner appends a lowercase role
+            # or private diagnostic. Never persist the unrestricted exception.
+            fixed=re.match('[A-Z][A-Z0-9_]{2,150}',str(error))
+            result['code']=fixed.group(0) if fixed else type(error).__name__
             try:
                 facts=guest("""import json,pathlib,subprocess
 def run(args):
@@ -522,7 +525,11 @@ kernel=run(['journalctl','-k','-b','-n','300','--no-pager','-o','cat'])
 avcs=[line[:1200] for line in kernel.splitlines() if 'avc:  denied' in line or 'avc: denied' in line]
 logs=run(['journalctl','-b','-u','aos-camera-access','-u','aos-sm','-n','80','--no-pager','-o','cat'])
 errors=[line[:250] for line in logs.splitlines() if any(word in line for word in ('CAMERA_ACCESS_','Failed','failed','denied','SafeStop','safe stop','waiting-for-safe-stop'))]
-print(json.dumps(dict(units=units,paths=paths,avcs=avcs[-20:],errors=errors[-20:])))
+root=pathlib.Path('/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access')
+tx=root/'state/transaction.json';pending=json.loads(tx.read_bytes()) if tx.is_file() else {}
+boundary=dict(transaction={k:pending.get(k) for k in ('schemaVersion','operation','phase','hasPrevious')},
+ installedPresent=(root/'state/installed.json').exists(),runtimeEnrollmentPresent=(root/'demo-inputs/viss-update-binding').exists())
+print(json.dumps(dict(units=units,paths=paths,avcs=avcs[-20:],errors=errors[-20:],enrollmentBoundary=boundary)))
 """)
                 atomic(records/'failure-diagnostics.json',facts)
             except Exception:result['diagnostic']='BOUNDED_GUEST_OBSERVATION_UNAVAILABLE'

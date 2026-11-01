@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: MIT
 """Offline acceptance-report gates; never invokes a VM or Cloud."""
 import copy
+import ast
+from pathlib import Path
 import unittest
 
 from vision_camera_native_worker import completion
@@ -34,6 +36,14 @@ class CompletionTests(unittest.TestCase):
     def test_failed_report_cannot_be_promoted(self):
         value=dict(outcome='NOT_COMPLETE',code='NATIVE_FAILURE',cleanup={})
         self.assertEqual(completion(copy.deepcopy(value)),value)
+
+    def test_embedded_guest_scripts_have_valid_python_syntax(self):
+        tree=ast.parse(Path(__file__).with_name('vision_camera_native_worker.py').read_text())
+        checked=0
+        for value in ast.walk(tree):
+            if isinstance(value,ast.Constant) and isinstance(value.value,str) and value.value.startswith('import ') and '\n' in value.value:
+                compile(value.value,'native-camera-guest-fixture','exec');checked+=1
+        self.assertGreaterEqual(checked,8)
 
 
 if __name__=='__main__':unittest.main()
