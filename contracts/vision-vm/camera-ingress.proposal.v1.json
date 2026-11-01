@@ -1,0 +1,98 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-camera-ingress-contract-proposal",
+  "status": "PROPOSED_REQUIRES_INTERFACE_AND_TRUST_SCOPE_ACCEPTANCE",
+  "runtimeEnabled": false,
+  "parents": ["ADR-0019", "REQ-CAM-001", "REQ-CAM-002", "REQ-CAM-003", "REQ-CAM-004", "REQ-CAM-005", "REQ-CAM-006"],
+  "productTopology": {
+    "functionalVms": 2,
+    "retainedMain": "VDP, Brake Health, Tire Health; no changes",
+    "vision": "Camera Access OEM component plus Perception and Assessment assigned through a separate Vision Subject",
+    "currentValidationInstance": "SDV-Vision-Camera-Image-Lab-Data",
+    "newVm": false,
+    "cloudMutationForIngress": false
+  },
+  "ownership": {
+    "carla-ego-runtime": "Owned sensor, nonblocking capture/JPEG, bounded HTTPS media endpoint and selected-source media authorization",
+    "aos-vehicle-platform": "Internal Camera Access ingress adapter, bounded multipart parsing and existing local OEM IPC",
+    "aosedge-sdv-demo": "Existing Source owner supplies verified selection/credentials, starts/stops ingress and owns the named M4 campaign",
+    "nativeAos": "Unchanged application resource allocation and Camera Access component lifecycle"
+  },
+  "hostEndpoint": {
+    "method": "GET",
+    "path": "/vision/v1/camera/front.mjpeg",
+    "listener": "Existing Gateway TLS listener; same enrolled authority/port and TLS server name, no new listening port",
+    "visibility": "Enabled only by the closed Vision Source profile; absent on Main",
+    "responseType": "multipart/x-mixed-replace",
+    "partType": "image/jpeg",
+    "partLength": "Required Content-Length, equal to metadata.payloadBytes",
+    "partMetadataHeader": "X-Aos-Camera-Metadata; one compact JSON object with the existing Camera Access frame metadata fields",
+    "bindingHeader": "X-Aos-Camera-Binding; sourceId/sourceEpoch/cameraId/calibrationId and the Source assignment generation",
+    "queryParameters": false,
+    "redirects": false,
+    "configurableOperatorUrl": false
+  },
+  "authorization": {
+    "transport": "Mutual TLS using the existing per-instance Source trust owner",
+    "client": "Only the selected Vision Unit/node's existing SELECTED_PLATFORM_UNIT identity and exact enrolled fingerprint",
+    "newScope": "Explicit Vision camera-read grant; existing VISS telemetry permissions do not imply media permission",
+    "guestCredentialOwner": "Existing Source credential projection and systemd LoadCredential; no second CA/store, new leaf, key rotation or Main-key copying",
+    "credentialConsumer": "Internal OEM ingress adapter only; no key access for the Camera Access core or Aos applications",
+    "rejectedRoles": ["DEVELOPMENT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT", "foreign or unselected Unit/node"],
+    "activeMediaSessions": 1,
+    "quota": "Separate bounded media-session slot; preserve existing VISS role limits. Both channel classes participate in Source quiescence and detach.",
+    "revocation": "Source detach/reassignment closes media before acknowledging; failed/expired/unselected identity cannot reconnect",
+    "motionAuthority": false,
+    "cameraConfigurationAuthority": false
+  },
+  "guestAdapter": {
+    "logicalComponent": "Internal part of the Camera Access OEM package, not another Cloud service or VM",
+    "process": "Separate nonroot process with empty capabilities and NoNewPrivileges; narrow camera-ingress SELinux domain",
+    "credentialSeparation": "Camera core keeps its current identity/domain and receives no TLS credentials; shared UID alone is not credential isolation",
+    "localDelivery": "Existing /run/aos-camera-access/oem/producer.sock with hello/select/frame/disconnect and current componentEpoch",
+    "peerIdentityGate": "Prove the exact nonroot producer UID allowed by the existing OEM socket and isolate its credential/network permissions; no broad UID-0 or unconfined fallback",
+    "lifecycle": "Normal Source and native/systemd owners only. Start after valid Source enrollment and active Camera component; stop/drain for Source detach and Camera replacement.",
+    "network": "Outgoing connection to the enrolled Gateway media endpoint only; no guest network listener",
+    "parser": "Bounded streaming multipart parser; reject duplicate/unknown required framing, oversized metadata/body, inconsistent length and invalid JPEG metadata before local IPC",
+    "restart": "Fresh authenticated Gateway/source binding after either process restarts; no recorded-frame fallback"
+  },
+  "capture": {
+    "profile": "front-rgb-jpeg-720p-v1",
+    "width": 1280,
+    "height": 720,
+    "horizontalFovDegrees": 50,
+    "sensorTickSimulationSeconds": 0.1,
+    "jpegQuality": 85,
+    "tickOwnerChanged": false,
+    "clock": "CARLA_WORLD_SNAPSHOT_FRAME_MATCH with unchanged sensor time and at most 75-ms disagreement",
+    "sourceIdOwner": "Existing Source lifecycle binds the selected Gateway/camera session; no Unit identity guessed from a frame",
+    "sourceEpochOwner": "Gateway mints a fresh UUID on capture/stream restart, actor/source replacement or reset; old epoch is rejected",
+    "calibration": "Bind the actual rigid mount/intrinsics/crop/profile digest; no borrowed homography or camera configuration by a consumer"
+  },
+  "bounds": {
+    "metadataHeaderBytes": 4096,
+    "jpegBytes": 4194304,
+    "hostRawPendingFrames": 1,
+    "hostLatestJpegFrames": 2,
+    "hostLatestJpegBytes": 8388608,
+    "guestInFlightFrames": 1,
+    "cameraRetainedFrames": 2,
+    "cameraRetainedJpegBytes": 8388608,
+    "partReceiveDeadlineSeconds": 2,
+    "localDeliveryAgeSeconds": 1,
+    "pairIntervalNs": [80000000, 120000000],
+    "worldFrameHistory": 128
+  },
+  "failureSemantics": "Lost/stalled/invalid media clears or ages out pixels to UNAVAILABLE/WARMING/stale by the existing Camera contract; no synthetic timestamps, clock-domain subtraction, replay or automatic quality reduction. Cloud loss remains distinct from local media loss.",
+  "executionAfterAcceptance": [
+    "Cascade accepted interface/trust changes into owning requirements/ADR/D4 and freeze source pins",
+    "Implement offline protocol/authorization/queue/reset cases before any live mutation",
+    "Compile only affected Gateway/adapter targets on SSD; rebuild neither CARLA nor Main Factory",
+    "Run one bounded reversible live proof on the current M4 Vision VM through the normal Source owner, including negative identity/generation, disconnect/reconnect and Camera restart",
+    "Verify the actual Aos reader receives matching live JPEG pairs; preserve existing Cloud Unit, Subject, data and all retained instances",
+    "Restore all transient code/policy and stop owned runtimes; record live versus source-only/image acceptance separately"
+  ],
+  "deliveryBoundary": "No rootfs rewrite, overlay rebase or replacement VM. A required permanent image/policy delta needs a separately accepted delivery route preserving the current VM; transient proof is not permanent image acceptance.",
+  "excluded": ["SSH replay relabelled as product ingress", "new credential database", "VDP/Brake/Tire changes", "unconfined or root ingress fallback", "Perception/Assessment implementation", "model or end-to-end performance acceptance", "public release or Main promotion"]
+}

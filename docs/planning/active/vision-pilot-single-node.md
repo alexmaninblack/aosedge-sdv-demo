@@ -455,6 +455,47 @@ authenticated Gateway camera binding/delivery on this existing Vision VM.
 
 ## Current live-preview packet
 
+### Next boundary: authenticated Gateway camera ingress
+
+The native Camera image/resource gate is complete, but it consumes an OEM-local
+recorded JPEG fixture. Neither that root-authorized producer nor the engineering
+SSH preview is the product Gateway ingress. The current Source projection
+explicitly supplies enrollment/Safe Stop identities, not a Camera daemon key.
+Gateway's compiled strict-role read policy covers VISS paths, not camera HTTP.
+Camera's OEM socket admits only root/the daemon UID; the core has no network
+listener or transport authority. Endpoint, media permission, credential consumer
+and native producer identity must therefore close before implementing live
+ingress. The accepted V2 gate explicitly leaves endpoint/port and transport
+outputs to this design step.
+
+The [camera-ingress proposal](../../../contracts/vision-vm/camera-ingress.proposal.v1.json)
+is deliberately `PROPOSED` and runtime-disabled. Recommend one read-only MJPEG
+route on the existing Gateway TLS listener, only in the Vision profile, with an
+explicit camera-read grant for the currently selected Vision Unit/node. Reuse
+that instance's existing Source-owned selected-platform identity through its
+normal credential owner; do not copy Main's VDP key or create another CA/store.
+Keep a separate bounded media-session slot without weakening current VISS
+role limits, and make Source detach drain both channel classes.
+
+An internal OEM ingress process in the Camera Access package parses bounded
+frames and uses the existing producer socket; it is not a third VM, platform
+component or Cloud-assigned application. Keep TLS material out of Camera core
+and Perception. Prove its exact nonroot peer, separate narrow SELinux domain,
+credential isolation, lifecycle and outgoing-only connection before deployment.
+Source/capture epochs, real world/sensor times, calibrated profile and current
+pair/age/queue bounds remain explicit. No source/clock/quality fallback is added.
+
+This is an interface/trust-scope decision, not routine execution approval.
+After acceptance, cascade the owning contracts and run the one source/targeted
+compile/reversible-live scenario on the **current** Vision VM, preserving its
+Unit/Subject and data. No CARLA/Main Factory rebuild, new VM, key rotation or
+permanent image change is part of the proposed transient packet. If a permanent
+policy/image delta is necessary, do not repeat the previous successor-VM
+workaround: qualify a separately accepted delivery route that preserves the VM.
+Until the interface decision is accepted, no Gateway/guest runtime code,
+credential projection, network permission or live source is changed by this
+proposal. Perception/Assessment remain the subsequent service packet.
+
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,
 select only real 80–120 ms pairs and run all three models on each admitted pair.
