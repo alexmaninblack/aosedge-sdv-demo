@@ -17,16 +17,18 @@ def main():
     p.add_argument('--config',type=Path,required=True);p.add_argument('--name',required=True)
     mode=p.add_mutually_exclusive_group(required=True)
     mode.add_argument('--preflight',action='store_true');mode.add_argument('--live',action='store_true');mode.add_argument('--credentials',action='store_true');mode.add_argument('--network',action='store_true')
+    mode.add_argument('--delivery-inventory',action='store_true',help='Read native rootfs/boot delivery declarations, never update them')
     p.add_argument('--candidate',type=Path)
     p.add_argument('--resume-read-from',help='Reconcile an existing 0.1.2 publication; never upload it again')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
-    prefix='ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-preflight-'
+    prefix='ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-preflight-'
     h.require(a.name.startswith(prefix) and a.name.removeprefix(prefix).isdecimal(),'CAMPAIGN_NAME_INVALID')
     records=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
     h.require(not records.exists(),'ATTEMPT_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     bundle=Path(c['remoteRoot'])/'signed-bootstrap-03/AosEdge Vision Bootstrap 0.3.0.bundle'
     context=dict(main=c['main'],bundle=str(bundle),bootstrapManifestSha256='d782737eff7ddf6c69f59a36c806b2428129d83b70e6e2deb097939990006612')
     if a.credentials:context['projectionProbe']=True
+    if a.delivery_inventory:context['deliveryInventory']=True
     if a.network:context['networkSource']=(Path(__file__).resolve().parents[2]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator/vision_source_guest.py').read_text()
     worker=Path(__file__).with_name('vision_ingress_live_worker.py' if a.live else 'vision_ingress_preflight_worker.py')
     files=[worker]

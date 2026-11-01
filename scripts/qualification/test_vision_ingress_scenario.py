@@ -2,9 +2,16 @@
 # SPDX-License-Identifier: MIT
 import unittest
 import vision_ingress_live_worker as worker
+import vision_ingress_preflight_worker as preflight
 
 
 class IngressScenarioTests(unittest.TestCase):
+    def test_delivery_inventory_is_not_an_update_acceptance_or_mutation(self):
+        facts=dict(nativeDelivery=[dict(plugin='rootfs'),dict(plugin='boot')],upgradeAttempted=False,enforcing=True)
+        self.assertEqual(preflight.validate_delivery_inventory(facts),'DECLARATIONS_ONLY_NOT_UPGRADE_OR_ROLLBACK_ACCEPTANCE')
+        for change in (dict(upgradeAttempted=True),dict(enforcing=False),dict(nativeDelivery=[dict(plugin='rootfs')])):
+            with self.assertRaises(AssertionError):preflight.validate_delivery_inventory(dict(facts,**change))
+
     def test_only_exact_correlated_frame_hash_pairs_count(self):
         value=dict(ingressFrames=[dict(ingressFrame=10,sha256='a'),dict(ingressFrame=12,sha256='b')],
             messages=[dict(probe='LIVE_PAIR',frames=[10,12],sha256=['a','b'],bytesVerified=True)])

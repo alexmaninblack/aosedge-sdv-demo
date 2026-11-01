@@ -1,0 +1,103 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
+# Permanent Vision Ingress Delivery — Bounded Change Request
+
+- Status: Proposed; native update/publication not authorized by the completed transient packet
+- Version: 0.1
+- Prepared: 2026-11-01
+- Owner: SDV Lab integration and OEM platform
+- Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
+- Invariants: [accepted ingress contract](../../../contracts/vision-vm/camera-ingress.v1.json),
+  [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md),
+  `REQ-CAM-001`–`REQ-CAM-006` and `D4-030`
+
+## Purpose and current boundary
+
+The reversible Gateway → Camera Access → native Aos reader proof passed.
+Permanent ingress still needs the labelled launcher, systemd unit, narrow
+SELinux policy, updated Camera payload and signed host Gateway/Source tooling.
+The current Camera component archive cannot install those rootfs-owned files.
+Do not retain the temporary policy loader, boot a diagnostic drop-in forever,
+remount rootfs manually, rebase its overlay or manufacture a replacement VM.
+
+The completed diagnostic authority covered only service versions `0.1.2` and
+`0.1.3`. The latter is installed with the read resource revoked. It does not
+authorize an OS update, another OEM Camera release or another read lease.
+
+## Read-only inventory completed
+
+`ingress-delivery-02` passed in 43.61 seconds on the current M4 Vision VM:
+
+- Rootfs version is `6.1.1-vision-camera.3`; `/` is read-only ext4 on `/dev/sda3`.
+- The SM declares native component runtimes
+  `aos-vision-vm-1.0.0-main-qemuarm64-rootfs` and
+  `aos-vision-vm-1.0.0-main-qemuarm64-boot`.
+- Boot has `boot_a` and `boot_b`. There is **one** rootfs partition, not a
+  proven dual-rootfs scheme. Do not infer atomic OS rollback from boot A/B.
+- The rootfs runtime's declared health services are CM, IAM and SM; their
+  presence does not prove Camera/ingress compatibility or completed recovery.
+- Camera is installed and has no pending native component transaction.
+- Enforcing remains enabled. No update, Source/CARLA launch, signing or Cloud
+  mutation was attempted. The VM was stopped and four retained journals match.
+
+`ingress-delivery-01` is a failed evidence-tool attempt (`KeyError`, before the
+guest inventory ran), with stopped VM and unchanged retained journals. Its
+failure is retained, not relabelled as success.
+
+The pinned [SM rootfs implementation](https://github.com/aosedge/aos_core_cpp/blob/9d613a46df3c7f550062e2f19ae3406c57715694/src/sm/launcher/runtimes/rootfs/rootfs.cpp)
+stages a rootfs layer, records pending state, requests a reboot, and runs a
+health/confirmation cycle. This supports investigating the existing native
+owner, not bypassing it. The upstream
+[initramfs update helper](https://github.com/aosedge/meta-aos/blob/main/recipes-core/initrdscripts/initramfs-framework/aosupdate)
+illustrates trial mounting and a later in-place apply. That moving upstream
+reference is **not** proof of the installed helper's revision or power-loss
+recovery. Extract and inspect the actual pinned helper before implementation.
+
+## Recommended route for acceptance
+
+Use a separate Vision-only **native rootfs FOTA**, then the normal Camera OEM
+component update. Keep the same logical VM, overlay/backing image, hardware ID,
+Unit/node, Subject memberships, store UUID, credentials and application data.
+The provisioning/manufacturing receipt stays frozen at its original baseline;
+the observed updated rootfs version is a separate lifecycle fact.
+
+| Stage | Exact boundary and completion gate |
+| --- | --- |
+| Freeze delivery and recovery | Inspect the installed initramfs/update-state/SSH and IAM persistence contracts. Prove a compatible stopped-VM checkpoint and bounded recovery/reconciliation procedure before publication. Do not promise atomic rootfs rollback or replay an uncertain update. |
+| Prepare platform source | Package only the proven ingress launcher/unit/policy and existing native resource/store profile. Preserve static UID/GID, base Core/kernel, core IPC, compatibility and Main recipes. Keep ingress disabled until valid Source enrollment. |
+| Prepare host source | Extend the existing signed Vision bootstrap/catalog for its exact sealed Gateway/Source resources; normal Source remains the lifecycle owner. No proof monkeypatch, arbitrary binary path, second trust owner or Main/package replacement. Keep the current DMG and manufacture image. Freeze this closed resource binding before signing. |
+| Build on SSD | Run source/unit/targeted policy gates, then one warm Vision rootfs update artifact and package QA. Do not rebuild CARLA, Unreal, the Main Factory, model binaries or unrelated services. Separate rootfs-update bytes from a fresh manufacturing image. |
+| Native OS delivery | Sign/publish the frozen Vision rootfs candidate through the configured OEM and native SM runtime, only to the current Vision Unit's exact verification recipient. Let the native owner perform trial/apply/reboots. No agent-side rootfs writes or pending-state edits. Reconcile before any resume. |
+| Camera and reader delivery | Update Camera through its existing OEM A/B transaction owner, preserving rollback/data and real Safe Stop. Publish read/revoke diagnostic versions serially only to the existing Vision Subject; never change its members. |
+| Acceptance and shutdown | One named scenario owns first start, repeat, actual native pair hashes, wrong-role/generation/network/credential denial, disconnect/stale clearing, component restart, retained cold boot, revocation, scoped AVCs, recovery and verified cleanup. Preserve evidence and stop only owned processes. |
+
+## Exact additional authority proposed
+
+Subject to all preceding gates, authorize one closed delivery campaign:
+
+- Current `SDV-Vision-Camera-Image-Lab-Data` only; no fresh VM or provisioning.
+- Vision rootfs candidate `6.1.1-vision-camera.4`, targeting only the existing
+  Vision `rootfs` runtime. No boot component update or host-Mac OS update. If
+  compatibility requires a boot update, report a separate bounded delta first.
+- Camera Access `0.1.1` through the existing Vision Camera OEM component target.
+- Existing `vision-camera-image-probe`: `0.1.4` read, then `0.1.5` revoke.
+- One engineering-signed Vision bootstrap/tooling successor with the already
+  selected Apple owner and exact base-program binding. No public distribution,
+  Main merge/push, option A update or replacement of the current DMG.
+- Normal guest reboots, a private stopped-VM recovery checkpoint and its
+  ownership-checked use only under the accepted recovery/reconciliation plan.
+
+Before mutation, re-read the exact Unit, node, runtime/component type, existing
+versions and verification recipients. Refuse collision, another recipient,
+changed identity, incompatible archive or an uncertain existing intent. Do not
+edit shared Cloud models, adopt another verification set, rotate keys or use
+staging/main-account assumptions in place of the selected certificate domain.
+
+If the installed native update/recovery path cannot preserve the declared
+state, stop at that exact boundary with evidence. Do not substitute a replacement
+VM, manual disk surgery or a permanent diagnostic loader.
+
+Perception/Assessment and their final result/display contracts remain the next
+service packet, after permanent ingress acceptance. This request does not
+authorize new motion authority, model deployment or performance claims.

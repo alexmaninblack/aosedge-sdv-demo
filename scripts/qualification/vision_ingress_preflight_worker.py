@@ -85,6 +85,37 @@ facts['nftErrors']=errors
 print(json.dumps(facts))
 '''
 
+DELIVERY=r'''import json,pathlib,subprocess
+cfg=json.loads(pathlib.Path('/etc/aos/sm.cfg').read_bytes())
+rows=[]
+for item in cfg['runtimes']:
+ if item['plugin'] not in ('rootfs','boot'):continue
+ c=item['config'];fields=('versionFilePath','healthCheckServices','loader','detectMode','partitions','versionFile')
+ row=dict(plugin=item['plugin'],type=item['type'],isComponent=item.get('isComponent'),config={k:c[k] for k in fields if k in c})
+ working=c.get('workingDir')
+ if working:
+  p=pathlib.Path(working);row['workingDirectoryExists']=p.is_dir()
+ rows.append(row)
+mounts=[]
+for line in pathlib.Path('/proc/mounts').read_text().splitlines():
+ f=line.split()
+ if f[1] in ('/','/boot','/var/aos/workdirs','/var/aos/iam'):
+  mounts.append(dict(target=f[1],source=f[0],filesystem=f[2],readOnly='ro' in f[3].split(',')))
+p=subprocess.run(['lsblk','-J','-b','-o','NAME,TYPE,FSTYPE,LABEL,PARTLABEL,SIZE,RO'],capture_output=True,text=True,timeout=10)
+assert p.returncode==0 and len(p.stdout)<32768
+version=pathlib.Path('/etc/aos/version').read_text().strip();assert len(version)<128
+camera=pathlib.Path('/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access')
+print(json.dumps(dict(nativeDelivery=rows,mounts=mounts,blockDevices=json.loads(p.stdout),rootfsVersion=version,
+ cameraInstalled=(camera/'state/installed.json').is_file(),cameraTransactionPresent=(camera/'state/transaction.json').exists(),
+ enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_text().strip()=='1',upgradeAttempted=False)))
+'''
+
+
+def validate_delivery_inventory(facts):
+    assert {v['plugin'] for v in facts['nativeDelivery']}=={'rootfs','boot'},'NATIVE_DELIVERY_DECLARATIONS_INCOMPLETE'
+    assert facts['upgradeAttempted'] is False and facts['enforcing'],'DELIVERY_INVENTORY_INVALID'
+    return 'DECLARATIONS_ONLY_NOT_UPGRADE_OR_ROLLBACK_ACCEPTANCE'
+
 
 def main():
     context=json.loads(Path(sys.argv[1]).read_bytes());records=Path(sys.argv[1]).parent
@@ -141,6 +172,7 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
  pythonVersion=call(['python3','-V']).strip(),systemdVersion=call(['systemctl','--version']).splitlines()[0])))
 '''
             if context.get('projectionProbe'):script=PROJECTION
+            if context.get('deliveryInventory'):script=DELIVERY
             if context.get('networkSource'):
                 script=NETWORK.replace('SOURCE',repr(context['networkSource'])).replace('LOCAL_VM',repr(item['localVmId']))
             import textwrap
@@ -149,7 +181,9 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
             assert done.returncode==0,'NATIVE_PREFLIGHT_OBSERVATION_FAILED'
             result['facts']=json.loads(done.stdout)
             assert 'probeError' not in result['facts'],'NATIVE_PREFLIGHT_PROBE_ERROR'
-            if context.get('networkSource'):
+            if context.get('deliveryInventory'):
+                result['acceptance']=validate_delivery_inventory(result['facts'])
+            elif context.get('networkSource'):
                 assert result['facts'].get('created',{}).get('enforced') and not result['facts'].get('removed',{}).get('enforced',True),'NETWORK_ROUNDTRIP_FAILED'
             elif context.get('projectionProbe'):
                 assert result['facts']['uid']==result['facts']['expectedUid']>0,'PROJECTION_IDENTITY_INVALID'

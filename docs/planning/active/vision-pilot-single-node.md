@@ -4,7 +4,7 @@
 # Single Node Vision Lab Implementation Plan
 
 - Status: Authorized implementation — isolated M4 VM, previews and independent Camera Access
-- Version: 0.13
+- Version: 0.14
 - Prepared: 2026-10-28
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
@@ -538,6 +538,14 @@ This closes reversible live ingress/native consumer acceptance, **not**
 permanent image delivery, Perception/Assessment, model performance or full
 Vision E2E. Preserve the current VM/Unit and qualify an explicitly accepted
 permanent delivery route next; do not infer a Main merge or public release.
+
+The next [permanent delivery change request](vision-ingress-permanent-delivery.md)
+is proposed, not yet an accepted OS-update packet. Read-only
+`ingress-delivery-02` confirms the current native rootfs/boot runtimes, installed
+Camera with no pending transaction and a read-only single rootfs partition.
+Boot A/B is not proof of rootfs atomic rollback. The recommended route is native
+Vision rootfs FOTA plus normal Camera OEM delivery, with a closed signed host
+resource binding and recovery gates. No update/build/publication has started.
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,
