@@ -392,6 +392,27 @@ print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE
                 value=action();atomic(records/(name+'-response.json'),value)
                 return value
             def publish_probe(version):
+                failed_deployment=None
+                if version==read_version and c.get('probeTitleCorrectionFrom'):
+                    prior=Path(c['probeTitleCorrectionFrom']);require(prior.parent==records.parent and prior.name=='native-camera-15','TITLE_CORRECTION_SCOPE_INVALID')
+                    previous=json.loads((prior/'context.json').read_bytes());failed=json.loads((prior/'result.json').read_bytes())
+                    require(previous['probeSha256']==c['probeSha256'] and previous['main']==c['main']
+                        and previous['bootstrapManifestSha256']==c['bootstrapManifestSha256']
+                        and failed.get('code')=='PROBE_PUBLICATION_FAILED' and all(failed['cleanup'].values()),'TITLE_CORRECTION_INPUT_CHANGED')
+                    intent=json.loads((prior/('probe-upload-'+version+'-intent.json')).read_bytes())
+                    require(intent['unitId']==item['unitId'],'TITLE_CORRECTION_UNIT_CHANGED')
+                    original=json.loads((prior/('probe-upload-'+version+'-response.json')).read_bytes())
+                    require(original['httpStatus']==201,'TITLE_CORRECTION_UPLOAD_UNCERTAIN')
+                    before=phase('probe-failed-title-reconcile',lambda:fixture('publication',probeVersion=version,deploymentId=original['deploymentId']))
+                    require(before['stage']=='ERROR' and before['serviceId'] is None and before['catalogVersionCount']==0,'TITLE_CORRECTION_CATALOG_EFFECT_PRESENT')
+                    from aosedge_demo_orchestrator.components import archive_files
+                    from vision_camera_fixture_cloud import configuration,title_correction
+                    original_bundle=prior.parent/'native-camera-14'/('probe-'+version+'.tar.gz')
+                    old_config=json.loads(archive_files(archive_files(original_bundle.read_bytes())['batch.tar.gz'])['config.yaml'])
+                    title_correction(old_config,configuration(version))
+                    failed_deployment=original['deploymentId']
+                    atomic(records/'title-correction.json',dict(onlyTitleChanged=True,binaryUnchanged=True,
+                        newVm=False,newSignatureRequired=True,oldServiceUntouched=True))
                 if version==read_version and c.get('probeBuildRetryFrom'):
                     prior=Path(c['probeBuildRetryFrom']);require(prior.parent==records.parent and prior.name=='native-camera-14','PROBE_RETRY_SCOPE_INVALID')
                     previous=json.loads((prior/'context.json').read_bytes())
@@ -440,7 +461,8 @@ print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE
                 output=records/('probe-'+version+'.tar.gz')
                 signed=phase('probe-sign-'+version,lambda:fixture('sign',probeVersion=version,output=str(output)))
                 response=phase('probe-upload-'+version,lambda:external('probe-upload-'+version,
-                    lambda:fixture('upload',probeVersion=version,bundle=str(output),expectedSha256=signed['sha256'])))
+                    lambda:fixture('upload',probeVersion=version,bundle=str(output),expectedSha256=signed['sha256'],
+                        **({'failedDeploymentId':failed_deployment} if failed_deployment else {}))))
                 deadline=time.monotonic()+150;value=None
                 while time.monotonic()<deadline:
                     value=fixture('publication',probeVersion=version,deploymentId=response['deploymentId'])

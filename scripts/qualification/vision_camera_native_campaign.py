@@ -33,6 +33,7 @@ def main():
     p.add_argument('--consumer-only',action='store_true')
     p.add_argument('--reuse-probe-read',choices=('native-camera-12',))
     p.add_argument('--retry-probe-build',choices=('native-camera-14',))
+    p.add_argument('--correct-probe-title',choices=('native-camera-15',))
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     h.require(not a.repair_store_labels or a.transient_sm is not None,'LABEL_PROOF_REQUIRES_TRANSIENT_CONTEXT')
     h.require(a.name.startswith('native-camera-') and a.name.removeprefix('native-camera-').isdecimal(),'ATTEMPT_NAME_INVALID')
@@ -42,13 +43,21 @@ def main():
     context=dict(main=c['main'],bundle=a.bundle_remote,bootstrapManifestSha256=a.bootstrap_manifest,
         probeSha256=h.digest(a.probe),fixtureWorkerSha256=h.digest(here/'vision_camera_fixture_cloud.py'),
         probeCycle=a.probe_cycle,consumerOnly=a.consumer_only)
-    h.require(not a.consumer_only or (a.reuse_camera_publication and (a.probe_resume or a.retry_probe_build)),'CONSUMER_ONLY_RETAINED_SCOPE_REQUIRED')
+    h.require(not a.consumer_only or (a.reuse_camera_publication and (a.probe_resume or a.retry_probe_build or a.correct_probe_title)),'CONSUMER_ONLY_RETAINED_SCOPE_REQUIRED')
     h.require(not a.retry_probe_build or (a.name=='native-camera-15' and a.consumer_only and not a.probe_resume
         and not a.resource_policy and not a.transient_sm and a.probe_cycle==1),'TERMINAL_RETRY_SCOPE_INVALID')
+    h.require(not a.correct_probe_title or (a.name=='native-camera-16' and a.consumer_only and not a.probe_resume
+        and not a.retry_probe_build and not a.resource_policy and not a.transient_sm and a.probe_cycle==1),'TITLE_CORRECTION_SCOPE_INVALID')
     if a.resume:context['resumeFrom']=str(remote.parent/a.resume)
     if a.probe_resume:context['probeResumeFrom']=str(remote.parent/a.probe_resume)
     if a.reuse_probe_read:context['probeReadReuseFrom']=str(remote.parent/a.reuse_probe_read)
     if a.retry_probe_build:context['probeBuildRetryFrom']=str(remote.parent/a.retry_probe_build)
+    if a.correct_probe_title:
+        diagnosis=json.loads((Path(c['records'])/'cloud-build-diagnostic-01.json').read_bytes())
+        h.require(diagnosis['signaturesVerified'] and diagnosis['payloadFilesIdentical']
+            and diagnosis['newTitleAlreadyUsedByRetainedService'] and diagnosis['newServiceAbsent']
+            and diagnosis['visionUnitHasNoBrakeTireVdpAssignment'],'TITLE_DIAGNOSIS_REQUIRED')
+        context['probeTitleCorrectionFrom']=str(remote.parent/a.correct_probe_title)
     files=[here/'vision_camera_native_worker.py',here/'vision_camera_fixture_cloud.py',a.probe]
     if a.resource_policy:
         record=json.loads((a.resource_policy.parent/'result.json').read_bytes())

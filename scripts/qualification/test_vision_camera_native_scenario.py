@@ -7,7 +7,7 @@ from pathlib import Path
 import unittest
 
 from vision_camera_native_worker import completion
-from vision_camera_fixture_cloud import configuration,terminal_retry
+from vision_camera_fixture_cloud import configuration,terminal_retry,title_correction,TITLE
 
 
 class CompletionTests(unittest.TestCase):
@@ -48,6 +48,17 @@ class CompletionTests(unittest.TestCase):
 
 
 class ProbeConfigurationTests(unittest.TestCase):
+    def test_new_service_has_a_distinct_title_and_only_that_field_may_be_corrected(self):
+        after=configuration('0.1.0');before=copy.deepcopy(after)
+        before['items'][0]['identity']['title']='Vision Camera Access Probe'
+        self.assertEqual(TITLE,'Vision Camera Image Probe')
+        title_correction(before,after)
+        for mutate in (lambda c:c['items'][0].update(version='0.1.2'),
+                lambda c:c['items'][0]['configuration'].update(resources=[]),
+                lambda c:c['items'][0]['identity'].update(codename='other')):
+            wrong=copy.deepcopy(after);mutate(wrong)
+            with self.assertRaisesRegex(ValueError,'TITLE_CORRECTION_MUST_BE_ONLY_CHANGE'):title_correction(before,wrong)
+
     def test_terminal_retry_requires_exact_failed_job_and_no_catalog_effect(self):
         terminal_retry(dict(id='known',state='error'),'known',None,[])
         for bundle,identity,versions in ((dict(id='other',state='error'),None,[]),

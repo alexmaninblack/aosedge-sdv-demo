@@ -12,6 +12,7 @@ import sys
 import tempfile
 
 CODENAME='vision-camera-image-probe'
+TITLE='Vision Camera Image Probe'
 LABEL='SDV Vision Camera Image Probe'
 
 
@@ -25,10 +26,19 @@ def terminal_retry(bundle, deployment_id, service_id, versions):
             and service_id is None and not versions,'TERMINAL_BUILD_WITHOUT_EFFECT_REQUIRED')
 
 
+def title_correction(before, after):
+    import copy
+    expected=copy.deepcopy(before)
+    require(expected['items'][0]['identity']['codename']==CODENAME
+            and expected['items'][0]['identity']['title']=='Vision Camera Access Probe','TITLE_CORRECTION_SOURCE_INVALID')
+    expected['items'][0]['identity']['title']=TITLE
+    require(after==expected,'TITLE_CORRECTION_MUST_BE_ONLY_CHANGE')
+
+
 def configuration(version):
     require(version in ('0.1.0','0.1.1','0.1.2','0.1.3'),'VERSION_INVALID')
     return dict(schemaVersion=2,publisher=dict(author='maninblack'),items=[dict(
-        identity=dict(type='service',codename=CODENAME,title='Vision Camera Access Probe'),
+        identity=dict(type='service',codename=CODENAME,title=TITLE),
         version=version,sourceFolder='service',images=[dict(sourceFolder='arm64',archInfo=dict(architecture='arm64'))],
         configuration=dict(workingDir='/',cmd='/usr/bin/vision-camera-probe',instances=dict(minInstances=1,priority=10),
             offlineTTL='P7D',quotas=dict(cpuLimit=1000,ramLimit=134217728,storageLimit=16777216,
@@ -54,6 +64,7 @@ def execute(r):
                          'deployment_bundles_create','deployment_bundles_list')
         oem.require('subjects_list','subjects_read','subjects_create','subjects_units_create',
                     'subjects_units_list','subjects_services_list','subjects_services_create','units_subjects_services_list')
+        require(not any(v.get('title')==TITLE and v.get('codename')!=CODENAME for v in provider.pages('services/')),'TITLE_OWNED_BY_ANOTHER_SERVICE')
         return dict(ready=True)
     if action=='sign':
         from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
@@ -76,8 +87,11 @@ def execute(r):
             shutil.copyfile(root/'batch.tar.gz',output);output.chmod(0o444)
         return dict(observed,verificationTrust='CONFIGURED_SP_SIGNING_CERTIFICATE')
     reads=Reads(provider)
-    matches=[service_view(row,provider.user) for row in reads.pages('services/') if row.get('codename')==CODENAME]
+    service_rows=reads.pages('services/')
+    require(not any(v.get('title')==TITLE and v.get('codename')!=CODENAME for v in service_rows),'TITLE_OWNED_BY_ANOTHER_SERVICE')
+    matches=[service_view(row,provider.user) for row in service_rows if row.get('codename')==CODENAME]
     require(len(matches)<=1,'SERVICE_AMBIGUOUS')
+    require(not matches or matches[0]['title']==TITLE,'SERVICE_TITLE_CHANGED')
     service_id=matches[0]['id'] if matches else None
     if r.get('serviceId'):require(service_id==r['serviceId'],'SERVICE_CHANGED')
     versions=[version_view(row) for row in reads.pages('services/'+service_id+'/service-versions/')] if service_id else []

@@ -417,6 +417,21 @@ the retained .2 VM and its sealed input were not modified. Private evidence is
 `image-policy-01`, `signed-bootstrap-03`, `native-camera-14` and `native-camera-15`
 under the existing M4 qualification store. Original failed receipts stay failed.
 
+The operator clarified the two-VM product topology and Subject-owned service
+assignment, then authorized continuation on the retained Vision candidate.
+Read-only diagnosis confirms no Brake/Tire/VDP service assignment on its Unit.
+It also identifies a packaging inconsistency: the new diagnostic codename still
+uses the retained service's title. Both archives verify with the configured SP
+certificate and contain identical payload files; only codename/version differ.
+Cloud exposes the generic deployment-bundle build failure, not its internal cause.
+The bounded `native-camera-16` hypothesis corrects only the new service title to
+`Vision Camera Image Probe`, preserving codename, binary, resource configuration,
+version, VM and signed image. Require both prior terminal failures and no catalog
+effect again before one corrected signing/upload. This is not another retry of
+the unchanged failed archive. Prove or reject the naming hypothesis; do not call
+it the established Cloud root cause without independent evidence. The retained
+service/Subject, Main and all four earlier instances remain untouched.
+
 ## Current live-preview packet
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
