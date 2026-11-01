@@ -5,8 +5,12 @@ import copy
 import ast
 from pathlib import Path
 import unittest
+import hashlib
+import subprocess
+import sys
+import tempfile
 
-from vision_camera_native_worker import completion
+from vision_camera_native_worker import completion,fixture_helpers
 from vision_camera_fixture_cloud import configuration,terminal_retry,title_correction,TITLE
 
 
@@ -48,6 +52,15 @@ class CompletionTests(unittest.TestCase):
 
 
 class ProbeConfigurationTests(unittest.TestCase):
+    def test_verified_fixture_loads_in_isolated_python_without_script_search_path(self):
+        worker=Path(__file__).with_name('vision_camera_native_worker.py').resolve()
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary).resolve();fixture=root/'vision_camera_fixture_cloud.py'
+            fixture.write_text('answer = 42\n');digest=hashlib.sha256(fixture.read_bytes()).hexdigest()
+            code="import importlib.util,pathlib; s=importlib.util.spec_from_file_location('worker',"+repr(str(worker))+"); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); assert m.fixture_helpers(pathlib.Path("+repr(str(root))+"),"+repr(digest)+").answer==42"
+            subprocess.run([sys.executable,'-I','-B','-c',code],check=True,capture_output=True,timeout=5)
+            with self.assertRaisesRegex(ValueError,'FIXTURE_WORKER_CHANGED'):fixture_helpers(root,'0'*64)
+
     def test_new_service_has_a_distinct_title_and_only_that_field_may_be_corrected(self):
         after=configuration('0.1.0');before=copy.deepcopy(after)
         before['items'][0]['identity']['title']='Vision Camera Access Probe'

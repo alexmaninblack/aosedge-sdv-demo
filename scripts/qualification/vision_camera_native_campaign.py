@@ -46,7 +46,7 @@ def main():
     h.require(not a.consumer_only or (a.reuse_camera_publication and (a.probe_resume or a.retry_probe_build or a.correct_probe_title)),'CONSUMER_ONLY_RETAINED_SCOPE_REQUIRED')
     h.require(not a.retry_probe_build or (a.name=='native-camera-15' and a.consumer_only and not a.probe_resume
         and not a.resource_policy and not a.transient_sm and a.probe_cycle==1),'TERMINAL_RETRY_SCOPE_INVALID')
-    h.require(not a.correct_probe_title or (a.name=='native-camera-16' and a.consumer_only and not a.probe_resume
+    h.require(not a.correct_probe_title or (a.name in ('native-camera-16','native-camera-17') and a.consumer_only and not a.probe_resume
         and not a.retry_probe_build and not a.resource_policy and not a.transient_sm and a.probe_cycle==1),'TITLE_CORRECTION_SCOPE_INVALID')
     if a.resume:context['resumeFrom']=str(remote.parent/a.resume)
     if a.probe_resume:context['probeResumeFrom']=str(remote.parent/a.probe_resume)
@@ -76,6 +76,16 @@ def main():
         context['repairStoreLabels']=a.repair_store_labels
     h.atomic(root/'context.json',context);files.append(root/'context.json')
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
+    if a.correct_probe_title and a.name=='native-camera-17':
+        check='''import json,pathlib
+p=pathlib.Path(PREVIOUS);r=json.loads((p/'result.json').read_bytes());c=json.loads((p/'context.json').read_bytes())
+assert r['code']=='ModuleNotFoundError' and all(r['cleanup'].values())
+assert c['bootstrapManifestSha256']==MANIFEST and c['probeSha256']==PROBE
+assert not (p/'probe-sign-0.1.0.json').exists() and not (p/'probe-upload-0.1.0-intent.json').exists()
+print(json.dumps(dict(previousStopped=True,noCorrectedSigningOrUpload=True)))
+'''.replace('PREVIOUS',repr(str(remote.parent/'native-camera-16'))).replace('MANIFEST',repr(a.bootstrap_manifest)).replace('PROBE',repr(context['probeSha256']))
+        reconciled=json.loads(h.remote(t,q(python)+' -I -B -c '+q(check),timeout=15))
+        h.atomic(root/'previous-tooling-failure-reconciled.json',reconciled)
     if a.reuse_camera_publication:
         h.require(not a.resume,'PUBLICATION_REUSE_SCOPE_INVALID')
         code="""import json,pathlib,subprocess

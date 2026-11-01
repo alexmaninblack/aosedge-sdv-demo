@@ -78,17 +78,19 @@ with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.Str
   newTitleAlreadyUsedByRetainedService=old[0]['title']==configs[1]['items'][0]['identity']['title'],
   newServiceAbsent=True,failedBuilds=failed,visionUnitHasNoBrakeTireVdpAssignment=True,
   visionAssignedServiceCount=len(assigned),mutation=False,vmStarted=False)
+ facts['serviceCreationPermitted']='services_create' in cloud.user['effectivePermissions']
 print(json.dumps(facts))
 '''
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True)
+    p.add_argument('--attempt',type=int,choices=(1,2),default=1)
     a=p.parse_args();c=configuration(a.config)
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
     code=REMOTE.replace('BASE',repr(c['main']['packageRoot'])).replace('SDK',repr(SDK))
     result=json.loads(h.remote(c['transport'],shlex.quote(python)+' -I -B -c '+shlex.quote(code),timeout=85))
-    target=Path(c['records'])/'cloud-build-diagnostic-01.json'
+    target=Path(c['records'])/('cloud-build-diagnostic-'+str(a.attempt).zfill(2)+'.json')
     h.require(not target.exists(),'DIAGNOSTIC_EXISTS_RECONCILE');h.atomic(target,result)
     print(json.dumps(result),flush=True)
 

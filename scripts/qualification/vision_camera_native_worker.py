@@ -28,6 +28,16 @@ def atomic(path,value):
     os.replace(tmp,path)
 
 
+def fixture_helpers(records, expected_sha256):
+    """Explicit verified module loading also works under Python -I."""
+    import importlib.util
+    path=records/'vision_camera_fixture_cloud.py'
+    require(path.is_file() and not path.is_symlink() and hashlib.sha256(path.read_bytes()).hexdigest()==expected_sha256,'FIXTURE_WORKER_CHANGED')
+    spec=importlib.util.spec_from_file_location('vision_verified_fixture',path)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+
 def completion(result):
     """An action pass never hides failed cleanup or unexecuted acceptance gates."""
     if result['outcome'].startswith('PASS_') and not all(result['cleanup'].values()):
@@ -406,10 +416,10 @@ print(json.dumps(dict(newEpoch=True,oldEpochDenied=True,sourceState='UNAVAILABLE
                     before=phase('probe-failed-title-reconcile',lambda:fixture('publication',probeVersion=version,deploymentId=original['deploymentId']))
                     require(before['stage']=='ERROR' and before['serviceId'] is None and before['catalogVersionCount']==0,'TITLE_CORRECTION_CATALOG_EFFECT_PRESENT')
                     from aosedge_demo_orchestrator.components import archive_files
-                    from vision_camera_fixture_cloud import configuration,title_correction
+                    helpers=fixture_helpers(records,c['fixtureWorkerSha256'])
                     original_bundle=prior.parent/'native-camera-14'/('probe-'+version+'.tar.gz')
                     old_config=json.loads(archive_files(archive_files(original_bundle.read_bytes())['batch.tar.gz'])['config.yaml'])
-                    title_correction(old_config,configuration(version))
+                    helpers.title_correction(old_config,helpers.configuration(version))
                     failed_deployment=original['deploymentId']
                     atomic(records/'title-correction.json',dict(onlyTitleChanged=True,binaryUnchanged=True,
                         newVm=False,newSignatureRequired=True,oldServiceUntouched=True))

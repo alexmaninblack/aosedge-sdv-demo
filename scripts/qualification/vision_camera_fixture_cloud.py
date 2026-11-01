@@ -64,7 +64,9 @@ def execute(r):
                          'deployment_bundles_create','deployment_bundles_list')
         oem.require('subjects_list','subjects_read','subjects_create','subjects_units_create',
                     'subjects_units_list','subjects_services_list','subjects_services_create','units_subjects_services_list')
-        require(not any(v.get('title')==TITLE and v.get('codename')!=CODENAME for v in provider.pages('services/')),'TITLE_OWNED_BY_ANOTHER_SERVICE')
+        services=provider.pages('services/')
+        require(not any(v.get('title')==TITLE and v.get('codename')!=CODENAME for v in services),'TITLE_OWNED_BY_ANOTHER_SERVICE')
+        if not any(v.get('codename')==CODENAME for v in services):provider.require('services_create')
         return dict(ready=True)
     if action=='sign':
         from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
@@ -103,6 +105,7 @@ def execute(r):
         require(all(row['id']==current['unitId'] and row['system_uid']==current['systemUid'] for row in recipients),'FOREIGN_RECIPIENT')
     if action=='upload':
         require(not selected,'VERSION_EXISTS_RECONCILE')
+        if service_id is None:provider.require('services_create')
         if r.get('failedDeploymentId'):
             rows=reads.pages('deployment-bundles/',r['failedDeploymentId'])
             require(len(rows)==1,'FAILED_BUILD_NOT_OBSERVED')
