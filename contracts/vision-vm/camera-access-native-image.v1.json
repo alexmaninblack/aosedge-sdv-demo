@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "kind": "vision-native-image-qualification-selection",
-  "outcome": "NOT_COMPLETE_SERVICE_BUILD_FAILED_IN_CLOUD",
+  "outcome": "PASS_NATIVE_CAMERA_IMAGE_WITH_RECORDED_FIXTURE",
   "signedBootstrap": {
     "version": "0.3.0",
     "manifestSha256": "d782737eff7ddf6c69f59a36c806b2428129d83b70e6e2deb097939990006612",
@@ -20,19 +20,24 @@
   },
   "nativeInstanceName": "SDV-Vision-Camera-Image-Lab-Data",
   "retainedInstanceNames": ["SDV-Lab-Data", "SDV-Vision-Lab-Data", "SDV-Vision-Native-Lab-Data", "SDV-Vision-Camera-Lab-Data"],
-  "sourceGates": {"visionCases": 43, "qualificationCases": 13, "platformCases": 277, "platformSkips": 3},
-  "passed": ["signature and actual consumer transfer", "separate normal manufacture and OEM provisioning", "own VM/overlay/Unit/node", "initial Source enrollment", "real physical Safe Stop", "native Camera activation", "fresh epoch and old-epoch denial after daemon restart", "Camera active with zero automatic restarts and no observed scoped AVCs", "four retained journals unchanged"],
+  "sourceGates": {"visionCases": 43, "qualificationCases": 15, "platformCases": 277, "platformSkips": 3},
+  "passed": ["signature and actual consumer transfer", "separate normal manufacture and OEM provisioning", "own VM/overlay/Unit/node", "initial Source enrollment", "real physical Safe Stop", "native Camera activation", "fresh epoch and old-epoch denial after daemon restart", "actual native Aos JPEG pair/hash read and mutation denial", "read-only resource mount", "SOTA revocation with new process and absent mount/group", "cold VM boot retaining Unit/store/component/revocation", "fresh scoped AVC checks before and after cold boot", "Enforcing and zero automatic Camera restarts", "four retained journals unchanged", "Cloud Subject restricted to this Vision Unit and diagnostic service"],
   "cloudService": {
     "codename": "vision-camera-image-probe",
-    "version": "0.1.0",
-    "acceptedUploads": 2,
-    "buildStates": ["error", "error"],
-    "serviceAndVersionAbsentAfterReconciliation": true,
-    "resubmit": "Same already-signed bytes, once, after authoritative terminal-error/no-catalog-effect reconciliation",
-    "rootCause": "NOT_EXPOSED_BY_AVAILABLE_BUILD_STATUS"
+    "title": "Vision Camera Image Probe",
+    "readVersion": "0.1.0",
+    "revokedVersion": "0.1.1",
+    "acceptedUploads": 4,
+    "priorFailedBuildStates": ["error", "error"],
+    "correctedBuildStates": ["done", "done"],
+    "correction": "Only the new service title changed; payload bytes, resource contract, version, VM and signed image were preserved. Failed jobs had no catalog effect before corrected publication.",
+    "rootCause": "Distinct title resolved publication; internal server error cause is not exposed by the generic build status",
+    "subjectIsolation": "One owned Vision Subject, exactly this Vision Unit and diagnostic service; no Brake/Tire/VDP service assignment"
   },
-  "pending": ["native Aos consumer read and denial on this image", "resource revocation on this image", "cold-image consumer and security acceptance", "authenticated Gateway camera ingress", "Perception/Assessment", "full Vision E2E"],
-  "evidence": {"imageCampaign": "image-policy-01", "activation": "native-camera-14", "boundedConsumerContinuation": "native-camera-15", "retainedRestart": "Existing Camera restored on the same stopped VM during native-camera-15; not full cold-image consumer acceptance"},
+  "nativeConsumer": {"uid": 5000, "selinuxDomain": "container_engine_t", "readerGroups": [990], "effectiveCapabilities": "empty", "noNewPrivileges": true, "readOnlyMount": true, "revokedGroups": [], "revokedMountPresent": false},
+  "nativeImagePolicyAcceptance": "PASS_RECORDED_FIXTURE_NATIVE_CONSUMER_AND_COLD_BOOT",
+  "pending": ["authenticated Gateway camera ingress", "Perception/Assessment", "full Vision E2E", "capture-clock accuracy and AI throughput"],
+  "evidence": {"imageCampaign": "image-policy-01 (original failure retained)", "activation": "native-camera-14", "failedResubmit": "native-camera-15", "toolingFailureBeforeCorrectedSigningOrUpload": "native-camera-16", "nativeAcceptance": "native-camera-17", "nativeAcceptanceSeconds": 155.88, "packageDiagnosis": "cloud-build-diagnostic-01/02", "subjectPostRead": "cloud-subject-acceptance-01"},
   "cleanup": "Owned Source/CARLA/VM/listeners and SSD Builder stopped; data, identities, signed image, current DMG and caches retained",
-  "excluded": ["Main merge", "public publication", "CARLA rebuild", "Main Factory rebuild", "retained VM replacement or rebase", "additional service-upload retries"]
+  "excluded": ["Main merge", "public publication", "CARLA rebuild", "Main Factory rebuild", "retained VM replacement or rebase", "distinct per-service SELinux/MCS domain", "full Vision E2E"]
 }

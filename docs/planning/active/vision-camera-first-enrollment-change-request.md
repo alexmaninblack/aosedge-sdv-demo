@@ -3,7 +3,7 @@
 
 # Vision First Enrollment and Queued Camera Installation
 
-- Status: First enrollment fixed and signed; native resource proof passed with temporary policy, successor-image acceptance pending
+- Status: First enrollment fixed and signed; permanent .3 native image/resource/cold-boot acceptance passed with recorded JPEG input
 - Prepared: 2026-11-01
 - Owner: SDV Lab Source lifecycle and OEM platform
 - Parent: [Vision implementation packet](vision-pilot-single-node.md#current-signed-bootstrap-and-native-camera-access-packet)
@@ -78,14 +78,17 @@ upload was reconciled, not repeated. All owned processes/listeners were closed
 and the three other journals remained unchanged. Authenticated camera ingress,
 AI models and full Vision E2E are not inferred from this recorded-JPEG IPC proof.
 
-## Remaining native image acceptance
+<a id="remaining-native-image-acceptance"></a>
+## Native image acceptance
 
 The resource correction is committed and compiled in the platform feature
 branch. The installed `6.1.1-vision-camera.2` image still contains its earlier
 policy: the successful temporary policy was removed, not silently persisted.
-Bootstrap 0.2.1 supplies the signed Source fix, not a replacement OS image.
-The policy's permanent delivery and cold-image security acceptance therefore
-remain open. Neither original failure receipt is relabelled as a full pass.
+Bootstrap 0.2.1 supplied the signed Source fix, not a replacement OS image.
+That retained image is unchanged. The separate signed 0.3.0 / Factory .3
+successor now carries the permanent policy and has passed the native
+recorded-JPEG consumer/revocation and cold-image security gates. Neither
+original failure receipt is relabelled as a full pass.
 
 Do not remount/rewrite the current rootfs, rebase its overlay, or promote the
 diagnostic policy loader into a new production boot owner. Keep the current VM,
@@ -96,14 +99,16 @@ authorizes that exact additional VM/Unit, not another Test as a retry of the
 retained first-enrollment transaction. No normal OS-update route, Main change
 or public delivery is introduced.
 
-The separate signed 0.3.0 / Factory .3 validation instance is now built and
-provisioned. First Source enrollment and Camera activation passed there without
-temporary policy. The [image receipt](../../../contracts/vision-vm/camera-access-native-image.v1.json)
-keeps the remaining Aos-reader/revocation/cold-image gates open: Cloud failed to
-build its new diagnostic service, including one bounded resubmit of the exact
-signed archive after authoritative no-catalog-effect reconciliation. Preserve
-both VM generations and all failed receipts; this is not a complete native
-image acceptance or a reason to rebuild either VM.
+The [image receipt](../../../contracts/vision-vm/camera-access-native-image.v1.json)
+records the separate manufacture, first enrollment and Camera activation, then
+`native-camera-17`'s actual Aos read/denial/revocation and cold-boot acceptance
+without temporary policy. The new diagnostic service now has a distinct title;
+correcting only that metadata resolved Cloud processing. Both earlier failed
+jobs and the module-loader failure before corrected signing/upload remain
+failed evidence. An independent Cloud post-read confirms the Vision-only
+Subject/Unit/service binding and absence of Brake/Tire assignments. Preserve
+both VM generations and all data. Authenticated Gateway ingress, AI services
+and full Vision E2E remain separate gates; recorded JPEG IPC is not live ingress.
 
 ## Accepted minimal correction
 

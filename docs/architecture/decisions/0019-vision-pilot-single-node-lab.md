@@ -38,6 +38,22 @@ The first version runs the two Lab variants sequentially. It does not require
 a universal profile selector, simultaneous source attachment, multi-node
 management, distributed scheduling or inter-node credentials.
 
+Cloud Subjects, with explicit Unit membership and service assignments, own the
+application-service grouping. The retained Brake/Tire Unit keeps its existing
+Subject assignments; the Vision Unit receives only its separate Vision group
+(Perception and Assessment in the product). Do not bind Vision to a Subject
+that assigns Brake or Tire, and do not bind the retained Unit to Vision services.
+The OEM components VDP and Camera Access use their own platform delivery/target
+mechanism, not application-service Subject assignment. Image selection alone
+does not isolate Cloud service assignments; verify both Cloud bindings and
+actual native deployment. Diagnostic probe Subjects remain Vision-only.
+
+There are two functional VMs in the Lab product. Preserved stopped engineering
+or image-validation instances are evidence/rollback state, not a third product
+node or a multi-node topology. The operator explicitly reaffirmed this boundary
+on 2026-11-01; continuing validation must reuse the current Vision candidate,
+not create another VM to work around a service-publication failure.
+
 ## Runtime boundaries
 
 ```text

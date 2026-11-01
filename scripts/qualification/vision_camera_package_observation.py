@@ -27,7 +27,7 @@ with runtime_paths.installed_session(root):
  request=dict(tooling=str(pathlib.Path(context['bundle'])/'Contents/Resources/tooling/aosedge-sdv-demo/apps/demo-orchestrator/src'),
   credential=str(config['cloudProfiles']['service-provider']['credential']),ownerId=config['cloudProfiles']['service-provider']['expectedOwnerId'],
   oemCredential=str(config['cloudProfiles']['oem-delivery']['credential']),oemOwner=cloud_binding(state)['ownerId'],
-  cloudDomain=selected_domain(state),unitId=state['vehicles']['test']['unitId'],records=str(records))
+  cloudDomain=selected_domain(state),unitId=state['vehicles']['test']['unitId'],records=str(records),afterAcceptance=AFTER)
 script=SDK
 done=subprocess.run([sdk[0],'-I','-B','-c',script],input=json.dumps(request),env=env,capture_output=True,text=True,timeout=75)
 assert done.returncode==0,'PACKAGE_OBSERVATION_FAILED'
@@ -60,7 +60,9 @@ with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.Str
  services=reads.pages('services/')
  old=[v for v in services if v.get('codename')=='vision-camera-access-probe']
  new=[v for v in services if v.get('codename')=='vision-camera-image-probe']
- assert len(old)==1 and not new
+ assert len(old)==1
+ if r['afterAcceptance']:assert len(new)==1 and new[0]['title']=='Vision Camera Image Probe'
+ else:assert not new
  failed=[]
  for name in ('native-camera-14','native-camera-15'):
   response=json.loads((records/name/'probe-upload-0.1.0-response.json').read_bytes())
@@ -79,6 +81,26 @@ with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.Str
   newServiceAbsent=True,failedBuilds=failed,visionUnitHasNoBrakeTireVdpAssignment=True,
   visionAssignedServiceCount=len(assigned),mutation=False,vmStarted=False)
  facts['serviceCreationPermitted']='services_create' in cloud.user['effectivePermissions']
+ if r['afterAcceptance']:
+  own=new[0]['id']
+  assert len(assigned)==1 and assigned[0]['service']['id']==own
+  receipt=json.loads((records/'native-camera-17/probe-subject-create-response.json').read_bytes())['subject']
+  subject=oem.call('subjects/'+receipt['id']+'/')
+  assert subject['label']=='SDV Vision Camera Image Probe'
+  members=oem.pages('subjects/'+receipt['id']+'/units/')
+  bindings=oem.pages('subjects/'+receipt['id']+'/services/')
+  assert len(members)==1 and members[0]['id']==r['unitId']
+  assert len(bindings)==1 and bindings[0]['service']['id']==own
+  versions=reads.pages('services/'+own+'/service-versions/')
+  assert {v['version']:str(v['container_state']).lower() for v in versions}=={'0.1.0':'ready','0.1.1':'ready'}
+  states=[]
+  for version in ('0.1.0','0.1.1'):
+   response=json.loads((records/'native-camera-17'/('probe-upload-'+version+'-response.json')).read_bytes())
+   states.append(reads.pages('deployment-bundles/',response['deploymentId'])[0]['state'])
+  assert states==['done','done']
+  facts.update(newServiceAbsent=False,correctedTitleAccepted=True,successfulBuildStates=states,
+   visionSubjectHasOnlyThisUnit=True,visionSubjectHasOnlyThisService=True,visionUnitHasOnlyVisionAssignment=True,
+   retainedServiceTitleUnchanged=old[0]['title']==configs[0]['items'][0]['identity']['title'])
 print(json.dumps(facts))
 '''
 
@@ -86,11 +108,12 @@ print(json.dumps(facts))
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True)
     p.add_argument('--attempt',type=int,choices=(1,2),default=1)
+    p.add_argument('--after-acceptance',action='store_true')
     a=p.parse_args();c=configuration(a.config)
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
-    code=REMOTE.replace('BASE',repr(c['main']['packageRoot'])).replace('SDK',repr(SDK))
+    code=REMOTE.replace('BASE',repr(c['main']['packageRoot'])).replace('SDK',repr(SDK)).replace('AFTER',repr(a.after_acceptance))
     result=json.loads(h.remote(c['transport'],shlex.quote(python)+' -I -B -c '+shlex.quote(code),timeout=85))
-    target=Path(c['records'])/('cloud-build-diagnostic-'+str(a.attempt).zfill(2)+'.json')
+    target=Path(c['records'])/(('cloud-subject-acceptance-' if a.after_acceptance else 'cloud-build-diagnostic-')+str(a.attempt).zfill(2)+'.json')
     h.require(not target.exists(),'DIAGNOSTIC_EXISTS_RECONCILE');h.atomic(target,result)
     print(json.dumps(result),flush=True)
 

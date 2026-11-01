@@ -10,7 +10,7 @@
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
 - Execution status: signed Source first enrollment and native Camera activation passed on the retained M4 VM;
-  native reader/revocation passed under reversible policy; permanent successor-image security acceptance and full Vision E2E remain open
+  permanent .3 image passed native read/revocation/cold-boot security with recorded JPEGs; authenticated Gateway ingress and full Vision E2E remain open
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -241,11 +241,12 @@ CARLA kit or the final Vision UI/installer. It contains the new Vision image,
 source-bound tooling and Camera payload. Its closed catalog checks signature,
 team/identifier, base-program selection and image digest before the normal
 manufacture owner can consume it. No arbitrary image override is permitted.
-Use a fresh `SDV-Vision-Camera-Lab-Data` instance with the existing fixed 4-CPU/
-4-GiB Vision profile and Factory `6.1.1-vision-camera.2`. Preserve Main, the
-engineering Vision overlay/models and the previous failing native Vision Unit.
+The current selected instance is `SDV-Vision-Camera-Image-Lab-Data`, with the
+existing fixed 4-CPU/4-GiB Vision profile and Factory `6.1.1-vision-camera.3`.
+The earlier .2 `SDV-Vision-Camera-Lab-Data` is retained, not migrated or adopted.
+Preserve Main, the engineering Vision overlay/models and earlier native Units.
 
-The closed Cloud setup profile selects `aos-vision-vm` and `SDV Vision Camera Verification`;
+The closed Cloud setup profile selects `aos-vision-vm` and `SDV Vision Camera Image Verification`;
 it cannot adopt or amend the Main model/set. The existing Source owner projects
 fresh native-Unit Safe Stop credentials only into the Vision SM. It never starts
 VDP or gives Camera Access a Gateway credential. OEM Camera delivery reuses the
@@ -338,10 +339,9 @@ VM/store restoration were observed. The separate
 [resource source/proof receipt](../../../contracts/vision-vm/camera-access-native-resource-source.v1.json)
 records native read-only delivery, denial and revocation with clean fresh AVCs
 under a temporary policy. That policy was restored/removed, not shipped into
-the installed image. Permanent successor-image security acceptance remains
-open under the [current preservation boundary](vision-camera-first-enrollment-change-request.md#remaining-native-image-acceptance).
-The final gate still requires these native activation, restart, read and
-revocation results on the signed successor image, not only transient policy.
+the installed .2 image. The subsequent .3 successor now passes the permanent
+native resource/image gate under the [current preservation boundary](vision-camera-first-enrollment-change-request.md#remaining-native-image-acceptance),
+including restart, actual read/denial/revocation and fresh cold-boot security.
 Preserve the old native Unit and its verification set; the current successor
 owns its separate set/Subject.
 Authenticated camera ingress and full Vision E2E remain NOT_RUN.
@@ -431,6 +431,27 @@ effect again before one corrected signing/upload. This is not another retry of
 the unchanged failed archive. Prove or reject the naming hypothesis; do not call
 it the established Cloud root cause without independent evidence. The retained
 service/Subject, Main and all four earlier instances remain untouched.
+
+The title correction passed in `native-camera-17` on the same signed .3 image,
+VM and Unit. Cloud accepted both read 0.1.0 and revoked 0.1.1 service versions.
+The 155.88-second campaign proved native UID 5000, group 990, empty effective
+capabilities/NNP, `container_engine_t`, read-only mount and JPEG pair hashes,
+producer/mutation denial, a new process without resource mount/group after SOTA,
+and cold boot retaining the same Unit/store/component and revocation. Fresh
+scoped AVC checks passed before and after cold boot with Enforcing and zero
+automatic Camera restarts. No temporary policy or SM replacement was used.
+
+`cloud-subject-acceptance-01` independently verifies both successful Cloud builds
+and one owned Vision Subject containing only this Unit and diagnostic service;
+the Unit has no Brake/Tire/VDP service assignment. The retained service's title
+is unchanged. A distinct title resolved publication, but the generic Cloud
+error does not expose the internal server cause. `native-camera-16` was a
+module-loader tooling failure before any corrected signing/upload; it stays
+failed. Its isolated-Python regression is fixed. All four retained journals
+are unchanged and owned runtimes are stopped. This closes Camera Access native
+image/resource acceptance with recorded JPEG input, not Gateway ingress,
+Perception/Assessment, image-time accuracy or full Vision E2E. Continue V2's
+authenticated Gateway camera binding/delivery on this existing Vision VM.
 
 ## Current live-preview packet
 
