@@ -16,6 +16,7 @@ import time
 
 import remote_harness as h
 from vision_vm_campaign import configuration
+from vision_camera_fixture_cloud import SUCCESSOR_PACKET,FIXED_BINARY_SHA
 
 
 def main():
@@ -25,8 +26,9 @@ def main():
     parser.add_argument('--bundle',type=Path)
     parser.add_argument('--transient-first-reselect',action='store_true')
     parser.add_argument('--resume-from',choices=('vision-fresh-accept-07',))
+    parser.add_argument('--successor-cycle',action='store_true')
     args=parser.parse_args();c=configuration(args.config);t=c['transport'];q=shlex.quote
-    h.require(args.name in ('vision-fresh-accept-01','vision-fresh-accept-02','vision-fresh-accept-03','vision-fresh-accept-04','vision-fresh-accept-05','vision-fresh-accept-06','vision-fresh-accept-07','vision-fresh-accept-08'),'EXACT_FRESH_ACCEPTANCE_REQUIRED')
+    h.require(args.name in ('vision-fresh-accept-01','vision-fresh-accept-02','vision-fresh-accept-03','vision-fresh-accept-04','vision-fresh-accept-05','vision-fresh-accept-06','vision-fresh-accept-07','vision-fresh-accept-08','vision-fresh-accept-09'),'EXACT_FRESH_ACCEPTANCE_REQUIRED')
     records=Path(c['records'])/args.name;remote=Path(c['remoteRoot'])/args.name
     h.require(not records.exists(),'ACCEPTANCE_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     source=Path(__file__).resolve().parents[2];here=Path(__file__).parent
@@ -49,7 +51,7 @@ def main():
         'vision_ingress_observation.py','vision_delivery_guest.py','vision_camera_fixture_cloud.py','vision_permanent_component_cloud.py')]
     if args.transient_first_reselect:files.append(here/'vision_pending_reselect_proof.py')
     build=Path('/Volumes/SDV-Dev/sdv/build/vision-ingress')
-    files += [build/'fresh-reader-02/vision-camera-probe',build/'reader-01/vision-camera-credential-deny',
+    files += [build/('fresh-reader-03' if args.successor_cycle else 'fresh-reader-02')/'vision-camera-probe',build/'reader-01/vision-camera-credential-deny',
               build/'boundary-01/vision-ingress-boundary']
     h.require(all(p.is_file() and not p.is_symlink() for p in files),'FIXTURE_INPUT_MISSING')
     context=dict(main=c['main'],bundle=str(Path(c['remoteRoot'])/'signed-bootstrap-04/AosEdge Vision Bootstrap 0.5.0.bundle'),
@@ -58,11 +60,22 @@ def main():
         files={f.name:h.digest(f) for f in files},camera=dict(bytes=payload.stat().st_size,sha256=h.digest(payload),platformRevision=platform_pin))
     context['existingPublication']=json.loads((Path(c['records'])/'native-camera-17/context.json').read_bytes())['existingPublication']
     if args.resume_from:
-        h.require(args.name=='vision-fresh-accept-08' and not args.transient_first_reselect,'EXACT_NATIVE_READER_RESUME_REQUIRED')
+        h.require(args.name==('vision-fresh-accept-09' if args.successor_cycle else 'vision-fresh-accept-08') and not args.transient_first_reselect,'EXACT_NATIVE_READER_RESUME_REQUIRED')
         previous=json.loads((Path(c['records'])/args.resume_from/'result.json').read_bytes())
         h.require(previous['code']=='PERMANENT_OBSERVATION_TIMEOUT' and previous['cameraUpgrade']=='PASS_SAME_STORE_NATIVE_OEM'
             and all(previous['cleanup'].values()),'PREVIOUS_READER_ATTEMPT_NOT_RECONCILED')
         context['resumeFrom']=str(Path(c['remoteRoot'])/args.resume_from)
+    if args.successor_cycle:
+        h.require(args.name=='vision-fresh-accept-09' and args.resume_from=='vision-fresh-accept-07','EXACT_SUCCESSOR_RESUME_REQUIRED')
+        proof=json.loads((Path(c['records'])/'vision-reader-diagnostic-04/result.json').read_bytes())
+        diagnostic=proof['diagnostic'];compiled=json.loads((build/'fresh-reader-03/result.json').read_bytes())
+        h.require(diagnostic['standaloneParser']==dict(exit=0,passed=True,stderrPresent=False)
+            and len(diagnostic['bareFilesystemUnits'])==2 and all(row['passed'] and row['exit']==0 for row in diagnostic['bareFilesystemUnits'])
+            and all(proof['cleanup'].values()),'FIXED_READER_NATIVE_UNIT_REQUIRED')
+        h.require(context['files']['vision-camera-probe']==FIXED_BINARY_SHA
+            and compiled['files']['vision-camera-probe']['sha256']==FIXED_BINARY_SHA
+            and compiled['sourceSha256']==h.digest(source/'tests/fixtures/vision-camera-probe.c'),'FIXED_READER_SOURCE_CHANGED')
+        context['diagnosticSuccessors']=dict(SUCCESSOR_PACKET)
     if args.transient_first_reselect:
         h.require(args.name=='vision-fresh-accept-06','TRANSIENT_RESELECT_PROOF_NAME_REQUIRED');context['transientFirstReselect']=True
     if args.bundle:

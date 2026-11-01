@@ -22,10 +22,10 @@
     "nativeAos": "Unchanged application resource allocation and Camera Access component lifecycle"
   },
   "diagnosticAosReadCycle": {
-    "authorizedByOperator": "2026-11-01: explicit approval after the ingress source checkpoint",
+    "authorizedByOperator": "2026-11-01: explicit D1 approval for 0.1.6 read then 0.1.7 revoke on the same Vision VM, preserving data",
     "codename": "vision-camera-image-probe",
-    "readVersion": "0.1.2",
-    "revokeVersion": "0.1.3",
+    "readVersion": "0.1.6",
+    "revokeVersion": "0.1.7",
     "target": "Existing current Vision Unit and its existing diagnostic Subject only",
     "allowed": "Sign and publish those two diagnostic versions serially, verify native read then resource revocation",
     "preserve": ["VM", "Unit", "Subject membership", "Camera OEM component", "all other Subjects", "VDP/Brake/Tire", "data and credentials"],

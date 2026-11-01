@@ -3,8 +3,8 @@
 
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
-- Status: Accepted fresh .5 packet; diagnostic successor delta proposed below
-- Version: 0.9
+- Status: Accepted fresh .5 packet and diagnostic successor delta D1
+- Version: 0.10
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -30,7 +30,7 @@ The fresh route is: exact retirement and empty-recipient preflight → source/un
 gates → warm `.5` Vision image plus matching rootfs artifact on SSD → signed
 bootstrap and `.5` OEM publication while verification sets are empty → normal
 fresh manufacture/provision → Source enrollment and initial Camera activation
-→ Camera `0.1.1` upgrade → native read/revoke `0.1.4`/`0.1.5` and permanent ingress
+→ Camera `0.1.1` upgrade → native read/revoke `0.1.6`/`0.1.7` and permanent ingress
 acceptance. Existing owned model/set/service definitions may be reused after
 proving no old Unit binding; they are not stale VM state. Do not publish a new
 candidate until account-level recipient isolation is proven. CARLA, Main
@@ -114,19 +114,23 @@ and no-config parser units pass in the same container filesystem view. No
 synthetic frames were sent in that final check. Scratch and owned VM stopped;
 all retained journals match. Corrected bytes are **not published**.
 
-#### Proposed bounded delta D1 — immutable diagnostic successors
+<a id="vision-diagnostic-successors-d1"></a>
+#### Accepted bounded delta D1 — immutable diagnostic successors
 
-Status: **requires operator acceptance; not publication authority**.
+Status: **accepted by the operator on 2026-11-01**: publish `0.1.6` for reading,
+then `0.1.7` for revocation; continue the remaining scenario on the same Vision
+VM, preserve data and do not touch VDP/Brake/Tire. No routine confirmations.
 
 Replace the remaining diagnostic read/revoke pair with `0.1.6` read followed by
 `0.1.7` revoke for the same `vision-camera-image-probe`, fresh Unit and existing
 Subject only. Leave `0.1.4` immutable and `0.1.5` unused; no version overwrite,
 new Unit/Subject, expanded resource, global crypto change or image rebuild.
 Keep the existing configured OEM/SP owners and normal signer/deployer.
-The executable publisher remains limited to the already accepted versions
-until this delta is accepted.
+The executable publisher requires this exact accepted pair and the already
+compiled/proven fixed reader digest for either successor. Other versions,
+changed binaries and missing authority fail closed.
 
-After acceptance, reconcile the existing `.5`/Camera `0.1.1`/reader `0.1.4`
+Reconcile the existing `.5`/Camera `0.1.1`/reader `0.1.4`
 receipts; publish the fixed read/revoke successors serially and run the remaining
 named native pair, network/credential denial, stale/disconnect, component
 restart, retained cold boot, detach, revocation, AVC and shutdown gates. Preserve
@@ -203,7 +207,8 @@ Subject to all preceding gates, authorize one closed delivery campaign:
   Vision `rootfs` runtime. No boot component update or host-Mac OS update. If
   compatibility requires a boot update, report a separate bounded delta first.
 - Camera Access `0.1.1` through the existing Vision Camera OEM component target.
-- Existing `vision-camera-image-probe`: `0.1.4` read, then `0.1.5` revoke.
+- Existing `vision-camera-image-probe`: D1's `0.1.6` read, then `0.1.7` revoke;
+  immutable `0.1.4` remains unchanged and unused `0.1.5` is not published.
 - One engineering-signed Vision bootstrap/tooling successor with the already
   selected Apple owner and exact base-program binding. No public distribution,
   Main merge/push, option A update or replacement of the current DMG.

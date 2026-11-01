@@ -11,7 +11,7 @@ import sys
 import tempfile
 
 from vision_camera_native_worker import completion,fixture_helpers
-from vision_camera_fixture_cloud import configuration,terminal_retry,title_correction,TITLE
+from vision_camera_fixture_cloud import configuration,terminal_retry,title_correction,TITLE,successor_authority,SUCCESSOR_PACKET,FIXED_BINARY_SHA
 
 
 class NativeFixtureIsolationTests(unittest.TestCase):
@@ -98,7 +98,7 @@ class ProbeConfigurationTests(unittest.TestCase):
                 terminal_retry(bundle,'known',identity,versions)
 
     def test_read_versions_request_only_the_camera_read_resource(self):
-        for version in ('0.1.0','0.1.2','0.1.4'):
+        for version in ('0.1.0','0.1.2','0.1.4','0.1.6'):
             with self.subTest(version=version):
                 item=configuration(version)['items'][0]
                 self.assertEqual(item['version'],version)
@@ -106,16 +106,24 @@ class ProbeConfigurationTests(unittest.TestCase):
                 self.assertEqual(item['configuration']['allowedConnections'],[])
 
     def test_revoked_versions_request_neither_camera_nor_network(self):
-        for version in ('0.1.1','0.1.3','0.1.5'):
+        for version in ('0.1.1','0.1.3','0.1.5','0.1.7'):
             with self.subTest(version=version):
                 item=configuration(version)['items'][0]
                 self.assertEqual(item['configuration']['resources'],[])
                 self.assertEqual(item['configuration']['allowedConnections'],[])
 
     def test_unknown_version_cannot_silently_omit_resource(self):
-        for version in ('0.1.6','latest',None,1):
+        for version in ('0.1.8','latest',None,1):
             with self.subTest(version=version),self.assertRaisesRegex(ValueError,'VERSION_INVALID'):
                 configuration(version)
+
+    def test_successors_require_exact_accepted_pair_and_fixed_binary(self):
+        for version in ('0.1.6','0.1.7'):
+            request=dict(probeVersion=version,diagnosticSuccessors=dict(SUCCESSOR_PACKET),binarySha256=FIXED_BINARY_SHA)
+            successor_authority(request)
+            for key,value in (('diagnosticSuccessors',{}),('binarySha256','older-binary')):
+                with self.assertRaises(ValueError):successor_authority(dict(request,**{key:value}))
+            with self.assertRaises(ValueError):successor_authority(dict(probeVersion=version,binarySha256=FIXED_BINARY_SHA))
 
 
 if __name__=='__main__':unittest.main()

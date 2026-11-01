@@ -93,13 +93,20 @@ def main():
         require(item['unitId']!='4374bcb2-0613-419c-8ac9-e8458358c91c' and item['runtime']['state']==before.get('source',{}).get('state','STOPPED')=='STOPPED','FRESH_IDLE_UNIT_REQUIRED')
         identity={k:item[k] for k in ('unitId','nodeId','localVmId','overlay')}
         resume=Path(c['resumeFrom']) if c.get('resumeFrom') else None
+        successors=c.get('diagnosticSuccessors')
+        fixture_helpers=runpy.run_path(str(records/'vision_camera_fixture_cloud.py'))
+        if successors:
+            require(resume is not None and successors==fixture_helpers['SUCCESSOR_PACKET']
+                and c['files']['vision-camera-probe']==fixture_helpers['FIXED_BINARY_SHA'],'EXACT_FIXED_SUCCESSOR_CYCLE_REQUIRED')
+        read_version='0.1.6' if successors else '0.1.4';revoke_version='0.1.7' if successors else '0.1.5'
         if resume:
             require(resume.parent==records.parent and resume.name=='vision-fresh-accept-07','READER_RESUME_SCOPE_INVALID')
             prior=json.loads((resume/'result.json').read_bytes())
             require(prior.get('code')=='PERMANENT_OBSERVATION_TIMEOUT' and prior.get('cameraUpgrade')=='PASS_SAME_STORE_NATIVE_OEM'
                 and all(prior['cleanup'].values()),'READER_RESUME_NOT_RECONCILED')
             prior_context=json.loads((resume/'context.json').read_bytes())
-            require(prior_context['files']['vision-camera-probe']==c['files']['vision-camera-probe'] and prior_context['camera']==c['camera'],'READER_RESUME_INPUT_CHANGED')
+            require((prior_context['files']['vision-camera-probe']==c['files']['vision-camera-probe'] or bool(successors))
+                and prior_context['camera']==c['camera'],'READER_RESUME_INPUT_CHANGED')
         retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
         caffeinate=subprocess.Popen(['/usr/bin/caffeinate','-d','-i','-w',str(__import__('os').getpid())],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         with runtime_paths.installed_session(native):
@@ -118,7 +125,10 @@ def main():
                 require(done.returncode==0 and len(done.stdout)<262144,'ACCEPTANCE_SDK_UNAVAILABLE');value=json.loads(done.stdout)
                 if not value.get('ok'):record('sdk-error.json',value);raise ValueError(value.get('reason','ACCEPTANCE_SDK_FAILED'))
                 return value['data']
-            def fixture(action,**extra):return sdk_call('vision_camera_fixture_cloud.py',dict(scope,action=action,**extra))
+            def fixture(action,**extra):
+                request=dict(scope,action=action,**extra)
+                if successors:request['diagnosticSuccessors']=successors
+                return sdk_call('vision_camera_fixture_cloud.py',request)
             packet=dict(authorized=True,recoveryFirst=True,rootfsVersion='6.1.1-vision-camera.5',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5')
             def component(action,kind='aos-vision-vm-1.0.0-main-qemuarm64-camera-access',**extra):
                 version='6.1.1-vision-camera.5' if kind.endswith('-rootfs') else '0.1.1'
@@ -250,6 +260,7 @@ def main():
             require({v['version'] for v in catalog['versions']}==({'0.1.0','0.1.1','0.1.2','0.1.3','0.1.4'} if resume else {'0.1.0','0.1.1','0.1.2','0.1.3'}),'DIAGNOSTIC_CATALOG_COLLISION')
             subject=json.loads((Path(c['previousNative'])/'probe-subject-create-response.json').read_bytes())['subject']
             bound=phase('diagnostic-subject-before',lambda:fixture('subject-status',serviceId=service,subject=subject))
+            if successors:require(bound['unitBound'] and bound['serviceBound'],'SUCCESSOR_SUBJECT_MEMBERSHIP_CHANGED')
             if not bound['unitBound']:
                 record('subject-bind-intent.json',dict(attemptStarted=True,subjectId=subject['id'],unitId=item['unitId']))
                 phase('diagnostic-subject-bind',lambda:fixture('subject-bind',serviceId=service,subject=subject))
@@ -263,6 +274,7 @@ def main():
             def publish(version):
                 path=records/('probe-'+version+'.tar.gz');signed=phase('probe-sign-'+version,lambda:fixture('sign',probeVersion=version,output=str(path)))
                 record('probe-upload-'+version+'-intent.json',dict(attemptStarted=True,unitId=item['unitId'],subjectId=subject['id'],version=version,binarySha256=c['files']['vision-camera-probe']))
+                result['cloudMutation']=True
                 uploaded=phase('probe-upload-'+version,lambda:fixture('upload',probeVersion=version,bundle=str(path),expectedSha256=signed['sha256']))
                 end=time.monotonic()+150
                 while time.monotonic()<end:
@@ -270,12 +282,12 @@ def main():
                     if value['stage']=='READY':return value
                     require(value['stage']=='PROCESSING','PROBE_PUBLICATION_FAILED');time.sleep(2)
                 raise ValueError('PROBE_PUBLICATION_TIMEOUT_RECONCILE')
-            if resume:
+            if resume and not successors:
                 previous_upload=json.loads((resume/'probe-upload-0.1.4.json').read_bytes())['facts']
                 reconciled=phase('read-publication-reconciled',lambda:fixture('publication',probeVersion='0.1.4',deploymentId=previous_upload['deploymentId']))
                 require(reconciled['stage']=='READY','EXISTING_READER_NOT_READY')
                 record('retained-reader-publication.json',dict(noUpload=True,version='0.1.4',versionId=reconciled['versionId']))
-            else:publish('0.1.4')
+            else:publish(read_version)
             live=phase('native-aos-real-jpeg-pairs',lambda:until(lambda x:bool(current_pairs(x)),90));consumer=live['consumers'][0]
             require(len(live['consumers'])==1 and consumer['uid']>0 and live['readerGid'] in consumer['groups'] and consumer['readMountReadonly']
                 and consumer['context'].split(':')[2]=='container_engine_t' and inactive(consumer,bounding)
@@ -372,12 +384,12 @@ print(json.dumps(results))
             phase('cold-physical-safe-stop',physical_safe_stop)
             phase('cold-ingress-start',lambda:app.source_service.camera_ingress('start'))
             cold_live=phase('cold-native-real-jpeg-pairs',lambda:until(lambda x:bool(current_pairs(x)),60));consumer=cold_live['consumers'][0]
-            publish('0.1.5')
+            publish(revoke_version)
             revoked=phase('native-read-resource-revoked',lambda:until(lambda x:len(x['consumers'])==1 and x['consumers'][0]['pid']!=consumer['pid']
                 and not x['consumers'][0]['readMount'] and x['readerGid'] not in x['consumers'][0]['groups'],90))
             require(revoked['camera']['NRestarts']=='0' and revoked['ingress']['NRestarts']=='0','REVOCATION_RESTART_STORM')
             phase('cold-functional-avc-check',lambda:check_audit(cursor))
-            result.update(outcome='PASS_FRESH_PERMANENT_INGRESS_NATIVE_READ_REVOKE',sameFreshUnit=True,cameraVersion='0.1.1',rootfsVersion='6.1.1-vision-camera.5',
+            result.update(outcome='PASS_FRESH_PERMANENT_INGRESS_NATIVE_READ_REVOKE',sameFreshUnit=True,cameraVersion='0.1.1',rootfsVersion='6.1.1-vision-camera.5',readVersion=read_version,revokeVersion=revoke_version,
                 actualJpegPairs=True,disconnectClearing=True,stalledMediaAgeOut=True,mediaRoleQuotaDenial=True,sourceDetachDenial=True,cameraRestart=True,nativeColdBoot=True,resourceRevocation=True)
     except FirstReselectProofComplete:pass
     except Exception as error:

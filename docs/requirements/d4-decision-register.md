@@ -3692,10 +3692,13 @@ no camera/app key, new CA/store, broad policy or new VM. Source/compile/reversib
 live proof is authorized. Permanent image delivery and AI/full-E2E acceptance
 remain separate, not inferred from contract or transient proof.
 
-The operator additionally authorized only the existing Vision diagnostic
-service's `0.1.2` read-resource / `0.1.3` revoke cycle on 2026-11-01. Preserve
-the current Unit, Subject memberships, VM and OEM component. This exception
-permits native consumer evidence; it grants no Cloud authority to ingress.
+The original diagnostic `0.1.2` read-resource / `0.1.3` revoke proof is retained.
+For the same fresh Vision VM's permanent-delivery continuation, the operator
+accepted [D1](../planning/active/vision-ingress-permanent-delivery.md#vision-diagnostic-successors-d1)
+on 2026-11-01: existing diagnostic service `0.1.6` read then `0.1.7` revoke.
+Preserve Unit, Subject memberships, VM, OEM component and data; no VDP/Brake/Tire
+changes or new service authority. This exception permits native consumer
+evidence, not Cloud authority for ingress or AI/full-E2E acceptance.
 
 ## Explicitly Deferred or Out-of-Scope Items
 

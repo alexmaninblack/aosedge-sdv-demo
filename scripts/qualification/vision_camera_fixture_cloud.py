@@ -14,6 +14,9 @@ import tempfile
 CODENAME='vision-camera-image-probe'
 TITLE='Vision Camera Image Probe'
 LABEL='SDV Vision Camera Image Probe'
+SUCCESSOR_PACKET=dict(authorized=True,readVersion='0.1.6',revokeVersion='0.1.7',
+    rootfsVersion='6.1.1-vision-camera.5',cameraVersion='0.1.1',sameVisionUnit=True,preserveData=True)
+FIXED_BINARY_SHA='a63e8640b5d9a649adda0773358710fa1ba84ebf828c9e1e7ed97f0281fcab37'
 
 
 def require(ok, code):
@@ -36,14 +39,20 @@ def title_correction(before, after):
 
 
 def configuration(version):
-    require(version in ('0.1.0','0.1.1','0.1.2','0.1.3','0.1.4','0.1.5'),'VERSION_INVALID')
+    require(version in ('0.1.0','0.1.1','0.1.2','0.1.3','0.1.4','0.1.5','0.1.6','0.1.7'),'VERSION_INVALID')
     return dict(schemaVersion=2,publisher=dict(author='maninblack'),items=[dict(
         identity=dict(type='service',codename=CODENAME,title=TITLE),
         version=version,sourceFolder='service',images=[dict(sourceFolder='arm64',archInfo=dict(architecture='arm64'))],
         configuration=dict(workingDir='/',cmd='/usr/bin/vision-camera-probe',instances=dict(minInstances=1,priority=10),
             offlineTTL='P7D',quotas=dict(cpuLimit=1000,ramLimit=134217728,storageLimit=16777216,
                 stateLimit=1048576,tmpLimit=1048576,noFileLimit=1024,pidsLimit=32),alertRules=None,
-            resources=[dict(name='vision-camera-read')] if version in ('0.1.0','0.1.2','0.1.4') else [],allowedConnections=[]),dependencies=[])] )
+            resources=[dict(name='vision-camera-read')] if version in ('0.1.0','0.1.2','0.1.4','0.1.6') else [],allowedConnections=[]),dependencies=[])] )
+
+
+def successor_authority(request):
+    if request.get('probeVersion') not in ('0.1.6','0.1.7') and 'diagnosticSuccessors' not in request:return
+    require(request.get('diagnosticSuccessors')==SUCCESSOR_PACKET,'EXACT_SUCCESSOR_AUTHORITY_REQUIRED')
+    require(request.get('binarySha256')==FIXED_BINARY_SHA,'EXACT_FIXED_READER_REQUIRED')
 
 
 def execute(r):
@@ -55,7 +64,7 @@ def execute(r):
     from aosedge_demo_orchestrator.component_worker import credential_snapshot,verify
     from aosedge_demo_orchestrator.service_cloud import service_view,version_view,unit_view
     from aosedge_demo_orchestrator.status import object_id
-    action=r['action'];version=r.get('probeVersion','0.1.0');configuration(version)
+    action=r['action'];version=r.get('probeVersion','0.1.0');configuration(version);successor_authority(r)
     oem=Cloud(dict(credential=r['oemCredential'],cloudDomain=r['cloudDomain'],ownerId=r['oemOwner']))
     scope(oem,dict(r,version='0.1.0',setupProfile=PROFILE))
     provider=Cloud(dict(credential=r['spCredential'],cloudDomain=r['cloudDomain'],ownerId=r['spOwner']),expected_role='service provider')
