@@ -1,0 +1,38 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "vision-native-image-qualification-selection",
+  "outcome": "NOT_COMPLETE_SERVICE_BUILD_FAILED_IN_CLOUD",
+  "signedBootstrap": {
+    "version": "0.3.0",
+    "manifestSha256": "d782737eff7ddf6c69f59a36c806b2428129d83b70e6e2deb097939990006612",
+    "integrationRevision": "e96ad6b06b2c8efc5628c25555bff969e16d0a3b",
+    "platformRevision": "a80082e278f13d18915b5b5c3da6332c4fd647fd"
+  },
+  "factory": {
+    "version": "6.1.1-vision-camera.3",
+    "bytes": 6997147648,
+    "sha256": "ef55d6071db24d3f83a1b93574e0083e88ba9cee7fa2cc2fc020c57de7eeee17",
+    "rootfsQa": "PASS",
+    "offlineBuildSeconds": 184.94,
+    "mainConfigurationRestored": true,
+    "transientPolicyLoaderInstalled": false
+  },
+  "nativeInstanceName": "SDV-Vision-Camera-Image-Lab-Data",
+  "retainedInstanceNames": ["SDV-Lab-Data", "SDV-Vision-Lab-Data", "SDV-Vision-Native-Lab-Data", "SDV-Vision-Camera-Lab-Data"],
+  "sourceGates": {"visionCases": 43, "qualificationCases": 13, "platformCases": 277, "platformSkips": 3},
+  "passed": ["signature and actual consumer transfer", "separate normal manufacture and OEM provisioning", "own VM/overlay/Unit/node", "initial Source enrollment", "real physical Safe Stop", "native Camera activation", "fresh epoch and old-epoch denial after daemon restart", "Camera active with zero automatic restarts and no observed scoped AVCs", "four retained journals unchanged"],
+  "cloudService": {
+    "codename": "vision-camera-image-probe",
+    "version": "0.1.0",
+    "acceptedUploads": 2,
+    "buildStates": ["error", "error"],
+    "serviceAndVersionAbsentAfterReconciliation": true,
+    "resubmit": "Same already-signed bytes, once, after authoritative terminal-error/no-catalog-effect reconciliation",
+    "rootCause": "NOT_EXPOSED_BY_AVAILABLE_BUILD_STATUS"
+  },
+  "pending": ["native Aos consumer read and denial on this image", "resource revocation on this image", "cold-image consumer and security acceptance", "authenticated Gateway camera ingress", "Perception/Assessment", "full Vision E2E"],
+  "evidence": {"imageCampaign": "image-policy-01", "activation": "native-camera-14", "boundedConsumerContinuation": "native-camera-15", "retainedRestart": "Existing Camera restored on the same stopped VM during native-camera-15; not full cold-image consumer acceptance"},
+  "cleanup": "Owned Source/CARLA/VM/listeners and SSD Builder stopped; data, identities, signed image, current DMG and caches retained",
+  "excluded": ["Main merge", "public publication", "CARLA rebuild", "Main Factory rebuild", "retained VM replacement or rebase", "additional service-upload retries"]
+}

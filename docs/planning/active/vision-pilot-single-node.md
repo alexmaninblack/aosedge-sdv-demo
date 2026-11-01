@@ -391,6 +391,32 @@ Stop owned Source/CARLA/VM/DNS/Builder processes and independently verify exit.
 Gateway ingress, Perception/Assessment, full Vision E2E, Main promotion and
 public publication remain outside this packet.
 
+The [image qualification receipt](../../../contracts/vision-vm/camera-access-native-image.v1.json)
+records the signed 0.3.0 / Factory .3 candidate, built offline in 184.94 seconds
+with package/rootfs QA and the Main configuration restored. Transfer, separate
+manufacture/OEM provisioning, initial Source authentication, real physical Safe
+Stop, native Camera activation and daemon epoch restart passed on M4. The normal
+stopped-VM start in the bounded continuation restored Camera; it is not the
+unexecuted cold-image consumer/security gate.
+
+`native-camera-14` stopped at Cloud processing of the separate diagnostic
+service. After authoritative terminal-error/no-service/no-version reconciliation,
+`native-camera-15` resubmitted the exact signed archive once, without rebuilding,
+re-signing, recreating the VM or repeating Camera delivery. Both Cloud builds
+ended in `error`; the diagnostic service/version remain absent. Available build
+status does not identify the underlying server-build cause. No further upload
+retry is authorized by this continuation. Actual Aos read/revocation and final
+cold-image security acceptance on this candidate remain NOT_RUN, not passed by
+the earlier transient policy proof.
+
+All four retained journals are unchanged. New and old VM/Unit/overlay identities
+are separate. Owned Source/CARLA/VM/listeners and Builder are stopped. Signed
+images, data and caches remain intact. Only the redundant Builder-side .2 raw
+delivery copy was removed after verifying its preserved immutable SSD copy;
+the retained .2 VM and its sealed input were not modified. Private evidence is
+`image-policy-01`, `signed-bootstrap-03`, `native-camera-14` and `native-camera-15`
+under the existing M4 qualification store. Original failed receipts stay failed.
+
 ## Current live-preview packet
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview

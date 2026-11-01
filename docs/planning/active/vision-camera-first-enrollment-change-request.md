@@ -96,6 +96,15 @@ authorizes that exact additional VM/Unit, not another Test as a retry of the
 retained first-enrollment transaction. No normal OS-update route, Main change
 or public delivery is introduced.
 
+The separate signed 0.3.0 / Factory .3 validation instance is now built and
+provisioned. First Source enrollment and Camera activation passed there without
+temporary policy. The [image receipt](../../../contracts/vision-vm/camera-access-native-image.v1.json)
+keeps the remaining Aos-reader/revocation/cold-image gates open: Cloud failed to
+build its new diagnostic service, including one bounded resubmit of the exact
+signed archive after authoritative no-catalog-effect reconciliation. Preserve
+both VM generations and all failed receipts; this is not a complete native
+image acceptance or a reason to rebuild either VM.
+
 ## Accepted minimal correction
 
 Extend only the fresh Vision first-enrollment case, not general transaction
