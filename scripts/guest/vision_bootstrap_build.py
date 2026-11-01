@@ -40,7 +40,9 @@ def main():
     for name in ('project', 'source', 'evidence', 'manifest', 'native-proof', 'store-proof', 'resource-proof'):
         p.add_argument('--'+name, type=Path, required=True)
     p.add_argument('--revision', required=True)
+    p.add_argument('--fresh-empty-proof', type=Path)
     a = p.parse_args()
+    version='6.1.1-vision-camera.5' if a.fresh_empty_proof else VERSION
     require(os.uname().machine == 'aarch64' and os.uname().sysname == 'Linux', 'ARM64_BUILDER_REQUIRED')
     require(re.fullmatch('[a-f0-9]{40}', a.revision), 'REVISION_REQUIRED')
     for path in (a.project, a.source, a.evidence, a.manifest, a.native_proof, a.store_proof, a.resource_proof):
@@ -57,6 +59,11 @@ def main():
             and resource['resourceRevocation']=='PASS' and all(resource['cleanup'].values()),'RESOURCE_TRANSIENT_GATE_REQUIRED')
     require(a.source.name == 'aos-vehicle-platform-'+a.revision, 'SOURCE_REVISION_BINDING_REQUIRED')
     require((a.source/'qualification/vision-bootstrap-1.conf').is_file(), 'VISION_SOURCE_REQUIRED')
+    if a.fresh_empty_proof:
+        empty=json.loads(a.fresh_empty_proof.read_bytes())
+        require(empty['outcome']=='PASS_EMPTY_VISION_PUBLICATION_GATE' and empty['facts']['ready']
+            and empty['facts']['oldUnitAbsent'] and empty['facts']['allVerificationMembersAbsent']
+            and all(empty['cleanup'].values()),'FRESH_EMPTY_RECIPIENT_GATE_REQUIRED')
     a.evidence.mkdir(mode=0o700)
     lock = (a.project/'.vision-bootstrap-build.lock').open('a')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -68,7 +75,7 @@ def main():
     require(before.count(old) == 1, 'MAIN_LAYER_BINDING_UNEXPECTED')
     selected = before.replace(old, str(a.source/'meta-aos-vehicle-platform').encode())
     prefix = 'cd '+shlex.quote(str(a.project/'yocto'))+'; . poky/oe-init-build-env build-main >/dev/null; '
-    flags = ['-R', str(a.source/'qualification/vision-bootstrap-1.conf')]
+    flags = ['-R', str(a.source/'qualification'/('vision-fresh-1.conf' if a.fresh_empty_proof else 'vision-bootstrap-1.conf'))]
     started = time.monotonic()
 
     def save():
@@ -98,7 +105,7 @@ def main():
             require(len(values) == 1, 'CONFIGURATION_VARIABLE_MISSING:'+name)
             return values[0]
         for name, value in {'BB_NO_NETWORK':'1', 'AOS_UNIT_MODEL':'aos-vision-vm',
-                            'AOS_NODE_TYPE':'aos-vision-vm-main', 'AOS_ROOTFS_IMAGE_VERSION':VERSION,
+                            'AOS_NODE_TYPE':'aos-vision-vm-main', 'AOS_ROOTFS_IMAGE_VERSION':version,
                             'AOS_COMPONENT_RUNTIME_PREFIX':'aos-vision-vm-1.0.0-main-qemuarm64-'}.items():
             require(variable(name) == value, 'CONFIGURATION_MISMATCH:'+name)
         rootfs = Path(variable('IMAGE_ROOTFS'))
@@ -117,11 +124,22 @@ def main():
         require('aos-camera-access:' in (rootfs/'etc/passwd').read_text(), 'CAMERA_STATIC_ACCOUNT_MISSING')
         require((rootfs/'usr/libexec/aos-camera-access-store-check').is_file(), 'CAMERA_STORE_OWNER_MISSING')
         require((rootfs/r'usr/lib/systemd/system/var-aos-workdirs-sm-runtimes-systemd\x2dslot\x2dcamera\x2daccess.mount').is_file(), 'CAMERA_STORE_MOUNT_NOT_SHIPPED')
+        if a.fresh_empty_proof:
+            require((rootfs/'etc/aos/version').read_text().strip()=='VERSION="'+version+'"','FRESH_VERSION_NOT_BUILT')
+            require((rootfs/'usr/libexec/aos-camera-ingress-launcher').is_file(),'FRESH_INGRESS_LAUNCHER_MISSING')
+            def enabled(name):return any(p.name==name and p.is_symlink() and p.parent.name.endswith(('.wants','.requires'))
+                for p in (rootfs/'etc/systemd/system').rglob('*'))
+            require(enabled('systemd-networkd.service') and enabled('sshd.socket'),'FRESH_NETWORK_OR_SSH_PRESET_MISSING')
+            require(not enabled('aos-camera-ingress.service'),'FRESH_INGRESS_BOOT_ENABLED')
+            run('rootfs-fota',['aos-rootfs-vision'],3600)
+            payload=a.project/'yocto/build-main/tmp/deploy/images/qemuarm64/update'/('aos-vision-rootfs-'+version+'.squashfs')
+            require(payload.is_file() and not payload.is_symlink(),'FRESH_FOTA_MISSING')
+            result['rootfsArtifact']=dict(rootfsVersion=version,path=str(payload),bytes=payload.stat().st_size,sha256=sha(payload))
         # Derive only image assembly variables; do not regenerate Main's graph.
         manifest = a.manifest.read_text()
         for key, old_value, new_value in (
             ('UNIT_MODEL', 'aos-vm', 'aos-vision-vm'),
-            ('ROOTFS_IMAGE_VERSION', '6.1.1-maninblack.42', VERSION),
+            ('ROOTFS_IMAGE_VERSION', '6.1.1-maninblack.42', version),
             ('AOS_BASE_IMAGE', 'aos-image-vm', 'aos-image-vision')):
             pattern = '  '+key+': "'+old_value+'"'
             require(manifest.count(pattern) == 1, 'ASSEMBLY_MANIFEST_CHANGED:'+key)
@@ -131,13 +149,13 @@ def main():
         manifest = manifest.replace(platform_old, a.revision)
         selected_manifest = a.evidence/'vision.yaml'
         selected_manifest.write_text(manifest)
-        output = a.project/('main-qemuarm64-'+VERSION+'.img')
+        output = a.project/('main-qemuarm64-'+version+'.img')
         require(not output.exists(), 'ASSEMBLED_IMAGE_EXISTS_RECONCILE')
         run('assemble', ['/home/yocto/.local/bin/rouge', str(selected_manifest), '--MACHINE=qemuarm64',
                          '--NODE_TYPE=main', '--WITH_MESSAGE_PROXY=no', '--CACHE_LOCATION=outside',
                          '-fi', 'main-qemuarm64', '-o', str(output)], 600, False)
         require(output.is_file() and 0 < output.stat().st_size <= 16*1024**3, 'IMAGE_INVALID')
-        result.update(outcome='IMAGE_BUILT_NOT_LIVE_QUALIFIED', factoryVersion=VERSION,
+        result.update(outcome='IMAGE_BUILT_NOT_LIVE_QUALIFIED', factoryVersion=version,
                       path=str(output), bytes=output.stat().st_size, sha256=sha(output),
                       rootfsQa='PASS', offline=True)
     except Exception as error:

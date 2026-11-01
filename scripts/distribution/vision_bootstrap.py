@@ -76,7 +76,7 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
         bundle=scratch/output.name;resources=bundle/'Contents/Resources';resources.mkdir(parents=True)
         contents=bundle/'Contents'
         (contents/'Info.plist').write_bytes(plistlib.dumps(dict(CFBundleIdentifier=model.IDENTIFIER,
-            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.5.0' if ingress_candidate else '0.3.0')))
+            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.5.0')))
         target=resources/'images/main-qemuarm64.img';target.parent.mkdir()
         # APFS clone when available; the independent file is still signature-sealed.
         result=subprocess.run(['/bin/cp','-c',str(image),str(target)],capture_output=True)

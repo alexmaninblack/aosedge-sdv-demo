@@ -65,12 +65,23 @@ def main():
             env=EnvironmentService(catalog=v.SignedVisionCatalog(verified),vm_profile=v.VM_PROFILE);vm=VMService(env)
             units=UnitService(vm);config=load_configuration(native)
             shared=[Path(config['cloudProfiles'][name]['credential']) for name in ('oem-delivery','service-provider')]
-            require(all(p.is_file() and not p.is_symlink() and not p.is_relative_to(native) for p in shared),'SHARED_CREDENTIAL_MUST_BE_PRESERVED_OUTSIDE_DISPOSABLE_ROOT')
+            require(all(p.is_file() and not p.is_symlink() and not p.resolve().is_relative_to(native) for p in shared),'SHARED_CREDENTIAL_MUST_BE_PRESERVED_OUTSIDE_DISPOSABLE_ROOT')
             shared_stamps={p:(p.stat().st_ino,p.stat().st_size,p.stat().st_mtime_ns) for p in shared}
             observed=units._cloud('read',unitId=OLD_UNIT)['unit']
-            require(observed and observed['system_uid']==item['systemUid'] and observed['online_status']=='Offline'
-                and observed['unit_sets']==[item['unitSetId']] and len(observed['nodes'])==1
-                and observed['nodes'][0]['id']==OLD_NODE,'OLD_CLOUD_SCOPE_CHANGED')
+            resume=c.get('resumeLocalAfter')
+            if resume:
+                prior=Path(resume);require(prior==Path(c['remoteRoot'])/'vision-fresh-retire-01','EXACT_RETIREMENT_CONTINUATION_REQUIRED')
+                previous=read_json(prior/'result.json')
+                require(previous['code']=='LOCAL_RETIRE_REQUIRES_UNUSED_MANUFACTURED_ENVIRONMENT'
+                    and previous['cleanup']['oldVmStopped'] and previous['cleanup']['retainedJournalsUnchanged']
+                    and [v['stage'] for v in previous['phases']]==['deprovision','delete-unit']
+                    and item['cloud']['lifecycle']=='DELETED' and observed is None,'PRIOR_CLOUD_RETIREMENT_NOT_RECONCILED')
+                require(all(not Path(p).exists() for p in previous['removed']),'REMOVED_CHECKPOINT_REAPPEARED')
+                result['cloudRetirementReused']=True
+            else:
+                require(observed and observed['system_uid']==item['systemUid'] and observed['online_status']=='Offline'
+                    and observed['unit_sets']==[item['unitSetId']] and len(observed['nodes'])==1
+                    and observed['nodes'][0]['id']==OLD_NODE,'OLD_CLOUD_SCOPE_CHANGED')
             # Only checkpoint children of this exact disposable factory may go.
             factory=native/before['factory']['path'];checkpoints=[]
             for path in sorted(Path(c['remoteRoot']).rglob('*.qcow2')):
@@ -82,13 +93,23 @@ def main():
             env._assert_unheld(native/item['overlay']);env._assert_unheld(factory)
             record('retirement-scope.json',dict(unitId=OLD_UNIT,nodeId=OLD_NODE,vmId=OLD_VM,instance=str(native),
                 checkpointChildren=[str(p) for p in checkpoints],sharedCredentialsOutsideTarget=True,retainedInstances=list(v.RETAINED_INSTANCE_NAMES)))
-            phase('deprovision',lambda:units.execute('deprovision','test'))
-            phase('delete-unit',lambda:units.execute('delete','test'))
+            if not resume:
+                phase('deprovision',lambda:units.execute('deprovision','test'))
+                phase('delete-unit',lambda:units.execute('delete','test'))
             state=read_json(native/JOURNAL);require(units.confirm_retired(state,roles=('test',)),'RETIREMENT_ABSENCE_REQUIRED')
             record('checkpoint-removal-intent.json',dict(paths=[str(p) for p in checkpoints],irreversible=True))
             for path in checkpoints:
                 env._assert_unheld(path);path.unlink();result['removed'].append(str(path))
-            phase('retire-local-run',lambda:env.retire(lambda state:units.confirm_retired(state,roles=('test',))))
+            # The generic CLI retirement owner intentionally does not accept
+            # this installed specialist journal. Do not relax its schema. The
+            # accepted whole-instance disposal proves native Cloud absence and
+            # deletes exact child/backing files before the remaining directory.
+            overlay=native/item['overlay'];info=env._info(overlay)
+            require(info.get('format')=='qcow2' and info.get('full-backing-filename')==str(factory),'DISPOSABLE_BACKING_CHANGED')
+            for path in (overlay,factory):
+                env._owned_file(path);env._assert_unheld(path)
+            record('local-disk-removal-intent.json',dict(child=str(overlay),backing=str(factory),cloudAbsenceConfirmed=True))
+            overlay.unlink();factory.unlink();result['removed'] += [str(overlay),str(factory)]
         # All native lifecycle owners have completed. Remove only the remaining
         # disposable selection/config/Source state, not its external package.
         require(native==Path('/Users/alexagizim')/INSTANCE and not native.is_symlink(),'ROOT_CHANGED')

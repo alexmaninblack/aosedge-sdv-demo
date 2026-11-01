@@ -87,6 +87,10 @@ static int verified_pair(int fd,const char *header) {
     }
     printf("{\"probe\":\"LIVE_PAIR\",\"frames\":[%llu,%llu],\"sha256\":[\"%s\",\"%s\"],\"bytesVerified\":true}\n",
         frames[0],frames[1],expected[0],expected[1]);
+    /* Bounded, public metadata only, emitted after both body hashes passed.
+       Lets the native acceptance runner distinguish real source/core epochs
+       without installing an observer into the product Camera daemon. */
+    printf("{\"probe\":\"LIVE_METADATA\",\"value\":%s,\"bytesVerified\":true}\n",header);
     return 1;
 }
 

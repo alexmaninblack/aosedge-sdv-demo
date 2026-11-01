@@ -5,7 +5,7 @@
   "bundleIdentifier": "org.aosedge.sdvlab.vision.bootstrap",
   "teamIdentifier": "3NF57VKB3V",
   "signing": "Apple Development engineering-only; no ad-hoc or public-release claim",
-  "factoryVersion": "6.1.1-vision-camera.3",
+  "factoryVersion": "6.1.1-vision-camera.5",
   "factoryArchitecture": "main-qemuarm64",
   "vmProfile": "aos-vision-main-qemuarm64-v1",
   "unitModel": {"name": "aos-vision-vm", "version": "1.0.0"},
@@ -29,7 +29,7 @@
     "binding": "Optional closed resources sealed by the existing Apple bundle signature, exact base-program manifest and integration/platform/Gateway source pins; absent on old bundles, malformed fails closed",
     "limits": "Only the fixed Gateway Mach-O may be up to 32 MiB; other resource and total limits stay unchanged",
     "lifecycle": "Normal Source owner selects only verified runtime/runner, retains private TLS and all base CARLA/Python/UI assets; no proof callback or arbitrary binary path",
-    "provenance": "Factory 6.1.1-vision-camera.3 manufacture image and its platform revision remain frozen; update-platform revision is recorded separately in the sealed host descriptor"
+    "provenance": "Fresh .5 manufacture and matching rootfs update share the accepted Vision platform source pin. Earlier .3 images/manifests remain frozen and are not relabelled."
   },
   "maximumFactoryBytes": 17179869184,
   "scope": "Signed Vision-only input catalog and tooling; normal EnvironmentService, VMService, UnitService and native Aos component/container owners retain lifecycle authority",

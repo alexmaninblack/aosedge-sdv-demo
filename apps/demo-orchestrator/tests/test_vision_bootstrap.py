@@ -142,7 +142,7 @@ class BootstrapTests(unittest.TestCase):
         assets=v._host_assets(checked)
         self.assertEqual(assets,dict(runtime=self.resources/v.HOST_RUNTIME,runner=self.resources/v.HOST_RUNNER))
         self.assertEqual(checked.platform_revision,'b'*40)
-        self.assertEqual(checked.image.version,'6.1.1-vision-camera.3')
+        self.assertEqual(checked.image.version,'6.1.1-vision-camera.5')
 
     def test_host_extension_cannot_select_an_arbitrary_runtime(self):
         descriptor=self.host_extension();descriptor['assets']['runtime']='tooling/other'

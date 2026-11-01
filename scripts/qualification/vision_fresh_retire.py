@@ -13,7 +13,8 @@ from vision_vm_campaign import configuration
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True);p.add_argument('--name',required=True)
-    p.add_argument('--bundle',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--bundle',type=Path,required=True)
+    p.add_argument('--resume-local-after',choices=('vision-fresh-retire-01',));a=p.parse_args()
     h.require(a.name.startswith('vision-fresh-retire-') and a.name.removeprefix('vision-fresh-retire-').isdecimal(),'EXACT_FRESH_RETIREMENT_NAME_REQUIRED')
     c=configuration(a.config);t=c['transport'];q=shlex.quote;records=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
     import sys
@@ -24,6 +25,7 @@ def main():
     worker=Path(__file__).with_name('vision_fresh_retire_worker.py')
     context=dict(main=c['main'],bundle=str(remote/a.bundle.name),
         bootstrapManifestSha256=verified.manifest_sha256,remoteRoot=c['remoteRoot'])
+    if a.resume_local_after:context['resumeLocalAfter']=str(Path(c['remoteRoot'])/a.resume_local_after)
     h.atomic(records/'context.json',context);h.remote(t,'umask 077\nmkdir '+q(str(remote)),timeout=15)
     options=h.ssh_args(t)[1:-1];options.remove('-T');i=options.index('-b');options[i:i+2]=['-o','BindAddress='+options[i+1]]
     h.run(['/usr/bin/scp','-C','-r',*options,str(a.bundle),str(worker),str(records/'context.json'),t['user']+'@'+t['host']+':'+str(remote)+'/'],timeout=600)
