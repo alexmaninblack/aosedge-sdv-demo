@@ -53,13 +53,19 @@ def process(pid):
 
 def observe():
     camera=unit('aos-camera-access');ingress=unit('aos-camera-ingress')
-    consumers=[]
+    consumers=[];consumer_errors=[]
     for path in Path('/proc').iterdir():
         if not path.name.isdecimal():continue
         try:
             if Path(os.readlink(path/'exe')).name=='vision-camera-probe':
                 row=process(int(path.name));row['binarySha256']=hashlib.sha256((path/'exe').read_bytes()).hexdigest();consumers.append(row)
-        except (OSError,ValueError,KeyError):pass
+        except (OSError,ValueError,KeyError) as error:
+            try:
+                if (path/'comm').read_text().strip()=='vision-camera-p':
+                    import traceback
+                    frame=traceback.extract_tb(error.__traceback__)[-1]
+                    consumer_errors.append(dict(pid=int(path.name),error=type(error).__name__,file=Path(frame.filename).name,line=frame.lineno))
+            except OSError:pass
     messages=[];frames=[];network=[];codes=[]
     raw=run(['journalctl','-b','-n','2200','--no-pager','-o','cat'])
     assert len(raw)<2*1024**2
@@ -71,7 +77,7 @@ def observe():
             if at>=0:
                 try:target.append(json.JSONDecoder().raw_decode(line[at:])[0])
                 except ValueError:pass
-    result=dict(camera=camera,ingress=ingress,consumers=consumers,messages=messages[-160:],
+    result=dict(camera=camera,ingress=ingress,consumers=consumers,consumerErrors=consumer_errors,messages=messages[-160:],
         ingressFrames=frames[-450:],networkProofs=network[-12:],fixedCodes=codes[-12:],
         readerGid=grp.getgrnam('aos-camera-read').gr_gid,producerUid=pwd.getpwnam('aos-camera-access').pw_uid,
         enforcing=Path('/sys/fs/selinux/enforce').read_text().strip()=='1')

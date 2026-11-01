@@ -3,8 +3,8 @@
 
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
-- Status: Accepted on 2026-11-01; disposable Vision reset and fresh .5 delivery
-- Version: 0.8
+- Status: Accepted fresh .5 packet; diagnostic successor delta proposed below
+- Version: 0.9
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -76,6 +76,62 @@ activation. This was explicitly a transient projection proof, not permanent
 ingress acceptance. VM/Unit and all retained journals are unchanged; owned
 runtimes stopped. The source function matches the live-proven candidate in
 the regression gate. No immutable guest file or native transaction was edited.
+
+### Permanent delivery result and remaining boundary
+
+`vision-fresh-accept-07` proves native Camera `0.1.0` → `0.1.1` OEM delivery,
+same store UUID, Cloud/native version agreement, permanent nonroot ingress,
+idempotent start, empty ingress capabilities, read-only credential projection,
+and wrong-role/anonymous/second-media-session denial. The new diagnostic Subject
+binding targets only the fresh Unit; its service definition is reused. Read
+probe `0.1.4` was published once. It becomes failed when it receives a pair,
+so actual native JPEG-pair acceptance is **not complete**.
+
+`vision-fresh-accept-08` reconciles and reuses the exact Camera and reader
+publications without another upload/send/bind. It reproduces the reader failure
+while Camera/ingress remain healthy and Enforcing. Before Source start, kernel
+observations confirm UID 5000, reader group, read-only mount, no credential
+mount, no active capabilities and the expected binary. It is not an observer
+permission failure. Both attempts end with stopped owned runtimes, unchanged
+fresh identity and unchanged retained journals.
+
+The synthetic-only `vision-reader-diagnostic-02` reproduces the failure with a
+14-byte SOF test envelope, excluding CARLA throughput/JPEG size as its cause.
+This is fault isolation, not a valid live-image or pixel-decode claim.
+`vision-reader-diagnostic-03` proves that the same native parser unit passes in
+the full guest filesystem, segfaults (`-11`) in the actual container filesystem
+view with automatic OpenSSL configuration, and passes there with that config
+load disabled. The view-only unit runs as the diagnostic parent, not as the
+Aos service identity; it does not replace native-Aos acceptance.
+
+The hash-only fixture now explicitly initializes OpenSSL with
+`OPENSSL_INIT_NO_LOAD_CONFIG` before SHA-256 and checks the digest API result.
+It has no TLS/key/provider configuration contract. This changes neither system
+OpenSSL settings nor Camera/Core policy, limits, credentials or signing tools.
+Only the two fixture targets were compiled on the SSD (`fresh-reader-03`);
+the Builder was stopped. `vision-reader-diagnostic-04` proves both default-env
+and no-config parser units pass in the same container filesystem view. No
+synthetic frames were sent in that final check. Scratch and owned VM stopped;
+all retained journals match. Corrected bytes are **not published**.
+
+#### Proposed bounded delta D1 — immutable diagnostic successors
+
+Status: **requires operator acceptance; not publication authority**.
+
+Replace the remaining diagnostic read/revoke pair with `0.1.6` read followed by
+`0.1.7` revoke for the same `vision-camera-image-probe`, fresh Unit and existing
+Subject only. Leave `0.1.4` immutable and `0.1.5` unused; no version overwrite,
+new Unit/Subject, expanded resource, global crypto change or image rebuild.
+Keep the existing configured OEM/SP owners and normal signer/deployer.
+The executable publisher remains limited to the already accepted versions
+until this delta is accepted.
+
+After acceptance, reconcile the existing `.5`/Camera `0.1.1`/reader `0.1.4`
+receipts; publish the fixed read/revoke successors serially and run the remaining
+named native pair, network/credential denial, stale/disconnect, component
+restart, retained cold boot, detach, revocation, AVC and shutdown gates. Preserve
+the current VM, Unit, data, Main, CARLA, dependencies and caches. No Main merge,
+push, public distribution or Perception/Assessment acceptance is included.
 
 The reversible Gateway → Camera Access → native Aos reader proof passed.
 Permanent ingress still needs the labelled launcher, systemd unit, narrow

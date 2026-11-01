@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 """Bounded read-only guest inventory after the exact fresh Source boot fault."""
 import argparse
+import ast
 import json
 from pathlib import Path
 import shlex
@@ -11,7 +12,7 @@ from vision_vm_campaign import configuration
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True);p.add_argument('--attempt',type=int,choices=(1,2),default=1);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True);p.add_argument('--attempt',type=int,choices=(1,2,3,4,5,6,7,8),default=1);a=p.parse_args()
     c=configuration(a.config);python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
     records=Path(c['records'])/('vision-fresh-diagnose-'+str(a.attempt).zfill(2));h.require(not records.exists(),'DIAGNOSTIC_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     code=r'''import json,sys,pathlib,subprocess,stat
@@ -38,8 +39,10 @@ with runtime_paths.installed_session(native):
   state=read_json(native/JOURNAL);item=state['vehicles']['test']
   result['hostSource']=dict(generation=state.get('source',{}).get('assignmentGeneration'),onboarding=state.get('source',{}).get('trust',{}).get('onboarding',{}).get('state'))
   done=subprocess.run(ssh_command(access_path(native,'test'),item['sshPort'],5),input="python3 - <<'DIAG'\n"+code+"\nDIAG\n",capture_output=True,text=True,timeout=35)
-  assert done.returncode==0 and len(done.stdout)<131072
-  result['inventory']=json.loads(done.stdout)
+  if done.returncode or len(done.stdout)>=131072:
+   import re
+   result['probeError']=dict(exit=done.returncode,outputBytes=len(done.stdout),errorTypes=re.findall(r'^([A-Za-z]+Error):',done.stderr,re.M),lines=re.findall(r'File "<stdin>", line (\d+)',done.stderr))
+  else:result['inventory']=json.loads(done.stdout)
  finally:
   result['stop']=vm.execute('stop','test',timeout=150)
   result['retainedJournalsUnchanged']=all((p/JOURNAL).read_bytes()==raw for p,raw in retained.items())
@@ -61,12 +64,42 @@ for role in ('selected-platform-unit','platform-update-runtime'):
 check=subprocess.run(['/usr/libexec/aos-camera-access-store-check','verify'],capture_output=True,text=True)
 metadata=json.loads((root/'state/installed.json').read_bytes()) if (root/'state/installed.json').is_file() else None
 transaction=json.loads((root/'state/transaction.json').read_bytes()) if (root/'state/transaction.json').is_file() else None
+diagnostics=[];probe_units=set()
+for boot in ('-6','-1','0'):
+ log=subprocess.run(['journalctl','-b',boot,'-n','2200','--no-pager','-o','json'],capture_output=True,text=True)
+ for line in log.stdout.splitlines():
+  try:row=json.loads(line)
+  except ValueError:continue
+  message=row.get('MESSAGE','')
+  if isinstance(message,str) and any(s in message.lower() for s in ('segfault','core-dump','status=11/','status=31/','vision-camera-p','seccomp','killed process','oom','exited','"probe":')):
+   diagnostics.append(dict(boot=boot,unit=row.get('_SYSTEMD_UNIT'),comm=row.get('_COMM'),message=message[:1800]))
+   if '"probe":' in message and row.get('_SYSTEMD_UNIT'):probe_units.add(row['_SYSTEMD_UNIT'])
+probe_status={n:dict(v.split('=',1) for v in subprocess.run(['systemctl','show',n,'-p','ActiveState','-p','SubState','-p','Result','-p','ExecMainCode','-p','ExecMainStatus','-p','MemoryPeak','-p','MemoryMax','-p','NRestarts'],capture_output=True,text=True).stdout.splitlines() if '=' in v) for n in sorted(probe_units)}
+probe_process=[]
+for p in pathlib.Path('/proc').iterdir():
+ if not p.name.isdecimal():continue
+ try:
+  comm=(p/'comm').read_text().strip()
+  if comm!='vision-camera-p':continue
+  row=dict(pid=int(p.name),comm=comm)
+  for name in ('exe','status','attr/current','mountinfo','environ'):
+   try:
+    if name=='exe':row[name]=str((p/name).readlink())
+    elif name=='environ':(p/name).read_bytes();row[name]='READABLE_NOT_RETAINED'
+    elif name=='mountinfo':(p/name).read_text();row[name]='READABLE'
+    else:row[name]=(p/name).read_text()[:1800]
+   except OSError as error:row[name]=dict(error=type(error).__name__,errno=error.errno)
+  probe_process.append(row)
+ except OSError:continue
 print(json.dumps(dict(units=units,files=files,storeVerified=check.returncode==0,installed=metadata,transaction=transaction,
+ diagnostics=[s for s in diagnostics if '"probe":' not in s['message']][-60:],probeUnits=probe_status,probeProcesses=probe_process,
  selectedGeneration=json.loads((root/'demo-inputs/selected.json').read_bytes())['selectedSource']['assignmentGeneration'] if (root/'demo-inputs/selected.json').exists() else None,
  bindingGeneration=json.loads((root/'demo-inputs/viss-update-binding').read_bytes())['assignmentGeneration'] if (root/'demo-inputs/viss-update-binding').exists() else None,
  mounts=[s.split()[:4] for s in pathlib.Path('/proc/mounts').read_text().splitlines() if str(root) in s])))
 '''
+    ast.parse(guest)
     code=code.replace('MAIN',repr(c['main'])).replace('BUNDLE',repr(str(Path(c['remoteRoot'])/'signed-bootstrap-04/AosEdge Vision Bootstrap 0.5.0.bundle'))).replace('GUEST',repr(guest))
+    ast.parse(code)
     value=json.loads(h.remote(c['transport'],shlex.quote(python)+' -I -B -c '+shlex.quote(code),timeout=240))
     h.atomic(records/'result.json',value);print(json.dumps(value,indent=2))
 

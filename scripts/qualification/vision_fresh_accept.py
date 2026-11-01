@@ -24,8 +24,9 @@ def main():
     parser.add_argument('--name',required=True)
     parser.add_argument('--bundle',type=Path)
     parser.add_argument('--transient-first-reselect',action='store_true')
+    parser.add_argument('--resume-from',choices=('vision-fresh-accept-07',))
     args=parser.parse_args();c=configuration(args.config);t=c['transport'];q=shlex.quote
-    h.require(args.name in ('vision-fresh-accept-01','vision-fresh-accept-02','vision-fresh-accept-03','vision-fresh-accept-04','vision-fresh-accept-05','vision-fresh-accept-06','vision-fresh-accept-07'),'EXACT_FRESH_ACCEPTANCE_REQUIRED')
+    h.require(args.name in ('vision-fresh-accept-01','vision-fresh-accept-02','vision-fresh-accept-03','vision-fresh-accept-04','vision-fresh-accept-05','vision-fresh-accept-06','vision-fresh-accept-07','vision-fresh-accept-08'),'EXACT_FRESH_ACCEPTANCE_REQUIRED')
     records=Path(c['records'])/args.name;remote=Path(c['remoteRoot'])/args.name
     h.require(not records.exists(),'ACCEPTANCE_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     source=Path(__file__).resolve().parents[2];here=Path(__file__).parent
@@ -56,6 +57,12 @@ def main():
         previousNative=str(Path(c['remoteRoot'])/'native-camera-17'),
         files={f.name:h.digest(f) for f in files},camera=dict(bytes=payload.stat().st_size,sha256=h.digest(payload),platformRevision=platform_pin))
     context['existingPublication']=json.loads((Path(c['records'])/'native-camera-17/context.json').read_bytes())['existingPublication']
+    if args.resume_from:
+        h.require(args.name=='vision-fresh-accept-08' and not args.transient_first_reselect,'EXACT_NATIVE_READER_RESUME_REQUIRED')
+        previous=json.loads((Path(c['records'])/args.resume_from/'result.json').read_bytes())
+        h.require(previous['code']=='PERMANENT_OBSERVATION_TIMEOUT' and previous['cameraUpgrade']=='PASS_SAME_STORE_NATIVE_OEM'
+            and all(previous['cleanup'].values()),'PREVIOUS_READER_ATTEMPT_NOT_RECONCILED')
+        context['resumeFrom']=str(Path(c['remoteRoot'])/args.resume_from)
     if args.transient_first_reselect:
         h.require(args.name=='vision-fresh-accept-06','TRANSIENT_RESELECT_PROOF_NAME_REQUIRED');context['transientFirstReselect']=True
     if args.bundle:

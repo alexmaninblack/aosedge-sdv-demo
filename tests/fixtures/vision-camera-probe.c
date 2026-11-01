@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <openssl/sha.h>
+#include <openssl/crypto.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +54,10 @@ static int query(int fd,const char *operation,char header[4097]) {
 }
 
 static int verified_pair(int fd,const char *header) {
+    /* This hash-only diagnostic has no TLS/key/provider configuration. The
+       bare native OCI image's system OpenSSL config is not a fixture input.
+       Initialize explicitly before SHA256's implicit provider setup. */
+    if(!OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG,NULL))return 0;
     /* The peer is the signed Camera daemon's closed serializer. This fixture
        extracts only its two length/hash fields; no general JSON API is implied. */
     size_t sizes[2];char expected[2][65];unsigned long long frames[2],times[2];
@@ -81,7 +86,8 @@ static int verified_pair(int fd,const char *header) {
         unsigned char *body=malloc(sizes[i]),hash[SHA256_DIGEST_LENGTH];char actual[65];
         if(!body)return 0;
         if(!exact(fd,body,sizes[i],0)){free(body);return 0;}
-        SHA256(body,sizes[i],hash);free(body);
+        if(SHA256(body,sizes[i],hash)==NULL){free(body);return 0;}
+        free(body);
         for(int k=0;k<SHA256_DIGEST_LENGTH;k++)sprintf(actual+k*2,"%02x",hash[k]);
         if(strcmp(actual,expected[i]))return 0;
     }

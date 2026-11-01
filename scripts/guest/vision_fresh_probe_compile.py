@@ -8,13 +8,15 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import argparse
 
 PROJECT=Path('/home/yocto/r61-build/factory42-475dc7c1ef3ac303')
 
 
 def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--attempt',choices=('01','03'),default='01');args=parser.parse_args()
     assert os.uname().machine=='aarch64' and os.uname().sysname=='Linux'
-    source=PROJECT/'.tmp/vision-fresh-probe-01';output=PROJECT/'vision-fresh-probe-01'
+    source=PROJECT/'.tmp'/('vision-fresh-probe-'+args.attempt);output=PROJECT/('vision-fresh-probe-'+args.attempt)
     assert not output.exists();output.mkdir(mode=0o700)
     work=PROJECT/'yocto/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git'
     values={s.split('=',1)[0].removeprefix('export '):shlex.split(s)[1].split('=',1)[1]

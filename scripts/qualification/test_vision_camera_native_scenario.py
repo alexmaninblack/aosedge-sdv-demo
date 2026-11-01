@@ -14,6 +14,22 @@ from vision_camera_native_worker import completion,fixture_helpers
 from vision_camera_fixture_cloud import configuration,terminal_retry,title_correction,TITLE
 
 
+class NativeFixtureIsolationTests(unittest.TestCase):
+    def test_hash_fixture_ignores_system_openssl_configuration_and_checks_result(self):
+        source=(Path(__file__).resolve().parents[2]/'tests/fixtures/vision-camera-probe.c').read_text()
+        self.assertLess(source.index('OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG,NULL)'),source.index('SHA256(body,sizes[i],hash)'))
+        self.assertIn('if(SHA256(body,sizes[i],hash)==NULL)',source)
+
+    def test_nested_diagnostic_guest_programs_are_syntax_checked_offline(self):
+        for name in ('vision_fresh_diagnose.py','vision_reader_diagnostic.py'):
+            source=Path(__file__).with_name(name).read_text();tree=ast.parse(source)
+            programs=[n.value for n in ast.walk(tree) if isinstance(n,ast.Constant) and isinstance(n.value,str)
+                and n.value.startswith(('import pathlib,','import json,sys,pathlib,')) and '\n' in n.value]
+            self.assertTrue(programs)
+            for program in programs:ast.parse(program)
+            self.assertIn('ast.parse(guest)',source);self.assertIn('ast.parse(code)',source)
+
+
 class CompletionTests(unittest.TestCase):
     def setUp(self):
         self.complete=dict(outcome='PASS_NATIVE_CAMERA_OEM_AND_AOS_READ',

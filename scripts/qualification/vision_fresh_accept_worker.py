@@ -92,6 +92,14 @@ def main():
         native=Path.home()/v.INSTANCE_NAME;before=read_json(native/JOURNAL);item=before['vehicles']['test']
         require(item['unitId']!='4374bcb2-0613-419c-8ac9-e8458358c91c' and item['runtime']['state']==before.get('source',{}).get('state','STOPPED')=='STOPPED','FRESH_IDLE_UNIT_REQUIRED')
         identity={k:item[k] for k in ('unitId','nodeId','localVmId','overlay')}
+        resume=Path(c['resumeFrom']) if c.get('resumeFrom') else None
+        if resume:
+            require(resume.parent==records.parent and resume.name=='vision-fresh-accept-07','READER_RESUME_SCOPE_INVALID')
+            prior=json.loads((resume/'result.json').read_bytes())
+            require(prior.get('code')=='PERMANENT_OBSERVATION_TIMEOUT' and prior.get('cameraUpgrade')=='PASS_SAME_STORE_NATIVE_OEM'
+                and all(prior['cleanup'].values()),'READER_RESUME_NOT_RECONCILED')
+            prior_context=json.loads((resume/'context.json').read_bytes())
+            require(prior_context['files']['vision-camera-probe']==c['files']['vision-camera-probe'] and prior_context['camera']==c['camera'],'READER_RESUME_INPUT_CHANGED')
         retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
         caffeinate=subprocess.Popen(['/usr/bin/caffeinate','-d','-i','-w',str(__import__('os').getpid())],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         with runtime_paths.installed_session(native):
@@ -114,6 +122,8 @@ def main():
             packet=dict(authorized=True,recoveryFirst=True,rootfsVersion='6.1.1-vision-camera.5',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5')
             def component(action,kind='aos-vision-vm-1.0.0-main-qemuarm64-camera-access',**extra):
                 version='6.1.1-vision-camera.5' if kind.endswith('-rootfs') else '0.1.1'
+                if resume and kind.endswith('-camera-access') and action=='status':
+                    extra.setdefault('deploymentId',json.loads((resume/'camera-upload.json').read_bytes())['facts']['deploymentId'])
                 return sdk_call('vision_permanent_component_cloud.py',dict(scope,action=action,componentType=kind,version=version,permanentDelivery=packet,**extra),600)
             def guest(code,timeout=30):
                 import textwrap
@@ -139,6 +149,7 @@ def main():
             def online():
                 with env._writer():return units._wait(read_json(native/JOURNAL),'test',lambda u:u and u['online_status']=='Online','CLOUD_ONLINE',timeout=60)
             phase('fresh-unit-online',online)
+            phase('reader-process-before-source',observe)
             root=phase('fifth-rootfs-cloud-status',lambda:component('status','aos-vision-vm-1.0.0-main-qemuarm64-rootfs'))
             require(any((r.get('installed_component') or {}).get('version')=='6.1.1-vision-camera.5' and not r.get('pending_component') for r in root['unit']['components'] or []),'FIFTH_ROOTFS_NOT_CONFIRMED')
             base_scope={k:value for k,value in scope.items() if k in ('setupProfile','version','vehicles','ownerId','cloudDomain')}
@@ -146,11 +157,12 @@ def main():
             require(reuse['ownerId']==scope['ownerId'] and reuse['cloudDomain']==scope['cloudDomain']
                 and reuse['payloadSha256']==bootstrap['cameraPayload']['sha256'],'INITIAL_CAMERA_INPUT_CHANGED')
             base_scope['deploymentId']=reuse['deploymentId']
-            baseline=phase('initial-camera-catalog',lambda:units._cloud('vision-camera-status',**base_scope))
-            require(baseline['publication']['stage']=='READY','INITIAL_CAMERA_CATALOG_NOT_READY')
-            record('initial-camera-send-intent.json',dict(unitId=item['unitId'],versionId=baseline['publication']['versionId'],attemptStarted=True))
-            result['cloudMutation']=True
-            phase('initial-camera-send',lambda:units._cloud('vision-camera-send',**base_scope,updateComponentId=baseline['publication']['versionId']))
+            if not resume:
+                baseline=phase('initial-camera-catalog',lambda:units._cloud('vision-camera-status',**base_scope))
+                require(baseline['publication']['stage']=='READY','INITIAL_CAMERA_CATALOG_NOT_READY')
+                record('initial-camera-send-intent.json',dict(unitId=item['unitId'],versionId=baseline['publication']['versionId'],attemptStarted=True))
+                result['cloudMutation']=True
+                phase('initial-camera-send',lambda:units._cloud('vision-camera-send',**base_scope,updateComponentId=baseline['publication']['versionId']))
             source_started=True
             phase('normal-source-start',lambda:app.source_service.simulation('start',target='test'))
             phase('normal-source-enrollment',app.source_service.initialize_test)
@@ -167,37 +179,44 @@ def main():
             phase('initial-physical-safe-stop',physical_safe_stop)
             native_snapshot=(records/'vision_delivery_guest.py').read_text()+"\nprint(json.dumps(run('snapshot')))\n"
             initial=phase('initial-camera-activation',lambda:guest(native_snapshot,45))
-            require(initial['rootfsVersion']=='VERSION="6.1.1-vision-camera.5"' and initial['camera']['version']=='0.1.0' and initial['enforcing'],'INITIAL_CAMERA_NOT_ACTIVATED')
+            require(initial['rootfsVersion']=='VERSION="6.1.1-vision-camera.5"' and initial['camera']['version']==('0.1.1' if resume else '0.1.0') and initial['enforcing'],'INITIAL_CAMERA_NOT_ACTIVATED')
             if c.get('transientFirstReselect'):
                 result.update(outcome='PASS_TRANSIENT_FIRST_RESELECT_NATIVE_ACTIVATION',nativeCameraActivated=True,immutableGuestFilesChanged=False,
                     permanentIngress='NOT_RUN');raise FirstReselectProofComplete()
             camera=phase('camera-successor-catalog',lambda:component('status'))
-            require(camera['publication']['stage']=='NOT_PUBLISHED','CAMERA_SUCCESSOR_EXISTS_RECONCILE')
-            camera_input=c['camera'];payload=records/'camera-access-0.1.1.tar.gz'
-            require(hashlib.sha256(payload.read_bytes()).hexdigest()==camera_input['sha256'],'CAMERA_PAYLOAD_CHANGED')
-            extra=dict(payload=str(payload),payloadBytes=camera_input['bytes'],payloadSha256=camera_input['sha256'],componentTitle=camera['componentTitle'])
-            output=records/'camera-0.1.1.tar.gz';signed=phase('camera-oem-sign',lambda:component('sign',output=str(output),**extra))
-            record('camera-upload-intent.json',dict(attemptStarted=True,unitId=item['unitId'],version='0.1.1',bundleSha256=signed['sha256']));camera_attempted=True
-            uploaded=phase('camera-upload',lambda:component('upload',bundle=str(output),expectedSha256=signed['sha256'],**extra))
-            end=time.monotonic()+150;ready=None
-            cloud_camera_confirmed=False
-            while time.monotonic()<end:
-                ready=component('status',deploymentId=uploaded['deploymentId'])
-                if ready['publication']['stage']=='READY':break
-                require(ready['publication']['stage']=='PROCESSING','CAMERA_PUBLICATION_FAILED');time.sleep(2)
-            require(ready and ready['publication']['stage']=='READY','CAMERA_PUBLICATION_TIMEOUT_RECONCILE')
-            record('camera-send-intent.json',dict(attemptStarted=True,unitId=item['unitId'],versionId=ready['publication']['versionId']))
-            phase('camera-delivery',lambda:component('send',deploymentId=uploaded['deploymentId'],componentTitle=camera['componentTitle']))
-            end=time.monotonic()+120;after=None
-            while time.monotonic()<end:
-                try:after=guest(native_snapshot,35)
-                except ValueError:time.sleep(1);continue
-                status=component('status',deploymentId=uploaded['deploymentId'])
-                if after['camera']['version']=='0.1.1' and any((r.get('installed_component') or {}).get('version')=='0.1.1' and not r.get('pending_component') for r in status['unit']['components'] or []):
-                    cloud_camera_confirmed=True;break
-                time.sleep(2)
-            require(cloud_camera_confirmed and after and after['camera']['version']=='0.1.1' and after['cameraStoreUuid']==initial['cameraStoreUuid'] and after['enforcing'],'CAMERA_UPGRADE_NOT_CONFIRMED')
-            camera_confirmed=True;record('camera-native-upgrade.json',after);result['cameraUpgrade']='PASS_SAME_STORE_NATIVE_OEM'
+            if resume:
+                previous_camera=json.loads((resume/'camera-native-upgrade.json').read_bytes())
+                require(camera['publication']['stage']=='READY' and initial['cameraStoreUuid']==previous_camera['cameraStoreUuid']
+                    and initial['machineId']==item['localVmId'].replace('-','')
+                    and any((r.get('installed_component') or {}).get('version')=='0.1.1' and not r.get('pending_component') for r in camera['unit']['components'] or []),'RETAINED_CAMERA_UPGRADE_NOT_CONFIRMED')
+                record('retained-camera-update-reconciled.json',dict(noUpload=True,noSend=True,sameStore=True,version='0.1.1'))
+            else:
+                require(camera['publication']['stage']=='NOT_PUBLISHED','CAMERA_SUCCESSOR_EXISTS_RECONCILE')
+                camera_input=c['camera'];payload=records/'camera-access-0.1.1.tar.gz'
+                require(hashlib.sha256(payload.read_bytes()).hexdigest()==camera_input['sha256'],'CAMERA_PAYLOAD_CHANGED')
+                extra=dict(payload=str(payload),payloadBytes=camera_input['bytes'],payloadSha256=camera_input['sha256'],componentTitle=camera['componentTitle'])
+                output=records/'camera-0.1.1.tar.gz';signed=phase('camera-oem-sign',lambda:component('sign',output=str(output),**extra))
+                record('camera-upload-intent.json',dict(attemptStarted=True,unitId=item['unitId'],version='0.1.1',bundleSha256=signed['sha256']));camera_attempted=True
+                uploaded=phase('camera-upload',lambda:component('upload',bundle=str(output),expectedSha256=signed['sha256'],**extra))
+                end=time.monotonic()+150;ready=None;cloud_camera_confirmed=False
+                while time.monotonic()<end:
+                    ready=component('status',deploymentId=uploaded['deploymentId'])
+                    if ready['publication']['stage']=='READY':break
+                    require(ready['publication']['stage']=='PROCESSING','CAMERA_PUBLICATION_FAILED');time.sleep(2)
+                require(ready and ready['publication']['stage']=='READY','CAMERA_PUBLICATION_TIMEOUT_RECONCILE')
+                record('camera-send-intent.json',dict(attemptStarted=True,unitId=item['unitId'],versionId=ready['publication']['versionId']))
+                phase('camera-delivery',lambda:component('send',deploymentId=uploaded['deploymentId'],componentTitle=camera['componentTitle']))
+                end=time.monotonic()+120;after=None
+                while time.monotonic()<end:
+                    try:after=guest(native_snapshot,35)
+                    except ValueError:time.sleep(1);continue
+                    status=component('status',deploymentId=uploaded['deploymentId'])
+                    if after['camera']['version']=='0.1.1' and any((r.get('installed_component') or {}).get('version')=='0.1.1' and not r.get('pending_component') for r in status['unit']['components'] or []):
+                        cloud_camera_confirmed=True;break
+                    time.sleep(2)
+                require(cloud_camera_confirmed and after and after['camera']['version']=='0.1.1' and after['cameraStoreUuid']==initial['cameraStoreUuid'] and after['enforcing'],'CAMERA_UPGRADE_NOT_CONFIRMED')
+                record('camera-native-upgrade.json',after)
+            camera_confirmed=True;result['cameraUpgrade']='PASS_SAME_STORE_NATIVE_OEM'
             phase('native-ingress-start',lambda:app.source_service.camera_ingress('start'))
             first=phase('permanent-ingress-live',lambda:until(lambda x:x.get('health',{}).get('status',{}).get('deliveryState')=='AVAILABLE'))
             ingress=first['ingressProcess'];core=first['cameraProcess']
@@ -228,7 +247,7 @@ def main():
             phase('live-media-role-and-quota-denial',deny_roles)
             phase('diagnostic-cloud-preflight',lambda:fixture('preflight'))
             catalog=phase('diagnostic-catalog',lambda:fixture('catalog'));service=catalog['serviceId']
-            require({v['version'] for v in catalog['versions']}=={'0.1.0','0.1.1','0.1.2','0.1.3'},'DIAGNOSTIC_CATALOG_COLLISION')
+            require({v['version'] for v in catalog['versions']}==({'0.1.0','0.1.1','0.1.2','0.1.3','0.1.4'} if resume else {'0.1.0','0.1.1','0.1.2','0.1.3'}),'DIAGNOSTIC_CATALOG_COLLISION')
             subject=json.loads((Path(c['previousNative'])/'probe-subject-create-response.json').read_bytes())['subject']
             bound=phase('diagnostic-subject-before',lambda:fixture('subject-status',serviceId=service,subject=subject))
             if not bound['unitBound']:
@@ -237,7 +256,10 @@ def main():
             if not bound['serviceBound']:
                 record('subject-service-intent.json',dict(attemptStarted=True,subjectId=subject['id'],serviceId=service))
                 phase('diagnostic-subject-service',lambda:fixture('subject-assign',serviceId=service,subject=subject))
-            old=phase('native-revoked-baseline',lambda:until(lambda x:len(x['consumers'])==1));bounding=old['consumers'][0]['capabilities']['CapBnd']
+            if resume:
+                old=json.loads((resume/'native-revoked-baseline.json').read_bytes())['facts']
+            else:old=phase('native-revoked-baseline',lambda:until(lambda x:len(x['consumers'])==1))
+            bounding=old['consumers'][0]['capabilities']['CapBnd']
             def publish(version):
                 path=records/('probe-'+version+'.tar.gz');signed=phase('probe-sign-'+version,lambda:fixture('sign',probeVersion=version,output=str(path)))
                 record('probe-upload-'+version+'-intent.json',dict(attemptStarted=True,unitId=item['unitId'],subjectId=subject['id'],version=version,binarySha256=c['files']['vision-camera-probe']))
@@ -248,7 +270,12 @@ def main():
                     if value['stage']=='READY':return value
                     require(value['stage']=='PROCESSING','PROBE_PUBLICATION_FAILED');time.sleep(2)
                 raise ValueError('PROBE_PUBLICATION_TIMEOUT_RECONCILE')
-            publish('0.1.4')
+            if resume:
+                previous_upload=json.loads((resume/'probe-upload-0.1.4.json').read_bytes())['facts']
+                reconciled=phase('read-publication-reconciled',lambda:fixture('publication',probeVersion='0.1.4',deploymentId=previous_upload['deploymentId']))
+                require(reconciled['stage']=='READY','EXISTING_READER_NOT_READY')
+                record('retained-reader-publication.json',dict(noUpload=True,version='0.1.4',versionId=reconciled['versionId']))
+            else:publish('0.1.4')
             live=phase('native-aos-real-jpeg-pairs',lambda:until(lambda x:bool(current_pairs(x)),90));consumer=live['consumers'][0]
             require(len(live['consumers'])==1 and consumer['uid']>0 and live['readerGid'] in consumer['groups'] and consumer['readMountReadonly']
                 and consumer['context'].split(':')[2]=='container_engine_t' and inactive(consumer,bounding)
