@@ -10,13 +10,13 @@ UNIT='11111111-1111-4111-8111-111111111111'
 SET='22222222-2222-4222-8222-222222222222'
 NODE='33333333-3333-4333-8333-333333333333'
 FLEET='44444444-4444-4444-8444-444444444444'
-REQUEST=dict(setupProfile=v.PROFILE,version=v.VERSION,vehicles={'test':dict(unitId=UNIT,nodeId=NODE,systemUid='vision-native',unitSetId=SET)})
+REQUEST=dict(setupProfile=v.PROFILE,version=v.VERSION,vehicles={'test':dict(unitId=UNIT,nodeId=NODE,nodeHardwareId='vision-native',systemUid='vision-native',unitSetId=SET)})
 
 
 class ScopeTests(unittest.TestCase):
     def setUp(self):
         self.unit=dict(id=UNIT,system_uid='vision-native',status='provisioned',online_status='Online',
-                       unit_sets=[SET],fleet=FLEET,nodes=[dict(id=NODE,node_type=v.NODE_TYPE,is_main=True)])
+                       unit_sets=[SET],fleet=FLEET,nodes=[dict(id=NODE,node_id='vision-native',node_type=v.NODE_TYPE,is_main=True)])
         self.selected=dict(title=v.SET_TITLE,is_validation_set=True,allow_unknown_components=False,fleet=FLEET)
         self.members=[dict(id=UNIT,system_uid='vision-native')]
         self.cloud=Mock()
@@ -48,6 +48,14 @@ class ScopeTests(unittest.TestCase):
         for request in (dict(REQUEST,setupProfile='main'),dict(REQUEST,version='2.0.0'),
                         dict(REQUEST,vehicles={'production':REQUEST['vehicles']['test']})):
             with self.assertRaises(CloudFailure):v.scope(self.cloud,request)
+
+    def test_nullable_cloud_main_flag_still_requires_exact_native_hardware_identity(self):
+        self.unit['nodes'][0]['is_main']=None
+        v.scope(self.cloud,REQUEST)
+        self.unit['nodes'][0]['node_id']='foreign'
+        with self.assertRaisesRegex(CloudFailure,'NODE_BINDING_CHANGED'):v.scope(self.cloud,REQUEST)
+        self.unit['nodes'][0]['node_id']='vision-native';self.unit['nodes'][0]['is_main']=False
+        with self.assertRaisesRegex(CloudFailure,'NODE_BINDING_CHANGED'):v.scope(self.cloud,REQUEST)
 
     def test_status_is_the_existing_publication_reader_with_fixed_camera_identity(self):
         with patch.object(v,'snapshot',return_value={'observed':True}) as read:

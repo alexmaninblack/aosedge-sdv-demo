@@ -254,6 +254,15 @@ The static ARM64 reader fixture is a diagnostic Aos service, not Perception.
 Its local JPEG fixture, UID/mount/protocol-denial and revocation observations
 must remain distinct from authenticated Gateway camera ingress and final AI E2E.
 
+Cloud may automatically add a newly registered Unit to existing campaign sets.
+The Vision provisioner removes only its own new Unit from those unrequested
+memberships through the existing Unit-Set owner, with intent and authoritative
+post-reads. Preserve every set definition and every other member. Reconcile a
+lost response by read, never by replaying removal. The own Vision verification
+set remains mandatory. The live Cloud serializer can report `is_main=null`;
+retain the exact single-node type and IAM-proven hardware/Cloud-node binding
+rather than treating that optional display field as the native Main-Node proof.
+
 The operator authorized native Aos-container access and separate OEM activation.
 Keep the old Brake/Tire VM/data unchanged. ADR 0019 v0.9 allocates the fixed
 resource, local IPC, own OEM target and Vision-only bootstrap. The platform

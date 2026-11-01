@@ -37,7 +37,8 @@ def scope(cloud, request):
             and unit['status']=='provisioned' and unit['online_status']=='Online'
             and unit['unit_sets']==[object_id(vehicle['unitSetId'])], 'UNIT_BINDING_CHANGED')
     require(len(unit['nodes'])==1 and unit['nodes'][0]['id']==vehicle['nodeId']
-            and unit['nodes'][0]['node_type']==NODE_TYPE and unit['nodes'][0]['is_main'] is True,'NODE_BINDING_CHANGED')
+            and unit['nodes'][0]['node_type']==NODE_TYPE and unit['nodes'][0]['node_id']==vehicle['nodeHardwareId']
+            and unit['nodes'][0].get('is_main') in (None,True),'NODE_BINDING_CHANGED')
     selected=cloud.call('unit-sets/'+object_id(vehicle['unitSetId'])+'/')
     require(selected.get('title')==SET_TITLE and selected.get('is_validation_set') is True
             and selected.get('allow_unknown_components') is False and selected.get('fleet')==unit['fleet'],'SET_BINDING_CHANGED')

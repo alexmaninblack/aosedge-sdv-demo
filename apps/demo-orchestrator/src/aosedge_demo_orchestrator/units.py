@@ -310,6 +310,10 @@ class UnitService:
         if len(state["operations"]) != 2 or state["operations"][-1].get("class") != "UNIT_LIFECYCLE":
             raise EnvironmentError("PRIOR_OPERATION_REQUIRES_RECONCILIATION")
         op = state["operations"][-1]
+        if op.get('step')=='VISION_REMOVE_UNREQUESTED_SET':
+            from .vision_cloud_scope import confirm
+            confirm(self,state,op)
+            return
         role = op["target"][0]
         item = state["vehicles"][role]
         value = self._cloud("find", systemUid=item["systemUid"])["unit"] if item.get("systemUid") else None
@@ -459,11 +463,23 @@ class UnitService:
             self._done(state, role)
         if selected.get("production" if role == "test" else "test", {}).get("id") in unit["unit_sets"]:
             raise EnvironmentError("CROSSED_ROLE_MEMBERSHIP")
+        if getattr(self.environment.catalog,'cloud_setup_profile',None)=='vision-bootstrap-v1':
+            from .vision_cloud_scope import isolate
+            isolate(self,state)
         item["cloud"]["lifecycle"] = "ONLINE"
         self.vm._save(state)
         self.progress(role + ": Cloud Online; role Unit Set confirmed")
         return {"unitId": item["unitId"], "nodeId": item["nodeId"], "systemUid": item["systemUid"],
                 "onlineStatus": "Online", "lifecycle": "PROVISIONED"}
+
+    def isolate_vision_test(self):
+        """Explicit repair of this already provisioned Vision Unit only."""
+        from .vision_cloud_scope import isolate
+        with self.environment._writer():
+            state=read_json(self.root/JOURNAL)
+            if len(state['operations'])!=1:
+                self._reconcile(state)
+            return isolate(self,state)
 
     def _deprovision(self, state, role, selected):
         item = state["vehicles"][role]
