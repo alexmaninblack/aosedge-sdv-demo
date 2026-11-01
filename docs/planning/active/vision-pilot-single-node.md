@@ -9,9 +9,9 @@
 - Updated: 2026-11-01
 - Owner: SDV Lab integration
 - Architecture proposal: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md)
-- Execution status: signed Source enrollment and native Camera activation passed on the retained M4 VM;
-  permanent .3 image passed recorded-input/native security gates; authenticated Gateway-to-native-Aos
-  live ingress/read/revoke passed as a reversible proof. Permanent ingress delivery and AI/full Vision E2E remain open.
+- Execution status: permanent Camera ingress, native read/revoke and retained cold boot passed
+  on the same fresh .5 Vision VM. Perception/Assessment native deployment and full Vision E2E
+  remain open; the next service-interface packet is proposed, not yet accepted.
 - Authorization: implement the 2026-10-31 plan on the dedicated M4, preserving Main;
   source/build/cache work stays on the development SSD. No implicit Main merge or public publication.
 
@@ -938,6 +938,12 @@ Compact JSON measurements, JPEGs and executed-source snapshots are retained
 under the private `vision-camera-20261029` / `optimize-01` evidence root.
 
 ## V2 Freeze interfaces and update the design chain
+
+The [next native-service boundary packet](vision-services-native-delivery.md)
+consolidates the still-unaccepted dynamics, inter-service and result-return
+interfaces, dependency cut, package ceiling and native delivery ladder. Camera
+acceptance does not authorize those new resource/credential scopes by inference.
+Resolve that packet once before downstream implementation; retain the same VM.
 
 Apply the class-C cascade on the Vision branch: HLA, Scenario, Flows, system
 requirements, component/interface allocation, relevant component packages and
