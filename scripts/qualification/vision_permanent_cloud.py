@@ -11,12 +11,62 @@ import sys
 
 ROOTFS = 'aos-vision-vm-1.0.0-main-qemuarm64-rootfs'
 CAMERA = 'aos-vision-vm-1.0.0-main-qemuarm64-camera-access'
-VERSIONS = {ROOTFS: '6.1.1-vision-camera.4', CAMERA: '0.1.1'}
+VERSIONS = {ROOTFS: '6.1.1-vision-camera.5', CAMERA: '0.1.1'}
+FAILED_BATCH='96a16904-0cfa-484c-ac70-0601ff90048d'
+FAILED_COMPONENT='40ed2e6e-2aee-45f5-af80-3ab6928771ff'
+CURRENT_UNIT='4374bcb2-0613-419c-8ac9-e8458358c91c'
 RETIRED_VERIFICATION = {
     '55e87ad2-9c8c-4e0f-ad3c-02bbd362acd9': (
         'SDV Vision Camera Verification', '5abf6a2b-ae53-4995-a58a-91d9253057f7'),
     '581d4776-9679-4c48-8021-194539f2a5d3': (
         'SDV Vision Verification', '2ac4b71a-2d06-4dd5-904f-7d2c24109f39')}
+
+
+def reject_failed_rootfs(cloud, request):
+    """One accepted rejection; no deletion, membership change or upload retry."""
+    import os
+    from aosedge_demo_orchestrator.unit_cloud import CloudFailure
+    if request.get('rejectFailedRootfs')!=dict(authorized=True,batchId=FAILED_BATCH,
+        failedVersion='6.1.1-vision-camera.4',successorVersion=VERSIONS[ROOTFS]):
+        raise CloudFailure('VISION_ROOTFS_REJECTION_AUTHORITY_REQUIRED')
+    if request['vehicles']['test']['unitId']!=CURRENT_UNIT:
+        raise CloudFailure('VISION_ROOTFS_REJECTION_UNIT_CHANGED')
+    cloud.require('verification_batch_approval')
+    records=Path(request['operationDirectory'])
+    if not records.is_absolute() or not records.is_dir() or records.is_symlink():
+        raise CloudFailure('VISION_ROOTFS_REJECTION_RECORDS_INVALID')
+    path='verification-batch/'+FAILED_BATCH+'/'
+    def observe():
+        value=cloud.call(path);entries=value.get('update_items') or []
+        if (value.get('id')!=FAILED_BATCH or value.get('oem_id')!=cloud.user['ownerId']
+            or value.get('architectures')!=['arm64'] or len(entries)!=1
+            or entries[0].get('identity_id')!=FAILED_COMPONENT
+            or entries[0].get('codename')!=ROOTFS or entries[0].get('version')!='6.1.1-vision-camera.4'):
+            raise CloudFailure('VISION_ROOTFS_REJECTION_BATCH_CHANGED')
+        return {k:value.get(k) for k in ('id','state','architectures','approval_states')}
+    def record(name,value):
+        fd=os.open(records/name,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+        with os.fdopen(fd,'w') as stream:
+            json.dump(value,stream,indent=2);stream.flush();os.fsync(stream.fileno())
+    before=observe();intent=records/'failed-rootfs-rejection-intent.json'
+    body=[dict(architecture='arm64',is_approved=False)]
+    if intent.exists():
+        expected=dict(batchId=FAILED_BATCH,unitId=CURRENT_UNIT,body=body,attemptStarted=True)
+        if json.loads(intent.read_bytes())!=expected:
+            raise CloudFailure('VISION_ROOTFS_REJECTION_INTENT_CHANGED')
+        if (before.get('approval_states') or {}).get('arm64',{}).get('is_approved') is not False:
+            raise CloudFailure('VISION_ROOTFS_REJECTION_UNCERTAIN_NO_REPLAY')
+        return dict(confirmed=True,replayed=False,resumed=True,batch=before)
+    record('failed-rootfs-rejection-before.json',before)
+    record(intent.name,dict(batchId=FAILED_BATCH,unitId=CURRENT_UNIT,body=body,attemptStarted=True))
+    uncertain=False
+    try:cloud.call(path,'PATCH',body)
+    except Exception:uncertain=True
+    after=observe()
+    confirmed=(after.get('approval_states') or {}).get('arm64',{}).get('is_approved') is False
+    record('failed-rootfs-rejection-response.json',dict(confirmed=confirmed,responseUncertain=uncertain,batch=after))
+    if not confirmed:raise CloudFailure('VISION_ROOTFS_REJECTION_UNCONFIRMED_NO_REPLAY')
+    return dict(confirmed=True,replayed=False,resumed=False,batch=after)
 
 
 def retire_verification(cloud, request):
@@ -182,6 +232,16 @@ def execute(request):
     from aosedge_demo_orchestrator.vision_bootstrap import PROFILE
     cloud = Cloud(dict(credential=request['oemCredential'], cloudDomain=request['cloudDomain'],
                        ownerId=request['oemOwner']))
+    if request.get('rejectFailedRootfs'):
+        from aosedge_demo_orchestrator.vision_bootstrap import NODE_TYPE
+        expected=request['vehicles']['test'];unit=cloud.unit(expected['unitId'],nodes=True)
+        if not (unit is not None and unit['system_uid']==expected['systemUid'] and unit['status']=='provisioned'
+            and unit['unit_sets']==[expected['unitSetId']] and len(unit['nodes'])==1
+            and unit['nodes'][0]['id']==expected['nodeId'] and unit['nodes'][0]['node_type']==NODE_TYPE
+            and unit['nodes'][0]['node_id']==expected['nodeHardwareId']):
+            from aosedge_demo_orchestrator.unit_cloud import CloudFailure
+            raise CloudFailure('VISION_ROOTFS_REJECTION_RETAINED_IDENTITY_CHANGED')
+        return reject_failed_rootfs(cloud,request)
     scope(cloud, dict(request, version='0.1.0', setupProfile=PROFILE))
     changes = retire_verification(cloud, request) if request.get('retireVerification') else []
     result = inventory(cloud, request)

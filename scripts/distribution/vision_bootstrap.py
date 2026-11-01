@@ -76,7 +76,7 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
         bundle=scratch/output.name;resources=bundle/'Contents/Resources';resources.mkdir(parents=True)
         contents=bundle/'Contents'
         (contents/'Info.plist').write_bytes(plistlib.dumps(dict(CFBundleIdentifier=model.IDENTIFIER,
-            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.4.0' if ingress_candidate else '0.3.0')))
+            CFBundleName='AosEdge Vision Bootstrap',CFBundlePackageType='BNDL',CFBundleVersion='0.5.0' if ingress_candidate else '0.3.0')))
         target=resources/'images/main-qemuarm64.img';target.parent.mkdir()
         # APFS clone when available; the independent file is still signature-sealed.
         result=subprocess.run(['/bin/cp','-c',str(image),str(target)],capture_output=True)
@@ -121,7 +121,7 @@ def assemble(factory, camera_payload, base_manifest, platform_revision, identity
                 model.require(done.returncode==0,'HOST_NATIVE_SIGNATURE_INVALID')
                 path.chmod(0o555)
             descriptor=dict(schemaVersion=1,kind='signed-vision-ingress-host',profile=model.PROFILE,
-                baseProgramManifestSha256=base_manifest,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',
+                baseProgramManifestSha256=base_manifest,rootfsVersion='6.1.1-vision-camera.5',cameraVersion='0.1.1',
                 sources=dict(integration=revision,platform=update_platform_revision,gateway=manifest['source']['gateway']),
                 assets=dict(runtime=model.HOST_RUNTIME,runner=model.HOST_RUNNER))
             (host/'host-runtime.json').write_text(json.dumps(descriptor,indent=2)+'\n');(host/'host-runtime.json').chmod(0o444)

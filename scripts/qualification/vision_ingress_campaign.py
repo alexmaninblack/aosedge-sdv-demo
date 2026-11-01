@@ -23,12 +23,14 @@ def main():
     mode.add_argument('--native-source-proof',action='store_true',help='Reversible exact permanent policy/store layout; no Cloud publication')
     mode.add_argument('--permanent-cloud-preflight',action='store_true',help='Read-only account-level recipient/collision gate before permanent delivery')
     mode.add_argument('--retire-old-verification',action='store_true',help='Authorized flag-only change of the two exact old Vision sets, then recipient gate')
+    mode.add_argument('--recover-unconfirmed-trial',action='store_true',help='Normal native revert of the exact unconfirmed rootfs.4 trial; no disk restore')
+    mode.add_argument('--reject-failed-rootfs',action='store_true',help='Accepted rejection of the exact failed .4 batch; VM remains stopped')
     p.add_argument('--candidate',type=Path)
     p.add_argument('--reconcile-verification-04',action='store_true',help='Read-reconcile the exact first flag intent from attempt 04; never replay it')
     p.add_argument('--resume-read-from',help='Reconcile an existing 0.1.2 publication; never upload it again')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
     live_mode=a.live or a.native_source_proof
-    prefix='ingress-verification-' if a.retire_old_verification else 'ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
+    prefix='ingress-reject-' if a.reject_failed_rootfs else 'ingress-native-revert-' if a.recover_unconfirmed_trial else 'ingress-verification-' if a.retire_old_verification else 'ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
     h.require(a.name.startswith(prefix) and a.name.removeprefix(prefix).isdecimal(),'CAMPAIGN_NAME_INVALID')
     records=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
     h.require(not records.exists(),'ATTEMPT_EXISTS_RECONCILE');records.mkdir(mode=0o700)
@@ -37,8 +39,20 @@ def main():
     if a.credentials:context['projectionProbe']=True
     if a.delivery_inventory:context['deliveryInventory']=True
     if a.network:context['networkSource']=(Path(__file__).resolve().parents[2]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator/vision_source_guest.py').read_text()
-    worker=Path(__file__).with_name('vision_ingress_live_worker.py' if live_mode else 'vision_recovery_worker.py' if a.recovery else 'vision_ingress_preflight_worker.py')
+    worker=Path(__file__).with_name('vision_failed_rootfs_worker.py' if a.reject_failed_rootfs else 'vision_trial_recovery_worker.py' if a.recover_unconfirmed_trial else 'vision_ingress_live_worker.py' if live_mode else 'vision_recovery_worker.py' if a.recovery else 'vision_ingress_preflight_worker.py')
     files=[worker]
+    if a.reject_failed_rootfs:
+        from vision_permanent_cloud import FAILED_BATCH,VERSIONS,ROOTFS
+        files.append(Path(__file__).with_name('vision_permanent_cloud.py'))
+        context.update(recoveredAttempt=str(Path(c['remoteRoot'])/'ingress-native-revert-02'),
+            rejectFailedRootfs=dict(authorized=True,batchId=FAILED_BATCH,failedVersion='6.1.1-vision-camera.4',successorVersion=VERSIONS[ROOTFS]),
+            files={p.name:h.digest(p) for p in files})
+    if a.recover_unconfirmed_trial:
+        prior=json.loads((Path(c['records'])/'permanent-rootfs-01/result.json').read_bytes())
+        h.require(prior['code']=='NATIVE_ROOTFS_COMMIT_NOT_CONFIRMED' and prior['cloudMutation']
+                  and not prior['rootfsInstalled'],'EXACT_UNCONFIRMED_TRIAL_REQUIRED')
+        files.extend(Path(__file__).with_name(n) for n in ('vision_permanent_rootfs_worker.py','vision_delivery_guest.py'))
+        context.update(failedAttempt=str(Path(c['remoteRoot'])/'permanent-rootfs-01'),files={p.name:h.digest(p) for p in files})
     if a.permanent_cloud_preflight or a.retire_old_verification:
         prior=json.loads((Path(c['records'])/'ingress-recovery-01/result.json').read_bytes())
         h.require(prior['outcome']=='PASS_SAME_VM_CHECKPOINT_RECOVERY' and all(prior['cleanup'].values()),'RECOVERY_GATE_REQUIRED')
@@ -96,7 +110,10 @@ def main():
     if live_mode:h.run(['/usr/bin/scp',*options,'-r',str(a.candidate),t['user']+'@'+t['host']+':'+str(remote/'candidate')],timeout=90)
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
     command=q(python)+' -I -B '+q(str(remote/worker.name))+(' --context ' if live_mode else ' ')+q(str(remote/'context.json'))
-    process=subprocess.Popen(h.ssh_args(t)+[command],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    process=subprocess.Popen(h.ssh_args(t)+[command],stdin=subprocess.PIPE if a.recover_unconfirmed_trial else None,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    if a.recover_unconfirmed_trial:
+        # User-authorized non-secret Factory console default, never a Mac keychain password.
+        process.stdin.write(json.dumps(dict(password='Password1')));process.stdin.close()
     with (records/'progress.jsonl').open('x') as log:
         for line in process.stdout:
             h.require(log.tell()<2**20,'PROGRESS_LIMIT');log.write(line);log.flush()

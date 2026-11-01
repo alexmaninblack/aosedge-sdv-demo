@@ -26,10 +26,13 @@ BUILD=Path('/Volumes/SDV-Dev/sdv/build/vision-ingress')
 def main():
     p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True)
     p.add_argument('--name',required=True);p.add_argument('--cloud-proof',required=True)
-    p.add_argument('--reuse-completed-rootfs-02',action='store_true');a=p.parse_args()
+    reuse=p.add_mutually_exclusive_group()
+    reuse.add_argument('--reuse-completed-rootfs-02',action='store_true')
+    reuse.add_argument('--reuse-completed-rootfs-05',action='store_true');a=p.parse_args()
     c=configuration(a.config);q=shlex.quote
     h.require(a.name.startswith('rootfs-fota-') and a.name.removeprefix('rootfs-fota-').isdecimal(),'FOTA_NAME_INVALID')
-    h.require(a.cloud_proof.startswith('ingress-verification-') and a.cloud_proof.removeprefix('ingress-verification-').isdecimal(),'CLOUD_PROOF_NAME_INVALID')
+    h.require(any(a.cloud_proof.startswith(prefix) and a.cloud_proof.removeprefix(prefix).isdecimal()
+                  for prefix in ('ingress-verification-','ingress-cloud-')),'CLOUD_PROOF_NAME_INVALID')
     cloud=Path(c['records'])/a.cloud_proof/'result.json';proof=json.loads(cloud.read_bytes())
     h.require(proof['outcome']=='PASS_NATIVE_PREREQUISITES' and proof['facts']['cloud']['ready']
               and all(proof['cleanup'].values()),'ACCOUNT_GATE_REQUIRED')
@@ -75,6 +78,11 @@ print('SOURCE_EXPORT_READY')
         h.require(prior['code']=='ROOTFS_VERSION_MISMATCH' and prior['platformRevision']==revision
                   and prior['mainConfigurationRestored'],'EXACT_ROOTFS_RESUME_REQUIRED')
         command+=['--resume-rootfs-from',str(PROJECT/'rootfs-fota-02/result.json')]
+    if a.reuse_completed_rootfs_05:
+        prior=json.loads((BUILD/'rootfs-fota-05/result.json').read_bytes())
+        h.require(prior['code']=='ROOTFS_BUILD_STAGE_FAILED:rootfs-envelope' and prior['platformRevision']==revision
+                  and prior['mainConfigurationRestored'],'EXACT_ROOTFS_ENVELOPE_RESUME_REQUIRED')
+        command+=['--resume-rootfs-from',str(PROJECT/'rootfs-fota-05/result.json')]
     h.atomic(output/'inputs.json',dict(platformRevision=revision,sourceExportSha256=export_sha,
                                       inputs={k:h.digest(v) for k,v in inputs.items()}))
     started=time.monotonic()

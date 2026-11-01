@@ -24,7 +24,7 @@
     "runtime": "tooling/vision-host/native/carla-ego-runtime",
     "runner": "tooling/vision-host/tools/run_m6_interactive.py",
     "nativeLibraries": ["libssl.3.dylib", "libcrypto.3.dylib"],
-    "rootfsVersion": "6.1.1-vision-camera.4",
+    "rootfsVersion": "6.1.1-vision-camera.5",
     "cameraVersion": "0.1.1",
     "binding": "Optional closed resources sealed by the existing Apple bundle signature, exact base-program manifest and integration/platform/Gateway source pins; absent on old bundles, malformed fails closed",
     "limits": "Only the fixed Gateway Mach-O may be up to 32 MiB; other resource and total limits stay unchanged",

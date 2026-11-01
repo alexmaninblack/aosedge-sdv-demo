@@ -175,7 +175,7 @@ def _host_assets(bootstrap):
         and type(value['schemaVersion']) is int and value['schemaVersion']==1
         and value['kind']=='signed-vision-ingress-host' and value['profile']==PROFILE
         and value['baseProgramManifestSha256']==envelope['baseProgramManifestSha256']
-        and value['rootfsVersion']=='6.1.1-vision-camera.4' and value['cameraVersion']=='0.1.1'
+        and value['rootfsVersion']=='6.1.1-vision-camera.5' and value['cameraVersion']=='0.1.1'
         and value['assets']==dict(runtime=HOST_RUNTIME,runner=HOST_RUNNER),'HOST_DESCRIPTOR_INVALID')
     sources=value['sources']
     require(set(sources)=={'integration','platform','gateway'}

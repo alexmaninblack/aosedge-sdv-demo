@@ -545,8 +545,12 @@ is accepted on 2026-11-01 with recovery required before build/update. Read-only
 Camera with no pending transaction and a read-only single rootfs partition.
 Boot A/B is not proof of rootfs atomic rollback. The recommended route is native
 Vision rootfs FOTA plus normal Camera OEM delivery, with a closed signed host
-resource binding and recovery gates. Implementation starts with the existing
-VM's stopped-checkpoint/restore proof; no native update is inferred from inventory.
+resource binding and recovery gates. Recovery and reversible policy proof passed.
+The first native `.4` rootfs trial failed due to omitted image preprocessing;
+normal native revert restored `.3` with the same VM/data. The producer fix passed
+offline first/repeat checks. The accepted continuation rejects only the exact
+failed verification batch, reconciles pending state, then delivers `.5`; Camera,
+permanent Source and native read/revoke acceptance remain open.
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,

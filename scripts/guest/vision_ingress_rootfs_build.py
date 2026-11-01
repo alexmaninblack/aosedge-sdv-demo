@@ -14,7 +14,7 @@ import shutil
 import subprocess
 import time
 
-VERSION='6.1.1-vision-camera.4'
+VERSION='6.1.1-vision-camera.5'
 
 
 def require(ok, code):
@@ -26,6 +26,14 @@ def sha(path):
     with path.open('rb') as stream:
         for block in iter(lambda:stream.read(4*1024**2),b''):value.update(block)
     return value.hexdigest()
+
+
+def preset_links(root, name):
+    # Python 3.10's literal glob excludes dangling absolute symlinks. They
+    # resolve on the guest, not against the Builder's host filesystem.
+    return [str(path.relative_to(root)) for path in (root/'etc/systemd/system').rglob('*')
+            if path.name==name and path.is_symlink()
+            and path.parent.name.endswith(('.wants','.requires'))]
 
 
 def main():
@@ -84,19 +92,22 @@ def main():
         rootfs=Path(variable('IMAGE_ROOTFS'))
         require(rootfs.is_relative_to(a.project/'yocto/build-main/tmp'),'ROOTFS_SCOPE_INVALID')
         if a.resume_rootfs_from:
-            require(a.resume_rootfs_from==a.project/'rootfs-fota-02/result.json','EXACT_COMPLETED_ROOTFS_RECEIPT_REQUIRED')
+            require(a.resume_rootfs_from in (a.project/'rootfs-fota-02/result.json',a.project/'rootfs-fota-05/result.json'),'EXACT_COMPLETED_ROOTFS_RECEIPT_REQUIRED')
             previous=json.loads(a.resume_rootfs_from.read_bytes())
+            stages=[('configuration',0),('compile',0),('package-qa',0),('rootfs',0)]
+            envelope_resume=a.resume_rootfs_from.parent.name=='rootfs-fota-05'
             require(previous['platformRevision']==a.revision and previous['mainConfigurationRestored']
-                and previous['code']=='ROOTFS_VERSION_MISMATCH'
-                and [(v['stage'],v['exit']) for v in previous['phases']]==[
-                    ('configuration',0),('compile',0),('package-qa',0),('rootfs',0)],'ROOTFS_RESUME_NOT_RECONCILED')
-            result['completedRootfsReused']='rootfs-fota-02'
+                and previous['code']==('ROOTFS_BUILD_STAGE_FAILED:rootfs-envelope' if envelope_resume else 'ROOTFS_VERSION_MISMATCH')
+                and [(v['stage'],v['exit']) for v in previous['phases']]==stages+([('rootfs-envelope',1)] if envelope_resume else []),'ROOTFS_RESUME_NOT_RECONCILED')
+            result['completedRootfsReused']=a.resume_rootfs_from.parent.name
         else:
             run('compile',['-c','compile','refpolicy-aos','aos-camera-access-platform'],3600)
             run('package-qa',['refpolicy-aos','aos-camera-access-platform'],3600)
             modules=list((a.project/'yocto/build-main/tmp/work/qemuarm64-aos-linux/refpolicy-aos').glob('*/packages-split/refpolicy-aos/usr/share/selinux/aos/camera_ingress.pp'))
             require(len(modules)==1 and modules[0].is_file(),'NATIVE_POLICY_MODULE_NOT_PACKAGED')
-            run('rootfs',['-c','rootfs','aos-image-vision'],5400)
+            # do_image performs systemd presets/final labels; no filesystem
+            # image task or manufacturing assembly is requested here.
+            run('rootfs',['-c','image','aos-image-vision'],5400)
         require((rootfs/'etc/aos/version').read_text().strip()=='VERSION="'+VERSION+'"','ROOTFS_VERSION_MISMATCH')
         sm=json.loads((rootfs/'etc/aos/sm.cfg').read_bytes())
         require({r['type'] for r in sm['runtimes'] if r['plugin'] in ('rootfs','boot')}=={
@@ -109,8 +120,10 @@ def main():
                      'etc/selinux/aos/contexts/files/file_contexts'):
             require((rootfs/name).is_file(),'NATIVE_INGRESS_FILE_MISSING')
         require('camera_ingress_exec_t' in (rootfs/'etc/selinux/aos/contexts/files/file_contexts').read_text(),'NATIVE_LABEL_MISSING')
-        for path in (rootfs/'etc/systemd/system').rglob('aos-camera-ingress.service'):
-            require(not path.parent.name.endswith(('.wants','.requires')),'INGRESS_BOOT_ENABLED')
+        def enabled(name):return bool(preset_links(rootfs,name))
+        require(enabled('systemd-networkd.service') or enabled('systemd-networkd.socket'),'NETWORK_PRESET_MISSING')
+        require(enabled('sshd.socket'),'SSH_PRESET_MISSING')
+        require(not preset_links(rootfs,'aos-camera-ingress.service'),'INGRESS_BOOT_ENABLED')
         require(not (rootfs/'etc/machine-id').read_bytes().strip(),'MACHINE_ID_SHIPPED')
         for pattern in ('etc/ssh/ssh_host_*_key','etc/ssl/private/*'):
             require(not any(p.is_file() and not p.is_symlink() and p.stat().st_size for p in rootfs.glob(pattern)),'PRIVATE_KEY_SHIPPED')

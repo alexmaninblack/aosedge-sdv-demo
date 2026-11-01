@@ -16,7 +16,7 @@ import tempfile
 
 ROOTFS='aos-vision-vm-1.0.0-main-qemuarm64-rootfs'
 CAMERA='aos-vision-vm-1.0.0-main-qemuarm64-camera-access'
-VERSIONS={ROOTFS:'6.1.1-vision-camera.4',CAMERA:'0.1.1'}
+VERSIONS={ROOTFS:'6.1.1-vision-camera.5',CAMERA:'0.1.1'}
 LIMIT=8*1024**3
 
 
@@ -24,11 +24,11 @@ def require(ok,code):
     if not ok:raise ValueError('VISION_PERMANENT_'+code)
 
 
-def configuration(kind):
+def configuration(kind, title='DEFAULT'):
     require(kind in VERSIONS,'COMPONENT_INVALID')
     root=kind==ROOTFS
     return dict(schemaVersion=2,publisher=dict(author='maninblack'),items=[dict(
-        identity=dict(type='component',codename=kind,title='Vision Rootfs' if root else 'Camera Access'),
+        identity=dict(type='component',codename=kind,title=('Vision Rootfs' if root else 'Camera Access') if title=='DEFAULT' else title),
         version=VERSIONS[kind],sourceFolder='rootfs' if root else 'camera-access',
         configuration=dict(runtimes=[dict(codename=kind,type='runtime')]),
         images=[dict(path='image.squashfs' if root else 'payload.tar.gz',archInfo=dict(architecture='arm64'),
@@ -57,13 +57,13 @@ def entries(archive,allowed):
     require(names==set(allowed),'ARCHIVE_CONTENTS_INVALID')
 
 
-def verify(path,credential,kind,payload_sha,payload_bytes,expected=None):
+def verify(path,credential,kind,payload_sha,payload_bytes,expected=None,*,title='DEFAULT'):
     """Stream the large FOTA envelope; keep the Main 128-MiB parser unchanged."""
     import jwt
     from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
     require(path.is_file() and not path.is_symlink() and 0<path.stat().st_size<=LIMIT,'BUNDLE_UNSAFE')
     outer_sha=sha(path);require(expected is None or outer_sha==expected,'SIGNED_DIGEST_CHANGED')
-    config=configuration(kind);item=config['items'][0];payload_name=item['sourceFolder']+'/'+item['images'][0]['path']
+    config=configuration(kind,title);item=config['items'][0];payload_name=item['sourceFolder']+'/'+item['images'][0]['path']
     records=[];small={}
     with tempfile.TemporaryDirectory(prefix='.vision-verify-',dir=path.parent) as temporary:
         batch=Path(temporary)/'batch.tar.gz'
@@ -106,14 +106,27 @@ def execute(r):
     require(r.get('permanentDelivery')==dict(authorized=True,recoveryFirst=True,rootfsVersion=VERSIONS[ROOTFS],
         cameraVersion=VERSIONS[CAMERA],readVersion='0.1.4',revokeVersion='0.1.5'),'PACKET_AUTHORITY_REQUIRED')
     cloud=Cloud(dict(credential=r['oemCredential'],cloudDomain=r['cloudDomain'],ownerId=r['oemOwner']))
-    scope(cloud,dict(r,version='0.1.0',setupProfile=PROFILE));action=r['action']
+    action=r['action']
+    if action=='status':
+        # Native rootfs trial/apply reboots legitimately make this exact Unit
+        # offline. Read-only observation keeps the full identity binding;
+        # every write still requires the ordinary Online scope below.
+        from aosedge_demo_orchestrator.vision_bootstrap import NODE_TYPE
+        expected=r['vehicles']['test'];unit=cloud.unit(expected['unitId'],nodes=True)
+        require(unit is not None and unit['system_uid']==expected['systemUid'] and unit['status']=='provisioned'
+            and unit['unit_sets']==[expected['unitSetId']] and len(unit['nodes'])==1
+            and unit['nodes'][0]['id']==expected['nodeId'] and unit['nodes'][0]['node_type']==NODE_TYPE
+            and unit['nodes'][0]['node_id']==expected['nodeHardwareId'],'RETAINED_UNIT_BINDING_CHANGED')
+    else:scope(cloud,dict(r,version='0.1.0',setupProfile=PROFILE))
     if action=='sign':
         from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
         from aos_signer.signer.signer import Signer
         source=Path(r['payload']);output=Path(r['output'])
         require(source.is_file() and not source.is_symlink() and source.stat().st_size==r['payloadBytes']
             and sha(source)==r['payloadSha256'] and not output.exists(),'SIGN_INPUT_CHANGED')
-        config=configuration(kind);item=config['items'][0]
+        current=resolve_component(cloud,component_type=kind)
+        require(current is not None and current.get('title')==r['componentTitle'],'COMPONENT_TITLE_CHANGED')
+        config=configuration(kind,r['componentTitle']);item=config['items'][0]
         with tempfile.TemporaryDirectory(prefix='.vision-sign-',dir=output.parent) as temporary:
             stage=Path(temporary);target=stage/item['sourceFolder']/item['images'][0]['path'];target.parent.mkdir()
             shutil.copyfile(source,target);p=stage/'config.yaml';p.write_text(json.dumps(config));old=Path.cwd()
@@ -121,7 +134,7 @@ def execute(r):
                 os.chdir(stage)
                 with credential_snapshot(dict(credential=r['oemCredential'])) as private:
                     Signer(UpdateBundleConfiguration(p),p,pkcs12_path=private['credential']).process()
-                    value=verify(stage/'batch.tar.gz',Path(private['credential']),kind,r['payloadSha256'],r['payloadBytes'])
+                    value=verify(stage/'batch.tar.gz',Path(private['credential']),kind,r['payloadSha256'],r['payloadBytes'],title=r['componentTitle'])
             finally:os.chdir(old)
             shutil.copyfile(stage/'batch.tar.gz',output);output.chmod(0o444)
         return value
@@ -134,13 +147,14 @@ def execute(r):
     if not bundle_id:bundles=[v for v in bundles if any(i.get('codename')==kind and i.get('version')==r['version'] for i in v.get('items') or [])]
     observed=publication(r['version'],bundle_id,[bundle_view(v) for v in bundles],selected,component_type=kind)
     unit=unit_view(reads,r['vehicles']['test'],strict=True,component_type=kind)
-    result=dict(publication=observed,unit=unit,componentId=component['id'],versions=selected)
+    result=dict(publication=observed,unit=unit,componentId=component['id'],componentTitle=component.get('title'),versions=selected)
     if action=='status':return result
+    require(component.get('title')==r['componentTitle'],'COMPONENT_TITLE_CHANGED')
     coverage=recipients(reads,r);require(coverage['complete'],'RECIPIENT_SCOPE_UNPROVEN')
     if action=='upload':
         require(observed['stage']=='NOT_PUBLISHED' and not selected and not bundles,'PUBLICATION_EXISTS_RECONCILE')
         require(unit['components'] is not None and not any(v.get('pending_component') for v in unit['components']),'PENDING_COMPONENT_RECONCILE')
-        path=Path(r['bundle']);verify(path,Path(r['oemCredential']),kind,r['payloadSha256'],r['payloadBytes'],r['expectedSha256'])
+        path=Path(r['bundle']);verify(path,Path(r['oemCredential']),kind,r['payloadSha256'],r['payloadBytes'],r['expectedSha256'],title=r['componentTitle'])
         return upload_bundle(cloud,path,prefix='VISION_PERMANENT')
     require(action=='send' and observed['stage']=='READY','PUBLICATION_NOT_READY')
     version_id=observed['versionId'];unit_id=r['vehicles']['test']['unitId']

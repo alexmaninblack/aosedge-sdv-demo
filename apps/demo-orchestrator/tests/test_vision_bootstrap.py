@@ -122,7 +122,7 @@ class BootstrapTests(unittest.TestCase):
 
     def host_extension(self):
         descriptor=dict(schemaVersion=1,kind='signed-vision-ingress-host',profile=v.PROFILE,
-            baseProgramManifestSha256=BASE,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',
+            baseProgramManifestSha256=BASE,rootfsVersion='6.1.1-vision-camera.5',cameraVersion='0.1.1',
             sources=dict(integration='a'*40,platform='c'*40,gateway='d'*40),
             assets=dict(runtime=v.HOST_RUNTIME,runner=v.HOST_RUNNER))
         files={v.HOST_DESCRIPTOR:json.dumps(descriptor).encode(),v.HOST_RUNTIME:b'unit-native-fixture',

@@ -3,8 +3,8 @@
 
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
-- Status: Accepted on 2026-11-01; recovery gate must pass before build/publication/update
-- Version: 0.5
+- Status: Accepted on 2026-11-01; native .4 trial reverted, .5 successor authorized
+- Version: 0.6
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -80,7 +80,7 @@ the observed updated rootfs version is a separate lifecycle fact.
 Subject to all preceding gates, authorize one closed delivery campaign:
 
 - Current `SDV-Vision-Camera-Image-Lab-Data` only; no fresh VM or provisioning.
-- Vision rootfs candidate `6.1.1-vision-camera.4`, targeting only the existing
+- Vision rootfs successor `6.1.1-vision-camera.5`, targeting only the existing
   Vision `rootfs` runtime. No boot component update or host-Mac OS update. If
   compatibility requires a boot update, report a separate bounded delta first.
 - Camera Access `0.1.1` through the existing Vision Camera OEM component target.
@@ -109,7 +109,8 @@ authorize new motion authority, model deployment or performance claims.
 
 Evidence below is retained in the private `vision-vm-m4` qualification records,
 not embedded in the public source tree. The two flag-only Cloud changes below
-are complete; no component publication or permanent guest update has begun.
+are complete. The `.4` rootfs publication and native trial failed and were
+recovered as recorded below; permanent ingress acceptance is not complete.
 
 | Gate | Observed result |
 | --- | --- |
@@ -188,6 +189,61 @@ and its platform provenance stay frozen, while the update platform/Gateway
 revisions are bound separately. Only the fixed Gateway Mach-O has a 32-MiB
 resource ceiling; other and total resource limits are unchanged.
 
-Native rootfs/Camera delivery and the new native read/revoke acceptance remain
-**NOT_RUN** until their actual receipts close. Preserve checkpoints, source,
-dependencies and caches, and stop owned runtimes at campaign completion/failure.
+### Rootfs trial, recovery and accepted successor
+
+`rootfs-fota-07` produced the immutable `.4` artifact; `permanent-rootfs-01`
+signed and uploaded it once to the isolated verification recipient. The native
+trial did **not** commit. Its producer had depended on `do_rootfs`, omitting
+`IMAGE_PREPROCESS_COMMAND` (systemd presets and final SELinux labels). Networking
+did not start, so Core initialization could not confirm the trial. This is a
+producer defect, not a reason to weaken health confirmation or retry the upload.
+
+`ingress-native-revert-02` passed in 53.01 s. With CM/SM held stopped through
+their normal service owners, transient network/SSH starts proved the diagnosis
+without enabling units or writing rootfs. One normal guest reboot let the pinned
+initramfs revert the unconfirmed trial to `.3`; no checkpoint disk was restored.
+Machine/Unit/node identity, Camera store, component bytes, provisioning and SSH
+continuity were retained. Native transaction flags cleared, Enforcing remained
+enabled, Camera was healthy, and Vision/Source stopped. Four retained journals
+are unchanged. The earlier `ingress-native-revert-01` interpreter import failure
+occurred before a recovery mutation and is not acceptance evidence.
+
+Platform `1f317ac7a70ae029f409a1e9a8d5c103f0224e05` now exports the fully
+preprocessed Vision tree through a dedicated FOTA-only build task. It does not
+depend on the shared link from an old manufacturing run or invoke filesystem,
+boot, WIC or RW-partition assembly. `vision-image-preprocess-03` passed first and
+idempotent-repeat gates in 42.07 s, with network/SSH presets and offline guards,
+and restored Main build configuration. A Python 3.10 literal-glob diagnostic bug
+was fixed separately: absolute guest symlinks must be enumerated without
+resolving them against the Builder host. No corrected `.4` artifact was published.
+
+The stopped VM is on `.3`; the final read-only Cloud observation still reports
+`.4` pending and its batch `96a16904-0cfa-484c-ac70-0601ff90048d` in
+`Waiting_validation`. The batch matches the exact OEM/component identity,
+codename, version and ARM64 architecture; this API response does not expose an
+`update_bundle_id`, so an upload-to-batch ID equality was not proven or assumed.
+No rejection, approval, pending-state edit or replay is inferred from native
+rollback.
+
+**Additional operator authority accepted on 2026-11-01:** reject only that
+exact failed `.4` batch through the documented verification approval endpoint,
+authoritatively reconcile Cloud state, then sign/publish/deliver immutable
+`6.1.1-vision-camera.5` to the same retained Vision VM and continue this packet.
+Preserve `.4` and its evidence; never overwrite its bytes or reuse its version.
+Re-read the exact batch/Unit and record intent before rejection. If rejection
+does not close the pending state, stop and reconcile rather than manually
+editing guest or Cloud state. Update the closed signed host descriptor to the
+successor version without rewriting the earlier frozen bootstrap manifest.
+
+`ingress-reject-01` subsequently passed in 7.02 s: one exact rejection changed
+that batch to `Invalid` with ARM64 `is_approved=false`. Vision/Source stayed
+stopped, their journal and all retained journals were unchanged. No Unit,
+Subject, member, payload or version was deleted. The fresh account/guest gate
+must still pass before the `.5` build and upload; rejection alone is not proof
+that native and Cloud pending state have converged.
+
+Camera `0.1.1`, probe `0.1.4`/`0.1.5`, permanent Source ingress and the final
+security/restart acceptance remain **NOT_RUN**. The existing signed bootstrap
+`0.4.0` is a prepared, uninstalled candidate, not a qualified deployment.
+Preserve checkpoints, source, dependencies and caches. Builder and M4 Vision
+were stopped after diagnosis; resume only through the named campaign.
