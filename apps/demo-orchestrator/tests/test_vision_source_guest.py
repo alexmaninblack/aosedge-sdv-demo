@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import subprocess
+import stat
 import sys
 from types import SimpleNamespace
 import unittest
@@ -62,6 +63,23 @@ class VisionProjectionTests(unittest.TestCase):
         self.assertEqual(1,completed.returncode)
         self.assertEqual(dict(ok=False,reason='VISION_SOURCE_PROFILE_REQUIRED'),json.loads(completed.stdout))
         self.assertNotIn('DO_NOT_PRINT',completed.stdout+completed.stderr)
+
+    def test_native_runtime_directory_uses_observed_aos_volume_not_vdp_submount(self):
+        info=SimpleNamespace(st_mode=stat.S_IFDIR|0o755,st_uid=0,st_dev=4)
+        with patch.object(Path,'is_symlink',return_value=False),patch.object(Path,'stat',return_value=info), \
+             patch.object(Path,'read_text',return_value='/dev/mapper/aosvg-workdirs /var/aos/workdirs ext4 rw 0 0\n'), \
+             patch.object(v.os.path,'ismount',side_effect=lambda p:str(p)=='/var/aos/workdirs'):
+            v.native_store()
+            info.st_uid=1000
+            with self.assertRaisesRegex(ValueError,'STORE_UNSAFE'):v.native_store()
+            info.st_uid=0;info.st_mode=stat.S_IFDIR|0o777
+            with self.assertRaisesRegex(ValueError,'STORE_UNSAFE'):v.native_store()
+
+    def test_missing_native_volume_never_creates_or_mounts_a_replacement(self):
+        with patch.object(Path,'is_symlink',return_value=False),patch.object(Path,'read_text',return_value=''), \
+             patch.object(Path,'mkdir') as mkdir:
+            with self.assertRaisesRegex(ValueError,'NATIVE_VOLUME_NOT_MOUNTED'):v.native_store()
+            mkdir.assert_not_called()
 
 
 if __name__=='__main__':unittest.main()

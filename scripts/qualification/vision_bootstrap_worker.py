@@ -122,8 +122,7 @@ def main():
             cmd=ssh_command(access_path(native,'test'),item['sshPort'],5)
             script='''set -eu
 test "$(getenforce)" = Enforcing
-getent passwd aos-camera-access >/dev/null
-getent group aos-camera-read >/dev/null
+python3 -c "import pwd,grp;assert pwd.getpwnam('aos-camera-access').pw_uid>0;assert grp.getgrnam('aos-camera-read').gr_gid>0"
 systemctl is-active --quiet aos-sm
 test ! -e /usr/libexec/aos-vehicle-data-provider-launcher
 test ! -e /var/aos/workdirs/sm/runtimes/systemd-slot-component/active

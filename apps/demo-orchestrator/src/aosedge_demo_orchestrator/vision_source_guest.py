@@ -50,6 +50,22 @@ def read(path, mode):
     return path.read_text()
 
 
+def native_store():
+    """The native runtime's directory is inside Aos' mounted workdir volume.
+
+    It is not a separate mount point. Do not inherit the VDP bootstrap's old
+    per-component-mount assumption, create a fallback, or mount anything here.
+    """
+    parent=Path('/var/aos/workdirs')
+    require(not any(p.is_symlink() for p in (RUNTIME,*RUNTIME.parents)), 'STORE_LINKED')
+    mounts=[line.split()[:3] for line in Path('/proc/mounts').read_text().splitlines()]
+    require(['/dev/mapper/aosvg-workdirs',str(parent),'ext4'] in mounts
+            and os.path.ismount(parent), 'NATIVE_VOLUME_NOT_MOUNTED')
+    info=RUNTIME.stat()
+    require(stat.S_ISDIR(info.st_mode) and info.st_uid==0 and not info.st_mode&0o022
+            and info.st_dev==parent.stat().st_dev, 'NATIVE_STORE_UNSAFE')
+
+
 def status(trust):
     values = dict(line.split('=', 1) for line in trust.call([
         'systemctl', 'show', 'aos-sm.service', '--property=ActiveState,Result,NRestarts']).splitlines() if '=' in line)
@@ -76,7 +92,7 @@ def execute(request, trust, source=None):
     if action == 'trust-status':
         return status(trust)
     require(action in ('trust-configure', 'trust-restore'), 'ACTION_UNSUPPORTED')
-    require(os.path.ismount(RUNTIME), 'NATIVE_STORE_NOT_MOUNTED')
+    native_store()
     files = {'ca': INPUTS/'viss-update-ca'}
     for name, role in (('vdp', 'selected-platform-unit'), ('runtime', 'platform-update-runtime')):
         files[name+'Certificate'] = STORE/role/'client.pem'
