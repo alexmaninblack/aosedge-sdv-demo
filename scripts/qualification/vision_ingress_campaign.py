@@ -18,10 +18,15 @@ def main():
     mode=p.add_mutually_exclusive_group(required=True)
     mode.add_argument('--preflight',action='store_true');mode.add_argument('--live',action='store_true');mode.add_argument('--credentials',action='store_true');mode.add_argument('--network',action='store_true')
     mode.add_argument('--delivery-inventory',action='store_true',help='Read native rootfs/boot delivery declarations, never update them')
+    mode.add_argument('--recovery',action='store_true',help='Rehearse stopped-checkpoint restore on the same Vision VM before updates')
+    mode.add_argument('--boot-inventory',action='store_true',help='Inspect installed boot/initramfs read-only before rootfs FOTA')
+    mode.add_argument('--native-source-proof',action='store_true',help='Reversible exact permanent policy/store layout; no Cloud publication')
+    mode.add_argument('--permanent-cloud-preflight',action='store_true',help='Read-only account-level recipient/collision gate before permanent delivery')
     p.add_argument('--candidate',type=Path)
     p.add_argument('--resume-read-from',help='Reconcile an existing 0.1.2 publication; never upload it again')
     a=p.parse_args();c=configuration(a.config);t=c['transport'];q=shlex.quote
-    prefix='ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-preflight-'
+    live_mode=a.live or a.native_source_proof
+    prefix='ingress-cloud-' if a.permanent_cloud_preflight else 'ingress-native-source-' if a.native_source_proof else 'ingress-live-' if a.live else 'ingress-projection-' if a.credentials else 'ingress-network-' if a.network else 'ingress-delivery-' if a.delivery_inventory else 'ingress-recovery-' if a.recovery else 'ingress-boot-' if a.boot_inventory else 'ingress-preflight-'
     h.require(a.name.startswith(prefix) and a.name.removeprefix(prefix).isdecimal(),'CAMPAIGN_NAME_INVALID')
     records=Path(c['records'])/a.name;remote=Path(c['remoteRoot'])/a.name
     h.require(not records.exists(),'ATTEMPT_EXISTS_RECONCILE');records.mkdir(mode=0o700)
@@ -30,9 +35,26 @@ def main():
     if a.credentials:context['projectionProbe']=True
     if a.delivery_inventory:context['deliveryInventory']=True
     if a.network:context['networkSource']=(Path(__file__).resolve().parents[2]/'apps/demo-orchestrator/src/aosedge_demo_orchestrator/vision_source_guest.py').read_text()
-    worker=Path(__file__).with_name('vision_ingress_live_worker.py' if a.live else 'vision_ingress_preflight_worker.py')
+    worker=Path(__file__).with_name('vision_ingress_live_worker.py' if live_mode else 'vision_recovery_worker.py' if a.recovery else 'vision_ingress_preflight_worker.py')
     files=[worker]
-    if a.live:
+    if a.permanent_cloud_preflight:
+        prior=json.loads((Path(c['records'])/'ingress-recovery-01/result.json').read_bytes())
+        h.require(prior['outcome']=='PASS_SAME_VM_CHECKPOINT_RECOVERY' and all(prior['cleanup'].values()),'RECOVERY_GATE_REQUIRED')
+        files.append(Path(__file__).with_name('vision_permanent_cloud.py'))
+        context.update(permanentCloudPreflight=True,files={f.name:h.digest(f) for f in files})
+    if a.boot_inventory:
+        files.append(Path(__file__).with_name('vision_delivery_guest.py'))
+        context.update(bootInventory=True,files={f.name:h.digest(f) for f in files})
+    if a.recovery:
+        files.append(Path(__file__).with_name('vision_delivery_guest.py'))
+        context.update(files={f.name:h.digest(f) for f in files},permanentDelivery=dict(authorized=True,recoveryFirst=True,
+            rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5'))
+    if a.native_source_proof:
+        prior=json.loads((Path(c['records'])/'ingress-recovery-01/result.json').read_bytes())
+        h.require(prior['outcome']=='PASS_SAME_VM_CHECKPOINT_RECOVERY' and all(prior['cleanup'].values()),'RECOVERY_GATE_REQUIRED')
+        context.update(nativeSourceProof=True,permanentDelivery=dict(authorized=True,recoveryFirst=True,
+            rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5'))
+    if live_mode:
         h.require(a.candidate is not None and a.candidate.is_dir() and not a.candidate.is_symlink(),'LIVE_CANDIDATE_REQUIRED')
         import shutil
         for path in (Path(__file__).with_name('vision_camera_fixture_cloud.py'),Path(__file__).with_name('vision_ingress_observation.py'),
@@ -62,9 +84,9 @@ def main():
     h.remote(t,'umask 077\nmkdir '+q(str(remote)),timeout=15)
     options=h.ssh_args(t)[1:-1];options.remove('-T');i=options.index('-b');options[i:i+2]=['-o','BindAddress='+options[i+1]]
     h.run(['/usr/bin/scp',*options,*map(str,files),t['user']+'@'+t['host']+':'+str(remote)+'/'],timeout=30)
-    if a.live:h.run(['/usr/bin/scp',*options,'-r',str(a.candidate),t['user']+'@'+t['host']+':'+str(remote/'candidate')],timeout=90)
+    if live_mode:h.run(['/usr/bin/scp',*options,'-r',str(a.candidate),t['user']+'@'+t['host']+':'+str(remote/'candidate')],timeout=90)
     python=c['main']['packageRoot']+'/demo-artifacts/aosedge-sdv-demo/host-runtime/python/bin/python3.12'
-    command=q(python)+' -I -B '+q(str(remote/worker.name))+(' --context ' if a.live else ' ')+q(str(remote/'context.json'))
+    command=q(python)+' -I -B '+q(str(remote/worker.name))+(' --context ' if live_mode else ' ')+q(str(remote/'context.json'))
     process=subprocess.Popen(h.ssh_args(t)+[command],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     with (records/'progress.jsonl').open('x') as log:
         for line in process.stdout:

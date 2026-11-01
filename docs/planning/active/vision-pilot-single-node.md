@@ -539,13 +539,14 @@ permanent image delivery, Perception/Assessment, model performance or full
 Vision E2E. Preserve the current VM/Unit and qualify an explicitly accepted
 permanent delivery route next; do not infer a Main merge or public release.
 
-The next [permanent delivery change request](vision-ingress-permanent-delivery.md)
-is proposed, not yet an accepted OS-update packet. Read-only
+The [permanent delivery packet](vision-ingress-permanent-delivery.md)
+is accepted on 2026-11-01 with recovery required before build/update. Read-only
 `ingress-delivery-02` confirms the current native rootfs/boot runtimes, installed
 Camera with no pending transaction and a read-only single rootfs partition.
 Boot A/B is not proof of rootfs atomic rollback. The recommended route is native
 Vision rootfs FOTA plus normal Camera OEM delivery, with a closed signed host
-resource binding and recovery gates. No update/build/publication has started.
+resource binding and recovery gates. Implementation starts with the existing
+VM's stopped-checkpoint/restore proof; no native update is inferred from inventory.
 
 The current moving packet uses `vision_live_campaign.py --moving` and preview
 v2. Associate actual world snapshots by frame ID, retain raw sensor timestamps,

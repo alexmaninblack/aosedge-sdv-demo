@@ -3,8 +3,8 @@
 
 # Permanent Vision Ingress Delivery — Bounded Change Request
 
-- Status: Proposed; native update/publication not authorized by the completed transient packet
-- Version: 0.1
+- Status: Accepted on 2026-11-01; recovery gate must pass before build/publication/update
+- Version: 0.3
 - Prepared: 2026-11-01
 - Owner: SDV Lab integration and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#current-packet-authenticated-gateway-camera-ingress)
@@ -21,9 +21,12 @@ The current Camera component archive cannot install those rootfs-owned files.
 Do not retain the temporary policy loader, boot a diagnostic drop-in forever,
 remount rootfs manually, rebase its overlay or manufacture a replacement VM.
 
-The completed diagnostic authority covered only service versions `0.1.2` and
-`0.1.3`. The latter is installed with the read resource revoked. It does not
-authorize an OS update, another OEM Camera release or another read lease.
+The completed transient diagnostic authority covered only service versions
+`0.1.2` and `0.1.3`; the latter has its read resource revoked. The operator
+subsequently accepted this entire permanent-delivery packet, explicitly requiring
+recovery first, preservation of the Vision VM/data and VDP/Brake/Tire, SSD builds,
+no CARLA rebuild and no routine intermediate confirmations. Additional authority
+is limited to the exact targets and gates below, not inferred from the old proof.
 
 ## Read-only inventory completed
 
@@ -49,12 +52,12 @@ The pinned [SM rootfs implementation](https://github.com/aosedge/aos_core_cpp/bl
 stages a rootfs layer, records pending state, requests a reboot, and runs a
 health/confirmation cycle. This supports investigating the existing native
 owner, not bypassing it. The upstream
-[initramfs update helper](https://github.com/aosedge/meta-aos/blob/main/recipes-core/initrdscripts/initramfs-framework/aosupdate)
-illustrates trial mounting and a later in-place apply. That moving upstream
-reference is **not** proof of the installed helper's revision or power-loss
-recovery. Extract and inspect the actual pinned helper before implementation.
+[initramfs update helper](https://github.com/aosedge/meta-aos/blob/176da6346b1199f854106dede4cc49604174619c/recipes-core/initrdscripts/initramfs-framework/aosupdate)
+uses trial mounting and a later in-place apply. Its installed revision was
+subsequently checked as described below; it does not provide atomic rootfs
+recovery from power loss.
 
-## Recommended route for acceptance
+## Accepted route
 
 Use a separate Vision-only **native rootfs FOTA**, then the normal Camera OEM
 component update. Keep the same logical VM, overlay/backing image, hardware ID,
@@ -72,7 +75,7 @@ the observed updated rootfs version is a separate lifecycle fact.
 | Camera and reader delivery | Update Camera through its existing OEM A/B transaction owner, preserving rollback/data and real Safe Stop. Publish read/revoke diagnostic versions serially only to the existing Vision Subject; never change its members. |
 | Acceptance and shutdown | One named scenario owns first start, repeat, actual native pair hashes, wrong-role/generation/network/credential denial, disconnect/stale clearing, component restart, retained cold boot, revocation, scoped AVCs, recovery and verified cleanup. Preserve evidence and stop only owned processes. |
 
-## Exact additional authority proposed
+## Exact additional authority
 
 Subject to all preceding gates, authorize one closed delivery campaign:
 
@@ -101,3 +104,62 @@ VM, manual disk surgery or a permanent diagnostic loader.
 Perception/Assessment and their final result/display contracts remain the next
 service packet, after permanent ingress acceptance. This request does not
 authorize new motion authority, model deployment or performance claims.
+
+## Execution checkpoint — 2026-11-01
+
+Evidence below is retained in the private `vision-vm-m4` qualification records,
+not embedded in the public source tree. No permanent update, signing or Cloud
+mutation has begun.
+
+| Gate | Observed result |
+| --- | --- |
+| `ingress-recovery-01` | PASS, 131.15 s. Stopped APFS-cloned overlay was compared byte-for-byte and checked. After an owned marker was written through the normal running guest, the checkpoint was restored by an atomic same-directory swap and the same VM booted again. Marker absent; machine/provisioning identity, rootfs, Camera store UUID and SSH continuity retained. Both recovery and pre-restore disks are preserved privately on M4. |
+| `ingress-boot-01` / `native-primitives-01` | Installed initramfs matches the cached archive and exact `meta-aos` revision `176da6346b1199f854106dede4cc49604174619c`; all four installed helper hashes match that source. No boot update is required by the inspected route. The permanent SELinux module and launcher compiled on SSD. No rootfs/image assembly was run. |
+| `ingress-native-source-01` | PASS, 134.06 s. Exact permanent policy reads the sealed Camera-store payload, with nonroot transport, credential isolation, destination-drop and listener-denial proofs, disconnect/restart and fresh epochs. Stock policy and native store restored. No diagnostic publication; resource remains revoked at `0.1.3`. |
+| `ingress-cloud-01` | BLOCKED, 48.42 s. Current Unit/node scope is valid and online, candidate versions/bundles do not exist, no pending rootfs/Camera transaction or send request exists. The account-level recipient guard found two additional verification Units. Vision was normally stopped and all four retained journals are unchanged. |
+
+Rootfs trial/apply is owned by the native runtime and installed initramfs, not
+the host scenario. The pinned helper mounts persistent `/var` outside the trial
+root until its final mount move; root SSH home is on a separate `/home` mount.
+The checkpoint remains mandatory because final rootfs apply is in-place, not
+dual-rootfs atomic replacement. After any future publication, reconcile Cloud
+desired state before booting a restored checkpoint; an unknown result is not
+permission to replay the update or automatically boot an old disk.
+
+### Account-level blocker and proposed bounded delta
+
+The only selected recipient is Unit
+`4374bcb2-0613-419c-8ac9-e8458358c91c` in
+`SDV Vision Camera Image Verification`. Other verification memberships are:
+
+| Verification set | Set ID | Other retained Unit |
+| --- | --- | --- |
+| SDV Vision Camera Verification | `55e87ad2-9c8c-4e0f-ad3c-02bbd362acd9` | `5abf6a2b-ae53-4995-a58a-91d9253057f7` |
+| SDV Vision Verification | `581d4776-9679-4c48-8021-194539f2a5d3` | `2ac4b71a-2d06-4dd5-904f-7d2c24109f39` |
+
+The existing `component_publication.recipients` guard correctly rejects these
+additional recipients. Do not weaken it, infer isolation from offline guests,
+or upload first and attempt to change recipients afterward.
+
+The [Cloud deployment lifecycle](https://docs.aosedge.tech/docs/aos-cloud/entities/deployable_item)
+documents automatic delivery to verification sets when the batch enters
+verification. The [public v11 OpenAPI](https://api.aoscloud.io/api/v11/openapi.json),
+version `6.1.97` checked on 2026-11-01, declares only the multipart `file` field
+for bundle upload, with no upload-level recipient selector or skip-verification
+parameter. A later explicit send request therefore does not establish that the
+initial upload was isolated. No undocumented control was attempted.
+
+**Proposed, not authorized or executed:** change only `is_validation_set` to
+`false` on those two older Vision sets, keeping the sets, all Unit memberships,
+Subjects, VMs, credentials and data. Keep the current selected verification set
+unchanged. Re-read definitions/members before each exact mutation, record intent,
+apply once, reconcile and rerun the account gate before build/publication.
+This extends the current packet's explicit prohibition on editing shared sets
+and requires a bounded authorization. Do not automatically restore verification
+eligibility after publication: that can reintroduce delivery to the old Units.
+Main/VDP/Brake/Tire and `Test Vehicles` remain excluded.
+
+Until this boundary is resolved, native rootfs/Camera delivery, the signed host
+tooling successor and the new native read/revoke acceptance are **NOT_RUN**.
+Preserve checkpoints, source, dependencies and caches; stop the owned Builder
+and M4 runtimes rather than leaving them running while waiting for direction.

@@ -89,7 +89,11 @@ def start():
     try:
         run(['semodule','-p',str(ROOT/'policy-proof'),'-S','/var/lib/selinux','-s','aos','-i',str(module)],timeout=100)
         run([str(ROOT/'exec/vision-policy-load'),'load'])
-        for name,label in (('aos-camera-ingress-launcher','camera_ingress_exec_t'),('camera-access','camera_ingress_code_t')):
+        profile=ROOT/'policy-profile.json';code_label='camera_ingress_code_t'
+        if profile.exists():
+            assert json.loads(profile.read_bytes())==dict(profile='native-store'),'INGRESS_POLICY_PROFILE_INVALID'
+            code_label='camera_access_store_t'
+        for name,label in (('aos-camera-ingress-launcher','camera_ingress_exec_t'),('camera-access',code_label)):
             run(['chcon','-t',label,str(ROOT/'exec'/name)])
         ROOT.chmod(0o755)
         # Only this service's read-only namespace sees the candidate zip.

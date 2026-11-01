@@ -59,12 +59,14 @@ def run(args):return subprocess.run(args,check=True,capture_output=True,timeout=
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--name',required=True)
+    p.add_argument('--native-policy',action='store_true')
     p.add_argument('--primitives',type=Path,default=BUILD/'primitives-01');a=p.parse_args()
     assert a.name.startswith('candidate-') and a.name.removeprefix('candidate-').isdecimal()
     output=BUILD/a.name;assert not output.exists(),'CANDIDATE_EXISTS_RECONCILE'
     primitives=json.loads((a.primitives/'result.json').read_bytes())
     assert primitives['outcome']=='PASS_TARGETED_INGRESS_PRIMITIVES'
-    assert primitives['inputs']['camera_ingress_probe.te']==digest(PLATFORM/'tests/camera_ingress_probe.te'),'POLICY_COMPILE_SOURCE_CHANGED'
+    policy=PLATFORM/'meta-aos-vehicle-platform/recipes-security/refpolicy/files/camera_ingress.te' if a.native_policy else PLATFORM/'tests/camera_ingress_probe.te'
+    assert primitives['inputs'][policy.name]==digest(policy),'POLICY_COMPILE_SOURCE_CHANGED'
     with directory(Path('/Volumes/SDV-Dev/sdv')) as scratch:
         stage=scratch/'candidate';stage.mkdir(mode=0o700)
         native=stage/'native';(native/'lib').mkdir(parents=True)
@@ -94,9 +96,10 @@ def main():
         for name in ('source.py','source_authentication.py','vision_source_guest.py','vm.py','vision_first_enrollment.py'):
             shutil.copyfile(ROOT/'apps/demo-orchestrator/src/aosedge_demo_orchestrator'/name,source/name)
         guest=stage/'guest';guest.mkdir()
-        for name in ('aos-camera-ingress-launcher','camera_ingress_probe.pp'):
+        for name in ('aos-camera-ingress-launcher','camera_ingress.pp' if a.native_policy else 'camera_ingress_probe.pp'):
             assert digest(a.primitives/name)==primitives['files'][name]['sha256'],'PRIMITIVE_BINARY_CHANGED'
-            shutil.copyfile(a.primitives/name,guest/name)
+            shutil.copyfile(a.primitives/name,guest/('camera_ingress_probe.pp' if name=='camera_ingress.pp' else name))
+        if a.native_policy:(guest/'policy-profile.json').write_text(json.dumps(dict(profile='native-store'))+'\n')
         shutil.copyfile('/Volumes/SDV-Dev/sdv/build/vision-bootstrap/0.1.0/evidence/camera-store-policy-loader-01/vision-policy-load',guest/'vision-policy-load')
         shutil.copyfile(PLATFORM/'meta-aos-vehicle-platform/recipes-aos/aos-camera-access-platform/files/aos-camera-ingress.service',guest/'aos-camera-ingress.service')
         shutil.copyfile(ROOT/'scripts/qualification/vision_camera_ingress_guest.py',guest/'vision_camera_ingress_guest.py')
@@ -113,7 +116,7 @@ def main():
         (guest/'camera-access').write_bytes(data.getvalue())
         files={str(path.relative_to(stage)):dict(sha256=digest(path),bytes=path.stat().st_size)
             for path in sorted(stage.rglob('*')) if path.is_file()}
-        manifest=dict(kind='REVERSIBLE_VISION_INGRESS_PROOF',releaseImage=False,files=files,
+        manifest=dict(kind='REVERSIBLE_VISION_INGRESS_PROOF',releaseImage=False,nativePolicy=a.native_policy,files=files,
             source={name:run(['git','-C',str(path),'rev-parse','HEAD']).stdout.decode().strip()
                 for name,path in (('integration',ROOT),('gateway',GATEWAY),('platform',PLATFORM))})
         (stage/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

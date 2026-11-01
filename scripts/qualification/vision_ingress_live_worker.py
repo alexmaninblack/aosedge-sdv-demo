@@ -68,6 +68,9 @@ def inactive_native_capabilities(process,bounding):
         and all(int(caps[k],16)==0 for k in ('CapEff','CapPrm','CapInh','CapAmb')))
 
 
+class NativeSourceProofComplete(Exception):pass
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--context',type=Path,required=True);a=p.parse_args()
     c=json.loads(a.context.read_bytes());records=a.context.parent;candidate=records/'candidate'
@@ -83,8 +86,12 @@ def main():
         atomic(records/'progress.json',result);print(json.dumps(dict(stage=name,state='COMPLETE')),flush=True)
         return value
     try:
-        require(c.get('diagnosticCycle')==dict(codename='vision-camera-image-probe',readVersion='0.1.2',revokeVersion='0.1.3',authorized=True),
-            'EXACT_DIAGNOSTIC_CYCLE_AUTHORITY_REQUIRED')
+        native_source=c.get('nativeSourceProof') is True
+        if native_source:
+            require(c.get('permanentDelivery')==dict(authorized=True,recoveryFirst=True,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5'),'PERMANENT_PACKET_AUTHORITY_REQUIRED')
+        else:
+            require(c.get('diagnosticCycle')==dict(codename='vision-camera-image-probe',readVersion='0.1.2',revokeVersion='0.1.3',authorized=True),
+                'EXACT_DIAGNOSTIC_CYCLE_AUTHORITY_REQUIRED')
         require(subprocess.check_output(['/usr/sbin/sysctl','-n','hw.model'],text=True).strip()=='Mac16,8','M4_REQUIRED')
         require('"CGSSessionScreenIsLocked"=Yes' not in subprocess.check_output(['/usr/sbin/ioreg','-n','Root','-d1'],text=True),'M4_DESKTOP_LOCKED')
         package=Path(c['main']['packageRoot']);bundle=Path(c['bundle'])
@@ -94,6 +101,7 @@ def main():
         require(sha(candidate/'manifest.json')==c['candidateManifestSha256'],'CANDIDATE_MANIFEST_CHANGED')
         manifest=json.loads((candidate/'manifest.json').read_bytes())
         require(manifest['kind']=='REVERSIBLE_VISION_INGRESS_PROOF' and manifest['releaseImage'] is False,'PROOF_CANDIDATE_REQUIRED')
+        if native_source:require(manifest.get('nativePolicy') is True,'NATIVE_POLICY_CANDIDATE_REQUIRED')
         for name,row in manifest['files'].items():
             path=candidate/name;require(path.is_relative_to(candidate) and '..' not in Path(name).parts
                 and not path.is_symlink() and path.stat().st_size==row['bytes'] and sha(path)==row['sha256'],'CANDIDATE_FILE_CHANGED')
@@ -156,7 +164,7 @@ def main():
             phase('cloud-read-preflight',lambda:fixture('preflight'))
             catalog=phase('diagnostic-catalog-before',lambda:fixture('catalog'))
             resume=c.get('readCycleResume')
-            expected_versions={'0.1.0','0.1.1','0.1.2'} if resume else {'0.1.0','0.1.1'}
+            expected_versions={'0.1.0','0.1.1','0.1.2','0.1.3'} if native_source else {'0.1.0','0.1.1','0.1.2'} if resume else {'0.1.0','0.1.1'}
             require(catalog['serviceId'] and {v['version'] for v in catalog['versions']}==expected_versions,'DIAGNOSTIC_VERSIONS_EXIST_RECONCILE')
             service=catalog['serviceId']
             if resume:
@@ -285,6 +293,24 @@ print(json.dumps(dict(exit=done.returncode,unit=unit,probes=probes)))
             # Negative probes precede the functional audit cursor; preserve
             # their explicit denials separately rather than erasing evidence.
             phase('negative-proof-audit',lambda:guest("import json,pathlib\np=pathlib.Path('/var/log/audit/audit.log')\nraw=p.read_bytes()[-262144:].decode(errors='replace')\nprint(json.dumps(dict(scopedAvcs=[v[:1600] for v in raw.splitlines() if 'avc:' in v and ('camera_ingress' in v or 'camera_access_t' in v)],cursor=p.stat().st_size)))"))
+            if native_source:
+                epoch=first['health']['componentEpoch'];old_source=first['ingressFrames'][-1]['sourceEpoch']
+                phase('native-policy-ingress-stop',lambda:app.source_service.camera_ingress('stop'))
+                phase('native-policy-pixels-cleared',lambda:until(lambda v:v['health']['status']['deliveryState']=='UNAVAILABLE' and v['health']['status']['retainedFrames']==0,timeout=5))
+                phase('native-policy-ingress-repeat',lambda:app.source_service.camera_ingress('start'))
+                repeated=phase('native-policy-fresh-stream',lambda:until(lambda v:v['ingressFrames'] and v['ingressFrames'][-1]['sourceEpoch']!=old_source and v['health']['status']['deliveryState']=='AVAILABLE',timeout=20))
+                source_epoch=repeated['ingressFrames'][-1]['sourceEpoch']
+                phase('native-policy-core-restart',lambda:guest("import json,subprocess\nsubprocess.run(['systemctl','restart','aos-camera-access.service'],check=True,capture_output=True,timeout=20)\nprint(json.dumps(dict(restarted=True)))",timeout=25))
+                phase('native-policy-source-after-restart',lambda:app.source_service.camera_ingress('start'))
+                phase('native-policy-fresh-core-and-stream',lambda:until(lambda v:v['health']['componentEpoch']!=epoch and v['health']['status']['deliveryState']=='AVAILABLE'
+                    and v['ingressFrames'][-1]['sourceEpoch']!=source_epoch,timeout=25))
+                audit=guest("import json,pathlib\np=pathlib.Path('/var/log/audit/audit.log');cursor=CURSOR\nwith p.open('rb') as f:f.seek(cursor);raw=f.read(1048577)\nassert len(raw)<=1048576\nprint(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_text().strip()=='1',scopedAvcs=[v[:1600] for v in raw.decode(errors='replace').splitlines() if 'avc:' in v and ('camera_ingress' in v or 'camera_access_t' in v)])))".replace('CURSOR',str(json.loads((records/'negative-proof-audit.json').read_bytes())['facts']['cursor'])))
+                atomic(records/'functional-audit.json',audit)
+                require(audit['enforcing'] and all(expected_bind_denial(v) for v in audit['scopedAvcs']),'NATIVE_POLICY_UNEXPECTED_FUNCTIONAL_AVC')
+                phase('native-policy-normal-source-stop',lambda:app.source_service.simulation('stop',target='test'))
+                WorkspaceService(env,app.source_service.driver).execute('close');source_started=False
+                result.update(outcome='PASS_TRANSIENT_NATIVE_STORE_INGRESS_POLICY',nativeAosLiveFrames='NOT_RUN_RESOURCE_REMAINS_REVOKED',nativePolicy=True)
+                raise NativeSourceProofComplete()
             require(proof_deadline-time.monotonic()>300,'INSUFFICIENT_PUBLICATION_AND_REVOKE_BUDGET')
             def publish(version):
                 if version=='0.1.2' and resume:return reconciled
@@ -350,6 +376,7 @@ print(json.dumps(dict(exit=done.returncode,unit=unit,probes=probes)))
             phase('normal-source-stop-with-media-drain',lambda:app.source_service.simulation('stop',target='test'))
             WorkspaceService(env,app.source_service.driver).execute('close');source_started=False
             result['outcome']='PASS_REVERSIBLE_NATIVE_LIVE_INGRESS_READ_REVOKE'
+    except NativeSourceProofComplete:pass
     except Exception as error:
         message=str(error)
         fixed=message.removesuffix(':test')

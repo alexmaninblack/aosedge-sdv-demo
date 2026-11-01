@@ -121,6 +121,7 @@ def main():
     context=json.loads(Path(sys.argv[1]).read_bytes());records=Path(sys.argv[1]).parent
     package=Path(context['main']['packageRoot']);bundle=Path(context['bundle'])
     assert not (records/'result.json').exists(),'EXISTING_ATTEMPT_RECONCILE'
+    for name,digest in context.get('files',{}).items():assert hashlib.sha256((records/name).read_bytes()).hexdigest()==digest,'PREFLIGHT_INPUT_CHANGED'
     assert hashlib.sha256((package/'application-manifest.json').read_bytes()).hexdigest()==context['main']['manifestSha256']
     subprocess.run(['codesign','--verify','--deep','--strict','-R',
         '=identifier "org.aosedge.sdvlab.vision.bootstrap" and anchor apple generic and certificate leaf[subject.OU] = "3NF57VKB3V"',
@@ -173,6 +174,7 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
 '''
             if context.get('projectionProbe'):script=PROJECTION
             if context.get('deliveryInventory'):script=DELIVERY
+            if context.get('bootInventory'):script=(records/'vision_delivery_guest.py').read_text()+"\nprint(json.dumps(run('boot-inventory')))\n"
             if context.get('networkSource'):
                 script=NETWORK.replace('SOURCE',repr(context['networkSource'])).replace('LOCAL_VM',repr(item['localVmId']))
             import textwrap
@@ -181,13 +183,39 @@ print(json.dumps(dict(enforcing=pathlib.Path('/sys/fs/selinux/enforce').read_tex
             assert done.returncode==0,'NATIVE_PREFLIGHT_OBSERVATION_FAILED'
             result['facts']=json.loads(done.stdout)
             assert 'probeError' not in result['facts'],'NATIVE_PREFLIGHT_PROBE_ERROR'
-            if context.get('deliveryInventory'):
+            if context.get('bootInventory'):
+                assert result['facts']['readOnlyInspection'] and not result['facts']['bootChanged'],'BOOT_INVENTORY_MUTATION'
+                result['acceptance']='READ_ONLY_BOOT_INSPECTION_NOT_UPDATE_ACCEPTANCE'
+            elif context.get('deliveryInventory'):
                 result['acceptance']=validate_delivery_inventory(result['facts'])
             elif context.get('networkSource'):
                 assert result['facts'].get('created',{}).get('enforced') and not result['facts'].get('removed',{}).get('enforced',True),'NETWORK_ROUNDTRIP_FAILED'
             elif context.get('projectionProbe'):
                 assert result['facts']['uid']==result['facts']['expectedUid']>0,'PROJECTION_IDENTITY_INVALID'
             else:assert result['facts']['unit']['ActiveState']=='active','NATIVE_CAMERA_NOT_ACTIVE'
+            if context.get('permanentCloudPreflight'):
+                from aosedge_demo_orchestrator.units import UnitService
+                from aosedge_demo_orchestrator.status import read_json,load_configuration
+                from aosedge_demo_orchestrator.cloud_runtime import launch
+                from aosedge_demo_orchestrator.cloud_connection import selected_domain,cloud_binding
+                with env._writer():
+                    UnitService(vm)._wait(read_json(native/JOURNAL),'test',
+                        lambda value:value and value['online_status']=='Online','CLOUD_ONLINE',timeout=60)
+                config=load_configuration(native)
+                sdk,sdk_environment=launch(native,config['cloudPython'],'unit_cloud.py')
+                request=dict(cloudDomain=selected_domain(before),oemOwner=cloud_binding(before)['ownerId'],
+                    oemCredential=str(config['cloudProfiles']['oem-delivery']['credential']),
+                    vehicles={'test':{k:item[k] for k in ('unitId','systemUid','unitSetId','nodeId')}})
+                request['vehicles']['test']['nodeHardwareId']=item['cloud']['identity']['nodeHardwareId']
+                tooling=bundle/'Contents/Resources/tooling/aosedge-sdv-demo/apps/demo-orchestrator/src'
+                done=subprocess.run([sdk[0],'-I','-B',str(records/'vision_permanent_cloud.py'),str(tooling)],
+                    input=json.dumps(request),text=True,capture_output=True,env=sdk_environment,timeout=120)
+                assert done.returncode==0 and len(done.stdout)<262144,'PERMANENT_CLOUD_SDK_FAILED'
+                value=json.loads(done.stdout)
+                assert value.get('ok'),value.get('reason','PERMANENT_CLOUD_PREFLIGHT_FAILED')
+                result['facts']['cloud']=value['data']
+                result['acceptance']='READ_ONLY_ACCOUNT_PREFLIGHT_NOT_UPDATE_ACCEPTANCE'
+                assert value['data']['ready'],'PERMANENT_CLOUD_SCOPE_BLOCKED'
             result['outcome']='PASS_NATIVE_PREREQUISITES'
         except Exception as error:
             result['code']=str(error) if isinstance(error,AssertionError) else type(error).__name__
