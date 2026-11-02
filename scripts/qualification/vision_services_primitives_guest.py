@@ -510,6 +510,33 @@ print(json.dumps(dict(actualNativeIdentityVerified=True,positiveRoleStatuses=len
         return result
 
 
+class PermanentObservation(Transaction):
+    """Reuse read-only observers only; never open the reversible transaction."""
+    def open(self):
+        require(os.geteuid()==0 and Path('/etc/machine-id').read_text().strip()=='89273f164be04b22b4cb58d08533c8bc','PERMANENT_SAME_VISION_REQUIRED')
+        require(Path('/etc/aos/version').read_text().strip()=='VERSION="6.1.1-vision-camera.6"'
+            and call(['getenforce']).strip()=='Enforcing','PERMANENT_ROOTFS_REQUIRED')
+        require(not any(p.exists() or p.is_symlink() for p in (ROOT,POLICY,UNIT,IAM_DROPIN)),'PERMANENT_TRANSIENT_OVERRIDE_PRESENT')
+        require(all(properties(name)['ActiveState']=='active' and properties(name)['NRestarts']=='0' for name in OWNERS),'PERMANENT_NATIVE_OWNERS_NOT_HEALTHY')
+        self.group_names=dict(zip(ROLES,('aos-vision-perc-pub','aos-vision-perc-read','aos-vision-context-read','aos-vision-assess-pub')))
+        self.uid=pwd.getpwnam('aos-vision-exchange').pw_uid;self.gids=dict(owner=grp.getgrnam('aos-vision-exchange').gr_gid,
+            **{role:grp.getgrnam(name).gr_gid for role,name in self.group_names.items()})
+        require(self.uid==989 and list(self.gids.values())==[989,988,987,986,985],'PERMANENT_ACCOUNT_CHANGED')
+        require(CPU.is_file() and CPU.read_text().count('cpu cores\t: 4')==4,'PERMANENT_TOPOLOGY_WRITER_MISSING')
+        require(json.loads(Path('/var/aos/workdirs/sm/runtimes/systemd-slot-camera-access/state/installed.json').read_bytes())['Version']=='0.1.2','PERMANENT_CAMERA_REQUIRED')
+        self.canonical={str(p):digest(p) for p in map(Path,('/etc/aos/cm.cfg','/etc/aos/sm.cfg','/etc/aos/iam.cfg','/etc/aos/resources.cfg','/etc/passwd','/etc/group'))}
+        require(not any(os.path.ismount(p) for p in self.canonical),'PERMANENT_CONFIGURATION_BOUND')
+        self.stock=digest(Path('/sys/fs/selinux/policy'));self.audit_cursor=Path('/var/log/audit/audit.log').stat().st_size
+        return dict(outcome='PASS_SHIPPED_VISION_PLATFORM_READ_ONLY',rootfsVersion='6.1.1-vision-camera.6',cameraVersion='0.1.2',
+            platformOverrides=False,nativeOwnersHealthy=True,selinuxEnforcing=True,storage=self.storage())
+
+    def close(self):
+        require(all(digest(Path(p))==pin for p,pin in self.canonical.items()) and not any(os.path.ismount(p) for p in self.canonical),'PERMANENT_CONFIGURATION_CHANGED')
+        require(digest(Path('/sys/fs/selinux/policy'))==self.stock and call(['getenforce']).strip()=='Enforcing','PERMANENT_POLICY_CHANGED')
+        require(not any(p.exists() or p.is_symlink() for p in (ROOT,POLICY,UNIT,IAM_DROPIN)),'PERMANENT_OVERRIDE_CREATED')
+        return dict(canonicalConfigurationUnchanged=True,kernelPolicyUnchanged=True,noTransientPlatformOverrides=True,selinuxEnforcing=True)
+
+
 def run(inputs):
     transaction=Transaction(Path(inputs));result=dict(outcome='NOT_COMPLETE',cleanup={});started=time.monotonic()
     try:result.update(transaction.open())

@@ -12,9 +12,10 @@ from .status import read_json,now
 
 
 class VisionReader:
-    def __init__(self,source):
+    def __init__(self,source,source_factory=None):
         from .vision_bootstrap import INSTANCE_NAME,VM_PROFILE
-        self.source=source;self.root=source.root
+        from .source import SourceService
+        self.source_factory=source_factory or (lambda:SourceService(source.vm,source.units));self.root=source.root
         state=read_json(self.root/JOURNAL)
         if self.root.name!=INSTANCE_NAME or state.get('vmProfile')!=VM_PROFILE:
             raise ValueError('VISION_PRESENTER_TARGET_REQUIRED')
@@ -23,7 +24,9 @@ class VisionReader:
         state=read_json(self.root/JOURNAL);view=vision_observation.unavailable()
         source=state.get('source') or {};runtime=state['vehicles']['test'].get('runtime') or {}
         if source.get('state')=='RUNNING' and runtime.get('state')=='RUNNING':
-            try:view=vision_observation.observation(self.source.observe(guest=False,timeout=5).get('vision'))
+            # SourceDriver's temporary SSH session/deadline belong to one
+            # invocation. Never share them across HTTP threads or API actions.
+            try:view=vision_observation.observation(self.source_factory().observe(guest=False,timeout=5).get('vision'))
             except (OSError,ValueError):pass
         return dict(profile='vision',observedAt=now(),vision=view,
             controller=dict(state='RUNNING' if runtime.get('state')=='RUNNING' else 'STOPPED'),

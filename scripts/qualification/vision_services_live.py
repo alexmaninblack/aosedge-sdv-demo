@@ -158,7 +158,7 @@ def worker(context):
             code='''import hashlib,json,pathlib,select,sys,time,traceback
 base=pathlib.Path(BASE);pins=PINS
 assert all(not (base/name).is_symlink() and hashlib.sha256((base/name).read_bytes()).hexdigest()==pin for name,pin in pins.items())
-ns={};exec((base/'vision_services_primitives_guest.py').read_text(),ns);transaction=ns['Transaction'](base)
+ns={};exec((base/'vision_services_primitives_guest.py').read_text(),ns);transaction=ns['PermanentObservation' if PERMANENT else 'Transaction'](base)
 def emit(phase,data):print(json.dumps(dict(phase=phase,data=data)),flush=True)
 try:
  emit('READY',transaction.open());deadline=time.monotonic()+1800
@@ -188,8 +188,8 @@ finally:
  except Exception as error:
   value=str(error);emit('CLEANUP_ERROR',dict(code=value if value.isupper() and len(value)<160 else type(error).__name__))
 '''
-            replacements=dict(BASE=str(base),PINS=guest_files,MEASUREMENT_INPUTS=c.get('measurementInputs',{}),UNIX_ONLY=c.get('nativeUnixOnlyProof',False))
-            code=re.sub(r'\b(BASE|PINS|MEASUREMENT_INPUTS|UNIX_ONLY)\b',lambda match:repr(replacements[match[0]]),code)
+            replacements=dict(BASE=str(base),PINS=guest_files,MEASUREMENT_INPUTS=c.get('measurementInputs',{}),UNIX_ONLY=c.get('nativeUnixOnlyProof',False),PERMANENT=c.get('permanentSystem',False))
+            code=re.sub(r'\b(BASE|PINS|MEASUREMENT_INPUTS|UNIX_ONLY|PERMANENT)\b',lambda match:repr(replacements[match[0]]),code)
             session=subprocess.Popen(command[:-2]+['python3 -I -B -c '+shlex.quote(code)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,bufsize=1)
             def read_responses():
                 for row in session.stdout:lines.put(row)
@@ -424,6 +424,12 @@ finally:
                 security=phase('native-functional-security-after-characterization',lambda:request('OBSERVE'))
                 require(not security['scopedAvcs'] and security['nativeScopedAvcCount']==0,'VISION_NATIVE_FUNCTIONAL_AVC')
                 phase('native-current-subject-after-characterization',lambda:cloud('subject-status',serviceIds=ids,subject=subject))
+                if c.get('permanentSystem'):
+                    result['apiPermanentPlatform']='PASS_NO_TRANSIENT_PLATFORM_OVERRIDES'
+                    from vision_services_visual import visual
+                    phase('headed-vision-ui-loss-and-recovery',lambda:visual(app,env,records,c,observation,request))
+                    result.update(outcome='PASS_PERMANENT_VISION_API_AND_HEADED_BROWSER_UI',fullVisionE2E='ROOTFS_CLOUD_INVENTORY_DEFECT_OPEN',
+                        rootfsCloudInventory='KNOWN_OMISSION_NOT_PASSED');raise ConfigProofComplete
                 result['outcome']='PASS_NATIVE_TWO_SERVICE_CAMERA_CHARACTERIZATION_ONLY';result['fullVisionE2E']='PENDING_INDEPENDENT_SOTA_PERMANENT_IMAGE_AND_UI'
     except ConfigProofComplete:
         pass
@@ -444,7 +450,7 @@ finally:
                         if session.poll() is None:session.stdin.write('STOP\n');session.stdin.flush()
                         closed=receive(100);require(closed['phase']=='CLOSED','VISION_LIVE_GUEST_RESTORE_NOT_CONFIRMED');atomic(records/'native-restoration.json',closed['data'])
                         require(closed['data'] and all(closed['data'].values()),'VISION_LIVE_RESTORE_NOT_COMPLETE');session.stdin.close();session.wait(timeout=10)
-                        result['cleanup']['nativeConfigAndPolicyRestored']=session.returncode==0
+                        result['cleanup']['permanentConfigAndPolicyUnchanged' if c.get('permanentSystem') else 'nativeConfigAndPolicyRestored']=session.returncode==0
                         if reader is not None:reader.join(timeout=2)
                     except Exception as error:result['cleanup']['nativeConfigAndPolicyRestored']=False;result['guestCleanupCode']=clean_error(error)
                 try:result['cleanup']['vmStopped']=vm.execute('stop','test',timeout=150)['vehicles']['test']['state']=='COMPLETED'

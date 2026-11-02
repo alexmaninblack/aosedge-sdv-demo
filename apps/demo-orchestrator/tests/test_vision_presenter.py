@@ -20,7 +20,7 @@ class VisionPresenterTests(unittest.TestCase):
     def test_only_selected_vision_profile_and_closed_dto_cross_boundary(self):
         source=self.source();source.observe.return_value=dict(vision=v.unavailable(),unitId='PRIVATE',credential='PRIVATE')
         with patch.object(p,'read_json',return_value=self.state()):
-            value=p.VisionReader(source)()
+            value=p.VisionReader(source,lambda:source)()
         self.assertEqual(set(value),{'profile','observedAt','vision','controller','source'})
         self.assertNotIn('PRIVATE',json.dumps(value));self.assertEqual(value['vision'],v.unavailable())
         with patch.object(p,'read_json',return_value=dict(self.state(),vmProfile='main')):
@@ -30,10 +30,17 @@ class VisionPresenterTests(unittest.TestCase):
         source=self.source()
         for observed in (dict(),dict(vision=dict(v.unavailable(),unitId='PRIVATE'))):
             source.observe.return_value=observed
-            with patch.object(p,'read_json',return_value=self.state()):self.assertEqual(p.VisionReader(source)()['vision'],v.unavailable())
+            with patch.object(p,'read_json',return_value=self.state()):self.assertEqual(p.VisionReader(source,lambda:source)()['vision'],v.unavailable())
         source.observe.reset_mock();state=self.state();state['source']['state']='STOPPED'
         with patch.object(p,'read_json',return_value=state):self.assertEqual(p.VisionReader(source)()['vision'],v.unavailable())
         source.observe.assert_not_called()
+
+    def test_each_http_read_gets_an_isolated_source_driver(self):
+        prototype=self.source();first=Mock();second=Mock()
+        first.observe.return_value=second.observe.return_value=dict(vision=v.unavailable())
+        with patch('aosedge_demo_orchestrator.source.SourceService',side_effect=[first,second]) as factory,patch.object(p,'read_json',return_value=self.state()):
+            reader=p.VisionReader(prototype);reader();reader()
+        self.assertEqual(factory.call_count,2);first.observe.assert_called_once();second.observe.assert_called_once()
 
     def test_vision_http_has_no_mutation_or_main_cloud_routes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -379,17 +379,29 @@ match the pinned meta-aos sources. The explicit compatibility receipt preserves
 both archive digests and this distinction; no boot update is required or built.
 
 The one warm incremental Vision-only rootfs successor `6.1.1-vision-camera.6`
-is at targeted compile/package gates; no new rootfs has been delivered yet.
-The first compile found the 24-character shadow group-name limit before an
-image task. The source correction and reversible proof above precede the next
-compile. Camera Access `0.1.2` is prepared but **not published**. Read-only
-account/recipient checks found both versions free and scoped only to this
-existing Vision Unit. Preserve the stopped recovery checkpoint before any
-normal OEM update.
+is built (`rootfs-fota-09`), officially signed/published and natively committed
+on the same retained VM. It booted read-only from /dev/sda3 with no pending
+rootfs/update flags and healthy Core; Camera identity/store/enrollment/data are
+preserved. The first attempt's Cloud HTTP 503 is preserved, not retried as a
+publication. Read-only reconciliation found an open defect: Cloud's Unit
+inventory lists Boot and Camera but omits Rootfs, although native CM/SM report
+the exact new rootfs component/version active. `permanent-rootfs-close-01`
+records this as **NATIVE_ROOTFS_COMMITTED_CLOUD_INVENTORY_MISSING**, not PASS,
+and normally stops the committed VM. Do not promote a release or fabricate a
+Cloud inventory row to hide this disagreement.
+
+The independent, already authorized Camera OEM update `0.1.2` then passes on
+the same store (`vision-services-camera-update-01`), including exact installed
+entry bytes and Cloud-installed version, physical Safe Stop, retained data and
+normal Source/VM cleanup. Rootfs's aggregate Cloud-inventory defect remains
+open; it is not counted as passed by continuing the independent native/API/UI
+checks. No second rootfs/manufacturing/boot image is built.
 
 Signed host `0.6.2` is the calibrated transient candidate, retaining the
-immutable `.5` manufacturing input. Host `0.6.3` will carry the coordinated
-short-name observer and read-only Vision Presenter. The new view uses only the
+immutable `.5` manufacturing input. Signed `0.6.3` carries the coordinated
+short-name observer and read-only Vision Presenter; `0.6.4` isolates each HTTP
+observation's SourceDriver session/deadline from other reads and API actions.
+The new view uses only the
 existing loopback Presenter snapshot route and the existing same-UID Source
 status socket: no additional product listener, operation or application key.
 The Source Vision projection remains at most 3,072 bytes inside the unchanged
@@ -397,12 +409,13 @@ The Source Vision projection remains at most 3,072 bytes inside the unchanged
 A bounded 16-point ground-plane plot is explicitly not an overlay on a newer
 live image. Missing/stale input clears the prior valid display.
 
-The new view passes three focused units, all 72 Vision units and 62 existing
+The new view passes four focused units, all 73 Vision units and 62 existing
 Presenter units. These are **not live UI acceptance**. Finish permanent rootfs
 and Camera OEM delivery, repeat native/API gates without transient platform
 overrides, then run the visible semantic UI scenario on M4 with screenshots,
 layout checks, real input loss/recovery and owned-process cleanup. Do not claim
-full E2E or publish a Vision installer before those gates complete.
+full E2E or publish a Vision installer before those gates complete and the
+Rootfs Cloud-inventory disagreement is resolved.
 
 A valid absent lead is present=false with null distances. The current trusted
 vehicle geometry profile is unavailable, so a valid shadow plan is withheld;
