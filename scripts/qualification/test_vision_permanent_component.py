@@ -28,6 +28,14 @@ class PermanentComponentTests(unittest.TestCase):
             self.assertEqual(config['items'][0]['version'],version)
         with self.assertRaises(ValueError):delivery.configuration('main-rootfs')
 
+    def test_services_packet_is_a_separate_exact_immutable_profile(self):
+        from aos_signer.cloud_common.schemas.v2.cloud_income import AosUploadMetaConfig
+        self.assertEqual(delivery.SERVICES_VERSIONS,{delivery.ROOTFS:'6.1.1-vision-camera.6',delivery.CAMERA:'0.1.2'})
+        for kind,version in delivery.SERVICES_VERSIONS.items():
+            new=delivery.configuration(kind,services_packet=True);AosUploadMetaConfig.model_validate(new)
+            self.assertEqual(new['items'][0]['version'],version)
+            self.assertEqual(delivery.configuration(kind)['items'][0]['version'],delivery.VERSIONS[kind])
+
     def test_streaming_rootfs_signature_and_payload_binding(self):
         import jwt
         from cryptography import x509

@@ -151,7 +151,9 @@ def worker(context):
             setup=subprocess.run(command,input='set -eu\ntest ! -e '+shlex.quote(str(base))+'\nmkdir -m 755 '+shlex.quote(str(base))+'\n',capture_output=True,text=True,timeout=15)
             require(setup.returncode==0,'VISION_LIVE_STAGING_CONFLICT')
             options=command[1:-3];options.remove('-T');options[options.index('-p')]='-P'
-            transfer=subprocess.run(['/usr/bin/scp','-O',*options,*[str(records/name) for name in c['files']],'root@127.0.0.1:'+str(base)+'/'],capture_output=True,text=True,timeout=30)
+            guest_files=c.get('guestFiles',c['files'])
+            require(set(guest_files)<=set(c['files']) and all(c['files'][name]==pin for name,pin in guest_files.items()),'VISION_GUEST_FILE_SCOPE_CHANGED')
+            transfer=subprocess.run(['/usr/bin/scp','-O',*options,*[str(records/name) for name in guest_files],'root@127.0.0.1:'+str(base)+'/'],capture_output=True,text=True,timeout=30)
             require(transfer.returncode==0,'VISION_LIVE_INPUT_TRANSFER_FAILED')
             code='''import hashlib,json,pathlib,select,sys,time,traceback
 base=pathlib.Path(BASE);pins=PINS
@@ -170,6 +172,8 @@ try:
    elif operation=='STORAGE':emit(operation,transaction.storage())
    elif operation=='DIAGNOSE':emit(operation,transaction.diagnose())
    elif operation=='CALIBRATION_DIAGNOSE':emit(operation,transaction.native_calibration_diagnosis())
+   elif operation=='NATIVE_ROLE_PROOF':emit(operation,transaction.native_calibration_diagnosis('unix-only' if UNIX_ONLY else 'roles'))
+   elif operation=='NATIVE_NETWORK_DIAGNOSE':emit(operation,transaction.native_network_diagnosis())
    elif operation=='RETIRE_MEASUREMENT':emit(operation,transaction.retire_measurement_duplicates(MEASUREMENT_INPUTS))
    elif operation=='DENY_ROOT':emit(operation,transaction.root_denial())
    elif operation=='RESTART':
@@ -184,8 +188,8 @@ finally:
  except Exception as error:
   value=str(error);emit('CLEANUP_ERROR',dict(code=value if value.isupper() and len(value)<160 else type(error).__name__))
 '''
-            replacements=dict(BASE=str(base),PINS=c['files'],MEASUREMENT_INPUTS=c.get('measurementInputs',{}))
-            code=re.sub(r'\b(BASE|PINS|MEASUREMENT_INPUTS)\b',lambda match:repr(replacements[match[0]]),code)
+            replacements=dict(BASE=str(base),PINS=guest_files,MEASUREMENT_INPUTS=c.get('measurementInputs',{}),UNIX_ONLY=c.get('nativeUnixOnlyProof',False))
+            code=re.sub(r'\b(BASE|PINS|MEASUREMENT_INPUTS|UNIX_ONLY)\b',lambda match:repr(replacements[match[0]]),code)
             session=subprocess.Popen(command[:-2]+['python3 -I -B -c '+shlex.quote(code)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,bufsize=1)
             def read_responses():
                 for row in session.stdout:lines.put(row)
@@ -234,6 +238,7 @@ finally:
                     oemCredential=str(config['cloudProfiles']['oem-delivery']['credential']),spCredential=str(config['cloudProfiles']['service-provider']['credential']),
                     vehicle={key:item[key] for key in ('unitId','systemUid','unitSetId','nodeId')})
                 cloud_request['vehicle']['nodeHardwareId']=item['cloud']['identity']['nodeHardwareId']
+                if c.get('nativeSota') or c.get('currentNative'):cloud_request['unixOnlySuccessor']=True
                 def cloud(action,**extra):
                     if action in ('upload','subject-create','subject-bind','subject-assign'):result['cloudMutation']=True
                     done=subprocess.run([sdk[0],'-I','-B',str(records/'vision_services_cloud.py'),str(tooling)],input=json.dumps(dict(cloud_request,action=action,**extra)),
@@ -258,7 +263,8 @@ finally:
                 if c.get('resumeNative'):
                     resume=c['resumeNative'];ids=resume['serviceIds'];subject=resume['subject']
                     require(preflight['subjectCandidates']==[subject['id']] and all(preflight['services'][role]['serviceId']==ids[role]
-                        and len(preflight['services'][role]['versions'])==1 and preflight['services'][role]['versions'][0]['id']==resume['versionIds'][role] for role in ('perception','assessment')),'VISION_NATIVE_RECONCILIATION_CHANGED')
+                        and {row['id'] for row in preflight['services'][role]['versions']}==({resume['versionIds'][role],c['currentNative']['versionIds'][role]} if c.get('currentNative') else {resume['versionIds'][role]})
+                        for role in ('perception','assessment')),'VISION_NATIVE_RECONCILIATION_CHANGED')
                     reconciled=phase('existing-native-subject-reconciliation',lambda:cloud('subject-status',serviceIds=ids,subject=subject))
                     require(reconciled['unitBound'] and reconciled['assignedRoles']==c.get('expectedAssignedRoles',['perception']),'VISION_NATIVE_EXISTING_ASSIGNMENT_CHANGED')
                 else:
@@ -286,12 +292,14 @@ finally:
                 actual=phase('actual-native-service-identities',lambda:request('NATIVE'));instances=actual['instances']
                 for role in ('perception','assessment'):
                     value=instances['vision-'+role];allocation=payload['allocation'][role]
-                    require(value['identity']['version']=='0.1.0' and value['identity']['sourceRevision']==payload['applicationSourceRevision']
+                    require(value['identity']['version']==('0.1.1' if c.get('currentNative') else '0.1.0') and value['identity']['sourceRevision']==(c['currentNative']['sourceRevision'] if c.get('currentNative') else payload['applicationSourceRevision'])
                         and len(set(value['uid']))==1 and value['uid'][0]>0 and min(value['gid'])>0 and value['nnp']=='1'
                         and value['context'].split(':')[2]=='container_engine_t'
                         and all(int(value['capabilities'][key],16)==0 for key in ('CapEff','CapPrm','CapInh','CapAmb')),'VISION_NATIVE_IDENTITY_OR_SOURCE_MISMATCH')
                     require(value['cpuMax']==('280000 100000' if role=='perception' else '10000 100000') and value['memoryMax']==str(allocation['ramLimit']),'VISION_NATIVE_CPU_OR_MEMORY_QUOTA_NOT_APPLIED')
                     require(value['pidsMax']==str(allocation['pidsLimit']),'VISION_NATIVE_PID_QUOTA_NOT_APPLIED')
+                    require(value['noFileLimits']==[str(allocation['noFileLimit'])]*2 and value['tmpFilesystemBytes']==allocation['tmpLimit'],
+                        'VISION_NATIVE_FD_OR_TMP_QUOTA_NOT_APPLIED')
                     expected={'/run/aosedge/vision/'+name for name in (('perception-publish',) if role=='perception' else ('perception-read','context-read','assessment-publish'))}
                     if role=='perception':expected.add('/run/aosedge/platform/camera')
                     require(set(value['resourceMounts'])==expected and all(all(options.values()) for options in value['resourceMounts'].values())
@@ -310,6 +318,95 @@ finally:
                     view=observation();atomic(records/'latest-vision-observation.json',view)
                     if view and view.get('reference') and view['state']=='AVAILABLE':break
                     require(time.monotonic()<deadline,'VISION_NATIVE_FUNCTIONAL_RESULT_NOT_CONFIRMED');time.sleep(.1)
+                if c.get('communicationCacheProof'):
+                    facts=phase('native-communication-cache-path-functional',lambda:request('NATIVE'))
+                    require(facts['storage']['imageManager']['installPath']=='/var/aos/downloads/vision-services/cm-images'
+                        and all(row['seccomp']=='2' for row in facts['instances'].values()),'VISION_COMMUNICATION_CACHE_EFFECTIVE_CONFIG_CHANGED')
+                    security=phase('native-security-after-communication-cache-path',lambda:request('OBSERVE'))
+                    require(not security['scopedAvcs'] and security['nativeScopedAvcCount']==0,'VISION_NATIVE_FUNCTIONAL_AVC')
+                    if c.get('groupAliasProof'):
+                        configuration=phase('native-short-role-group-configuration',lambda:request('DIAGNOSE'))
+                        require({r['name'].removeprefix('vision-'):r['groups'][0] for r in configuration['resourceFile'][1:]}==c['groupAliasProof']
+                            and configuration['smVisibleResourceFile']==configuration['resourceFile'],'VISION_ROLE_GROUP_ALIASES_NOT_APPLIED')
+                    result['outcome']='PASS_NATIVE_SHORT_ROLE_GROUPS_AND_RETAINED_SUCCESSORS' if c.get('groupAliasProof') else 'PASS_NATIVE_COMMUNICATION_CACHE_PATH_AND_RETAINED_SUCCESSORS';raise ConfigProofComplete
+                if c.get('nativeNetworkDiagnosis'):
+                    phase('read-only-native-network-configuration',lambda:request('NATIVE_NETWORK_DIAGNOSE',timeout=50))
+                    result['outcome']='PASS_READ_ONLY_NATIVE_NETWORK_DIAGNOSIS';raise ConfigProofComplete
+                if c.get('nativeSota'):
+                    successor=c['nativeSota'];version='0.1.1'
+                    storage=phase('independent-sota-capacity-preflight',lambda:request('STORAGE'))['space']
+                    peak=max(2*successor['services']['perception']['bytes'],successor['services']['perception']['bytes']+2*successor['services']['assessment']['bytes'])+32*1024**2
+                    require(storage['/var/aos/workdirs']['free']>=peak and storage['/var/aos/downloads']['free']>=successor['expandedBytes']+32*1024**2,
+                        'VISION_NATIVE_SOTA_MEASURED_CAPACITY_REQUIRED')
+                    current=instances
+                    for role in ('perception','assessment'):
+                        other='assessment' if role=='perception' else 'perception';pin=successor['services'][role]
+                        require(not any(row['version']==version for row in preflight['services'][role]['versions']),'VISION_NATIVE_SOTA_VERSION_EXISTS_RECONCILE')
+                        atomic(records/('sota-'+role+'-intent.json'),dict(attemptStarted=True,unitId=UNIT,serviceId=ids[role],version=version,sha256=pin['sha256']))
+                        response=phase('publish-independent-'+role+'-successor',lambda role=role,pin=pin:cloud('upload',role=role,
+                            bundle=str(records/('vision-'+role+'-'+version+'.tar.gz')),expectedSha256=pin['sha256'],
+                            prepared=str(records/(role+'-successor-prepared.json')),preparedSha256=pin['preparedSha256'],
+                            packageModule=str(records/'aos_package.py'),packageModuleSha256=payload['packageModuleSha256']))
+                        atomic(records/('sota-'+role+'-response.json'),response);deadline=time.monotonic()+180
+                        while True:
+                            published=cloud('publication',role=role,deploymentId=response['deploymentId']);atomic(records/('sota-'+role+'-publication.json'),published)
+                            if published['stage']=='READY':break
+                            require(time.monotonic()<deadline,'VISION_NATIVE_SOTA_PUBLICATION_TIMEOUT');time.sleep(2)
+                        deadline=time.monotonic()+150
+                        while True:
+                            after=request('NATIVE')['instances'];atomic(records/('sota-'+role+'-native-latest.json'),after)
+                            value=after.get('vision-'+role)
+                            if value and value['identity'].get('version')==version:break
+                            require(time.monotonic()<deadline,'VISION_NATIVE_SOTA_INSTANCE_NOT_OBSERVED');time.sleep(.3)
+                        require(value['identity']['sourceRevision']==successor['sourceRevision'] and value['identity'].get('processProfile')=='unix-only-seccomp-v1'
+                            and value['seccomp']=='2' and value['nnp']=='1' and value['pid']!=current['vision-'+role]['pid']
+                            and value['uid']==current['vision-'+role]['uid'] and value['groups']==current['vision-'+role]['groups']
+                            and value['cpuMax']==current['vision-'+role]['cpuMax'] and value['memoryMax']==current['vision-'+role]['memoryMax']
+                            and value['pidsMax']==current['vision-'+role]['pidsMax'] and value['noFileLimits']==current['vision-'+role]['noFileLimits']
+                            and value['tmpFilesystemBytes']==current['vision-'+role]['tmpFilesystemBytes']
+                            and value['resourceMounts']==current['vision-'+role]['resourceMounts']
+                            and not value['credentialMountPresent'] and not value['forbiddenRolePathsPresent']
+                            and all(int(value['capabilities'][key],16)==0 for key in ('CapEff','CapPrm','CapInh','CapAmb')),'VISION_NATIVE_SOTA_IDENTITY_SANDBOX_OR_QUOTA_CHANGED')
+                        preserved=after.get('vision-'+other,{})
+                        require(preserved.get('identity')==current['vision-'+other]['identity'] and preserved.get('uid')==current['vision-'+other]['uid']
+                            and preserved.get('resourceMounts')==current['vision-'+other]['resourceMounts'],'VISION_NATIVE_SOTA_CHANGED_OTHER_SERVICE')
+                        atomic(records/('sota-'+role+'-independence.json'),dict(otherVersionUnchanged=True,otherSourceAndResourcesUnchanged=True,
+                            otherPidUnchanged=preserved['pid']==current['vision-'+other]['pid']))
+                        deadline=time.monotonic()+20
+                        while True:
+                            visible=observation()
+                            if visible and visible['state']=='AVAILABLE' and visible[role+'Version']==version:break
+                            require(time.monotonic()<deadline,'VISION_NATIVE_SOTA_FUNCTIONAL_RESULT_NOT_CONFIRMED');time.sleep(.05)
+                        atomic(records/('sota-'+role+'-functional.json'),visible);current=after
+                    security=phase('native-functional-security-after-independent-sota',lambda:request('OBSERVE'))
+                    require(not security['scopedAvcs'] and security['nativeScopedAvcCount']==0,'VISION_NATIVE_FUNCTIONAL_AVC')
+                    phase('subject-after-independent-sota',lambda:cloud('subject-status',serviceIds=ids,subject=subject))
+                    result['outcome']='PASS_NATIVE_INDEPENDENT_SOTA_AND_UNIX_ONLY_MAIN_PROCESSES'
+                    result['fullVisionE2E']='PENDING_PERMANENT_IMAGE_AND_UI';raise ConfigProofComplete
+                if c.get('nativeAdversarialProof'):
+                    phase('actual-native-role-and-network-negatives',lambda:request('NATIVE_ROLE_PROOF',timeout=45))
+                    before_loss=view;before_native=instances
+                    phase('normal-camera-and-broker-input-loss',lambda:app.source_service.camera_ingress('stop'))
+                    deadline=time.monotonic()+4
+                    while True:
+                        lost=observation()
+                        if lost is not None and lost['reference'] is None and all(lost[k] is None for k in ('lead','path','plan')):break
+                        require(time.monotonic()<deadline,'VISION_NATIVE_LOSS_DID_NOT_CLEAR_OUTPUT');time.sleep(.05)
+                    atomic(records/'unavailable-after-real-input-loss.json',lost)
+                    phase('normal-camera-and-broker-input-recovery',lambda:app.source_service.camera_ingress('start'))
+                    deadline=time.monotonic()+20
+                    while True:
+                        recovered=observation()
+                        if recovered and recovered['state']=='AVAILABLE' and recovered['reference'] and recovered['reference']!=before_loss['reference']:break
+                        require(time.monotonic()<deadline,'VISION_NATIVE_INPUT_RECOVERY_NOT_CONFIRMED');time.sleep(.05)
+                    atomic(records/'available-after-real-input-recovery.json',recovered)
+                    after_native=phase('native-identities-after-input-recovery',lambda:request('NATIVE'))['instances']
+                    require(all(after_native[name]['pid']==before_native[name]['pid'] for name in before_native),'VISION_NATIVE_INPUT_LOSS_RESTARTED_APPLICATION')
+                    security=phase('native-functional-security-after-negatives-and-recovery',lambda:request('OBSERVE'))
+                    require(not security['scopedAvcs'] and security['nativeScopedAvcCount']==0,'VISION_NATIVE_FUNCTIONAL_AVC')
+                    result['outcome']='PASS_TRANSIENT_NATIVE_UNIX_ONLY_AND_INPUT_RECOVERY' if c.get('nativeUnixOnlyProof') else 'PASS_NATIVE_ROLE_NETWORK_LOSS_AND_RECOVERY'
+                    result['applicationProcessFilter']='NOT_PACKAGED' if c.get('nativeUnixOnlyProof') else 'NOT_TESTED'
+                    result['fullVisionE2E']='PENDING_INDEPENDENT_SOTA_PERMANENT_IMAGE_AND_UI';raise ConfigProofComplete
                 samples=[];seen=set();began=time.monotonic()
                 while time.monotonic()-began<180:
                     view=observation()
@@ -364,11 +461,17 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker',type=Path);parser.add_argument('--config',type=Path)
     for flag in ('resume-nosuid-proof','diagnose-peer-denial','native-services','resume-native','native-config-proof',
-                 'native-delivery-reconcile','native-image-path-proof','native-calibration-diagnosis','calibrated-camera-proof'):
+                 'native-delivery-reconcile','native-image-path-proof','native-calibration-diagnosis','calibrated-camera-proof','adversarial-proof','native-network-diagnosis','network-tools-proof','unix-only-proof','native-sota','communication-cache-proof'):
         parser.add_argument('--'+flag,action='store_true')
     parser.add_argument('--resume-native-exec',nargs='?',const=1,type=int,choices=(1,2))
     parser.add_argument('--camera-pose-diagnosis',nargs='?',const=1,type=int,choices=(1,2,3))
     a=parser.parse_args()
+    if a.communication_cache_proof:a.native_sota=True
+    if a.native_sota:a.unix_only_proof=True
+    if a.unix_only_proof:a.network_tools_proof=True
+    if a.network_tools_proof:a.native_network_diagnosis=True
+    if a.native_network_diagnosis:a.adversarial_proof=True
+    if a.adversarial_proof:a.calibrated_camera_proof=True
     if a.calibrated_camera_proof:a.camera_pose_diagnosis=3
     if a.camera_pose_diagnosis:a.resume_native_exec=2
     if a.resume_native_exec:a.native_calibration_diagnosis=True
@@ -434,6 +537,33 @@ def main():
                                                     and all(row['unrealErrorMetres']<.00002 and row['correctedErrorMetres']>.01 for row in pose['samples']),
                                                     'VISION_MEASURED_UNREAL_ATTACHMENT_PROOF_REQUIRED')
                                                 name='vision-services-native-live-11';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                                if a.adversarial_proof:
+                                                    prior=json.loads((records/'result.json').read_bytes())
+                                                    require(prior['outcome']=='PASS_NATIVE_TWO_SERVICE_CAMERA_CHARACTERIZATION_ONLY' and all(prior['cleanup'].values()),'VISION_NATIVE_CALIBRATED_CHARACTERIZATION_REQUIRED')
+                                                    name='vision-services-native-live-12';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                                    if a.native_network_diagnosis:
+                                                        failed=json.loads((records/'result.json').read_bytes());last=json.loads((records/'failure-native-diagnostics.json').read_bytes())['readOnlyExecDiscovery']['lastExec']
+                                                        require(failed.get('code')=='VISION_CALIBRATION_NATIVE_READ_ONLY_EXEC_FAILED' and all(failed['cleanup'].values())
+                                                            and last['role']=='perception' and 'ConnectionRefusedError: [Errno 111] Connection refused' in last['stderr'],'VISION_NATIVE_NETWORK_REFUSAL_DIAGNOSIS_REQUIRED')
+                                                        name='vision-services-native-live-13';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                                        if a.network_tools_proof:
+                                                            previous=json.loads((records/'result.json').read_bytes());error=json.loads((records/'guest-error-response.json').read_bytes())
+                                                            require(previous.get('code')=='ValueError' and all(previous['cleanup'].values()) and error['data']['code']=='FileNotFoundError',
+                                                                'VISION_NATIVE_NETWORK_EVIDENCE_TOOL_FAILURE_REQUIRED')
+                                                            name='vision-services-native-live-14';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                                            if a.unix_only_proof:
+                                                                previous=json.loads((records/'result.json').read_bytes())
+                                                                require(previous['outcome']=='PASS_READ_ONLY_NATIVE_NETWORK_DIAGNOSIS' and all(previous['cleanup'].values()),'VISION_NATIVE_EFFECTIVE_NETWORK_RULES_REQUIRED')
+                                                                name='vision-services-native-live-15';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                                                if a.native_sota:
+                                                                    previous=json.loads((records/'result.json').read_bytes())
+                                                                    require(previous['outcome']=='PASS_TRANSIENT_NATIVE_UNIX_ONLY_AND_INPUT_RECOVERY' and all(previous['cleanup'].values()),'VISION_NATIVE_UNIX_ONLY_TRANSIENT_REQUIRED')
+                                                                    name='vision-services-native-live-16';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                                                    if a.communication_cache_proof:
+                                                                        previous=json.loads((records/'result.json').read_bytes());recovery=json.loads((Path(c['records'])/'vision-services-recovery-01/result.json').read_bytes())
+                                                                        require(previous['outcome']=='PASS_NATIVE_INDEPENDENT_SOTA_AND_UNIX_ONLY_MAIN_PROCESSES' and all(previous['cleanup'].values())
+                                                                            and recovery['outcome']=='PASS_SAME_VM_CHECKPOINT_RECOVERY' and all(recovery['cleanup'].values()),'VISION_SUCCESSOR_RECOVERY_REQUIRED')
+                                                                        name='vision-services-native-live-17';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
             if a.native_config_proof:
                 name='vision-services-native-config-02';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
                 prior_diagnostic=json.loads((Path(c['records'])/'vision-services-native-config-01/result.json').read_bytes())
@@ -462,6 +592,9 @@ def main():
     if a.native_image_path_proof:context['expectedAssignedRoles']=['perception','assessment']
     if a.native_calibration_diagnosis and not a.calibrated_camera_proof:context['nativeCalibrationDiagnosis']=True
     if a.camera_pose_diagnosis and not a.calibrated_camera_proof:context['cameraPoseDiagnosis']=True
+    if a.adversarial_proof:context['nativeAdversarialProof']=True
+    if a.native_network_diagnosis and not a.unix_only_proof:context['nativeNetworkDiagnosis']=True
+    if a.unix_only_proof:context['nativeUnixOnlyProof']=True
     if a.native_services:
         import shutil
         build=Path('/Volumes/SDV-Dev/sdv/build/vision-services');signed=json.loads((build/'signed-03/result.json').read_bytes())
@@ -498,9 +631,29 @@ def main():
                 context['nativeOwnerCapacityFive']=True
                 if a.native_image_path_proof:
                     plan=records/'native-image-path-proof.json';atomic(plan,dict(schemaVersion=1,imagePath='/var/aos/downloads/vision-services/sm-images',preserveOriginal=True,
-                        **({'reuseRecordedCache':True} if a.native_calibration_diagnosis else {})));files.append(plan)
+                        **({'reuseRecordedCache':True} if a.native_calibration_diagnosis else {}),
+                        **(dict(communicationInstallPath='/var/aos/downloads/vision-services/cm-images',expectedServiceSourceRevision='a10c6f354866e5d3e839ee59a18344bb7cad96df') if a.communication_cache_proof else {})));files.append(plan)
         else:context['measurementInputs']={row['name']:dict(bytes=row['bytes'],sha256=known[row['name']]) for row in inventory}
         context['files']={path.name:h.digest(path) for path in files}
+        if a.native_sota:
+            signed_successor=json.loads((build/'signed-04/result.json').read_bytes())
+            require(signed_successor['outcome']=='PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SUCCESSOR_SIGNATURES' and signed_successor['scratchRemoved'],'VISION_NATIVE_SOTA_SIGNATURES_REQUIRED')
+            successors={};expanded=0;source_revision=None
+            for role,pin in signed_successor['services'].items():
+                archive=build/'signed-04'/('vision-'+role+'-0.1.1.tar.gz')
+                require(pin['version']=='0.1.1' and archive.stat().st_size==pin['bytes'] and h.digest(archive)==pin['sha256'],'VISION_NATIVE_SOTA_INPUT_CHANGED')
+                prepared=records/(role+'-successor-prepared.json');shutil.copyfile(build/'packages-02'/role/'prepared.json',prepared);prepared.chmod(0o600)
+                closure=json.loads((build/'closure-09'/role/'closure.json').read_bytes());expanded+=closure['bytes']
+                require(source_revision in (None,pin['sourceRevision']),'VISION_NATIVE_SOTA_SOURCE_MISMATCH');source_revision=pin['sourceRevision']
+                successors[role]=dict(sha256=pin['sha256'],bytes=pin['bytes'],preparedSha256=h.digest(prepared));files.extend([archive,prepared])
+            if a.communication_cache_proof:
+                context['currentNative']=dict(sourceRevision=source_revision,versionIds={role:json.loads((Path(c['records'])/'vision-services-native-live-16'/('sota-'+role+'-publication.json')).read_bytes())['versionId'] for role in successors})
+                context['communicationCacheProof']=True
+            else:context['nativeSota']=dict(services=successors,expandedBytes=expanded,sourceRevision=source_revision)
+            context['files']={path.name:h.digest(path) for path in files}
+    guest_names={'vision_services_primitives_guest.py','vision_cpuinfo_projection.py','aos-vision-exchange.service','aos-vision-exchange-proof',
+        'vision_exchange.pp','camera-access','vision-policy-load','aos_sm_app','aos_cm_app','native-image-path-proof.json'}
+    context['guestFiles']={name:pin for name,pin in context['files'].items() if name in guest_names}
     atomic(records/'context.json',context);t=c['transport'];h.remote(t,'umask 077\nmkdir '+shlex.quote(str(remote)),timeout=15)
     options=h.ssh_args(t)[1:-1];options.remove('-T');i=options.index('-b');options[i:i+2]=['-o','BindAddress='+options[i+1]]
     h.run(['/usr/bin/scp',*options,str(source),str(records/'context.json'),*map(str,files),t['user']+'@'+t['host']+':'+str(remote)+'/'],timeout=30)

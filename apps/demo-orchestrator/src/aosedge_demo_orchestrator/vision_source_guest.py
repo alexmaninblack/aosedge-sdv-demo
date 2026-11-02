@@ -191,7 +191,8 @@ def exchange_ready_facts(values,uid,gid,groups,context,credentials_readonly,sock
 
 
 def exchange_process_ready(pid):
-    user=pwd.getpwnam('aos-vision-exchange');groups={grp.getgrnam('aos-vision-'+role).gr_gid for role in EXCHANGE_ROLES}
+    group_names=dict(zip(EXCHANGE_ROLES,('aos-vision-perc-pub','aos-vision-perc-read','aos-vision-context-read','aos-vision-assess-pub')))
+    user=pwd.getpwnam('aos-vision-exchange');groups={grp.getgrnam(group_names[role]).gr_gid for role in EXCHANGE_ROLES}
     require(user.pw_uid>0 and user.pw_gid>0,'EXCHANGE_IDENTITY_INVALID')
     try:
         proc=Path('/proc')/str(pid);values=dict(row.split(':',1) for row in (proc/'status').read_text().splitlines() if ':' in row)
@@ -204,7 +205,7 @@ def exchange_process_ready(pid):
         for role in EXCHANGE_ROLES:
             path=Path('/run/aos-vision-exchange')/role/'exchange.sock';info=path.lstat()
             sockets.append(stat.S_ISSOCK(info.st_mode) and info.st_uid==user.pw_uid
-                and info.st_gid==grp.getgrnam('aos-vision-'+role).gr_gid and stat.S_IMODE(info.st_mode)==0o660 and str(path) in listening)
+                and info.st_gid==grp.getgrnam(group_names[role]).gr_gid and stat.S_IMODE(info.st_mode)==0o660 and str(path) in listening)
         return exchange_ready_facts(values,user.pw_uid,user.pw_gid,groups,(proc/'attr/current').read_text(),readonly,sockets)
     except (FileNotFoundError,ProcessLookupError):return False
 

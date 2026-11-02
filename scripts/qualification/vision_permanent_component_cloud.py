@@ -17,6 +17,7 @@ import tempfile
 ROOTFS='aos-vision-vm-1.0.0-main-qemuarm64-rootfs'
 CAMERA='aos-vision-vm-1.0.0-main-qemuarm64-camera-access'
 VERSIONS={ROOTFS:'6.1.1-vision-camera.5',CAMERA:'0.1.1'}
+SERVICES_VERSIONS={ROOTFS:'6.1.1-vision-camera.6',CAMERA:'0.1.2'}
 LIMIT=8*1024**3
 
 
@@ -24,12 +25,12 @@ def require(ok,code):
     if not ok:raise ValueError('VISION_PERMANENT_'+code)
 
 
-def configuration(kind, title='DEFAULT'):
+def configuration(kind, title='DEFAULT',*,services_packet=False):
     require(kind in VERSIONS,'COMPONENT_INVALID')
     root=kind==ROOTFS
     return dict(schemaVersion=2,publisher=dict(author='maninblack'),items=[dict(
         identity=dict(type='component',codename=kind,title=('Vision Rootfs' if root else 'Camera Access') if title=='DEFAULT' else title),
-        version=VERSIONS[kind],sourceFolder='rootfs' if root else 'camera-access',
+        version=(SERVICES_VERSIONS if services_packet else VERSIONS)[kind],sourceFolder='rootfs' if root else 'camera-access',
         configuration=dict(runtimes=[dict(codename=kind,type='runtime')]),
         images=[dict(path='image.squashfs' if root else 'payload.tar.gz',archInfo=dict(architecture='arm64'),
                      osInfo=dict(os='linux'),mediaType='application/vnd.aos.image.component.full.v1+'+('squashfs' if root else 'gzip'))])])
@@ -57,13 +58,13 @@ def entries(archive,allowed):
     require(names==set(allowed),'ARCHIVE_CONTENTS_INVALID')
 
 
-def verify(path,credential,kind,payload_sha,payload_bytes,expected=None,*,title='DEFAULT'):
+def verify(path,credential,kind,payload_sha,payload_bytes,expected=None,*,title='DEFAULT',services_packet=False):
     """Stream the large FOTA envelope; keep the Main 128-MiB parser unchanged."""
     import jwt
     from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
     require(path.is_file() and not path.is_symlink() and 0<path.stat().st_size<=LIMIT,'BUNDLE_UNSAFE')
     outer_sha=sha(path);require(expected is None or outer_sha==expected,'SIGNED_DIGEST_CHANGED')
-    config=configuration(kind,title);item=config['items'][0];payload_name=item['sourceFolder']+'/'+item['images'][0]['path']
+    config=configuration(kind,title,services_packet=services_packet);item=config['items'][0];payload_name=item['sourceFolder']+'/'+item['images'][0]['path']
     records=[];small={}
     with tempfile.TemporaryDirectory(prefix='.vision-verify-',dir=path.parent) as temporary:
         batch=Path(temporary)/'batch.tar.gz'
@@ -102,12 +103,17 @@ def execute(r):
     from aosedge_demo_orchestrator.component_publication import Reads,recipients,publication,bundle_view
     from aosedge_demo_orchestrator.component_cloud import resolve_component,unit_view,upload_bundle
     from aosedge_demo_orchestrator.component_worker import credential_snapshot
-    kind=r['componentType'];require(kind in VERSIONS and r['version']==VERSIONS[kind],'EXACT_COMPONENT_VERSION_REQUIRED')
-    require(r.get('permanentDelivery')==dict(authorized=True,recoveryFirst=True,rootfsVersion=VERSIONS[ROOTFS],
-        cameraVersion=VERSIONS[CAMERA],readVersion='0.1.4',revokeVersion='0.1.5'),'PACKET_AUTHORITY_REQUIRED')
+    services_packet=r.get('servicesPacket',False);require(type(services_packet) is bool,'PACKET_INVALID')
+    versions_profile=SERVICES_VERSIONS if services_packet else VERSIONS
+    kind=r['componentType'];require(kind in versions_profile and r['version']==versions_profile[kind],'EXACT_COMPONENT_VERSION_REQUIRED')
+    authority=dict(authorized=True,recoveryFirst=True,rootfsVersion=versions_profile[ROOTFS],cameraVersion=versions_profile[CAMERA],
+        **(dict(perceptionVersion='0.1.1',assessmentVersion='0.1.1') if services_packet else dict(readVersion='0.1.4',revokeVersion='0.1.5')))
+    require(r.get('permanentDelivery')==authority,'PACKET_AUTHORITY_REQUIRED')
+    if services_packet:require(r['vehicles']['test']['unitId']=='af6d074a-6ce1-49ba-b613-0476e7b6d1b5'
+        and r['vehicles']['test']['nodeHardwareId']=='89273f164be04b22b4cb58d08533c8bc','SERVICES_TARGET_CHANGED')
     cloud=Cloud(dict(credential=r['oemCredential'],cloudDomain=r['cloudDomain'],ownerId=r['oemOwner']))
     action=r['action']
-    if action=='status':
+    if action in ('status','preflight'):
         # Native rootfs trial/apply reboots legitimately make this exact Unit
         # offline. Read-only observation keeps the full identity binding;
         # every write still requires the ordinary Online scope below.
@@ -126,7 +132,7 @@ def execute(r):
             and sha(source)==r['payloadSha256'] and not output.exists(),'SIGN_INPUT_CHANGED')
         current=resolve_component(cloud,component_type=kind)
         require(current is not None and current.get('title')==r['componentTitle'],'COMPONENT_TITLE_CHANGED')
-        config=configuration(kind,r['componentTitle']);item=config['items'][0]
+        config=configuration(kind,r['componentTitle'],services_packet=services_packet);item=config['items'][0]
         with tempfile.TemporaryDirectory(prefix='.vision-sign-',dir=output.parent) as temporary:
             stage=Path(temporary);target=stage/item['sourceFolder']/item['images'][0]['path'];target.parent.mkdir()
             shutil.copyfile(source,target);p=stage/'config.yaml';p.write_text(json.dumps(config));old=Path.cwd()
@@ -134,7 +140,7 @@ def execute(r):
                 os.chdir(stage)
                 with credential_snapshot(dict(credential=r['oemCredential'])) as private:
                     Signer(UpdateBundleConfiguration(p),p,pkcs12_path=private['credential']).process()
-                    value=verify(stage/'batch.tar.gz',Path(private['credential']),kind,r['payloadSha256'],r['payloadBytes'],title=r['componentTitle'])
+                    value=verify(stage/'batch.tar.gz',Path(private['credential']),kind,r['payloadSha256'],r['payloadBytes'],title=r['componentTitle'],services_packet=services_packet)
             finally:os.chdir(old)
             shutil.copyfile(stage/'batch.tar.gz',output);output.chmod(0o444)
         return value
@@ -149,12 +155,16 @@ def execute(r):
     unit=unit_view(reads,r['vehicles']['test'],strict=True,component_type=kind)
     result=dict(publication=observed,unit=unit,componentId=component['id'],componentTitle=component.get('title'),versions=selected)
     if action=='status':return result
+    if action=='preflight':
+        coverage=recipients(reads,r);require(coverage['complete'],'RECIPIENT_SCOPE_UNPROVEN')
+        require(observed['stage']=='NOT_PUBLISHED' and not selected and not bundles,'PUBLICATION_EXISTS_RECONCILE')
+        return dict(result,recipientScopeComplete=True,publicationCollision=False)
     require(component.get('title')==r['componentTitle'],'COMPONENT_TITLE_CHANGED')
     coverage=recipients(reads,r);require(coverage['complete'],'RECIPIENT_SCOPE_UNPROVEN')
     if action=='upload':
         require(observed['stage']=='NOT_PUBLISHED' and not selected and not bundles,'PUBLICATION_EXISTS_RECONCILE')
         require(unit['components'] is not None and not any(v.get('pending_component') for v in unit['components']),'PENDING_COMPONENT_RECONCILE')
-        path=Path(r['bundle']);verify(path,Path(r['oemCredential']),kind,r['payloadSha256'],r['payloadBytes'],r['expectedSha256'],title=r['componentTitle'])
+        path=Path(r['bundle']);verify(path,Path(r['oemCredential']),kind,r['payloadSha256'],r['payloadBytes'],r['expectedSha256'],title=r['componentTitle'],services_packet=services_packet)
         return upload_bundle(cloud,path,prefix='VISION_PERMANENT')
     require(action=='send' and observed['stage']=='READY','PUBLICATION_NOT_READY')
     version_id=observed['versionId'];unit_id=r['vehicles']['test']['unitId']

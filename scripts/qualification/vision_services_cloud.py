@@ -21,6 +21,8 @@ HARDWARE='89273f164be04b22b4cb58d08533c8bc'
 SET='09068ddf-7bb3-4454-bbe7-e24274d30dac'
 LABEL='SDV Vision Pilot'
 ROLES=('perception','assessment')
+SERVICES={'perception':'b929f003-84c2-4928-94b0-58db5e2be38e','assessment':'4c769afe-5d90-4ea1-bb02-3b97d97edcd5'}
+FIRST_VERSIONS={'perception':'dad81788-1947-458b-ad61-f8a5e800e5a6','assessment':'da58bf5f-7b7b-4a2e-a314-641c099f3b6e'}
 
 
 def require(ok,code):
@@ -49,9 +51,11 @@ def execute(r):
     from aosedge_demo_orchestrator.component_publication import Reads,bundle_view
     from aosedge_demo_orchestrator.service_assignment import _subject
     from aosedge_demo_orchestrator.status import object_id
-    action=r['action'];role=r.get('role')
+    action=r['action'];role=r.get('role');successor=r.get('unixOnlySuccessor',False)
+    require(type(successor) is bool,'SUCCESSOR_MODE_INVALID');wanted_version='0.1.1' if successor else '0.1.0'
     require(action in ('preflight','catalog','upload','publication','subject-create','subject-status','subject-bind','subject-assign'),'ACTION_DENIED')
     require(role in ROLES or (role is None and action in ('preflight','subject-create','subject-status','subject-bind')),'ROLE_DENIED')
+    require(not successor or action in ('preflight','catalog','upload','publication','subject-status'),'SUCCESSOR_SUBJECT_WRITE_DENIED')
     oem=Cloud(dict(credential=r['oemCredential'],cloudDomain=r['cloudDomain'],ownerId=r['oemOwner']));scope(oem,r)
     provider=Cloud(dict(credential=r['spCredential'],cloudDomain=r['cloudDomain'],ownerId=r['spOwner']),expected_role='service provider')
     provider.require('services_list','services_read','services_service_versions_list','services_units_list','deployment_bundles_list')
@@ -62,7 +66,12 @@ def execute(r):
         current=service_view(candidates[0],provider.user) if candidates else None
         require(current is None or current['title']=='Vision '+name.title(),'SERVICE_TITLE_CHANGED');services[name]=current
         rows=[version_view(row) for row in provider.pages('services/'+current['id']+'/service-versions/')] if current else []
-        require(len(rows)<=1 and all(row['version']=='0.1.0' for row in rows),'UNEXPECTED_VERSION_RECONCILE');versions[name]=rows
+        require(len(rows)<=(2 if successor else 1) and len({row['version'] for row in rows})==len(rows)
+            and all(row['version'] in (('0.1.0','0.1.1') if successor else ('0.1.0',)) for row in rows),'UNEXPECTED_VERSION_RECONCILE');versions[name]=rows
+        if successor:
+            baseline=[row for row in rows if row['version']=='0.1.0']
+            require(current is not None and current['id']==SERVICES[name] and len(baseline)==1 and baseline[0]['id']==FIRST_VERSIONS[name],
+                'SUCCESSOR_BASELINE_IDENTITY_CHANGED')
         if current:
             recipients=[unit_view(row) for row in provider.pages('services/'+current['id']+'/units/')]
             require(all(row['id']==UNIT and row['system_uid']==r['vehicle']['systemUid'] for row in recipients),'FOREIGN_SERVICE_RECIPIENT')
@@ -76,12 +85,12 @@ def execute(r):
         return dict(ready=True,services={name:dict(serviceId=services[name]['id'] if services[name] else None,versions=versions[name]) for name in ROLES},subjectCandidates=[object_id(row['id']) for row in subjects])
     if action=='catalog':return dict(serviceId=services[role]['id'] if services[role] else None,versions=versions[role])
     if action=='upload':
-        require(not versions[role],'VERSION_EXISTS_RECONCILE')
+        require(not any(row['version']==wanted_version for row in versions[role]),'VERSION_EXISTS_RECONCILE')
         package=Path(r['packageModule']);prepared_path=Path(r['prepared'])
         require(not package.is_symlink() and hashlib.sha256(package.read_bytes()).hexdigest()==r['packageModuleSha256']
             and not prepared_path.is_symlink() and hashlib.sha256(prepared_path.read_bytes()).hexdigest()==r['preparedSha256'],'PACKAGE_VERIFIER_CHANGED')
         module=runpy.run_path(str(package));prepared=json.loads(prepared_path.read_bytes())
-        require(prepared['role']==role and prepared['version']=='0.1.0','PREPARED_IDENTITY_CHANGED')
+        require(prepared['role']==role and prepared['version']==wanted_version,'PREPARED_IDENTITY_CHANGED')
         signed=module['verify_signed'](Path(r['bundle']),Path(r['spCredential']),role,prepared,r['expectedSha256'])
         from aosedge_demo_orchestrator.component_cloud import upload_bundle
         return dict(upload_bundle(provider,Path(r['bundle']),prefix='VISION_SERVICES'),signedSha256=signed['sha256'])
@@ -89,12 +98,13 @@ def execute(r):
         rows=Reads(provider).pages('deployment-bundles/',object_id(r['deploymentId']));require(len(rows)==1,'DEPLOYMENT_NOT_OBSERVED')
         bundle=bundle_view(rows[0]);state=str(bundle['state']).lower()
         require(state!='error','DEPLOYMENT_BUILD_FAILED')
-        if state!='done' or not versions[role]:return dict(stage='PROCESSING',serviceId=services[role]['id'] if services[role] else None)
+        selected=[row for row in versions[role] if row['version']==wanted_version]
+        if state!='done' or not selected:return dict(stage='PROCESSING',serviceId=services[role]['id'] if services[role] else None)
         require(len(bundle['items'])==1 and bundle['items'][0]['type']=='service'
-            and bundle['items'][0]['codename']=='vision-'+role and bundle['items'][0]['version']=='0.1.0','DEPLOYMENT_ITEMS_CHANGED')
-        version=versions[role][0]
-        return dict(stage='READY' if str(version['container_state']).lower()=='ready' else 'PROCESSING',serviceId=services[role]['id'],versionId=version['id'],version='0.1.0')
-    require(all(services[name] and len(versions[name])==1 and str(versions[name][0]['container_state']).lower()=='ready' for name in ROLES),'BOTH_READY_SERVICES_REQUIRED')
+            and bundle['items'][0]['codename']=='vision-'+role and bundle['items'][0]['version']==wanted_version,'DEPLOYMENT_ITEMS_CHANGED')
+        version=selected[0]
+        return dict(stage='READY' if str(version['container_state']).lower()=='ready' else 'PROCESSING',serviceId=services[role]['id'],versionId=version['id'],version=wanted_version)
+    require(all(services[name] and versions[name] and all(str(row['container_state']).lower()=='ready' for row in versions[name]) for name in ROLES),'BOTH_READY_SERVICES_REQUIRED')
     planned={services[name]['id'] for name in ROLES}
     require(r.get('serviceIds')=={name:services[name]['id'] for name in ROLES},'PUBLISHED_SERVICE_BINDING_CHANGED')
     if action=='subject-create':

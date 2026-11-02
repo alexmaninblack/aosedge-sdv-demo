@@ -73,6 +73,11 @@ class Transaction:
         self.inputs=inputs;self.original={};self.bound=[];self.policy_loaded=False;self.exec_mounted=False;self.broker_exec_mounted=False;self.started=False;self.stock=None;self.canonical=None
         self.unit_text=None;self.iam_text=None;self.created_dirs=[];self.ready=False
         self.audit_cursor=0;self.owner_overrides=[];self.owner_exec_mounted=False;self.image_cache=None;self.exec_diagnosis=None
+        plan=json.loads((inputs/'native-image-path-proof.json').read_bytes()) if (inputs/'native-image-path-proof.json').exists() else {}
+        self.plan=plan
+        self.group_names=plan.get('groupNames',{r:'aos-vision-'+r for r in ROLES})
+        require(self.group_names in ({r:'aos-vision-'+r for r in ROLES},dict(zip(ROLES,('aos-vision-perc-pub','aos-vision-perc-read','aos-vision-context-read','aos-vision-assess-pub')))),
+            'VISION_PRIMITIVES_GROUP_NAMES_CHANGED')
 
     def bind(self,source,target):
         require(not os.path.ismount(target),'VISION_PRIMITIVES_CONFIG_ALREADY_BOUND')
@@ -122,9 +127,14 @@ class Transaction:
         self.uid=uid;self.gids=dict(zip(('owner',*ROLES),gids))
         passwd=Path('/etc/passwd').read_text();group=Path('/etc/group').read_text()
         passwd+='\naos-vision-exchange:x:'+str(uid)+':'+str(gids[0])+':Vision exchange:/nonexistent:/bin/false\n'
-        group+='\n'+'\n'.join(name+':x:'+str(gid)+':' for name,gid in zip(('aos-vision-exchange',*('aos-vision-'+r for r in ROLES)),gids))+'\n'
+        group+='\n'+'\n'.join(name+':x:'+str(gid)+':' for name,gid in zip(('aos-vision-exchange',*(self.group_names[r] for r in ROLES)),gids))+'\n'
+        if self.plan.get('legacyGroupAliases') is True:
+            # Only the retained signed .6.2 host observer uses these names.
+            # Alias the same numeric groups in this reversible NSS projection;
+            # no additional group ID or application permission is introduced.
+            group+='\n'.join('aos-vision-'+r+':x:'+str(self.gids[r])+':' for r in ROLES if self.group_names[r]!='aos-vision-'+r)+'\n'
         resources=json.loads(Path('/etc/aos/resources.cfg').read_bytes());require([r['name'] for r in resources]==['vision-camera-read'],'VISION_PRIMITIVES_RESOURCE_BASELINE_CHANGED')
-        resources += [dict(name='vision-'+role,sharedCount=1,groups=['aos-vision-'+role],mounts=[dict(source=str(RUNTIME/role),destination='/run/aosedge/vision/'+role,type='bind',options=['bind','ro','nosuid','nodev','noexec'])]) for role in ROLES]
+        resources += [dict(name='vision-'+role,sharedCount=1,groups=[self.group_names[role]],mounts=[dict(source=str(RUNTIME/role),destination='/run/aosedge/vision/'+role,type='bind',options=['bind','ro','nosuid','nodev','noexec'])]) for role in ROLES]
         iam=json.loads(Path('/etc/aos/iam.cfg').read_bytes());require(iam['nodeInfo'].get('maxDmips')==10000 and 'cpuInfoPath' not in iam['nodeInfo'],'VISION_PRIMITIVES_NODE_BUDGET_CHANGED')
         iam['nodeInfo']['cpuInfoPath']=str(CPU)
         candidates={'passwd':(Path('/etc/passwd'),passwd),'group':(Path('/etc/group'),group),
@@ -133,10 +143,15 @@ class Transaction:
         if (self.inputs/'native-image-path-proof.json').exists():
             plan=json.loads((self.inputs/'native-image-path-proof.json').read_bytes())
             reuse=plan.get('reuseRecordedCache',False)
-            require(plan==dict(schemaVersion=1,imagePath='/var/aos/downloads/vision-services/sm-images',preserveOriginal=True,**({'reuseRecordedCache':True} if reuse else {})),'VISION_IMAGE_PATH_PROOF_PLAN_CHANGED')
+            communication=plan.get('communicationInstallPath')
+            reuse_communication=plan.get('reuseCommunicationCache',False)
+            require(plan==dict(schemaVersion=1,imagePath='/var/aos/downloads/vision-services/sm-images',preserveOriginal=True,**({'reuseRecordedCache':True} if reuse else {}),
+                **(dict(communicationInstallPath='/var/aos/downloads/vision-services/cm-images',expectedServiceSourceRevision='a10c6f354866e5d3e839ee59a18344bb7cad96df') if communication else {}),
+                **(dict(reuseCommunicationCache=True,groupNames=self.group_names) if reuse_communication else {}),
+                **(dict(legacyGroupAliases=True) if plan.get('legacyGroupAliases') is True else {})),'VISION_IMAGE_PATH_PROOF_PLAN_CHANGED')
             source=Path('/var/aos/workdirs/sm/images');parent=Path('/var/aos/downloads/vision-services');target=parent/'sm-images'
             require(source.is_dir() and not source.is_symlink() and os.path.ismount('/var/aos/downloads')
-                and shutil.disk_usage('/var/aos/downloads').free>900*1024**2,'VISION_IMAGE_PATH_CAPACITY_OR_OWNERSHIP_CONFLICT')
+                and shutil.disk_usage('/var/aos/downloads').free>(32 if communication else 900)*1024**2,'VISION_IMAGE_PATH_CAPACITY_OR_OWNERSHIP_CONFLICT')
             # Native immutable cache only; no database, application storage,
             # state, credential, runtime or Camera store is moved or deleted.
             require(all(p.is_symlink() or p.stat().st_uid==0 for p in source.rglob('*')),'VISION_IMAGE_PATH_CACHE_OWNER_CHANGED')
@@ -154,6 +169,27 @@ class Transaction:
                 partitionBytes=shutil.disk_usage(target).total,freeBytes=shutil.disk_usage(target).free,reusedRecordedNativeCache=reuse)
             sm=json.loads(Path('/etc/aos/sm.cfg').read_bytes());require('imagePath' not in sm.get('imageManager',{}),'VISION_IMAGE_PATH_EXISTING_OVERRIDE')
             sm.setdefault('imageManager',{})['imagePath']=str(target);candidates['sm.cfg']=(Path('/etc/aos/sm.cfg'),json.dumps(sm))
+            if communication:
+                # No new model is acquired in this proof. Both complete native
+                # successors must already be here before the cache-copy budget
+                # is calculated; the first-delivery 900-MiB estimate is not used.
+                profiles=[]
+                for path in target.rglob('service-manifest.json'):
+                    if path.is_file() and not path.is_symlink() and path.stat().st_size<16384:
+                        value=json.loads(path.read_bytes())
+                        if value.get('version')=='0.1.1' and value.get('sourceRevision')==plan['expectedServiceSourceRevision']:profiles.append(value.get('codename'))
+                require(set(profiles)=={'vision-perception','vision-assessment'},'VISION_COMMUNICATION_CACHE_NATIVE_SUCCESSORS_REQUIRED')
+                cm=json.loads(Path('/etc/aos/cm.cfg').read_bytes());old_install=Path('/var/aos/workdirs/cm/imagemanager/install');new_install=Path(communication)
+                require(cm.get('imageManager',{}).get('installPath')==str(old_install) and old_install.is_dir() and not old_install.is_symlink()
+                    and (new_install.is_dir() and not new_install.is_symlink() and new_install.stat().st_uid==0 if reuse_communication else not new_install.exists()),'VISION_COMMUNICATION_CACHE_BASELINE_CHANGED')
+                original_cm={str(p.relative_to(old_install)):(p.stat().st_size,digest(p)) for p in old_install.rglob('*') if p.is_file() and not p.is_symlink()}
+                needed=(0 if reuse_communication else sum(v[0] for v in original_cm.values()))+32*1024**2
+                require(shutil.disk_usage(parent).free>=needed,'VISION_COMMUNICATION_CACHE_COPY_CAPACITY')
+                if not reuse_communication:call(['cp','-a','--',str(old_install),str(new_install)],60)
+                copied_cm={str(p.relative_to(new_install)):(p.stat().st_size,digest(p)) for p in new_install.rglob('*') if p.is_file() and not p.is_symlink()}
+                if not reuse_communication:require(copied_cm==original_cm,'VISION_COMMUNICATION_CACHE_COPY_CHANGED')
+                cm['imageManager']['installPath']=str(new_install);candidates['cm.cfg']=(Path('/etc/aos/cm.cfg'),json.dumps(cm))
+                self.image_cache['communicationCache']=dict(path=str(new_install),bytes=sum(v[0] for v in original_cm.values()),files=len(original_cm),originalPreserved=True)
         if (self.inputs/'aos_sm_app').exists():
             require((self.inputs/'aos_cm_app').is_file(),'VISION_CAPACITY_OWNER_PAIR_REQUIRED')
             owners=ROOT/'owners';owners.mkdir(mode=0o700)
@@ -169,7 +205,7 @@ class Transaction:
                 drop.write_text(text);drop.chmod(0o644);self.owner_overrides.append((drop,text))
         for name,(target,text) in candidates.items():
             source=ROOT/'private'/name;source.write_text(text);source.chmod(stat.S_IMODE(target.stat().st_mode));self.bind(source,target)
-        require(pwd.getpwnam('aos-vision-exchange').pw_uid==uid and all(grp.getgrnam('aos-vision-'+r).gr_gid==self.gids[r] for r in ROLES),'VISION_PRIMITIVES_NATIVE_NSS_UNCONFIRMED')
+        require(pwd.getpwnam('aos-vision-exchange').pw_uid==uid and all(grp.getgrnam(self.group_names[r]).gr_gid==self.gids[r] for r in ROLES),'VISION_PRIMITIVES_NATIVE_NSS_UNCONFIRMED')
         self.iam_text='[Service]\nExecStartPre=/usr/bin/python3 -I -B '+str(ROOT/'vision_cpuinfo_projection.py')+' --write-profile\n'
         IAM_DROPIN.parent.mkdir(mode=0o755,parents=True,exist_ok=True);IAM_DROPIN.write_text(self.iam_text);IAM_DROPIN.chmod(0o644)
         self.unit_text=(self.inputs/'aos-vision-exchange.service').read_text().replace('ExecStart=/usr/libexec/aos-vision-exchange-launcher','ExecStart='+str(ROOT/'exec/aos-vision-exchange-launcher'))
@@ -307,6 +343,17 @@ class Transaction:
             except (FileNotFoundError,ProcessLookupError,PermissionError):continue
         return dict(instances=result,storage=self.storage())
 
+    def native_network_diagnosis(self):
+        actual=self.native()['instances'];require(set(actual)=={'vision-perception','vision-assessment'},'VISION_NATIVE_NETWORK_IDENTITIES_REQUIRED')
+        # This Factory uses nftables, not the absent iptables-save utility.
+        values=dict(guestNft=json.loads(call(['nft','-j','list','ruleset'],10)),guestNetworkNamespace=os.readlink('/proc/self/ns/net'))
+        for name,row in actual.items():
+            pid=str(row['pid']);prefix=['nsenter','--target',pid,'--net']
+            values[name]=dict(namespaces=row['namespaces'],routes=(Path('/proc')/pid/'net/route').read_text(),
+                interfaces=(Path('/proc')/pid/'net/dev').read_text(),
+                nft=json.loads(call([*prefix,'nft','-j','list','ruleset'],10)) if shutil.which('nsenter') else None)
+        return dict(readOnly=True,actualNativeNamespaces=True,configuration=values)
+
     def root_denial(self):
         results=[]
         for role in ROLES:
@@ -332,8 +379,9 @@ class Transaction:
         self.audit_cursor=Path('/var/log/audit/audit.log').stat().st_size
         return dict(outcome='PASS_WRONG_ROOT_PEER_DENIED' if all(row['denied'] for row in results) else 'NOT_COMPLETE',roles=results)
 
-    def native_calibration_diagnosis(self):
+    def native_calibration_diagnosis(self,purpose='calibration'):
         """Read through real existing OCI instances, never launch a substitute."""
+        require(purpose in ('calibration','roles','unix-only'),'VISION_NATIVE_FIXED_PROBE_REQUIRED')
         actual=self.native()['instances'];require(set(actual)=={'vision-perception','vision-assessment'},'VISION_CALIBRATION_NATIVE_PAIR_REQUIRED')
         config=json.loads(Path('/etc/aos/sm.cfg').read_bytes());plugins=[row for row in config['runtimes'] if row['plugin']=='container']
         require(len(plugins)==1,'VISION_CALIBRATION_CONTAINER_RUNTIME_AMBIGUOUS')
@@ -379,7 +427,58 @@ assert all(int(status[key].strip(),16)==0 for key in ('CapEff','CapPrm','CapInh'
                 path.unlink()
                 for stream in streams:
                     if stream.exists():stream.unlink()
-        pair=execute('perception',"from vision_common.client import camera_pair\npair=camera_pair();assert pair is not None\nprint(json.dumps(dict(binding=pair[0],frame=pair[1][-1])))\n")
+        if purpose in ('roles','unix-only'):
+            results={}
+            for role,names in (('perception',['perception-publish']),('assessment',['perception-read','context-read','assessment-publish'])):
+                sandbox='''import ctypes as c
+class Filter(c.Structure):_fields_=[('code',c.c_ushort),('jt',c.c_ubyte),('jf',c.c_ubyte),('k',c.c_uint)]
+class Program(c.Structure):_fields_=[('len',c.c_ushort),('filter',c.POINTER(Filter))]
+rules=[(0x20,0,0,4),(0x15,1,0,0xc00000b7),(0x06,0,0,0x80000000),
+ (0x20,0,0,0),(0x15,0,3,198),(0x20,0,0,16),(0x15,1,0,1),(0x06,0,0,0x50001),
+ (0x20,0,0,0),(0x15,0,3,199),(0x20,0,0,16),(0x15,1,0,1),(0x06,0,0,0x50001),
+ (0x20,0,0,0),(0x15,0,1,425),(0x06,0,0,0x50001),(0x15,0,1,426),(0x06,0,0,0x50001),
+ (0x15,0,1,427),(0x06,0,0,0x50001),(0x06,0,0,0x7fff0000)]
+filters=(Filter*len(rules))(*(Filter(*row) for row in rules));program=Program(len(rules),filters)
+libc=c.CDLL(None,use_errno=True);assert libc.prctl(38,1,0,0,0)==0
+assert libc.prctl(22,2,c.byref(program),0,0)==0
+assert next(row.split(':')[1].strip() for row in pathlib.Path('/proc/self/status').read_text().splitlines() if row.startswith('Seccomp:'))=='2'
+''' if purpose=='unix-only' else ''
+                body=sandbox+'''import socket,time,errno
+from vision_common import ipc,protocol as p
+from vision_common.client import Client,ROOT,ROLES
+assigned=ASSIGNED
+for role in assigned:
+ response=Client(role).request('status');assert response['state']=='STATUS' and response['reason']=='READY'
+ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as connection:
+  connection.settimeout(2);connection.connect(str(ROOT/role/'exchange.sock'));deadline=time.monotonic()+2
+  operation='latest' if role=='context-read' else 'context'
+  ipc.send(connection,dict(schemaVersion=1,operation=operation),deadline,p.MAX_REQUEST)
+  denied=ipc.receive(connection,deadline,p.MAX_REQUEST)
+  assert denied['state']=='REJECTED' and denied['reason']=='REQUEST_REJECTED'
+assert all(not (ROOT/role).exists() for role in ROLES if role not in assigned)
+connection=None
+try:
+ connection=socket.socket(socket.AF_INET,socket.SOCK_STREAM);connection.settimeout(1)
+ connection.connect(('10.0.0.1',16443));raise AssertionError('NATIVE_NETWORK_CONNECTED')
+except OSError as error:
+ assert error.errno in (errno.EPERM,errno.EACCES,errno.ENETUNREACH)
+ network=errno.errorcode[error.errno]
+finally:
+ if connection is not None:connection.close()
+print(json.dumps(dict(actualNativeIdentityVerified=True,positiveRoleStatuses=len(assigned),wrongOperationsDenied=len(assigned),unassignedRolesAbsent=True,networkDenied=network,credentialUsed=False)))
+'''.replace('ASSIGNED',repr(names))
+                results[role]=execute(role,body)
+            # Native negative denials, if audited, must be exactly the tested
+            # network boundary. They are not a grant or a functional AVC pass.
+            with Path('/var/log/audit/audit.log').open('rb') as stream:stream.seek(self.audit_cursor);raw=stream.read(1048577)
+            require(len(raw)<=1048576,'VISION_PRIMITIVES_AUDIT_LIMIT')
+            avcs=[row for row in raw.decode(errors='replace').splitlines() if 'avc:' in row and ('container_engine_t' in row or 'vision_exchange' in row or 'camera_ingress_t' in row)]
+            require(all('scontext=' in row and ':container_engine_t:' in row and 'tclass=tcp_socket' in row
+                and any('{ '+permission+' }' in row for permission in ('create','connect','name_connect')) for row in avcs),'VISION_NATIVE_UNEXPECTED_NEGATIVE_AVC')
+            self.audit_cursor=Path('/var/log/audit/audit.log').stat().st_size
+            return dict(roles=results,expectedNetworkDenyAvcs=len(avcs),transientProcessFilter=purpose=='unix-only',
+                outcome='PASS_TRANSIENT_NATIVE_UNIX_ONLY_ROLE_AND_NETWORK_NEGATIVES' if purpose=='unix-only' else 'PASS_ACTUAL_NATIVE_ROLE_AND_NETWORK_NEGATIVES')
+        pair=execute('perception',"from vision_common.client import camera_pair\nimport time\nend=time.monotonic()+2;pair=camera_pair()\nwhile pair is None and time.monotonic()<end:time.sleep(.02);pair=camera_pair()\nassert pair is not None\nprint(json.dumps(dict(binding=pair[0],frame=pair[1][-1])))\n")
         body="from vision_common.client import Client\nreader=Client('context-read');reader.request('status');context=reader.request('context',binding="+repr(pair['binding'])+",frame="+repr(pair['frame'])+")\nassert context['kind']=='context'\nvalue=context['calibration'];reason=value['reason']\nassert reason in ('CURRENT','PLANE_UNAVAILABLE','MOUNT_INCOMPATIBLE','CALIBRATION_GEOMETRY_INVALID','CALIBRATION_UNAVAILABLE')\nprint(json.dumps(dict(calibrationAvailable=value['available'],reason=reason,nativeIdentitiesAndNamespacesVerified=True,cameraHashContextMatched=True,credentialUsed=False)))\n"
         return execute('assessment',body)
 

@@ -26,14 +26,14 @@ def require(ok,code):
     if not ok:raise ValueError(code)
 
 
-def worker(role,target):
+def worker(role,target,successor=False):
     from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
     from aos_signer.signer.signer import Signer
     sys.path.insert(0,str(ROOT/'apps/demo-orchestrator/src'))
     from aosedge_demo_orchestrator.component_worker import credential_snapshot,credential_identity
     package=runpy.run_path(str(SERVICES/'tools/aos_package.py'))
-    source=BUILD/'packages-01'/role;prepared=json.loads((source/'prepared.json').read_bytes())
-    require(prepared['role']==role and prepared['signing']==prepared['publication']=='NOT_RUN','VISION_SIGNING_PREPARATION_CHANGED')
+    source=BUILD/('packages-02' if successor else 'packages-01')/role;prepared=json.loads((source/'prepared.json').read_bytes())
+    require(prepared['role']==role and prepared['version']==('0.1.1' if successor else '0.1.0') and prepared['signing']==prepared['publication']=='NOT_RUN','VISION_SIGNING_PREPARATION_CHANGED')
     require(Path(os.environ['TMPDIR']).is_relative_to(BUILD/'.tmp'),'VISION_SIGNING_REQUIRES_OWNED_SSD_SCRATCH')
     require(not target.exists(),'VISION_SIGNED_OUTPUT_EXISTS_RECONCILE')
     secret=json.loads(sys.stdin.read(32769))
@@ -58,16 +58,16 @@ def worker(role,target):
                 produced=source/'batch.tar.gz'
                 observed=package['verify_signed'](produced,Path(private['credential']),role,prepared)
         shutil.copyfile(produced,target);target.chmod(0o444);produced.unlink()
-        return dict(outcome='PASS_OFFICIAL_VISION_SERVICE_SIGNATURE',role=role,version='0.1.0',
+        return dict(outcome='PASS_OFFICIAL_VISION_SERVICE_SIGNATURE',role=role,version=prepared['version'],
             sourceRevision=prepared['sourceRevision'],**observed,publication='NOT_RUN')
     finally:os.chdir(old)
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--worker',choices=('perception','assessment'));parser.add_argument('--target',type=Path);parser.add_argument('--config',type=Path);parser.add_argument('--selected-account',action='store_true');a=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--worker',choices=('perception','assessment'));parser.add_argument('--target',type=Path);parser.add_argument('--config',type=Path);parser.add_argument('--selected-account',action='store_true');parser.add_argument('--unix-only-successor',action='store_true');a=parser.parse_args()
     if a.worker:
         try:
-            with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):result=worker(a.worker,a.target)
+            with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):result=worker(a.worker,a.target,a.unix_only_successor)
         except Exception as error:
             value=str(error);result=dict(outcome='NOT_COMPLETE',code=value if value.isupper() and len(value)<120 else type(error).__name__)
         print(json.dumps(result));return 0 if result['outcome'].startswith('PASS_') else 1
@@ -119,19 +119,23 @@ print(json.dumps(dict(credentialBase64=secret,cloudDomain='aoscloud.io')))
     require(failed['services']['perception']['code']=='ValueError' and failed['publication']=='NOT_RUN'
         and not list((BUILD/'signed-02').glob('*.tar.gz'))
         and not any((BUILD/'packages-01'/role/'batch.tar.gz').exists() for role in ('perception','assessment')),'VISION_EMPTY_SIGNING_ATTEMPT_REQUIRED')
-    target=BUILD/'signed-03';require(not target.exists(),'VISION_SIGNING_ATTEMPT_EXISTS_RECONCILE');target.mkdir(mode=0o700)
+    if a.unix_only_successor:
+        previous=json.loads((BUILD/'signed-03/result.json').read_bytes())
+        require(previous['outcome']=='PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SIGNATURES' and previous['scratchRemoved'],'VISION_PREVIOUS_SIGNATURES_REQUIRED')
+    version='0.1.1' if a.unix_only_successor else '0.1.0'
+    target=BUILD/('signed-04' if a.unix_only_successor else 'signed-03');require(not target.exists(),'VISION_SIGNING_ATTEMPT_EXISTS_RECONCILE');target.mkdir(mode=0o700)
     result=dict(outcome='NOT_COMPLETE',services={},publication='NOT_RUN')
     with directory(BUILD) as scratch:
         for role in ('perception','assessment'):
-            path=target/('vision-'+role+'-0.1.0.tar.gz')
+            path=target/('vision-'+role+'-'+version+'.tar.gz')
             environment=dict(os.environ,TMPDIR=str(scratch),PYTHONDONTWRITEBYTECODE='1')
-            observed=subprocess.run([str(SDK/'bin/python3.12'),'-I','-B',str(Path(__file__)),'--worker',role,'--target',str(path)],
+            observed=subprocess.run([str(SDK/'bin/python3.12'),'-I','-B',str(Path(__file__)),'--worker',role,'--target',str(path),*(['--unix-only-successor'] if a.unix_only_successor else [])],
                 capture_output=True,text=True,env=environment,input=selected,timeout=180)
             require(len(observed.stdout)<16384,'VISION_SIGNING_RESPONSE_LIMIT')
             value=json.loads(observed.stdout);result['services'][role]=value
             (target/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(value),flush=True)
             require(observed.returncode==0 and value['outcome']=='PASS_OFFICIAL_VISION_SERVICE_SIGNATURE','VISION_OFFICIAL_SIGNING_UNCONFIRMED')
-    result['outcome']='PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SIGNATURES';result['scratchRemoved']=True
+    result['outcome']='PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SUCCESSOR_SIGNATURES' if a.unix_only_successor else 'PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SIGNATURES';result['scratchRemoved']=True
     (target/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(dict(outcome=result['outcome'],publication='NOT_RUN')));return 0
 
 

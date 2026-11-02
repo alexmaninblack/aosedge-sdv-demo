@@ -26,20 +26,25 @@ BUILD=Path('/Volumes/SDV-Dev/sdv/build/vision-ingress')
 def main():
     p=argparse.ArgumentParser();p.add_argument('--config',type=Path,required=True)
     p.add_argument('--name',required=True);p.add_argument('--cloud-proof',required=True)
+    p.add_argument('--services-packet',action='store_true')
     reuse=p.add_mutually_exclusive_group()
     reuse.add_argument('--reuse-completed-rootfs-02',action='store_true')
     reuse.add_argument('--reuse-completed-rootfs-05',action='store_true');a=p.parse_args()
     c=configuration(a.config);q=shlex.quote
     h.require(a.name.startswith('rootfs-fota-') and a.name.removeprefix('rootfs-fota-').isdecimal(),'FOTA_NAME_INVALID')
     h.require(any(a.cloud_proof.startswith(prefix) and a.cloud_proof.removeprefix(prefix).isdecimal()
-                  for prefix in ('ingress-verification-','ingress-cloud-')),'CLOUD_PROOF_NAME_INVALID')
+                  for prefix in (('vision-services-platform-preflight-',) if a.services_packet else ('ingress-verification-','ingress-cloud-'))),'CLOUD_PROOF_NAME_INVALID')
     cloud=Path(c['records'])/a.cloud_proof/'result.json';proof=json.loads(cloud.read_bytes())
-    h.require(proof['outcome']=='PASS_NATIVE_PREREQUISITES' and proof['facts']['cloud']['ready']
+    if a.services_packet:
+        h.require(proof['outcome']=='PASS_VISION_SERVICES_PLATFORM_RECIPIENTS_AND_VERSIONS' and proof['cloudMutation'] is False
+            and all(v['recipientScopeComplete'] and not v['publicationCollision'] for v in proof['components'].values()),'ACCOUNT_GATE_REQUIRED')
+        h.require(not a.reuse_completed_rootfs_02 and not a.reuse_completed_rootfs_05,'SERVICES_BUILD_CANNOT_REUSE_LEGACY_ROOTFS')
+    else:h.require(proof['outcome']=='PASS_NATIVE_PREREQUISITES' and proof['facts']['cloud']['ready']
               and all(proof['cleanup'].values()),'ACCOUNT_GATE_REQUIRED')
     h.require(shutil.disk_usage(BUILD).free>=60*1024**3,'SSD_FREE_SPACE_BELOW_60_GIB')
     h.require(not h.run(['git','-C',str(PLATFORM),'diff','HEAD','--name-only']),'COMMITTED_PLATFORM_REQUIRED')
     revision=h.run(['git','-C',str(PLATFORM),'rev-parse','HEAD']).strip()
-    subprocess.run([sys.executable,'-B',str(PLATFORM/'tools/check_camera_ingress_delivery.py')],cwd=PLATFORM,check=True)
+    subprocess.run([sys.executable,'-B',str(PLATFORM/'tools'/('check_vision_services_delivery.py' if a.services_packet else 'check_camera_ingress_delivery.py'))],cwd=PLATFORM,check=True)
     for key,value in dict(R61_BUILDER_ROOT='/Volumes/SDV-Dev/sdv/build/factory-builder',
         R61_BUILDER_VOLUME_UUID='F92AB578-22AA-4DAC-B8DD-7DC0EB831396',R61_BUILDER_SSH_PORT='10024',R61_BUILDER_DNS_PORT='18054').items():os.environ[key]=value
     b=runpy.run_path(str(ROOT/'scripts/r6-1-builder'),run_name='builder_library')
@@ -63,14 +68,15 @@ print('SOURCE_EXPORT_READY')
     h.require(done.returncode==0,'PLATFORM_EXPORT_FAILED')
     inputs={
         'vision_ingress_rootfs_build.py':ROOT/'scripts/guest/vision_ingress_rootfs_build.py',
-        'recovery.json':Path(c['records'])/'ingress-recovery-01/result.json',
-        'source-proof.json':Path(c['records'])/'ingress-native-source-01/result.json',
-        'cloud-proof.json':cloud,'boot-proof.json':BUILD/'native-primitives-01/boot-compatibility.json'}
+        'recovery.json':Path(c['records'])/('vision-services-recovery-01' if a.services_packet else 'ingress-recovery-01')/'result.json',
+        'source-proof.json':Path(c['records'])/'vision-services-native-live-19/group-alias-acceptance.json' if a.services_packet else Path(c['records'])/'ingress-native-source-01/result.json',
+        'cloud-proof.json':cloud,'boot-proof.json':Path(c['records'])/'vision-services-boot-02/boot-compatibility.json' if a.services_packet else BUILD/'native-primitives-01/boot-compatibility.json'}
     remote_inputs=PROJECT/'.tmp'/a.name
     h.run(ssh+['test ! -e '+q(str(evidence))+' && mkdir -m 700 '+q(str(remote_inputs))],timeout=15)
     for name,path in inputs.items():h.run(b['scp_base']()+[str(path),'yocto@127.0.0.1:'+str(remote_inputs/name)],timeout=20)
     command=['python3',str(remote_inputs/'vision_ingress_rootfs_build.py'),'--project',str(PROJECT),'--source',str(source),
              '--evidence',str(evidence),'--revision',revision]
+    if a.services_packet:command+=['--services-packet']
     for flag,name in (('recovery','recovery.json'),('source-proof','source-proof.json'),('cloud-proof','cloud-proof.json'),('boot-proof','boot-proof.json')):
         command+=['--'+flag,str(remote_inputs/name)]
     if a.reuse_completed_rootfs_02:

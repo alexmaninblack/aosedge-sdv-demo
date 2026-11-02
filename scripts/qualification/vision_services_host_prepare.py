@@ -32,14 +32,16 @@ def run(args,**kwargs):return subprocess.run(args,check=True,capture_output=True
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--name',choices=('host-candidate-01','host-candidate-02','host-candidate-03'),default='host-candidate-01');a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--name',choices=('host-candidate-01','host-candidate-02','host-candidate-03','host-candidate-04'),default='host-candidate-01');a=p.parse_args()
     from vision_vm_campaign import configuration
     c=configuration(a.config);records=Path(c['records']);output=BUILD/a.name
     require(not output.exists(),'VISION_HOST_INPUT_EXISTS_RECONCILE')
     cpu=json.loads((records/'vision-services-cpu-04/result.json').read_bytes())
     require(cpu['outcome']=='PASS_NATIVE_QUOTA_MAPPING_AND_STOCK_RESTORATION' and all(cpu['cleanup'].values()),'VISION_HOST_CPU_PROOF_REQUIRED')
-    packages=json.loads((BUILD/'signed-03/result.json').read_bytes())
-    require(packages['outcome']=='PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SIGNATURES' and packages['scratchRemoved'],'VISION_HOST_SIGNED_SERVICE_INPUT_REQUIRED')
+    successor=a.name=='host-candidate-04'
+    packages=json.loads((BUILD/('signed-04' if successor else 'signed-03')/'result.json').read_bytes())
+    require(packages['outcome']==('PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SUCCESSOR_SIGNATURES' if successor else 'PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SIGNATURES')
+        and packages['scratchRemoved'],'VISION_HOST_SIGNED_SERVICE_INPUT_REQUIRED')
     sources={}
     for name,path in (('services',SERVICES),('platform',PLATFORM),('gateway',GATEWAY),('integration',ROOT)):
         require(not run(['git','-C',str(path),'diff','HEAD','--name-only']).stdout,'VISION_HOST_COMMITTED_SOURCES_REQUIRED')

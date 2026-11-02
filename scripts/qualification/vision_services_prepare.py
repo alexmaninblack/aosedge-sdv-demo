@@ -38,12 +38,16 @@ def freeze(allocation,cpu,observed,measured,closures):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--config',type=Path,required=True);args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--config',type=Path,required=True);parser.add_argument('--unix-only-successor',action='store_true');args=parser.parse_args()
     from vision_vm_campaign import configuration
-    c=configuration(args.config);records=Path(c['records']);target=BUILD/'packages-01'
+    c=configuration(args.config);records=Path(c['records']);target=BUILD/('packages-02' if args.unix_only_successor else 'packages-01')
     require(not target.exists() and target.parent.stat().st_dev==ROOT.stat().st_dev,'VISION_PACKAGE_OUTPUT_EXISTS_OR_WRONG_DISK')
     allocation=json.loads((ROOT/'contracts/vision-vm/services-allocation.v1.json').read_bytes())
-    closure=BUILD/'closure-08';closures={role:json.loads((closure/role/'closure.json').read_bytes()) for role in ('perception','assessment')}
+    if args.unix_only_successor:
+        proof=json.loads((records/'vision-services-native-live-15/result.json').read_bytes())
+        require(proof['outcome']=='PASS_TRANSIENT_NATIVE_UNIX_ONLY_AND_INPUT_RECOVERY' and all(proof['cleanup'].values()),'VISION_NATIVE_UNIX_ONLY_PROOF_REQUIRED')
+    closure=BUILD/('closure-09' if args.unix_only_successor else 'closure-08');closures={role:json.loads((closure/role/'closure.json').read_bytes()) for role in ('perception','assessment')}
+    require(all(v['version']==('0.1.1' if args.unix_only_successor else '0.1.0') for v in closures.values()),'VISION_CLOSURE_VERSION_CHANGED')
     quotas=freeze(allocation,json.loads((records/'vision-services-cpu-04/result.json').read_bytes()),
         json.loads((records/'vision-services-cpu-04/cpu-topology-observed.json').read_bytes()),
         json.loads((records/'vision-services-closure-06/result.json').read_bytes()),closures)

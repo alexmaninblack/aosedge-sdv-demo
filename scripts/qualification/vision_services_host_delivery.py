@@ -19,11 +19,11 @@ NAME='AosEdge Vision Bootstrap 0.6.0.bundle'
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);choice=p.add_mutually_exclusive_group();choice.add_argument('--observation-successor',action='store_true');choice.add_argument('--calibration-successor',action='store_true');a=p.parse_args();c=configuration(a.config)
-    version='0.6.2' if a.calibration_successor else '0.6.1' if a.observation_successor else '0.6.0'
-    base=BASE.parent/('0.6.2-services-calibration' if a.calibration_successor else '0.6.1-services-observe') if version!='0.6.0' else BASE
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);choice=p.add_mutually_exclusive_group();choice.add_argument('--observation-successor',action='store_true');choice.add_argument('--calibration-successor',action='store_true');choice.add_argument('--ui-successor',action='store_true');a=p.parse_args();c=configuration(a.config)
+    version='0.6.3' if a.ui_successor else '0.6.2' if a.calibration_successor else '0.6.1' if a.observation_successor else '0.6.0'
+    base=BASE.parent/('0.6.3-services-ui' if a.ui_successor else '0.6.2-services-calibration' if a.calibration_successor else '0.6.1-services-observe') if version!='0.6.0' else BASE
     name='AosEdge Vision Bootstrap '+version+'.bundle'
-    records=Path(c['records'])/('vision-services-host-03' if a.calibration_successor else 'vision-services-host-02' if a.observation_successor else 'vision-services-host-01');remote=Path(c['remoteRoot'])/records.name
+    records=Path(c['records'])/('vision-services-host-04' if a.ui_successor else 'vision-services-host-03' if a.calibration_successor else 'vision-services-host-02' if a.observation_successor else 'vision-services-host-01');remote=Path(c['remoteRoot'])/records.name
     h.require(not records.exists(),'VISION_HOST_DELIVERY_EXISTS_RECONCILE');records.mkdir(mode=0o700)
     result=json.loads((base/'result.json').read_bytes());bundle=base/name;archive=base/'host-files.tar'
     h.require(result['manifestSha256']==hashlib.sha256((bundle/'Contents/Resources/bootstrap.json').read_bytes()).hexdigest(),'VISION_HOST_MANIFEST_CHANGED')

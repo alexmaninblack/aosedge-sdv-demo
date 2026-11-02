@@ -40,7 +40,9 @@ def swap(source,target):
 def main():
     context=Path(sys.argv[1]);c=json.loads(context.read_bytes());records=context.parent
     require(not (records/'result.json').exists(),'RECOVERY_ATTEMPT_EXISTS_RECONCILE')
-    require(c.get('permanentDelivery')==dict(authorized=True,recoveryFirst=True,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5'),'PERMANENT_PACKET_AUTHORITY_REQUIRED')
+    authority=(dict(authorized=True,recoveryFirst=True,rootfsVersion='6.1.1-vision-camera.6',cameraVersion='0.1.2',perceptionVersion='0.1.1',assessmentVersion='0.1.1')
+        if c.get('servicesPacket') else dict(authorized=True,recoveryFirst=True,rootfsVersion='6.1.1-vision-camera.4',cameraVersion='0.1.1',readVersion='0.1.4',revokeVersion='0.1.5'))
+    require(c.get('permanentDelivery')==authority,'PERMANENT_PACKET_AUTHORITY_REQUIRED')
     package=Path(c['main']['packageRoot']);bundle=Path(c['bundle'])
     require(hashlib.sha256((package/'application-manifest.json').read_bytes()).hexdigest()==c['main']['manifestSha256'],'BASE_PROGRAM_CHANGED')
     for name,digest in c['files'].items():require(hashlib.sha256((records/name).read_bytes()).hexdigest()==digest,'RECOVERY_TRANSFER_CHANGED')
@@ -58,6 +60,8 @@ def main():
     native=Path.home()/v.INSTANCE_NAME
     retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
     initial=json.loads((native/JOURNAL).read_bytes());item=initial['vehicles']['test']
+    if c.get('servicesPacket'):
+        require(item['unitId']=='af6d074a-6ce1-49ba-b613-0476e7b6d1b5' and item['localVmId']=='89273f16-4be0-4b22-b4cb-58d08533c8bc','SERVICES_RECOVERY_TARGET_CHANGED')
     require(item['runtime']['state']=='STOPPED' and initial['source']['state']=='STOPPED' and not initial['source'].get('operation'),'RECOVERY_IDLE_VISION_REQUIRED')
     identity={k:item[k] for k in ('localVmId','unitId','nodeId','overlay','mac','sshPort')}
     result=dict(scenario='VISION_STOPPED_CHECKPOINT_RECOVERY',outcome='NOT_COMPLETE',phases=[],cleanup={},cloudMutation=False,updateAttempted=False)

@@ -57,6 +57,9 @@ def main():
     result=dict(scenario='VISION_RETAINED_NATIVE_ROOTFS_FOTA',outcome='NOT_COMPLETE',phases=[],cleanup={},
                 cloudMutation=False,rootfsInstalled=False,cameraUpdate='NOT_RUN',nativeReadRevoke='NOT_RUN')
     began=time.monotonic();vm=None;retained={};native=None;attempted=False;confirmed=False;caffeinate=None
+    services_packet=c.get('servicesPacket',False)
+    require(type(services_packet) is bool,'PACKET_INVALID')
+    version='6.1.1-vision-camera.6' if services_packet else '6.1.1-vision-camera.5'
     def phase(name,action):
         print(json.dumps(dict(stage=name,state='STARTED')),flush=True);start=time.monotonic();value=action()
         atomic(records/(name+'.json'),dict(seconds=round(time.monotonic()-start,2),facts=value))
@@ -101,7 +104,7 @@ def main():
             config=load_configuration(native);sdk,sdk_env=launch(native,config['cloudPython'],'unit_cloud.py')
             request=dict(cloudDomain=selected_domain(before),oemOwner=cloud_binding(before)['ownerId'],
                 oemCredential=str(config['cloudProfiles']['oem-delivery']['credential']),permanentDelivery=c['permanentDelivery'],
-                componentType='aos-vision-vm-1.0.0-main-qemuarm64-rootfs',version='6.1.1-vision-camera.5',
+                servicesPacket=services_packet,componentType='aos-vision-vm-1.0.0-main-qemuarm64-rootfs',version=version,
                 payload=str(payload),payloadSha256=c['rootfs']['sha256'],payloadBytes=c['rootfs']['bytes'],
                 vehicles=dict(test={k:item[k] for k in ('unitId','systemUid','unitSetId','nodeId')}))
             request['vehicles']['test']['nodeHardwareId']=item['cloud']['identity']['nodeHardwareId']
@@ -129,12 +132,20 @@ def main():
                 with env._writer():return UnitService(vm)._wait(read_json(native/JOURNAL),'test',lambda x:x and x['online_status']=='Online','CLOUD_ONLINE',timeout=60)
             phase('existing-unit-online',online)
             baseline=phase('native-before-update',guest)
-            require(baseline['rootfsVersion']=='6.1.1-vision-camera.3' and not baseline['rootfsPending']
+            require(baseline['rootfsVersion']==('6.1.1-vision-camera.5' if services_packet else '6.1.1-vision-camera.3') and not baseline['rootfsPending']
                 and not baseline['updateFlags'] and baseline['enforcing'] and not baseline['transientProofPresent'],'ROOTFS_BASELINE_INVALID')
+            if services_packet:
+                capacity_code="import json,os;print(json.dumps({p:os.statvfs(p).f_bavail*os.statvfs(p).f_frsize for p in ('/var/aos/downloads','/var/aos/workdirs')}))"
+                done=subprocess.run(ssh_command(access_path(native,'test'),item['sshPort'],4),
+                    input='python3 -c '+__import__('shlex').quote(capacity_code)+'\n',text=True,capture_output=True,timeout=15)
+                require(done.returncode==0,'ROOTFS_CAPACITY_UNAVAILABLE')
+                capacity=json.loads(done.stdout);required=2*payload.stat().st_size+32*1024**2
+                require(all(v>=required for v in capacity.values()),'ROOTFS_CAPACITY_INSUFFICIENT')
+                atomic(records/'rootfs-capacity.json',dict(availableBytes=capacity,requiredBytes=required))
             catalog=phase('rootfs-catalog-before',lambda:component('status'))
             require(catalog['publication']['stage']=='NOT_PUBLISHED' and not catalog['versions'],'ROOTFS_PUBLICATION_EXISTS_RECONCILE')
             request['componentTitle']=catalog['componentTitle']
-            output=records/'rootfs-6.1.1-vision-camera.5.tar.gz'
+            output=records/('rootfs-'+version+'.tar.gz')
             signed=phase('rootfs-oem-sign',lambda:component('sign',output=str(output)))
             intent=dict(attemptStarted=True,version=request['version'],componentType=request['componentType'],unitId=item['unitId'],
                         payloadSha256=request['payloadSha256'],bundleSha256=signed['sha256'])

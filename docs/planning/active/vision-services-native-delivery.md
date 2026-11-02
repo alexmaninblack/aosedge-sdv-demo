@@ -4,7 +4,7 @@
 # Native Vision Services — V2/V3 Boundary Packet
 
 - Status: Accepted by the operator; implementation and same-VM verification authorized
-- Version: 0.4
+- Version: 0.5
 - Prepared: 2026-11-02
 - Owner: SDV Lab integration, Vision services and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#v2-freeze-interfaces-and-update-the-design-chain)
@@ -303,153 +303,121 @@ digest or full Vision E2E.
 
 ## Current implementation checkpoint
 
-The calibration completion is implemented in Source/Gateway, the OEM exchange
-and both service consumers. Per-frame AutoDrive maps and resized-pixel fusion
-maps are distinct, digest-bound and unavailable on invalid geometry. Positive
-pair/status/context and mismatch/role negatives pass isolated tests. Gateway's
-six targeted C++/TLS tests pass; real calibrated native transport remains a
-separate gate.
+The native Perception and Assessment successors are `0.1.1`, application
+source `a10c6f354866e5d3e839ee59a18344bb7cad96df`. SSD closure `closure-09`
+contains 345,724,486 and 57,595,214 extracted bytes respectively. Recipe,
+Debian, model/runtime and header-library notices and the case-collision notice
+map are retained. `signed-04` verifies both official SDK signatures against
+their prepared configuration/files. No weights, runtime binaries or keys enter
+Git. The prior versions remain immutable history, not new build inputs.
 
-Both Linux ARM64 closures are built on SSD with recipe, Debian, header-library
-and model/runtime notices. Current application source is service revision
-`cd924e2120dcd3578274829f68995366a7e042d1`; notice-builder revision is
-`45aa14107f831ec362b971fae6bd59fd21336f77`. Build evidence is
-`build/vision-services/native-06` and `build/vision-services/closure-08`.
-Perception is 345,724,338 extracted bytes; Assessment is 57,595,066. The new
-Perception archive profile is isolated; existing Lab profile limits are not
-relaxed. Both first service versions are now signed through the official SDK
-and verified against the prepared files/configuration (`signed-03`). Both
-`0.1.0` versions are published and READY in Cloud and assigned only through the
-recorded `SDV Vision Pilot` Subject to the retained Vision Unit. Publication
-and assignment are not evidence of functional processing. The configured
-Vision SP account signs these services; no VM/Source identity is copied.
+### Completed native gates on the retained M4 Vision VM
 
-The [fixed allocation](../../../contracts/vision-vm/services-allocation.v1.json)
-is frozen for native characterization: Perception 7,000 DMIPS/768 MiB and
-Assessment 250 DMIPS/128 MiB. With the retained 1,000-DMIPS diagnostic, 1,750
-DMIPS remain within the unchanged node budget. Expected native CPU quotas are
-280,000/100,000 and 10,000/100,000 respectively. These are containment
-allocations, not proof of native disk fit, cadence or capture-to-display age.
-Package preparation preserves every recipe notice, including Linux filenames
-that differ only by case: only colliding notice basenames are renamed and a
-digest-bearing original/packaged path map ships with them. Runtime/model paths
-are never normalized; their case aliases fail closed.
+- `vision-services-native-live-11` proves the real calibrated route through
+  native Camera resources, all three Perception models, Assessment and Source.
+  The 180.01-second characterization observed 768 unique results (4.2663/s);
+  sampled capture-callback-to-observation age was 441.6 ms median, 559.5 ms
+  p95 and 615 ms maximum. This is a partial-path observation, not hardware
+  camera latency, exact camera FPS, full-display latency, accuracy or soak.
+  The five-results/s and 500-ms full-path goals are **not qualified**.
+- Gateway `34bdea3dfb254dc7aedf34c7915054a29898837e` uses the measured Unreal
+  physical rigid-camera convention. The twelve same-snapshot samples match
+  within 0.000009 m; the generic installed SDK composition differed by
+  0.05786 m. The original 0.001 matrix and 0.02-m/0.5-degree plane bounds
+  remain unchanged. Six targeted Gateway C++/TLS regressions pass.
+- Native UID/GID, named resource mounts, NNP, capabilities, namespaces,
+  CPU/RAM/PID/FD/tmp limits and fresh scoped AVC checks pass. The fixed
+  [allocation](../../../contracts/vision-vm/services-allocation.v1.json) remains
+  Perception 7,000 DMIPS/768 MiB and Assessment 250 DMIPS/128 MiB, on the
+  unchanged 4-vCPU/4-GiB, 10,000-DMIPS VM.
+- `native-live-15` proves wrong-role/protocol denial, Unix-only socket
+  restrictions in actual native identities, input-loss invalidation and
+  recovery without restarting the applications. The fixed C service entry
+  now installs the same AArch64 seccomp filter before Python, closes inherited
+  descriptors and denies non-Unix socket families and io_uring entry points.
+  `native-live-16` observes Seccomp=2 in both real `0.1.1` main processes.
+  Empty Core allowedConnections alone was not an egress-denial proof.
+- `native-live-16` serially publishes and observes independent native SOTA
+  for both `0.1.1` versions. The other service's PID, version, source and
+  resources remain unchanged each time. Both successors are READY and
+  desired only by the recorded Vision Subject/Unit. Never replay those uploads.
+- `vision-services-recovery-01` rehearses stopped-overlay recovery on the
+  same VM, including a marker write/restore/reboot and retained Camera store,
+  enrollment and identity checks. The checkpoint and original evidence remain.
+- `native-live-17` proves supported native CM install and SM image cache
+  paths on the existing downloads filesystem. Original caches, databases,
+  application state/storage and the Camera backing file remain preserved.
+  No disk/LVM resize, VM resource increase or weakened acquisition guard is
+  used.
+- `native-live-19/group-alias-acceptance.json` reconciles the live short-name
+  role proof. Linux group names are at most the Builder shadow tool's 24
+  characters; resource names, numeric group IDs and permissions are unchanged.
+  Both native successors produce a valid result with fresh scoped AVC count
+  zero. The original NOT_COMPLETE report is preserved: its final assertion
+  compared JSON object order instead of resource-name mappings. The separate
+  derived receipt binds the original report and actual configuration/security/
+  functional evidence; no live run is relabelled or repeated.
 
-On the retained M4 Vision VM, `vision-services-closure-06` passed synthetic,
-network-isolated, unprivileged closure execution: three FP32 model sessions,
-15 measured Perception cycles after five warmups, and 100 Assessment cycles.
-Perception mean wall time was 201.47 ms, mean CPU time 467.81 ms/result and
-peak RSS 553,779,200 bytes. Assessment without a geometry-dependent plan was
-0.069 ms mean with 39,714,816 peak RSS bytes. These are compute-only synthetic
-measurements, **not** actual native allocations, camera calibration, replay,
-freshness, five-results/s or UI acceptance. Raw finite AutoSteer `h_vector`
-values outside 0–1 are preserved, matching the pinned model and fusion mask.
+The normal Source-owned broker lifecycle also passes: separate nonroot
+`vision_exchange_t`, NNP/all-zero capabilities, four role sockets, read-only
+credentials, idempotent start, wrong-root denial, restart and reconnect.
+Completed reversible campaigns restore stock configuration/policy, preserve
+the same Unit/VM and all four retained journals, then stop Source/VM/helpers.
 
-The pinned Core ARM cpuinfo parser reports one core/thread by default, despite
-four actual Linux vCPUs. The native quota calculation uses the reported core
-count. `vision-services-cpu-04` proved a reversible **standard IAM
-`cpuInfoPath` projection** from the same real `/proc`/sysfs topology: the
-unchanged 1,000-DMIPS diagnostic service changed from 10,000/100,000 to
-40,000/100,000 CPU quota. Original IAM bytes, original quota, Enforcing policy,
-healthy native owners and owned scratch removal were then verified. The full
-real CPU records are projected by IAM's own `ExecStartPre` atomic writer;
-the startup writer and zero owner restart counts passed the same proof. No
-separate daemon or shortened synthetic CPU description is used. Core code,
-the 10,000-DMIPS node budget and VM resources were unchanged. A permanent
-Vision-only projection must be included in the narrowly gated platform delta;
-do not publish service quotas using the erroneous one-core mapping.
+### Permanent platform and visible acceptance still in progress
 
-Cloud writes have exact intent/result receipts; the two versions were
-published serially and the existing recorded Subject is reconciled before
-resuming native checks. Do not publish the same bytes/version again or create
-another Subject to recover a local failure. Completed campaigns preserve the
-Unit/VM and four retained journals, restore stock configurations/policy and
-stop their Source/VM/helpers. Receipts live in private qualification records,
-not the public service repository. A receipt with a later failure code is
-NOT_COMPLETE even if an earlier broker-only phase passed.
+The default-off Vision platform delta includes the proven five-resource Core
+capacity, standard IAM cpuInfoPath projection from the real four-vCPU topology,
+fixed native accounts, short internal role groups and supported CM/SM cache
+paths. Main's flags, quotas and privileges do not change. No manual crun
+application, rootfs remount, unsafe rebase, database rewrite or new credential
+interface substitutes for native ownership.
 
-Both actual native service identities, role mounts and CPU/RAM allocations
-pass with the transient platform settings (`vision-services-native-live-04`).
-Assessment's 32-PID limit is also observed; all remaining containment limits
-need their own assertions. This does not yet qualify a camera/model result.
-Current Source observation reports calibration unavailable, so the continuous
-native result, 180-second characterization and visible UI gates remain open.
-The retained `native-live-10` same-snapshot numeric phase isolates its mount
-failure: twelve stationary measurements match Unreal's physical rigid
-attachment within 0.000009 m, while the installed SDK's sign-corrected
-pitch/roll composition differs by 0.05786 m. The subsequent optional native
-read probe had no ready camera pair; the campaign is NOT_COMPLETE and is not
-reported as native calibration acceptance. A Vision-only Gateway helper now
-uses the explicit physical Unreal convention for measured sensor pose, rigid
-mount and road-plane axes. Its regression includes those measured nonzero
-pitch/roll values; the original 0.001 matrix comparison and plane bounds stay
-unchanged. The generic SDK, CARLA and Main calculations are not modified.
-Signed host `0.6.2` is the isolated transient functional candidate; it retains
-the `.5` manufacturing image and is not a permanent rootfs or qualified release.
-Read-only diagnostics may execute only inside the already Aos-created exact
-OCI instance with its actual UID/groups/namespaces/confinement; this is not a
-manual application/container launcher or a substitute for native processing.
+Installed boot was inspected read-only again. Its current compressed archive
+differs from an older receipt, but all four installed update helpers exactly
+match the pinned meta-aos sources. The explicit compatibility receipt preserves
+both archive digests and this distinction; no boot update is required or built.
 
-Two minimal platform corrections are proven independently of calibration:
+The one warm incremental Vision-only rootfs successor `6.1.1-vision-camera.6`
+is at targeted compile/package gates; no new rootfs has been delivered yet.
+The first compile found the 24-character shadow group-name limit before an
+image task. The source correction and reversible proof above precede the next
+compile. Camera Access `0.1.2` is prepared but **not published**. Read-only
+account/recipient checks found both versions free and scoped only to this
+existing Vision Unit. Preserve the stopped recovery checkpoint before any
+normal OEM update.
 
-- Pinned Core defaults to four node resources, but Vision needs Camera plus
-  four exchange resources. SM fails to advertise that five-entry set with
-  `not enough memory`; CM then cannot schedule the service. Targeted CM/SM
-  binaries compiled with `AOS_CONFIG_TYPES_MAX_NUM_NODE_RESOURCES=5` deliver
-  the complete set and allocate both native services. The source delta is
-  Vision-only and default-off; Main's flags and privileges do not change.
-- The 1.22-GB workdirs filesystem cannot hold the Camera store, duplicate
-  transfer blobs and extracted Perception. Native unpacking correctly refuses
-  insufficient space. The existing 1.64-GB downloads filesystem can host
-  native SM images through its already supported `imageManager.imagePath`.
-  A verified copy of the immutable SM image cache is retained there; the
-  original cache, SM database, Camera backing/identity, application state and
-  storage are unchanged. Both native applications start with this standard
-  setting. No disk/LVM resize, extra VM resource, lower space guard or manual
-  cache deduplication is used. The retained native cache is not scratch.
+Signed host `0.6.2` is the calibrated transient candidate, retaining the
+immutable `.5` manufacturing input. Host `0.6.3` will carry the coordinated
+short-name observer and read-only Vision Presenter. The new view uses only the
+existing loopback Presenter snapshot route and the existing same-UID Source
+status socket: no additional product listener, operation or application key.
+The Source Vision projection remains at most 3,072 bytes inside the unchanged
+4-KiB response. Full Unit/source/node/certificate associations remain server-side.
+A bounded 16-point ground-plane plot is explicitly not an overlay on a newer
+live image. Missing/stale input clears the prior valid display.
 
-Remaining gates are calibrated native read/publish, wrong-role/revocation and
-loss/restart proofs, stopped recovery, the one Vision-only permanent platform
-successor, independent SOTA and then visible API/UI acceptance. The complete
-native proof still precedes the permanent image gate. Neither a manual crun
-substitute, a bypassed signature nor an unqualified release claim is allowed.
+The new view passes three focused units, all 72 Vision units and 62 existing
+Presenter units. These are **not live UI acceptance**. Finish permanent rootfs
+and Camera OEM delivery, repeat native/API gates without transient platform
+overrides, then run the visible semantic UI scenario on M4 with screenshots,
+layout checks, real input loss/recovery and owned-process cleanup. Do not claim
+full E2E or publish a Vision installer before those gates complete.
 
-The Source-owned broker lifecycle now passes on the same VM
-(`vision-services-broker-live-03`): separate nonroot UID, `vision_exchange_t`,
-all-zero capabilities/NNP, four role sockets, read-only credentials, idempotent
-start, wrong-root denial, restart and reconnect. Canonical configurations and
-policy stores were restored; the VM, Source and owned wake helper stopped.
-The owned executable-tmpfs proof pattern requires no nosuid-transition policy
-grant. Broker lifecycle proof alone is not a model-flow result.
+A valid absent lead is present=false with null distances. The current trusted
+vehicle geometry profile is unavailable, so a valid shadow plan is withheld;
+this is intentional fail-closed behavior, not a value to invent from upstream
+example defaults. Path/lead observations do not qualify model accuracy, a
+geometry-dependent planner, motion control or vehicle safety.
 
-The read-only result observation uses the **existing same-UID Source status
-socket**, with no new operation/listener or application credential. Its Vision
-projection is at most 3,072 bytes inside the unchanged 4-KiB response boundary.
-Full associations remain private; the UI gets an opaque reference, original
-frame counter, capture age, versions and bounded shadow result. Up to 16 path
-samples are presentation-only; planning/fusion retain their full data. A
-different live camera frame must never receive that result as an overlay.
-Source start must independently confirm the broker's confinement and all four
-ready sockets, not merely a successful `Type=exec` process launch.
+## Upstream semantic basis
 
-## Source facts checked while preparing the packet
-
-Read the exact retained Git objects, not an evolving upstream branch:
-
-- `VisionPilot/modules/models/src/inference.cpp` currently mixes inference
-  with fusion; the two fusion calls omit their optional elapsed-time argument.
-- `.../safety_guardian/fusion/include/fusion/{longitudinal,lateral}_fusion.hpp`
-  and their sources accept an explicit delta and otherwise use nominal 0.10 s.
-- `.../fusion/src/longitudinal_fusion.cpp` returns valid/150 m when neither
-  model confirms a target. The new DTO must preserve absence independently.
-- `.../planning/src/longitudinal_planning.cpp` defines global `dt=0.05`;
-  `planning.cpp` uses it for inter-cycle displacement and horizon prediction.
-  These are distinct time semantics in the separated asynchronous pipeline.
-- `.../planning/CMakeLists.txt` brings Eigen 5.0.0 and IPOPT; fusion requires
-  OpenCV and currently depends on the combined model target. This dependency
-  cut must be real, not two copies of the existing executable or an implicit
-  ROS/CUDA/GUI installation.
-- `VisionPilot/config/vision_pilot.conf` contains example geometry/speed limits;
-  neither constitutes measured CARLA vehicle data or authorization to actuate.
-
-These are local source/inventory findings only. M4 and all VMs remained stopped.
+The pinned inference pipeline originally combines inference and fusion and
+omits explicit elapsed-time arguments. The separated services pass actual
+positive inter-result simulation time to fusion; planning processing elapsed
+time remains distinct from its horizon step. Finite AutoSteer height/mask
+values retain their upstream >=0.5 semantics without a sigmoid or 0–1 clamp.
+The upstream free-road 150-m sentinel means valid absence, not a detected
+vehicle at 150 m. Example geometry/speed limits are not trusted CARLA vehicle
+measurements or authority to actuate. Dependency/precision/reference proof is
+kept separate from native allocation, UI acceptance and performance goals.

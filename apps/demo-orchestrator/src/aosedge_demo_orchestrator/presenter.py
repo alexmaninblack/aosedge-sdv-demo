@@ -340,7 +340,9 @@ def client_state(root, native):
                 and not session.get("active") and not session.get("uncertain"))
 
 
-def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None, platform_reader=None):
+def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None, platform_reader=None, vision_only=False):
+    if vision_only and native is not None:
+        raise ValueError('VISION_PRESENTER_READ_ONLY_REQUIRED')
     root = Path(static_root).resolve(strict=True)
     if not (root / "index.html").is_file():
         raise ValueError("PRESENTER_BUILD_REQUIRED")
@@ -406,6 +408,10 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
             origin = self.headers.get("Origin")
             if origin and origin != "http://" + expected:
                 self.reply(403, b'{"error":"SAME_ORIGIN_REQUIRED"}')
+                return
+            if vision_only and self.path.startswith('/api/') and self.path not in (
+                    '/api/presenter/snapshot','/api/presenter/client-state'):
+                self.reply(404,b'{"error":"NOT_FOUND"}')
                 return
             if self.path == "/api/presenter/client-state":
                 try:
