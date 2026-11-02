@@ -10,6 +10,15 @@ import hashlib
 
 
 class ClosureCommandTests(unittest.TestCase):
+    def test_later_native_failure_cannot_retain_an_earlier_broker_pass(self):
+        module=runpy.run_path(str(Path(__file__).with_name('vision_services_live.py')))
+        earlier=dict(outcome='PASS_SOURCE_OWNED_NATIVE_BROKER_LIFECYCLE_ONLY',code='VISION_NATIVE_INSTANCE_START_UNCONFIRMED',cleanup=dict(restored=True))
+        self.assertEqual(module['final_outcome'](earlier),'NOT_COMPLETE')
+        passed=dict(outcome='PASS_NATIVE_TWO_SERVICE_CAMERA_CHARACTERIZATION_ONLY',cleanup=dict(restored=True))
+        self.assertEqual(module['final_outcome'](passed),passed['outcome'])
+        self.assertEqual(module['final_outcome'](dict(passed,cleanup=dict(restored=False))),'NOT_COMPLETE')
+        self.assertEqual(module['final_outcome'](dict(passed,cleanup={})),'NOT_COMPLETE')
+
     def test_live_owner_evidence_does_not_persist_enrollment_fingerprints(self):
         module=runpy.run_path(str(Path(__file__).with_name('vision_services_live.py')))
         value=dict(status='CURRENT',selectedSource=dict(unitId='public-native-id',selectedPlatformUnitCertificateSha256='DO_NOT_COPY'),

@@ -4,8 +4,8 @@
 # Native Vision Services — V2/V3 Boundary Packet
 
 - Status: Accepted by the operator; implementation and same-VM verification authorized
-- Version: 0.3
-- Prepared: 2026-11-01
+- Version: 0.4
+- Prepared: 2026-11-02
 - Owner: SDV Lab integration, Vision services and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#v2-freeze-interfaces-and-update-the-design-chain)
 - Accepted basis: [ADR 0019](../../architecture/decisions/0019-vision-pilot-single-node-lab.md),
@@ -307,7 +307,7 @@ The calibration completion is implemented in Source/Gateway, the OEM exchange
 and both service consumers. Per-frame AutoDrive maps and resized-pixel fusion
 maps are distinct, digest-bound and unavailable on invalid geometry. Positive
 pair/status/context and mismatch/role negatives pass isolated tests. Gateway's
-five targeted C++/TLS tests pass; real calibrated native transport remains a
+six targeted C++/TLS tests pass; real calibrated native transport remains a
 separate gate.
 
 Both Linux ARM64 closures are built on SSD with recipe, Debian, header-library
@@ -318,9 +318,11 @@ and model/runtime notices. Current application source is service revision
 Perception is 345,724,338 extracted bytes; Assessment is 57,595,066. The new
 Perception archive profile is isolated; existing Lab profile limits are not
 relaxed. Both first service versions are now signed through the official SDK
-and verified against the prepared files/configuration (`signed-03`). No
-service version has been published or deployed yet. The configured Vision SP
-account is used only for these signatures; no VM/Source identity is copied.
+and verified against the prepared files/configuration (`signed-03`). Both
+`0.1.0` versions are published and READY in Cloud and assigned only through the
+recorded `SDV Vision Pilot` Subject to the retained Vision Unit. Publication
+and assignment are not evidence of functional processing. The configured
+Vision SP account signs these services; no VM/Source identity is copied.
 
 The [fixed allocation](../../../contracts/vision-vm/services-allocation.v1.json)
 is frozen for native characterization: Perception 7,000 DMIPS/768 MiB and
@@ -357,31 +359,68 @@ the 10,000-DMIPS node budget and VM resources were unchanged. A permanent
 Vision-only projection must be included in the narrowly gated platform delta;
 do not publish service quotas using the erroneous one-core mapping.
 
-The read-only Cloud preflight found both first versions free and no existing
-`SDV Vision Pilot` Subject. The node-list API is used; its node-detail counterpart
-returned HTTP 500. No Subject/service/version mutation occurred. All completed
-campaigns preserved the Unit/VM and four retained journals and stopped owned
-VM/processes. These receipts live under the private qualification records, not
-the public service repository.
+Cloud writes have exact intent/result receipts; the two versions were
+published serially and the existing recorded Subject is reconciled before
+resuming native checks. Do not publish the same bytes/version again or create
+another Subject to recover a local failure. Completed campaigns preserve the
+Unit/VM and four retained journals, restore stock configurations/policy and
+stop their Source/VM/helpers. Receipts live in private qualification records,
+not the public service repository. A receipt with a later failure code is
+NOT_COMPLETE even if an earlier broker-only phase passed.
 
-Next gates remain: freeze quotas against the proven four-core mapping; exact
-transient broker/accounts/resources/credential/SELinux proof on actual Aos
-instances; stopped recovery; the one required Vision-only permanent platform
-successor; serial native delivery; calibrated replay/live and independent SOTA;
-then visible API/UI acceptance. The new signed first service versions are
-necessary inputs to their own native functional proof; prerequisite kernel/
-scope checks precede their first use, and the complete native proof still
-precedes the permanent image gate. This dependency ordering does not permit a
-manual crun substitute, a bypassed signature or an unqualified release claim.
+Both actual native service identities, role mounts and CPU/RAM allocations
+pass with the transient platform settings (`vision-services-native-live-04`).
+Assessment's 32-PID limit is also observed; all remaining containment limits
+need their own assertions. This does not yet qualify a camera/model result.
+Current Source observation reports calibration unavailable, so the continuous
+native result, 180-second characterization and visible UI gates remain open.
+The retained `native-live-10` same-snapshot numeric phase isolates its mount
+failure: twelve stationary measurements match Unreal's physical rigid
+attachment within 0.000009 m, while the installed SDK's sign-corrected
+pitch/roll composition differs by 0.05786 m. The subsequent optional native
+read probe had no ready camera pair; the campaign is NOT_COMPLETE and is not
+reported as native calibration acceptance. A Vision-only Gateway helper now
+uses the explicit physical Unreal convention for measured sensor pose, rigid
+mount and road-plane axes. Its regression includes those measured nonzero
+pitch/roll values; the original 0.001 matrix comparison and plane bounds stay
+unchanged. The generic SDK, CARLA and Main calculations are not modified.
+Signed host `0.6.2` is the isolated transient functional candidate; it retains
+the `.5` manufacturing image and is not a permanent rootfs or qualified release.
+Read-only diagnostics may execute only inside the already Aos-created exact
+OCI instance with its actual UID/groups/namespaces/confinement; this is not a
+manual application/container launcher or a substitute for native processing.
+
+Two minimal platform corrections are proven independently of calibration:
+
+- Pinned Core defaults to four node resources, but Vision needs Camera plus
+  four exchange resources. SM fails to advertise that five-entry set with
+  `not enough memory`; CM then cannot schedule the service. Targeted CM/SM
+  binaries compiled with `AOS_CONFIG_TYPES_MAX_NUM_NODE_RESOURCES=5` deliver
+  the complete set and allocate both native services. The source delta is
+  Vision-only and default-off; Main's flags and privileges do not change.
+- The 1.22-GB workdirs filesystem cannot hold the Camera store, duplicate
+  transfer blobs and extracted Perception. Native unpacking correctly refuses
+  insufficient space. The existing 1.64-GB downloads filesystem can host
+  native SM images through its already supported `imageManager.imagePath`.
+  A verified copy of the immutable SM image cache is retained there; the
+  original cache, SM database, Camera backing/identity, application state and
+  storage are unchanged. Both native applications start with this standard
+  setting. No disk/LVM resize, extra VM resource, lower space guard or manual
+  cache deduplication is used. The retained native cache is not scratch.
+
+Remaining gates are calibrated native read/publish, wrong-role/revocation and
+loss/restart proofs, stopped recovery, the one Vision-only permanent platform
+successor, independent SOTA and then visible API/UI acceptance. The complete
+native proof still precedes the permanent image gate. Neither a manual crun
+substitute, a bypassed signature nor an unqualified release claim is allowed.
 
 The Source-owned broker lifecycle now passes on the same VM
 (`vision-services-broker-live-03`): separate nonroot UID, `vision_exchange_t`,
 all-zero capabilities/NNP, four role sockets, read-only credentials, idempotent
 start, wrong-root denial, restart and reconnect. Canonical configurations and
 policy stores were restored; the VM, Source and owned wake helper stopped.
-The initial `/run` nosuid executable-fixture error was fixed with the existing
-owned executable-tmpfs proof pattern, **not** a nosuid-transition policy grant.
-This result is still not native Perception/Assessment allocation or model flow.
+The owned executable-tmpfs proof pattern requires no nosuid-transition policy
+grant. Broker lifecycle proof alone is not a model-flow result.
 
 The read-only result observation uses the **existing same-UID Source status
 socket**, with no new operation/listener or application credential. Its Vision

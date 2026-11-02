@@ -5,6 +5,7 @@
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import queue
@@ -43,6 +44,64 @@ def clean_error(error):
     value=str(error);return value if re.fullmatch('[A-Z][A-Z0-9_:.-]{1,160}',value) else type(error).__name__
 
 
+def final_outcome(result):
+    """A partial PASS must never survive a later failed gate or cleanup."""
+    if result.get('code') or not result.get('cleanup') or not all(result['cleanup'].values()):return 'NOT_COMPLETE'
+    return result['outcome']
+
+
+class ConfigProofComplete(Exception):
+    pass
+
+
+def camera_pose_diagnosis(app,records,native):
+    """Read existing actors only; no tick, attachment, settings or vehicle writes."""
+    assets=app.source_service.driver.assets();sys.path.append(str(assets['python-api-root']))
+    import carla
+    client=carla.Client('127.0.0.1',2000);client.set_timeout(5.)
+    from uuid import uuid4
+    from aosedge_demo_orchestrator.environment import JOURNAL
+    source=json.loads((native/JOURNAL).read_bytes())['source']
+    status=app.source_service.driver.rpc(source,'status',str(uuid4()));frame=status.get('frame') or {}
+    require(frame.get('runId')==source['runId'] and status.get('fresh') is True,'VISION_POSE_SOURCE_NOT_FRESH')
+    world=client.get_world();parent=world.get_actor(frame['egoActorId'])
+    require(parent is not None and parent.type_id.startswith('vehicle.'),'VISION_POSE_EXISTING_EGO_REQUIRED')
+    # A newly connected LibCarla client receives its actor cache asynchronously.
+    # A successful get_world()/vehicle RPC is not evidence that this cache is ready.
+    deadline=time.monotonic()+3
+    while True:
+        world.get_snapshot();actors=list(world.get_actors());all_cameras=[a for a in actors if a.type_id=='sensor.camera.rgb']
+        if all_cameras or time.monotonic()>=deadline:break
+        time.sleep(.05)
+    atomic(records/'read-only-camera-inventory.json',dict(actorTypes={kind:sum(a.type_id==kind for a in actors) for kind in sorted({a.type_id for a in actors})},cameras=[dict(hasParent=s.parent is not None,
+        ownedParent=s.parent is not None and s.parent.id==parent.id,
+        attributes={k:v for k,v in s.attributes.items() if k in ('image_size_x','image_size_y','fov','sensor_tick')}) for s in all_cameras]))
+    cameras=[s for s in all_cameras if s.parent is not None and s.parent.id==parent.id
+        and s.attributes.get('image_size_x')=='1280' and s.attributes.get('image_size_y')=='720' and float(s.attributes.get('fov','0'))==50.]
+    require(len(cameras)==1,'VISION_POSE_EXISTING_CAMERA_REQUIRED')
+    camera=cameras[0];rows=[]
+    for _ in range(12):
+        snapshot=world.get_snapshot();vehicle=snapshot.find(parent.id);sensor=snapshot.find(camera.id)
+        require(vehicle is not None and sensor is not None,'VISION_POSE_SAME_SNAPSHOT_REQUIRED')
+        vp=vehicle.get_transform();cp=sensor.get_transform()
+        p,y,r=map(math.radians,(vp.rotation.pitch,vp.rotation.yaw,vp.rotation.roll))
+        sp,cpitch,sy,cy,sr,cr=math.sin(p),math.cos(p),math.sin(y),math.cos(y),math.sin(r),math.cos(r)
+        corrected=[[cpitch*cy,cy*sp*sr-sy*cr,cy*sp*cr+sy*sr],
+                   [cpitch*sy,sy*sp*sr+cy*cr,sy*sp*cr-cy*sr],[-sp,cpitch*sr,cpitch*cr]]
+        unreal=[[cpitch*cy,cy*sp*sr-sy*cr,-cy*sp*cr-sy*sr],
+                [cpitch*sy,sy*sp*sr+cy*cr,-sy*sp*cr+cy*sr],[sp,-cpitch*sr,cpitch*cr]]
+        observed=[cp.location.x-vp.location.x,cp.location.y-vp.location.y,cp.location.z-vp.location.z]
+        mount=[1.6,0.,1.5]
+        def prediction(matrix):return [sum(matrix[i][j]*mount[j] for j in range(3)) for i in range(3)]
+        def error(matrix):return math.sqrt(sum((a-b)**2 for a,b in zip(prediction(matrix),observed)))
+        rows.append(dict(frame=snapshot.frame,parentRotation=[vp.rotation.pitch,vp.rotation.yaw,vp.rotation.roll],
+            cameraRotation=[cp.rotation.pitch,cp.rotation.yaw,cp.rotation.roll],observedMountWorld=observed,
+            correctedMountWorld=prediction(corrected),unrealMountWorld=prediction(unreal),
+            correctedErrorMetres=error(corrected),unrealErrorMetres=error(unreal)))
+        time.sleep(.1)
+    return dict(readOnly=True,existingActorsOnly=True,sameSnapshot=True,samples=rows)
+
+
 def worker(context):
     c=json.loads(context.read_bytes());records=context.parent;result=dict(outcome='NOT_COMPLETE',phases=[],cleanup={},cloudMutation=False,servicesDeployed=False)
     started=time.monotonic();vm=None;app=None;native=None;retained={};session=None;awake=None;source_attempted=False;lines=queue.Queue(maxsize=64);reader=None
@@ -62,7 +121,9 @@ def worker(context):
         require(hashlib.sha256(Path(__file__).read_bytes()).hexdigest()==c['workerSha256'],'VISION_LIVE_WORKER_CHANGED')
         require(subprocess.check_output(['/usr/sbin/sysctl','-n','hw.model'],text=True).strip()=='Mac16,8','M4_REQUIRED')
         desktop=subprocess.check_output(['/usr/sbin/ioreg','-n','Root','-d1'],text=True)
-        require(not re.search('CGSSessionScreenIsLocked[^\r\n]{0,16}Yes',desktop),'M4_DESKTOP_LOCKED')
+        locked=bool(re.search('CGSSessionScreenIsLocked[^\r\n]{0,16}Yes',desktop))
+        require(not locked or c.get('nativeServices'),'M4_DESKTOP_LOCKED')
+        result['visualDesktop']='LOCKED_UI_NOT_RUN' if locked else 'UNLOCKED'
         package=Path(c['packageRoot']);bundle=Path(c['bundle'])
         require(hashlib.sha256((package/'application-manifest.json').read_bytes()).hexdigest()==c['baseManifest'],'VISION_LIVE_BASE_CHANGED')
         subprocess.run(['codesign','--verify','--deep','--strict','-R','=identifier "org.aosedge.sdvlab.vision.bootstrap" and anchor apple generic and certificate leaf[subject.OU] = "3NF57VKB3V"',str(bundle)],check=True,capture_output=True,timeout=120)
@@ -76,7 +137,7 @@ def worker(context):
         from aosedge_demo_orchestrator.guest_access import ssh_command
         from aosedge_demo_orchestrator.application import DemoOrchestrator
         from aosedge_demo_orchestrator.workspace import WorkspaceService
-        bootstrap=v.verify(bundle,c['baseManifest']);require(bootstrap.manifest_sha256==MANIFEST,'VISION_LIVE_BOOTSTRAP_CHANGED')
+        bootstrap=v.verify(bundle,c['baseManifest']);require(bootstrap.manifest_sha256==c.get('bootstrapManifest',MANIFEST),'VISION_LIVE_BOOTSTRAP_CHANGED')
         native=Path.home()/v.INSTANCE_NAME;before=json.loads((native/JOURNAL).read_bytes());item=before['vehicles']['test']
         retained={Path.home()/n:(Path.home()/n/JOURNAL).read_bytes() for n in v.RETAINED_INSTANCE_NAMES}
         require(item['unitId']==UNIT and item['localVmId']==VM and item['runtime']['state']==before['source']['state']=='STOPPED' and not before['source'].get('operation'),'SAME_IDLE_VISION_REQUIRED')
@@ -98,19 +159,24 @@ assert all(not (base/name).is_symlink() and hashlib.sha256((base/name).read_byte
 ns={};exec((base/'vision_services_primitives_guest.py').read_text(),ns);transaction=ns['Transaction'](base)
 def emit(phase,data):print(json.dumps(dict(phase=phase,data=data)),flush=True)
 try:
- emit('READY',transaction.open());deadline=time.monotonic()+900
+ emit('READY',transaction.open());deadline=time.monotonic()+1800
  while time.monotonic()<deadline:
   if not select.select([sys.stdin],[],[],max(0,deadline-time.monotonic()))[0]:break
   operation=sys.stdin.readline(65).strip()
   if operation in ('','STOP'):break
   try:
    if operation=='OBSERVE':emit(operation,transaction.observe())
+   elif operation=='NATIVE':emit(operation,transaction.native())
+   elif operation=='STORAGE':emit(operation,transaction.storage())
+   elif operation=='DIAGNOSE':emit(operation,transaction.diagnose())
+   elif operation=='CALIBRATION_DIAGNOSE':emit(operation,transaction.native_calibration_diagnosis())
+   elif operation=='RETIRE_MEASUREMENT':emit(operation,transaction.retire_measurement_duplicates(MEASUREMENT_INPUTS))
    elif operation=='DENY_ROOT':emit(operation,transaction.root_denial())
    elif operation=='RESTART':
     ns['call'](['systemctl','restart','aos-vision-exchange.service']);emit(operation,transaction.observe())
    else:raise ValueError('VISION_LIVE_GUEST_OPERATION_DENIED')
   except Exception as error:
-   value=str(error);emit('ERROR',dict(code=value if value.isupper() and len(value)<160 else type(error).__name__))
+   value=str(error);emit('ERROR',dict(code=value if value.isupper() and len(value)<160 else type(error).__name__,frames=[dict(file=pathlib.Path(f.filename).name,line=f.lineno) for f in traceback.extract_tb(error.__traceback__)[-3:]]))
 except Exception as error:
  value=str(error);emit('ERROR',dict(code=value if value.isupper() and len(value)<160 else type(error).__name__,frames=[dict(file=pathlib.Path(f.filename).name,line=f.lineno) for f in traceback.extract_tb(error.__traceback__)[-3:]]))
 finally:
@@ -118,13 +184,17 @@ finally:
  except Exception as error:
   value=str(error);emit('CLEANUP_ERROR',dict(code=value if value.isupper() and len(value)<160 else type(error).__name__))
 '''
-            code=re.sub(r'\b(BASE|PINS)\b',lambda match:repr(str(base)) if match[0]=='BASE' else repr(c['files']),code)
+            replacements=dict(BASE=str(base),PINS=c['files'],MEASUREMENT_INPUTS=c.get('measurementInputs',{}))
+            code=re.sub(r'\b(BASE|PINS|MEASUREMENT_INPUTS)\b',lambda match:repr(replacements[match[0]]),code)
             session=subprocess.Popen(command[:-2]+['python3 -I -B -c '+shlex.quote(code)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,bufsize=1)
             def read_responses():
                 for row in session.stdout:lines.put(row)
                 lines.put('')
             reader=threading.Thread(target=read_responses,daemon=True);reader.start()
             ready=receive(170);require(ready['phase']=='READY','VISION_LIVE_GUEST_NOT_READY');atomic(records/'native-primitives-ready.json',ready['data'])
+            if c.get('nativeOwnerCapacityFive'):phase('five-resource-native-owners-configuration',lambda:request('DIAGNOSE'))
+            if c.get('nativeConfigProof'):
+                phase('effective-native-resource-configuration',lambda:request('DIAGNOSE'));result['outcome']='PASS_READ_ONLY_NATIVE_CONFIGURATION_OBSERVATION';raise ConfigProofComplete
             source_attempted=True
             phase('normal-source-start',lambda:app.source_service.simulation('start',target='test'))
             phase('normal-source-enrollment',app.source_service.initialize_test)
@@ -152,8 +222,119 @@ finally:
             phase('normal-source-exchange-reconnect',lambda:app.source_service.camera_ingress('start'))
             final=phase('healthy-broker-after-reconnect',healthy);require(not final['scopedAvcs'],'VISION_LIVE_FUNCTIONAL_AVC')
             result['outcome']='PASS_SOURCE_OWNED_NATIVE_BROKER_LIFECYCLE_ONLY'
+            if c.get('nativeServices'):
+                phase('native-storage-before-delivery',lambda:request('STORAGE'))
+                if c.get('measurementInputs'):phase('retire-verified-measurement-duplicates',lambda:request('RETIRE_MEASUREMENT'))
+                from aosedge_demo_orchestrator.status import load_configuration
+                from aosedge_demo_orchestrator.cloud_runtime import launch
+                from aosedge_demo_orchestrator.cloud_connection import selected_domain,cloud_binding
+                config=load_configuration(native);sdk,sdk_env=launch(native,config['cloudPython'],'unit_cloud.py')
+                payload=c['nativeServices'];tooling=bundle/'Contents/Resources/tooling/aosedge-sdv-demo/apps/demo-orchestrator/src'
+                cloud_request=dict(cloudDomain=selected_domain(before),oemOwner=cloud_binding(before)['ownerId'],spOwner=config['cloudProfiles']['service-provider']['expectedOwnerId'],
+                    oemCredential=str(config['cloudProfiles']['oem-delivery']['credential']),spCredential=str(config['cloudProfiles']['service-provider']['credential']),
+                    vehicle={key:item[key] for key in ('unitId','systemUid','unitSetId','nodeId')})
+                cloud_request['vehicle']['nodeHardwareId']=item['cloud']['identity']['nodeHardwareId']
+                def cloud(action,**extra):
+                    if action in ('upload','subject-create','subject-bind','subject-assign'):result['cloudMutation']=True
+                    done=subprocess.run([sdk[0],'-I','-B',str(records/'vision_services_cloud.py'),str(tooling)],input=json.dumps(dict(cloud_request,action=action,**extra)),
+                        capture_output=True,text=True,env=sdk_env,timeout=105)
+                    require(done.returncode==0 and len(done.stdout)<262144,'VISION_NATIVE_CLOUD_WORKER_UNAVAILABLE')
+                    value=json.loads(done.stdout);require(value.get('ok') is True,value.get('reason','VISION_NATIVE_CLOUD_UNCONFIRMED'));return value['data']
+                preflight=phase('two-service-cloud-preflight',lambda:cloud('preflight'))
+                require(c.get('resumeNative') or (not preflight['subjectCandidates'] and all(not row['versions'] for row in preflight['services'].values())),'VISION_NATIVE_INITIAL_VERSION_OR_SUBJECT_EXISTS_RECONCILE')
+                published={}
+                for role in (() if c.get('resumeNative') else ('perception','assessment')):
+                    pin=payload['services'][role];filename='vision-'+role+'-0.1.0.tar.gz'
+                    intent=records/('upload-'+role+'-intent.json');require(not intent.exists(),'VISION_NATIVE_UPLOAD_EXISTS_RECONCILE')
+                    atomic(intent,dict(attemptStarted=True,unitId=UNIT,codename='vision-'+role,version='0.1.0',sha256=pin['sha256']))
+                    result['cloudMutation']=True
+                    response=phase('publish-'+role,lambda role=role,pin=pin,filename=filename:cloud('upload',role=role,bundle=str(records/filename),expectedSha256=pin['sha256'],
+                        prepared=str(records/(role+'-prepared.json')),preparedSha256=pin['preparedSha256'],packageModule=str(records/'aos_package.py'),packageModuleSha256=payload['packageModuleSha256']))
+                    atomic(records/('upload-'+role+'-response.json'),response);deadline=time.monotonic()+180
+                    while True:
+                        value=cloud('publication',role=role,deploymentId=response['deploymentId']);atomic(records/('publication-'+role+'-latest.json'),value)
+                        if value['stage']=='READY':published[role]=value;break
+                        require(time.monotonic()<deadline,'VISION_NATIVE_PUBLICATION_TIMEOUT');time.sleep(2)
+                if c.get('resumeNative'):
+                    resume=c['resumeNative'];ids=resume['serviceIds'];subject=resume['subject']
+                    require(preflight['subjectCandidates']==[subject['id']] and all(preflight['services'][role]['serviceId']==ids[role]
+                        and len(preflight['services'][role]['versions'])==1 and preflight['services'][role]['versions'][0]['id']==resume['versionIds'][role] for role in ('perception','assessment')),'VISION_NATIVE_RECONCILIATION_CHANGED')
+                    reconciled=phase('existing-native-subject-reconciliation',lambda:cloud('subject-status',serviceIds=ids,subject=subject))
+                    require(reconciled['unitBound'] and reconciled['assignedRoles']==c.get('expectedAssignedRoles',['perception']),'VISION_NATIVE_EXISTING_ASSIGNMENT_CHANGED')
+                else:
+                    ids={role:row['serviceId'] for role,row in published.items()}
+                    atomic(records/'subject-create-intent.json',dict(attemptStarted=True,unitId=UNIT,serviceIds=ids,label='SDV Vision Pilot'))
+                    subject=phase('create-isolated-vision-subject',lambda:cloud('subject-create',serviceIds=ids))['subject'];atomic(records/'vision-subject.json',subject)
+                    atomic(records/'subject-bind-intent.json',dict(attemptStarted=True,unitId=UNIT,subjectId=subject['id']))
+                    phase('bind-same-vision-unit',lambda:cloud('subject-bind',serviceIds=ids,subject=subject))
+                for role in ('perception','assessment'):
+                    if not c.get('resumeNative') or role not in c.get('expectedAssignedRoles',['perception']):
+                        atomic(records/('subject-assign-'+role+'-intent.json'),dict(attemptStarted=True,unitId=UNIT,subjectId=subject['id'],serviceId=ids[role]))
+                        phase('assign-native-'+role,lambda role=role:cloud('subject-assign',role=role,serviceIds=ids,subject=subject))
+                    if c.get('nativeDeliveryReconcile'):continue
+                    deadline=time.monotonic()+120
+                    while True:
+                        actual=request('NATIVE');atomic(records/'native-instances-latest.json',actual)
+                        if 'vision-'+role in actual['instances']:break
+                        require(time.monotonic()<deadline,'VISION_NATIVE_INSTANCE_START_UNCONFIRMED');time.sleep(.5)
+                if c.get('nativeDeliveryReconcile'):
+                    deadline=time.monotonic()+120
+                    while True:
+                        actual=request('NATIVE');atomic(records/'native-instances-latest.json',actual)
+                        if set(actual['instances'])=={'vision-perception','vision-assessment'}:break
+                        require(time.monotonic()<deadline,'VISION_NATIVE_INSTANCE_START_UNCONFIRMED');time.sleep(.5)
+                actual=phase('actual-native-service-identities',lambda:request('NATIVE'));instances=actual['instances']
+                for role in ('perception','assessment'):
+                    value=instances['vision-'+role];allocation=payload['allocation'][role]
+                    require(value['identity']['version']=='0.1.0' and value['identity']['sourceRevision']==payload['applicationSourceRevision']
+                        and len(set(value['uid']))==1 and value['uid'][0]>0 and min(value['gid'])>0 and value['nnp']=='1'
+                        and value['context'].split(':')[2]=='container_engine_t'
+                        and all(int(value['capabilities'][key],16)==0 for key in ('CapEff','CapPrm','CapInh','CapAmb')),'VISION_NATIVE_IDENTITY_OR_SOURCE_MISMATCH')
+                    require(value['cpuMax']==('280000 100000' if role=='perception' else '10000 100000') and value['memoryMax']==str(allocation['ramLimit']),'VISION_NATIVE_CPU_OR_MEMORY_QUOTA_NOT_APPLIED')
+                    require(value['pidsMax']==str(allocation['pidsLimit']),'VISION_NATIVE_PID_QUOTA_NOT_APPLIED')
+                    expected={'/run/aosedge/vision/'+name for name in (('perception-publish',) if role=='perception' else ('perception-read','context-read','assessment-publish'))}
+                    if role=='perception':expected.add('/run/aosedge/platform/camera')
+                    require(set(value['resourceMounts'])==expected and all(all(options.values()) for options in value['resourceMounts'].values())
+                        and not value['credentialMountPresent'] and not value['forbiddenRolePathsPresent'],'VISION_NATIVE_ROLE_OR_MOUNT_ISOLATION_FAILED')
+                result['servicesDeployed']=True
+                if c.get('cameraPoseDiagnosis'):
+                    phase('read-only-existing-camera-parent-pose',lambda:camera_pose_diagnosis(app,records,native))
+                    phase('read-only-actual-native-calibration-diagnosis',lambda:request('CALIBRATION_DIAGNOSE'))
+                    result['outcome']='PASS_READ_ONLY_NATIVE_CAMERA_POSE_DIAGNOSIS';raise ConfigProofComplete
+                if c.get('nativeCalibrationDiagnosis'):
+                    phase('read-only-actual-native-calibration-diagnosis',lambda:request('CALIBRATION_DIAGNOSE'))
+                    result['outcome']='PASS_READ_ONLY_NATIVE_RESOURCE_CALIBRATION_DIAGNOSIS';raise ConfigProofComplete
+                def observation():return app.source_service.observe(guest=False,timeout=5).get('vision')
+                deadline=time.monotonic()+90
+                while True:
+                    view=observation();atomic(records/'latest-vision-observation.json',view)
+                    if view and view.get('reference') and view['state']=='AVAILABLE':break
+                    require(time.monotonic()<deadline,'VISION_NATIVE_FUNCTIONAL_RESULT_NOT_CONFIRMED');time.sleep(.1)
+                samples=[];seen=set();began=time.monotonic()
+                while time.monotonic()-began<180:
+                    view=observation()
+                    if view:
+                        row={key:view[key] for key in ('reference','sequence','frame','cameraFrame','captureAgeMs','state','reason','imageMatched')}
+                        row['elapsedSeconds']=round(time.monotonic()-began,3);samples.append(row)
+                        if row['reference']:seen.add(row['reference'])
+                    time.sleep(.15)
+                ages=sorted(row['captureAgeMs'] for row in samples if row['captureAgeMs'] is not None)
+                characterization=dict(seconds=round(time.monotonic()-began,2),uniqueObservedResults=len(seen),observedResultsPerSecond=len(seen)/(time.monotonic()-began),
+                    captureToObservationAgeMs=dict(median=ages[len(ages)//2],p95=ages[min(len(ages)-1,int(len(ages)*.95))],maximum=max(ages)) if ages else None,
+                    samples=samples,modelAccuracyQualified=False,soak=False)
+                atomic(records/'native-characterization.json',characterization)
+                require(len(seen)>=20,'VISION_NATIVE_CHARACTERIZATION_NO_CONTINUOUS_RESULTS')
+                security=phase('native-functional-security-after-characterization',lambda:request('OBSERVE'))
+                require(not security['scopedAvcs'] and security['nativeScopedAvcCount']==0,'VISION_NATIVE_FUNCTIONAL_AVC')
+                phase('native-current-subject-after-characterization',lambda:cloud('subject-status',serviceIds=ids,subject=subject))
+                result['outcome']='PASS_NATIVE_TWO_SERVICE_CAMERA_CHARACTERIZATION_ONLY';result['fullVisionE2E']='PENDING_INDEPENDENT_SOTA_PERMANENT_IMAGE_AND_UI'
+    except ConfigProofComplete:
+        pass
     except Exception as error:
-        result['code']=clean_error(error);result['errorFrames']=[dict(file=Path(f.filename).name,line=f.lineno) for f in traceback.extract_tb(error.__traceback__)[-4:]]
+        result['outcome']='NOT_COMPLETE';result['code']=clean_error(error);result['errorFrames']=[dict(file=Path(f.filename).name,line=f.lineno) for f in traceback.extract_tb(error.__traceback__)[-4:]]
+        if session is not None and session.poll() is None:
+            try:atomic(records/'failure-native-diagnostics.json',request('DIAGNOSE'))
+            except Exception as diagnostic_error:result['diagnosticCode']=clean_error(diagnostic_error)
     finally:
         if vm is not None and native is not None:
             with runtime_paths.installed_session(native):
@@ -174,13 +355,28 @@ finally:
                 state=json.loads((native/JOURNAL).read_bytes());result['cleanup'].update(sameVmAndUnit=state['vehicles']['test']['unitId']==UNIT and state['vehicles']['test']['localVmId']==VM,
                     retainedJournalsUnchanged=all((p/JOURNAL).read_bytes()==raw for p,raw in retained.items()))
         if awake is not None:awake.terminate();awake.wait(timeout=5);result['cleanup']['awakeHelperStopped']=True
-        if not result['cleanup'] or not all(result['cleanup'].values()):result['outcome']='NOT_COMPLETE'
+        result['outcome']=final_outcome(result)
         result['seconds']=round(time.monotonic()-started,2);atomic(records/'result.json',result);print(json.dumps(result),flush=True)
     return 0 if result['outcome'].startswith('PASS_') and 'code' not in result else 1
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--worker',type=Path);parser.add_argument('--config',type=Path);parser.add_argument('--resume-nosuid-proof',action='store_true');parser.add_argument('--diagnose-peer-denial',action='store_true');a=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--worker',type=Path);parser.add_argument('--config',type=Path)
+    for flag in ('resume-nosuid-proof','diagnose-peer-denial','native-services','resume-native','native-config-proof',
+                 'native-delivery-reconcile','native-image-path-proof','native-calibration-diagnosis','calibrated-camera-proof'):
+        parser.add_argument('--'+flag,action='store_true')
+    parser.add_argument('--resume-native-exec',nargs='?',const=1,type=int,choices=(1,2))
+    parser.add_argument('--camera-pose-diagnosis',nargs='?',const=1,type=int,choices=(1,2,3))
+    a=parser.parse_args()
+    if a.calibrated_camera_proof:a.camera_pose_diagnosis=3
+    if a.camera_pose_diagnosis:a.resume_native_exec=2
+    if a.resume_native_exec:a.native_calibration_diagnosis=True
+    if a.native_calibration_diagnosis:a.native_image_path_proof=True
+    if a.native_image_path_proof:a.native_delivery_reconcile=True
+    if a.native_delivery_reconcile:a.resume_native=True
+    if a.native_config_proof:a.resume_native=True
+    if a.resume_native:a.native_services=True
     if a.worker:return worker(a.worker)
     import remote_harness as h
     from vision_vm_campaign import configuration
@@ -191,6 +387,57 @@ def main():
             and old_observed['socketCount']==4 and old_observed['context'].rstrip('\x00').split(':')[2]=='vision_exchange_t'
             and not old_observed['scopedAvcs'],'VISION_PEER_DENIAL_OBSERVER_FAILURE_NOT_RECONCILED')
         name='vision-services-broker-live-03';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+    if a.native_services:
+        previous=json.loads((Path(c['records'])/'vision-services-broker-live-03/result.json').read_bytes())
+        require(previous['outcome']=='PASS_SOURCE_OWNED_NATIVE_BROKER_LIFECYCLE_ONLY' and all(previous['cleanup'].values()),'VISION_NATIVE_BROKER_LIFECYCLE_REQUIRED')
+        name='vision-services-native-live-01';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+        if a.resume_native:
+            failed=json.loads((records/'result.json').read_bytes())
+            require(failed.get('code')=='VISION_NATIVE_INSTANCE_START_UNCONFIRMED' and all(failed['cleanup'].values()),'VISION_NATIVE_FAILED_ASSIGNMENT_RECONCILIATION_REQUIRED')
+            name='vision-services-native-live-02';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+            if a.native_delivery_reconcile:
+                prior_result=json.loads((records/'result.json').read_bytes());diagnostic=json.loads((records/'failure-native-diagnostics.json').read_bytes())
+                require(prior_result.get('code')=='VISION_NATIVE_INSTANCE_START_UNCONFIRMED' and all(prior_result['cleanup'].values())
+                    and any('not found (imagemanager.cpp:281)' in row for row in diagnostic['logs']['aos-sm.service']),'VISION_NATIVE_MISSING_SM_IMAGE_NOT_RECONCILED')
+                name='vision-services-native-live-03';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                if a.native_image_path_proof:
+                    failed=json.loads((records/'result.json').read_bytes());diagnostic=json.loads((records/'failure-native-diagnostics.json').read_bytes())
+                    require(failed.get('code')=='VISION_NATIVE_INSTANCE_START_UNCONFIRMED' and all(failed['cleanup'].values())
+                        and any('Failed to unpack layer' in row and 'not enough space' in row for row in diagnostic['logs']['aos-sm.service']),'VISION_NATIVE_IMAGE_CAPACITY_FAULT_REQUIRED')
+                    name='vision-services-native-live-04';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                    if a.native_calibration_diagnosis:
+                        prior=json.loads((records/'result.json').read_bytes());require(prior.get('code')=='VISION_NATIVE_FUNCTIONAL_RESULT_NOT_CONFIRMED' and prior['servicesDeployed'] and all(prior['cleanup'].values()),'VISION_NATIVE_CALIBRATION_FAULT_NOT_RECONCILED')
+                        name='vision-services-native-live-05';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                        if a.resume_native_exec:
+                            failed=json.loads((records/'result.json').read_bytes());require(failed.get('code')=='VISION_CALIBRATION_EXISTING_OCI_ID_REQUIRED' and all(failed['cleanup'].values()),'VISION_NATIVE_OCI_DISCOVERY_FAULT_NOT_RECONCILED')
+                            name='vision-services-native-live-06';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                            if a.resume_native_exec==2:
+                                prior=json.loads((records/'result.json').read_bytes());discovery=json.loads((records/'failure-native-diagnostics.json').read_bytes())['readOnlyExecDiscovery']
+                                require(prior.get('code')=='VISION_CALIBRATION_NATIVE_READ_ONLY_EXEC_FAILED' and all(prior['cleanup'].values())
+                                    and discovery['lastExec']['stderr']=='fchown std stream 0: Permission denied\n','VISION_NATIVE_EXEC_STDIO_DENIAL_NOT_RECONCILED')
+                                name='vision-services-native-live-07';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                if a.camera_pose_diagnosis:
+                                    last=json.loads((records/'result.json').read_bytes());cal=json.loads((records/'read-only-actual-native-calibration-diagnosis.json').read_bytes())['facts']
+                                    require(last['outcome']=='PASS_READ_ONLY_NATIVE_RESOURCE_CALIBRATION_DIAGNOSIS' and all(last['cleanup'].values()) and cal['reason']=='MOUNT_INCOMPATIBLE','VISION_NATIVE_MOUNT_DIAGNOSIS_REQUIRED')
+                                    name='vision-services-native-live-08';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                    if a.camera_pose_diagnosis>=2:
+                                        failed=json.loads((records/'result.json').read_bytes())
+                                        require(failed.get('code')=='VISION_POSE_EXISTING_CAMERA_REQUIRED' and all(failed['cleanup'].values()),'VISION_POSE_SELECTOR_FAILURE_NOT_RECONCILED')
+                                        name='vision-services-native-live-09';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                        if a.camera_pose_diagnosis==3:
+                                            failed=json.loads((records/'result.json').read_bytes());inventory=json.loads((records/'read-only-camera-inventory.json').read_bytes())
+                                            require(failed.get('code')=='VISION_POSE_EXISTING_CAMERA_REQUIRED' and all(failed['cleanup'].values()) and inventory['cameras']==[],'VISION_POSE_EMPTY_CACHE_FAULT_REQUIRED')
+                                            name='vision-services-native-live-10';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                                            if a.calibrated_camera_proof:
+                                                done=json.loads((records/'result.json').read_bytes());pose=json.loads((records/'read-only-existing-camera-parent-pose.json').read_bytes())['facts']
+                                                require(all(done['cleanup'].values()) and pose['sameSnapshot'] and len(pose['samples'])==12
+                                                    and all(row['unrealErrorMetres']<.00002 and row['correctedErrorMetres']>.01 for row in pose['samples']),
+                                                    'VISION_MEASURED_UNREAL_ATTACHMENT_PROOF_REQUIRED')
+                                                name='vision-services-native-live-11';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+            if a.native_config_proof:
+                name='vision-services-native-config-02';records=Path(c['records'])/name;remote=Path(c['remoteRoot'])/name
+                prior_diagnostic=json.loads((Path(c['records'])/'vision-services-native-config-01/result.json').read_bytes())
+                require(prior_diagnostic.get('code')=='ValueError' and all(prior_diagnostic['cleanup'].values()),'VISION_NATIVE_CONFIG_OBSERVER_FAULT_RECONCILIATION_REQUIRED')
     if a.resume_nosuid_proof:
         old_path=Path(c['records'])/'vision-services-broker-live-01';old_result=json.loads((old_path/'result.json').read_bytes());old_observed=json.loads((old_path/'latest-broker-observation.json').read_bytes())
         require(old_result['code']=='VISION_LIVE_BROKER_NOT_HEALTHY' and all(old_result['cleanup'].values()) and old_observed['socketCount']==0
@@ -207,9 +454,53 @@ def main():
         Path('/Volumes/SDV-Dev/sdv/build/vision-bootstrap/0.1.0/evidence/camera-store-policy-loader-01/vision-policy-load')]
     for path in files:
         if path.name!='vision_services_primitives_guest.py':require(h.digest(path)==old['nativePrimitives']['files'][path.name],'VISION_LIVE_RETAINED_INPUT_CHANGED')
-    delivered=json.loads((Path(c['records'])/'vision-services-host-01/result.json').read_bytes())
+    delivered=json.loads((Path(c['records'])/('vision-services-host-03' if a.calibrated_camera_proof else 'vision-services-host-02' if a.native_services else 'vision-services-host-01')/'result.json').read_bytes())
     source=Path(__file__).resolve();context=dict(packageRoot=c['main']['packageRoot'],baseManifest=c['main']['manifestSha256'],
-        bundle=delivered['bundle'],workerSha256=h.digest(source),files={path.name:h.digest(path) for path in files})
+        bundle=delivered['bundle'],bootstrapManifest=delivered['manifestSha256'],workerSha256=h.digest(source),files={path.name:h.digest(path) for path in files})
+    if a.native_config_proof:context['nativeConfigProof']=True
+    if a.native_delivery_reconcile:context['nativeDeliveryReconcile']=True
+    if a.native_image_path_proof:context['expectedAssignedRoles']=['perception','assessment']
+    if a.native_calibration_diagnosis and not a.calibrated_camera_proof:context['nativeCalibrationDiagnosis']=True
+    if a.camera_pose_diagnosis and not a.calibrated_camera_proof:context['cameraPoseDiagnosis']=True
+    if a.native_services:
+        import shutil
+        build=Path('/Volumes/SDV-Dev/sdv/build/vision-services');signed=json.loads((build/'signed-03/result.json').read_bytes())
+        require(signed['outcome']=='PASS_TWO_INDEPENDENT_OFFICIAL_VISION_SIGNATURES' and signed['scratchRemoved'],'VISION_NATIVE_SIGNED_INPUTS_REQUIRED')
+        package=Path(__file__).resolve().parents[3]/'vision-pilot-services/tools/aos_package.py'
+        files.extend([Path(__file__).with_name('vision_services_cloud.py'),package]);services={}
+        for role,pin in signed['services'].items():
+            archive=build/'signed-03'/('vision-'+role+'-0.1.0.tar.gz');require(archive.stat().st_size==pin['bytes'] and h.digest(archive)==pin['sha256'],'VISION_NATIVE_SIGNED_INPUT_CHANGED')
+            prepared=records/(role+'-prepared.json');shutil.copyfile(build/'packages-01'/role/'prepared.json',prepared);prepared.chmod(0o600)
+            files.extend([archive,prepared]);services[role]=dict(sha256=pin['sha256'],preparedSha256=h.digest(prepared))
+        context['nativeServices']=dict(services=services,packageModuleSha256=h.digest(package),allocation=json.loads((Path(__file__).resolve().parents[2]/'contracts/vision-vm/services-allocation.v1.json').read_bytes()),applicationSourceRevision='cd924e2120dcd3578274829f68995366a7e042d1')
+        old_context=json.loads((Path(c['records'])/'vision-services-closure-01/context.json').read_bytes())
+        known=dict(old_context['measurements']['files'])
+        for i in range(2,6):
+            old_probe=json.loads((Path(c['records'])/('vision-services-closure-'+str(i).zfill(2))/'context.json').read_bytes())['measurements']['request']['probeSha256']
+            known['runtime_measurement-'+old_probe[:16]+'.py']=old_probe
+        inventory=json.loads((Path(c['records'])/'vision-services-exchange-preflight-02/native-exchange-storage-preflight.json').read_bytes())['facts']['ownedMeasurementInputs']
+        for role in ('perception','assessment'):
+            original=build/'closure-06'/(role+'-rootfs.tar.gz');require(h.digest(original)==known[original.name],'VISION_MEASUREMENT_RETAINED_ARCHIVE_CHANGED')
+        if a.resume_native:
+            prior=Path(c['records'])/'vision-services-native-live-01'
+            published={role:json.loads((prior/('publication-'+role+'-latest.json')).read_bytes()) for role in ('perception','assessment')}
+            retired=json.loads((prior/'retire-verified-measurement-duplicates.json').read_bytes())
+            require(retired['facts']['outcome']=='PASS_OWNED_MEASUREMENT_DUPLICATES_RETIRED','VISION_NATIVE_MEASUREMENT_RETIREMENT_NOT_RECONCILED')
+            context['resumeNative']=dict(serviceIds={role:row['serviceId'] for role,row in published.items()},versionIds={role:row['versionId'] for role,row in published.items()},subject=json.loads((prior/'vision-subject.json').read_bytes()))
+            if not a.native_config_proof:
+                observed=json.loads((Path(c['records'])/'vision-services-native-config-02/effective-native-resource-configuration.json').read_bytes())['facts']
+                require(observed['smVisibleResourceFile']==observed['resourceFile'] and len(observed['resourceFile'])==5
+                    and any("Can't get resources info: err=not enough memory" in row for row in observed['logs']['aos-sm.service']),'VISION_FIVE_RESOURCE_CAPACITY_FAULT_REQUIRED')
+                compiled=Path('/Volumes/SDV-Dev/sdv/build/vision-services/resource-capacity-04');receipt=json.loads((compiled/'result.json').read_bytes())
+                require(receipt['outcome']=='PASS_TARGETED_FIVE_RESOURCE_NATIVE_OWNER_COMPILE' and receipt['nodeResources']==5 and receipt['builderStopped'],'VISION_TARGETED_CAPACITY_COMPILE_REQUIRED')
+                for name,pin in receipt['files'].items():
+                    candidate=compiled/name;require(h.digest(candidate)==pin['sha256'],'VISION_CAPACITY_BINARY_CHANGED');files.append(candidate)
+                context['nativeOwnerCapacityFive']=True
+                if a.native_image_path_proof:
+                    plan=records/'native-image-path-proof.json';atomic(plan,dict(schemaVersion=1,imagePath='/var/aos/downloads/vision-services/sm-images',preserveOriginal=True,
+                        **({'reuseRecordedCache':True} if a.native_calibration_diagnosis else {})));files.append(plan)
+        else:context['measurementInputs']={row['name']:dict(bytes=row['bytes'],sha256=known[row['name']]) for row in inventory}
+        context['files']={path.name:h.digest(path) for path in files}
     atomic(records/'context.json',context);t=c['transport'];h.remote(t,'umask 077\nmkdir '+shlex.quote(str(remote)),timeout=15)
     options=h.ssh_args(t)[1:-1];options.remove('-T');i=options.index('-b');options[i:i+2]=['-o','BindAddress='+options[i+1]]
     h.run(['/usr/bin/scp',*options,str(source),str(records/'context.json'),*map(str,files),t['user']+'@'+t['host']+':'+str(remote)+'/'],timeout=30)

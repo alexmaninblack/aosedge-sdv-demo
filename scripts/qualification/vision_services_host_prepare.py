@@ -32,7 +32,7 @@ def run(args,**kwargs):return subprocess.run(args,check=True,capture_output=True
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--name',choices=('host-candidate-01','host-candidate-02'),default='host-candidate-01');a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--name',choices=('host-candidate-01','host-candidate-02','host-candidate-03'),default='host-candidate-01');a=p.parse_args()
     from vision_vm_campaign import configuration
     c=configuration(a.config);records=Path(c['records']);output=BUILD/a.name
     require(not output.exists(),'VISION_HOST_INPUT_EXISTS_RECONCILE')
@@ -47,7 +47,7 @@ def main():
     with directory(ROOT,root=Path('/Volumes/SDV-Dev/.s501/.tmp')) as scratch:
         junit=scratch/'gateway-unit.xml'
         names={'runtime_options','vision_calibration','vision_exchange','vision_camera','viss_network'}
-        if a.name=='host-candidate-02':names.add('viss_assignment_control')
+        if a.name!='host-candidate-01':names.add('viss_assignment_control')
         run(['ctest','--test-dir',str(BUILD/'gateway-unit'),'-R','^('+'|'.join(sorted(names))+')$','--output-on-failure','--output-junit',str(junit)],env=dict(os.environ,TMPDIR=str(scratch)))
         require(junit.is_file() and junit.stat().st_size<1024**2,'VISION_HOST_GATEWAY_REPORT_MISSING')
         cases=ET.parse(junit).getroot().findall('testcase')
