@@ -154,7 +154,13 @@ def execute(r):
     observed=publication(r['version'],bundle_id,[bundle_view(v) for v in bundles],selected,component_type=kind)
     unit=unit_view(reads,r['vehicles']['test'],strict=True,component_type=kind)
     result=dict(publication=observed,unit=unit,componentId=component['id'],componentTitle=component.get('title'),versions=selected)
-    if action=='status':return result
+    if action=='status':
+        if r.get('readOnlySendReconciliation') is True:
+            sends=reads.call('units/'+r['vehicles']['test']['unitId']+'/components/send-requests/')
+            require(isinstance(sends,list),'SEND_REQUESTS_INVALID')
+            result['sameComponentSendRequests']=[{k:v[k] for k in ('id','component_type','update_component') if k in v}
+                for v in sends if v.get('component_type')==kind]
+        return result
     if action=='preflight':
         coverage=recipients(reads,r);require(coverage['complete'],'RECIPIENT_SCOPE_UNPROVEN')
         require(observed['stage']=='NOT_PUBLISHED' and not selected and not bundles,'PUBLICATION_EXISTS_RECONCILE')

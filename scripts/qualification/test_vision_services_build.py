@@ -10,6 +10,14 @@ import hashlib
 
 
 class ClosureCommandTests(unittest.TestCase):
+    def test_rootfs_update_refuses_stranding_old_owner_cache_before_publication(self):
+        module=runpy.run_path(str(Path(__file__).with_name('vision_permanent_rootfs_worker.py')))
+        cm=dict(imageManager=dict(installPath='/var/aos/downloads/vision-services/cm-images'))
+        sm=dict(imageManager=dict(imagePath='/var/aos/downloads/vision-services/sm-images'))
+        self.assertTrue(module['services_cache_paths_compatible'](cm,sm))
+        self.assertFalse(module['services_cache_paths_compatible'](dict(imageManager=dict(installPath='/var/aos/workdirs/cm/imagemanager/install')),sm))
+        self.assertFalse(module['services_cache_paths_compatible'](cm,{}))
+
     def test_later_native_failure_cannot_retain_an_earlier_broker_pass(self):
         module=runpy.run_path(str(Path(__file__).with_name('vision_services_live.py')))
         earlier=dict(outcome='PASS_SOURCE_OWNED_NATIVE_BROKER_LIFECYCLE_ONLY',code='VISION_NATIVE_INSTANCE_START_UNCONFIRMED',cleanup=dict(restored=True))

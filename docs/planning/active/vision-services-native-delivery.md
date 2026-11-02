@@ -4,7 +4,7 @@
 # Native Vision Services — V2/V3 Boundary Packet
 
 - Status: Accepted by the operator; implementation and same-VM verification authorized
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-11-02
 - Owner: SDV Lab integration, Vision services and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#v2-freeze-interfaces-and-update-the-design-chain)
@@ -364,7 +364,7 @@ credentials, idempotent start, wrong-root denial, restart and reconnect.
 Completed reversible campaigns restore stock configuration/policy, preserve
 the same Unit/VM and all four retained journals, then stop Source/VM/helpers.
 
-### Permanent platform and visible acceptance still in progress
+### Permanent platform and visible acceptance
 
 The default-off Vision platform delta includes the proven five-resource Core
 capacity, standard IAM cpuInfoPath projection from the real four-vCPU topology,
@@ -410,12 +410,90 @@ A bounded 16-point ground-plane plot is explicitly not an overlay on a newer
 live image. Missing/stale input clears the prior valid display.
 
 The new view passes four focused units, all 73 Vision units and 62 existing
-Presenter units. These are **not live UI acceptance**. Finish permanent rootfs
-and Camera OEM delivery, repeat native/API gates without transient platform
-overrides, then run the visible semantic UI scenario on M4 with screenshots,
-layout checks, real input loss/recovery and owned-process cleanup. Do not claim
-full E2E or publish a Vision installer before those gates complete and the
-Rootfs Cloud-inventory disagreement is resolved.
+Presenter units. Live acceptance then ran against the permanent `.6` rootfs,
+Camera `0.1.2` and native Perception/Assessment `0.1.1`, without transient
+platform, policy, identity or resource overrides:
+
+- `vision-services-permanent-api-ui-01` completes the native/API portion,
+  including broker lifecycle, independent Cloud/native version reconciliation,
+  quotas/identities and a 180.19-second stationary calibrated characterization.
+  It observes 774 unique results (4.2954/s); capture-callback-to-observation age
+  is 432.9 ms median, 547.1 ms p95 and 605.3 ms maximum. These are **partial-path**
+  measurements, not the five-results/s or 500-ms capture-to-display goal.
+  Its original final UI-helper import failure remains NOT_COMPLETE. The
+  following UI receipt binds the completed API/security/characterization
+  files by SHA-256; it does not relabel the failed aggregate or repeat inference.
+- `vision-services-permanent-api-ui-03` passes actual **headed** Chrome on the
+  unlocked M4 desktop: Overview, Perception and Assessment, both service
+  versions, advancing opaque references, no full browser identifiers and stable
+  element rectangles. Stopping real camera ingress clears the path/lead/plan;
+  restarting it produces a new valid reference without restarting either app.
+  Fresh scoped AVC count is zero. Five actual browser screenshots are retained.
+  The preceding UI attempt passed its assertions but failed process-pipe
+  cleanup; that receipt remains failed. The corrected final campaign confirms
+  browser/server/process cleanup as well as the visual assertions.
+- The final visible campaign takes 121.90 seconds overall: VM start 37.48 s,
+  warm Source start 30.88 s and semantic browser actions/loss/recovery 9.74 s.
+  The API campaign takes 341.87 s including its mandatory 180-s sample and
+  preserved import failure. These are scenario times, not the total overnight
+  development, compilation, signing, diagnosis and evidence-collection time.
+
+Owned Source, simulator, browser, localhost server, VM and awake helpers are
+stopped at the end. The same Vision Unit/VM and data remain; all four retained
+instance journals are unchanged. No Docker restart or public release occurs.
+
+Visible browser coverage is all three **new Vision views**, not native Driving
+Control button automation, a camera overlay, a moving-route accuracy test or
+the retained Main VDP/Brake/Tire screens. Perception's cards explain the three
+model roles; they do not pretend to show three separately deployed services or
+raw model tensors through an unapproved browser interface. A review finding
+remains: camera-ingress loss projects `SOURCE NOT SELECTED` while the Source
+owner remains running; the diagnostic wording needs clarification. Previous
+valid results do clear, and layout does remain stable.
+
+Rootfs aggregate Cloud inventory remains a separate required gate until its
+explicit reconciliation receipt confirms the installed component. The native
+commit, Camera delivery, API and browser passes cannot stand in for that gate.
+Do not publish a Vision installer or promote Main on these bounded results.
+
+### Rootfs catalog defect and bounded follow-up
+
+The final read-only `vision-services-root-cache-11` confirms a healthy native
+`.6` read-only root, Camera `0.1.2`, Enforcing policy, no update transaction or
+temporary pending files, and CM restart count zero. The same Vision identity
+and all retained journals remain unchanged. Reading only the exact Rootfs rows
+of CM's `imagemanager` table finds **no Rootfs catalog row**. The five original
+OCI index/manifest/config/item-config/layer blobs remain intact in the old
+cache, but are absent from the new cache. Descriptor transfer sizes include
+encryption padding; raw cached bytes retain their original verified digests.
+
+This separates the failed migration from payload corruption or a model/UI
+failure. Copying the immutable blob closure alone does not register an item:
+native CM removes those copies as unreferenced. This agrees with the pinned
+[Core image-manager ownership](https://github.com/aosedge/aos_core_lib_cpp/blob/5560291ba6914e36a5b841ade4d8fc54134a9e91/src/core/cm/imagemanager/imagemanager.cpp)
+and [CM catalog storage](https://github.com/aosedge/aos_core_cpp/blob/9d613a46df3c7f550062e2f19ae3406c57715694/src/cm/database/database.cpp).
+The one normal same-version assignment request receives HTTP 400. Subsequent
+read-only reconciliation finds no queued Rootfs send request. No upload,
+new-version publication, manual database/spec rewrite or second image follows.
+All unsuccessful receipts are preserved. The eleven bounded cache/reconciliation
+campaigns total 725 seconds of execution; this diagnosis time is separate from
+the 9.74-second visible UI action sequence.
+
+The future services-rootfs delivery preflight now refuses publication unless
+the old native CM/SM owners already use the successor's cache paths. It fails
+with `ROOTFS_NATIVE_CACHE_MIGRATION_REQUIRED_BEFORE_PUBLICATION` rather than
+letting a reboot strand the just-acquired catalog. This source guard is unit
+tested, not a claim that a fresh corrected FOTA has been run.
+
+The current packet ends **NOT_COMPLETE_ROOTFS_CLOUD_INVENTORY_GATE_OPEN**.
+Closing it needs a bounded supported native catalog-recovery procedure, or an
+explicitly agreed recovery/re-staging plan that reconciles current retained
+data before changing state. Do not invent an installed database row, discard
+the current VM, or spend another image build outside this packet. After that
+recovery, require native/Cloud version agreement through a cold restart and
+repeat the short functional and headed UI loss/recovery scenario. The current
+data, stopped VM, recovery checkpoint, original image inputs and evidence are
+retained for that work.
 
 A valid absent lead is present=false with null distances. The current trusted
 vehicle geometry profile is unavailable, so a valid shadow plan is withheld;

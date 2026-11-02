@@ -32,6 +32,12 @@ def digest(path):
     return value.hexdigest()
 
 
+def services_cache_paths_compatible(cm,sm):
+    """A rootfs path change must not strand an update acquired by old Core."""
+    return (cm.get('imageManager',{}).get('installPath')=='/var/aos/downloads/vision-services/cm-images'
+        and sm.get('imageManager',{}).get('imagePath')=='/var/aos/downloads/vision-services/sm-images')
+
+
 OBSERVE=r'''
 value=run('snapshot')
 match=re.fullmatch(r'VERSION="([^"\n]+)"',value['rootfsVersion']);assert match
@@ -135,6 +141,14 @@ def main():
             require(baseline['rootfsVersion']==('6.1.1-vision-camera.5' if services_packet else '6.1.1-vision-camera.3') and not baseline['rootfsPending']
                 and not baseline['updateFlags'] and baseline['enforcing'] and not baseline['transientProofPresent'],'ROOTFS_BASELINE_INVALID')
             if services_packet:
+                paths_code="import json,pathlib;print(json.dumps({k:json.loads(pathlib.Path('/etc/aos/'+k+'.cfg').read_bytes()).get('imageManager',{}) for k in ('cm','sm')}))"
+                paths_result=subprocess.run(ssh_command(access_path(native,'test'),item['sshPort'],4),
+                    input='python3 -c '+__import__('shlex').quote(paths_code)+'\n',text=True,capture_output=True,timeout=15)
+                require(paths_result.returncode==0,'ROOTFS_CACHE_PATHS_UNAVAILABLE')
+                paths=json.loads(paths_result.stdout)
+                atomic(records/'native-update-cache-paths.json',paths)
+                require(services_cache_paths_compatible(dict(imageManager=paths['cm']),dict(imageManager=paths['sm'])),
+                    'ROOTFS_NATIVE_CACHE_MIGRATION_REQUIRED_BEFORE_PUBLICATION')
                 capacity_code="import json,os;print(json.dumps({p:os.statvfs(p).f_bavail*os.statvfs(p).f_frsize for p in ('/var/aos/downloads','/var/aos/workdirs')}))"
                 done=subprocess.run(ssh_command(access_path(native,'test'),item['sshPort'],4),
                     input='python3 -c '+__import__('shlex').quote(capacity_code)+'\n',text=True,capture_output=True,timeout=15)

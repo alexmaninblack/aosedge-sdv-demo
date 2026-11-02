@@ -318,6 +318,12 @@ finally:
                     view=observation();atomic(records/'latest-vision-observation.json',view)
                     if view and view.get('reference') and view['state']=='AVAILABLE':break
                     require(time.monotonic()<deadline,'VISION_NATIVE_FUNCTIONAL_RESULT_NOT_CONFIRMED');time.sleep(.1)
+                if c.get('uiOnlyAfterApi'):
+                    import runpy
+                    visual=runpy.run_path(str(records/'vision_services_visual.py'),run_name='vision_visual_scenario')['visual']
+                    phase('headed-vision-ui-loss-and-recovery',lambda:visual(app,env,records,c,observation,request))
+                    result.update(outcome='PASS_PERMANENT_VISION_HEADED_BROWSER_UI',apiProofReused=c['uiOnlyAfterApi'],
+                        characterizationRepeated=False,fullVisionE2E='ROOTFS_CLOUD_INVENTORY_DEFECT_OPEN');raise ConfigProofComplete
                 if c.get('communicationCacheProof'):
                     facts=phase('native-communication-cache-path-functional',lambda:request('NATIVE'))
                     require(facts['storage']['imageManager']['installPath']=='/var/aos/downloads/vision-services/cm-images'
@@ -426,7 +432,8 @@ finally:
                 phase('native-current-subject-after-characterization',lambda:cloud('subject-status',serviceIds=ids,subject=subject))
                 if c.get('permanentSystem'):
                     result['apiPermanentPlatform']='PASS_NO_TRANSIENT_PLATFORM_OVERRIDES'
-                    from vision_services_visual import visual
+                    import runpy
+                    visual=runpy.run_path(str(records/'vision_services_visual.py'),run_name='vision_visual_scenario')['visual']
                     phase('headed-vision-ui-loss-and-recovery',lambda:visual(app,env,records,c,observation,request))
                     result.update(outcome='PASS_PERMANENT_VISION_API_AND_HEADED_BROWSER_UI',fullVisionE2E='ROOTFS_CLOUD_INVENTORY_DEFECT_OPEN',
                         rootfsCloudInventory='KNOWN_OMISSION_NOT_PASSED');raise ConfigProofComplete
