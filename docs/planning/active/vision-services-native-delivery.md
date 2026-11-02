@@ -4,7 +4,7 @@
 # Native Vision Services — V2/V3 Boundary Packet
 
 - Status: Accepted by the operator; implementation and same-VM verification authorized
-- Version: 0.6
+- Version: 0.7
 - Prepared: 2026-11-02
 - Owner: SDV Lab integration, Vision services and OEM platform
 - Parent: [Vision implementation plan](vision-pilot-single-node.md#v2-freeze-interfaces-and-update-the-design-chain)
@@ -494,6 +494,55 @@ recovery, require native/Cloud version agreement through a cold restart and
 repeat the short functional and headed UI loss/recovery scenario. The current
 data, stopped VM, recovery checkpoint, original image inputs and evidence are
 retained for that work.
+
+### Recovery continuation proposal — not yet authorized for execution
+
+After transport on 2 November, all three SSD volumes and the same M4 are
+available. The integration branch remains at the recorded checkpoint; all five
+M4 VM/Source journals remain stopped. Read-only
+`vision-rootfs-recovery-preflight-02` confirms the same Unit/node/set, the exact
+published `.6` version still Ready and no queued component send requests.
+The Unit is Offline because its VM is stopped, not because a new connection
+failure was observed. The existing send endpoint rejects OPTIONS with 405;
+this supplies no recovery operation and does not justify retrying its failed
+POST. No VM, simulator, build or Cloud write is part of this preflight.
+The initial isolated-helper import failure is separate from product status;
+the corrected explicit helper path passes its isolated-loader regression.
+
+The pinned native image-manager interface exposes ordinary download/install,
+status and removal; no separate catalog-repair operation was found in that
+interface. The proposed bounded fallback therefore needs **explicit operator
+acceptance of active-state rollback**, not an inference from a request to resume:
+
+1. Inventory current persistent data and space; retain a complete stopped copy
+   of the current disk and journals for exact return. Keep the proven
+   pre-update checkpoint and all original blobs. Delete nothing.
+2. Restore a working copy of that checkpoint to the **same** Vision VM/Unit.
+   This rolls active guest state back. Post-checkpoint data remains preserved
+   in the full current copy; it is not automatically merged into the restored
+   guest. Define and verify the required data reconciliation before acceptance.
+3. Perform the first recovery boot without outbound Cloud traffic, while
+   retaining the existing explicitly forwarded SSH access. QEMU documents
+   [user-network restriction](https://www.qemu.org/docs/master/system/invocation.html#network-options)
+   without disabling explicit forwarding. This is a proposed narrow recovery
+   mode, not a live-qualified mode or permission to change global Mac networking.
+4. Under stopped native writers, prepare/verify the supported CM/SM cache-path
+   migration **before** allowing any new Rootfs acquisition or Cloud assignment.
+   Keep native ownership and metadata coherent; no manual database row, writable
+   immutable root, overlay rebase or fabricated installed status.
+5. Reconnect normally and reconcile the restored real catalog. Reuse the
+   already published `.6` image and Camera `0.1.2`; do not rebuild/re-upload
+   them or issue an uncertain request twice. Restore the current service/data
+   state through its normal owners and the agreed reconciliation plan.
+6. Require native/Cloud agreement through cold restart, then the short native
+   functional and three-view headed UI loss/recovery scenario, followed by
+   normal shutdown and unchanged retained-instance checks.
+
+This proposal does not authorize a new VM, Unit retirement, current-disk
+replacement without preservation, Main/VDP/Brake/Tire changes, another image
+build or a public release. If the required active data cannot be reconciled
+without forbidden state edits, stop before the swap and use a separately
+supported native recovery procedure instead.
 
 A valid absent lead is present=false with null distances. The current trusted
 vehicle geometry profile is unavailable, so a valid shadow plan is withheld;
